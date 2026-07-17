@@ -1,0 +1,23 @@
+{% from "_macros.html" import icon with context %}
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="ReliefLine" class="brand-icon">
+        <div>
+            <strong>ReliefLine</strong>
+            <span class="brand-sub">Pangasinan</span>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('pswdo.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} Dashboard</a>
+        <a href="{{ url_for('pswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('clipboard', 18) }} Relief Requests</a>
+        <a href="{{ url_for('pswdo.distribution') }}" class="{{ 'active' if active_page == 'distribution' }}">{{ icon('truck', 18) }} Distribution</a>
+        <a href="#">{{ icon('building', 18) }} Warehouse Inventory</a>
+        <a href="#">{{ icon('map', 18) }} GIS Map</a>
+        <a href="{{ url_for('prediction.index') }}">{{ icon('trending-up', 18) }} Predictive Analytics</a>
+        <a href="#" class="nav-spaced">{{ icon('bar-chart', 18) }} Reports</a>
+        <a href="#">{{ icon('bell', 18) }} Notifications <span class="nav-badge">3</span></a>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}">{{ icon('log-out', 18) }} Logout</a>
+    </div>
+</aside>

@@ -1,0 +1,28 @@
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #0f2547;
+    color: white;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.btn-primary:hover { background: #1a3a6b; }
+
+.dist-filter-bar { justify-content: flex-start; }
+.dist-filter-bar .btn-outline { margin-left: auto; }
+
+.dist-id { color: #2c5aa0; }
+.dist-unassigned { color: #b8bfc9; font-style: italic; }
+
+.badge-status-preparing { background: #fef5e3; color: #d68910; }
+.badge-status-loaded { background: #eaf0fd; color: #2c5aa0; }
+.badge-status-dispatched { background: #f1edfe; color: #6c5ce7; }
+.badge-status-in_transit { background: #fdf0e4; color: #a5713a; }
+.badge-status-delivered { background: #e8faf0; color: #1e8449; }
+.badge-status-delayed { background: #fdecea; color: #c0392b; }
+
+.badge-status { display: inline-flex; align-items: center; gap: 5px; }

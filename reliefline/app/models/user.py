@@ -1,0 +1,26 @@
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+from app.extensions import db
+
+class User(UserMixin, db.Model):
+    __tablename__ = "users"
+
+    user_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    role = db.Column(
+        db.Enum("system_admin", "pswdo_admin", "cswdo_admin", "barangay_user"),
+        nullable=False
+    )
+    office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=True)
+    barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=True)
+
+    def get_id(self):
+        return str(self.user_id)
+
+    def set_password(self, raw_password):
+        self.password = generate_password_hash(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password_hash(self.password, raw_password)

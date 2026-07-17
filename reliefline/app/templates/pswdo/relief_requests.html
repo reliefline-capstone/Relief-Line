@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Relief Requests - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'relief_requests' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <!-- Main content -->
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        <!-- Page title -->
+        <section class="page-header">
+            <div>
+                <h2>Relief Requests</h2>
+                <p>{{ active_event.event_name if active_event else 'No active event' }} · {{ pending_count }} pending decisions</p>
+            </div>
+            <div class="rr-actions">
+                <form method="GET" class="rr-search-form">
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                    <input type="hidden" name="municipality" value="{{ municipality_filter }}">
+                    <input type="hidden" name="priority" value="{{ priority_filter }}">
+                    <input type="hidden" name="date" value="{{ date_filter }}">
+                    <div class="rr-search-wrapper">
+                        {{ icon('search', 14, '#8a94a6') }}
+                        <input type="text" name="q" value="{{ search_query }}" placeholder="Search municipality or ID...">
+                    </div>
+                </form>
+                <a href="{{ url_for('pswdo.relief_requests') }}" class="btn-icon" title="Reset filters">{{ icon('rotate-ccw', 16, '#555') }}</a>
+                <a href="{{ url_for('pswdo.export_relief_requests', status=status_filter, municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+            </div>
+        </section>
+
+        <!-- Filter bar -->
+        <form method="GET" class="filter-bar">
+            <span class="filter-label">FILTER:</span>
+
+            <input type="hidden" name="q" value="{{ search_query }}">
+
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if status_filter == 'all' }}>All Status</option>
+                <option value="pending" {{ 'selected' if status_filter == 'pending' }}>Pending</option>
+                <option value="approved" {{ 'selected' if status_filter == 'approved' }}>Approved</option>
+                <option value="released" {{ 'selected' if status_filter == 'released' }}>Released</option>
+            </select>
+
+            <select name="municipality" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All Municipalities</option>
+                {% for lgu in target_lgus %}
+                <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="priority" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if priority_filter == 'all' }}>All Priority</option>
+                <option value="critical" {{ 'selected' if priority_filter == 'critical' }}>Critical</option>
+                <option value="high" {{ 'selected' if priority_filter == 'high' }}>High</option>
+                <option value="medium" {{ 'selected' if priority_filter == 'medium' }}>Medium</option>
+                <option value="low" {{ 'selected' if priority_filter == 'low' }}>Low</option>
+            </select>
+
+            <div class="date-input-wrapper">
+                {{ icon('calendar', 14, '#8a94a6') }}
+                <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
+            </div>
+        </form>
+
+        <!-- Summary pills -->
+        <div class="summary-pills">
+            <a href="{{ url_for('pswdo.relief_requests', status='pending') }}" class="pill pill-pending">
+                <strong>{{ pending_count }}</strong> Pending
+            </a>
+            <a href="{{ url_for('pswdo.relief_requests', status='approved') }}" class="pill pill-approved">
+                <strong>{{ approved_count }}</strong> Approved
+            </a>
+            <a href="{{ url_for('pswdo.relief_requests', status='released') }}" class="pill pill-released">
+                <strong>{{ released_count }}</strong> Released
+            </a>
+            <span class="summary-note">{{ total_filtered }} of {{ total_count }} shown · Sorted by priority (highest first)</span>
+        </div>
+
+        <!-- Table -->
+        <section class="panel rr-table-panel">
+            <table class="rr-table">
+                <thead>
+                    <tr>
+                        <th>MUNICIPALITY</th>
+                        <th>TYPHOON EVENT</th>
+                        <th>REQUESTED PACKS</th>
+                        <th>PRIORITY</th>
+                        <th>DATE</th>
+                        <th>STATUS</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req, priority in requests %}
+                    <tr>
+                        <td>
+                            <strong>{{ req.barangay.city_municipality }}</strong>
+                            <span class="rr-sub">RR-{{ req.allocation_date.year }}-{{ '%03d'|format(req.allocation_id) }}</span>
+                        </td>
+                        <td>
+                            {% if req.event %}
+                            {{ icon('cloud-lightning', 14, '#3867d6') }} {{ req.event.event_name }}
+                            {% else %}
+                            <span class="rr-sub">{{ req.disaster_event or '—' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ "{:,}".format(req.predicted_quantity) }}</strong>
+                            <span class="rr-sub">food packs</span>
+                        </td>
+                        <td>
+                            <span class="badge-priority badge-priority-{{ priority.tier }}"><i class="priority-dot"></i> {{ priority.label }}</span>
+                            <span class="rr-sub">{{ priority.detail }}</span>
+                        </td>
+                        <td>{{ req.allocation_date.strftime('%B') }} {{ req.allocation_date.day }}, {{ req.allocation_date.strftime('%Y') }}</td>
+                        <td>
+                            <span class="badge-status badge-status-{{ req.display_status }}">
+                                {{ req.display_status|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('pswdo.relief_request_detail', allocation_id=req.allocation_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="empty-note" style="text-align:center; padding: 30px;">Walang relief request na tumutugma sa filter mo.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="rr-pagination">
+                <span>Showing {{ requests|length }} request{{ 's' if requests|length != 1 }} · Sorted by priority (highest first)</span>
+                <div class="pagination-controls">
+                    {% if page > 1 %}
+                    <a href="{{ url_for('pswdo.relief_requests', page=page-1, status=status_filter, municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="page-btn">Previous</a>
+                    {% endif %}
+                    <span class="page-btn active">{{ page }}</span>
+                    {% if page < total_pages %}
+                    <a href="{{ url_for('pswdo.relief_requests', page=page+1, status=status_filter, municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="page-btn">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

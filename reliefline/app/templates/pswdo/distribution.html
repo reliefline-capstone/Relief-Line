@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Distribution - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'distribution' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        <!-- Page title -->
+        <section class="page-header">
+            <div>
+                <h2>Distribution Operations</h2>
+                <p>{{ primary_event.event_name if primary_event else 'No active event' }} · {{ today.strftime('%B') }} {{ today.day }}, {{ today.strftime('%Y') }}</p>
+            </div>
+            <div class="rr-actions">
+                <a href="{{ url_for('pswdo.completed_deliveries') }}" class="btn-outline">{{ icon('file-text', 14) }} Completed</a>
+                <a href="#" class="btn-primary">{{ icon('plus', 14, 'white') }} New Distribution</a>
+            </div>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="stat-cards dist-stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ total_today }}</span>
+                <span class="stat-label">Total Today</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('clock', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ preparing_count }}</span>
+                <span class="stat-label">Preparing</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon brown">{{ icon('navigation', 18, '#a5713a') }}</div>
+                <span class="stat-value">{{ in_transit_count }}</span>
+                <span class="stat-label">In Transit</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ delivered_count }}</span>
+                <span class="stat-label">Delivered</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ delayed_count }}</span>
+                <span class="stat-label">Delayed</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ "{:,}".format(packs_released) }}</span>
+                <span class="stat-label">Packs Released</span>
+            </div>
+        </section>
+
+        <!-- Filter bar -->
+        <form method="GET" class="filter-bar dist-filter-bar">
+            <div class="rr-search-wrapper">
+                {{ icon('search', 14, '#8a94a6') }}
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search...">
+            </div>
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if status_filter == 'all' }}>All Status</option>
+                {% for key, label in dispatch_labels.items() %}
+                <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <a href="{{ url_for('pswdo.export_distribution', status=status_filter, q=search_query) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+        </form>
+
+        <!-- Table -->
+        <section class="panel rr-table-panel">
+            <table class="rr-table">
+                <thead>
+                    <tr>
+                        <th>DISTRIBUTION ID</th>
+                        <th>MUNICIPALITY</th>
+                        <th>WAREHOUSE</th>
+                        <th>PACKS</th>
+                        <th>VEHICLE</th>
+                        <th>DRIVER</th>
+                        <th>STATUS</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in records %}
+                    {% set fulfilling = rec.allocation.fulfilling_office or rec.allocation.office %}
+                    <tr>
+                        <td>
+                            <strong class="dist-id">D-{{ rec.distribution_date.year }}-{{ '%03d'|format(rec.distribution_id) }}</strong>
+                            <span class="rr-sub">RR-{{ rec.allocation.allocation_date.year }}-{{ '%03d'|format(rec.allocation.allocation_id) }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ rec.barangay.city_municipality }}</strong>
+                            <span class="rr-sub">{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}</span>
+                        </td>
+                        <td>{{ fulfilling.office_name if fulfilling else '—' }}</td>
+                        <td>
+                            <strong>{{ "{:,}".format(rec.quantity_released) }}</strong>
+                            <span class="rr-sub">food packs</span>
+                        </td>
+                        <td>
+                            {% if rec.vehicle %}{{ rec.vehicle.vehicle_name }}{% else %}<span class="dist-unassigned">Unassigned</span>{% endif %}
+                        </td>
+                        <td>{{ rec.driver.name if rec.driver else '—' }}</td>
+                        <td>
+                            <span class="badge-status badge-status-{{ rec.dispatch_status }}">
+                                <i class="priority-dot"></i> {{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('pswdo.distribution_detail', distribution_id=rec.distribution_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="empty-note" style="text-align:center; padding: 30px;">Walang distribution na tumutugma sa filter mo.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="rr-pagination">
+                <span>{{ records|length }} distribution{{ 's' if records|length != 1 }}</span>
+            </div>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

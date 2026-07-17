@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}D-{{ rec.distribution_date.year }}-{{ '%03d'|format(rec.distribution_id) }} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'distribution' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        <div class="rd-breadcrumb">
+            <a href="{{ url_for('pswdo.distribution') }}">{{ icon('arrow-right', 14) }} Distribution Operations</a>
+            <span class="rd-crumb-sep">/</span>
+            <span>D-{{ rec.distribution_date.year }}-{{ '%03d'|format(rec.distribution_id) }}</span>
+            <span class="badge-status badge-status-{{ rec.dispatch_status }}"><i class="priority-dot"></i> {{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}</span>
+        </div>
+
+        <!-- Distribution status stepper -->
+        <section class="panel dd-stepper-panel">
+            <div class="dd-stepper-header">
+                <span class="rd-panel-title" style="margin-bottom:0;">DISTRIBUTION STATUS</span>
+                <div class="dd-header-actions">
+                    {% if rec.dispatch_status == 'preparing' %}
+                    <form method="POST" action="{{ url_for('pswdo.advance_distribution', distribution_id=rec.distribution_id) }}">
+                        <input type="hidden" name="target" value="loaded">
+                        <button type="submit" class="btn-decision btn-partial">{{ icon('arrow-right', 16, 'white') }} Mark as Loaded</button>
+                    </form>
+                    {% elif rec.dispatch_status == 'loaded' %}
+                    <form method="POST" action="{{ url_for('pswdo.advance_distribution', distribution_id=rec.distribution_id) }}">
+                        <input type="hidden" name="target" value="dispatched">
+                        <button type="submit" class="btn-decision btn-partial">{{ icon('arrow-right', 16, 'white') }} Mark as Dispatched</button>
+                    </form>
+                    {% elif rec.dispatch_status == 'dispatched' %}
+                    <form method="POST" action="{{ url_for('pswdo.advance_distribution', distribution_id=rec.distribution_id) }}">
+                        <input type="hidden" name="target" value="in_transit">
+                        <button type="submit" class="btn-decision btn-partial">{{ icon('arrow-right', 16, 'white') }} Mark In Transit</button>
+                    </form>
+                    <button type="button" class="btn-decision btn-approve-full" data-open-modal="confirm-delivery-modal">{{ icon('check-circle', 16, 'white') }} Confirm Delivery</button>
+                    {% elif rec.dispatch_status == 'in_transit' %}
+                    <button type="button" class="btn-decision btn-approve-full" data-open-modal="confirm-delivery-modal">{{ icon('check-circle', 16, 'white') }} Confirm Delivery</button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="dd-stepper">
+                {% for step in dispatch_steps %}
+                <div class="dd-step {{ 'dd-step-done' if loop.index0 <= current_index }}">
+                    <div class="dd-step-circle">
+                        {% if loop.index0 <= current_index %}{{ icon('check-circle', 16, 'white') }}{% else %}{{ loop.index }}{% endif %}
+                    </div>
+                    <span>{{ step_labels[step] }}</span>
+                </div>
+                {% if not loop.last %}<div class="dd-step-line {{ 'dd-step-line-done' if loop.index0 < current_index }}"></div>{% endif %}
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="main-grid rd-grid">
+            <div class="rd-main-col">
+
+                <!-- General Information -->
+                <section class="panel">
+                    <h3 class="rd-panel-title">General Information</h3>
+                    <div class="dd-kv-list">
+                        <div><span>Distribution No.</span><strong>D-{{ rec.distribution_date.year }}-{{ '%03d'|format(rec.distribution_id) }}</strong></div>
+                        <div><span>Municipality</span><strong>{{ rec.barangay.city_municipality }}</strong></div>
+                        <div><span>Requested By</span><strong>{{ requested_by_label }}</strong></div>
+                        <div><span>Approved By</span><strong>{{ approved_by_label }}</strong></div>
+                        <div><span>Approved Packs</span><strong>{{ "{:,}".format(alloc.allocated_quantity) }} food packs</strong></div>
+                        <div><span>Priority</span><strong>{{ priority.label }}</strong></div>
+                        <div>
+                            <span>Typhoon Event</span>
+                            <strong>{% if alloc.event %}{{ icon('cloud-lightning', 14, '#3867d6') }} {{ alloc.event.event_name }}{% else %}{{ alloc.disaster_event or '—' }}{% endif %}</strong>
+                        </div>
+                        <div><span>Request ID</span><strong>RR-{{ alloc.allocation_date.year }}-{{ '%03d'|format(alloc.allocation_id) }}</strong></div>
+                    </div>
+                </section>
+
+                <!-- Warehouse Information -->
+                <section class="panel">
+                    <h3 class="rd-panel-title">Warehouse Information</h3>
+                    <div class="dd-wh-tiles">
+                        <div class="dd-wh-tile dd-wh-blue">
+                            {{ icon('building', 20, '#2c5aa0') }}
+                            <span>Source Warehouse</span>
+                            <strong>{{ fulfilling_office.office_name if fulfilling_office else '—' }}</strong>
+                        </div>
+                        <div class="dd-wh-tile dd-wh-green">
+                            {{ icon('package', 20, '#1e8449') }}
+                            <span>Available Stock</span>
+                            <strong>{{ "{:,}".format(available_stock) }} Packs</strong>
+                        </div>
+                        <div class="dd-wh-tile dd-wh-orange">
+                            {{ icon('trending-up', 20, '#d35400') }}
+                            <span>Stock After Release</span>
+                            <strong>{{ "{:,}".format(stock_after_release) }} Packs</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Vehicle Assignment -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3 class="rd-panel-title" style="margin-bottom:0;">Vehicle Assignment</h3>
+                        <button type="button" class="btn-outline" data-open-modal="assign-vehicle-modal">{{ icon('truck', 14) }} {{ 'Reassign' if rec.vehicle else 'Assign Vehicle' }}</button>
+                    </div>
+                    {% if rec.vehicle %}
+                    <div class="dd-kv-list">
+                        <div><span>Vehicle</span><strong>{{ rec.vehicle.vehicle_name }}</strong></div>
+                        <div><span>Driver</span><strong>{{ rec.driver.name if rec.driver else '—' }}</strong></div>
+                        <div><span>Plate Number</span><strong>{{ rec.vehicle.plate_number or '—' }}</strong></div>
+                        <div><span>Capacity</span><strong>{{ "{:,}".format(rec.vehicle.capacity_packs) if rec.vehicle.capacity_packs else '—' }} packs</strong></div>
+                    </div>
+                    {% else %}
+                    <div class="dd-empty-block">
+                        {{ icon('truck', 32, '#c3cad6') }}
+                        <span>No vehicle assigned yet.</span>
+                        <button type="button" class="dd-link-btn" data-open-modal="assign-vehicle-modal">Assign Vehicle →</button>
+                    </div>
+                    {% endif %}
+                </section>
+
+                <!-- Dispatch Schedule -->
+                <section class="panel">
+                    <h3 class="rd-panel-title">Dispatch Schedule</h3>
+                    <div class="dd-wh-tiles">
+                        <div class="dd-wh-tile">
+                            {{ icon('clock', 18, '#8a94a6') }}
+                            <span>DISPATCH DATE</span>
+                            <strong>{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}</strong>
+                        </div>
+                        <div class="dd-wh-tile">
+                            {{ icon('arrow-right', 18, '#8a94a6') }}
+                            <span>DEPARTURE TIME</span>
+                            <strong>{{ rec.departure_time.strftime('%I:%M %p') if rec.departure_time else '—' }}</strong>
+                        </div>
+                        <div class="dd-wh-tile">
+                            {{ icon('map-pin', 18, '#8a94a6') }}
+                            <span>EXPECTED ARRIVAL</span>
+                            <strong>{{ rec.expected_arrival_time.strftime('%I:%M %p') if rec.expected_arrival_time else '—' }}</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Route map placeholder -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3 class="rd-panel-title" style="margin-bottom:0;">Route Map</h3>
+                        <span class="rd-sub">{{ fulfilling_office.office_name if fulfilling_office else '—' }} → {{ rec.barangay.city_municipality }}</span>
+                    </div>
+                    <div class="dd-route-box">
+                        <div class="dd-route-line-wrap">
+                            <div class="dd-route-line"></div>
+                            <div class="dd-route-node dd-route-start">
+                                <div class="dd-route-badge dd-route-wh">WH</div>
+                                <strong>{{ fulfilling_office.office_name if fulfilling_office else '—' }}</strong>
+                                <span>{{ icon('map-pin', 10) }} Warehouse</span>
+                            </div>
+                            <div class="dd-route-truck" style="left: {{ route_progress }}%;">
+                                <div class="dd-route-badge dd-route-truck-badge">{{ icon('truck', 14, '#2c5aa0') }}</div>
+                                <span>{{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}</span>
+                            </div>
+                            <div class="dd-route-node dd-route-end">
+                                <div class="dd-route-badge dd-route-pin">{{ icon('map-pin', 14, 'white') }}</div>
+                                <strong>{{ rec.barangay.city_municipality }}</strong>
+                                <span>{{ icon('map-pin', 10) }} Drop-off Point</span>
+                            </div>
+                        </div>
+                        <div class="dd-route-legend">
+                            <span><i class="dd-route-badge dd-route-wh dd-legend-icon">WH</i> {{ fulfilling_office.office_name if fulfilling_office else '—' }}</span>
+                            <span>{{ icon('truck', 12) }} {{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}</span>
+                            <span>{{ icon('map-pin', 12) }} {{ rec.barangay.city_municipality }} (Drop-off)</span>
+                        </div>
+                    </div>
+                </section>
+
+                {% if rec.dispatch_status == 'delivered' %}
+                <!-- Delivery Confirmation -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3 class="rd-panel-title" style="margin-bottom:0;">Delivery Confirmation</h3>
+                        <span class="dd-completed-tag">{{ icon('check-circle', 12) }} Completed</span>
+                    </div>
+                    <div class="dd-kv-list">
+                        <div><span>Received By</span><strong>{{ rec.received_by or '—' }}</strong></div>
+                        <div><span>Date Received</span><strong>{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}</strong></div>
+                        <div><span>Time Received</span><strong>{{ rec.time_received.strftime('%I:%M %p') if rec.time_received else '—' }}</strong></div>
+                        <div><span>Condition</span><strong>{{ rec.condition|title if rec.condition else '—' }}</strong></div>
+                        <div><span>Travel Time</span><strong>{{ rec.travel_time or '—' }}</strong></div>
+                    </div>
+                    {% if attachments %}
+                    <div class="dd-attachments">
+                        {% for name in attachments %}
+                        <a href="{{ url_for('static', filename='uploads/distributions/' ~ rec.distribution_id ~ '/' ~ name) }}" class="dd-attachment-chip">{{ icon('file-text', 14) }} {{ name }} {{ icon('download', 12) }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </section>
+                {% endif %}
+
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="rd-sidebar">
+                <section class="panel">
+                    <span class="rd-label">QUICK SUMMARY</span>
+                    <strong class="dd-summary-big">{{ "{:,}".format(rec.quantity_released) }}</strong>
+                    <span class="rd-sub" style="display:block; text-align:center; margin-bottom:14px;">Food Packs</span>
+
+                    <div class="dd-summary-row"><span>Municipality</span><strong>{{ rec.barangay.city_municipality }}</strong></div>
+                    <div class="dd-summary-row"><span>Warehouse</span><strong>{{ fulfilling_office.office_name if fulfilling_office else '—' }}</strong></div>
+                    <div class="dd-summary-row"><span>Vehicle</span><strong>{{ rec.vehicle.vehicle_name if rec.vehicle else 'Unassigned' }}</strong></div>
+                    <div class="dd-summary-row"><span>ETA</span><strong>{{ rec.expected_arrival_time.strftime('%I:%M %p') if rec.expected_arrival_time else '—' }}</strong></div>
+
+                    {% if rec.dispatch_status == 'preparing' %}
+                    <form method="POST" action="{{ url_for('pswdo.advance_distribution', distribution_id=rec.distribution_id) }}">
+                        <input type="hidden" name="target" value="loaded">
+                        <button type="submit" class="btn-decision btn-partial dd-full-width">{{ icon('arrow-right', 16, 'white') }} Mark as Loaded</button>
+                    </form>
+                    <button type="button" class="dd-link-btn" data-open-modal="assign-vehicle-modal">{{ icon('truck', 14) }} Assign Vehicle</button>
+                    {% elif rec.dispatch_status == 'loaded' %}
+                    <form method="POST" action="{{ url_for('pswdo.advance_distribution', distribution_id=rec.distribution_id) }}">
+                        <input type="hidden" name="target" value="dispatched">
+                        <button type="submit" class="btn-decision btn-partial dd-full-width">{{ icon('arrow-right', 16, 'white') }} Mark as Dispatched</button>
+                    </form>
+                    {% elif rec.dispatch_status == 'dispatched' %}
+                    <form method="POST" action="{{ url_for('pswdo.advance_distribution', distribution_id=rec.distribution_id) }}">
+                        <input type="hidden" name="target" value="in_transit">
+                        <button type="submit" class="btn-decision btn-partial dd-full-width">{{ icon('arrow-right', 16, 'white') }} Mark In Transit</button>
+                    </form>
+                    <button type="button" class="btn-decision btn-approve-full dd-full-width" data-open-modal="confirm-delivery-modal">{{ icon('check-circle', 16, 'white') }} Confirm Delivery</button>
+                    {% elif rec.dispatch_status == 'in_transit' %}
+                    <button type="button" class="btn-decision btn-approve-full dd-full-width" data-open-modal="confirm-delivery-modal">{{ icon('check-circle', 16, 'white') }} Confirm Delivery</button>
+                    {% elif rec.dispatch_status == 'delivered' %}
+                    <div class="dd-delivered-card">
+                        {{ icon('check-circle', 24, '#1e8449') }}
+                        <strong>Delivered Successfully</strong>
+                        <span>{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}</span>
+                    </div>
+                    {% endif %}
+                </section>
+            </aside>
+        </div>
+
+    </main>
+</div>
+
+<!-- Assign / Reassign Vehicle modal -->
+<div class="rd-modal-overlay" id="assign-vehicle-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Assign Vehicle & Driver</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('pswdo.assign_distribution_vehicle', distribution_id=rec.distribution_id) }}">
+            <label>Vehicle *</label>
+            <select name="vehicle_id" id="dd-vehicle-select" required onchange="dd_fillVehicle(this)">
+                <option value="">Select vehicle...</option>
+                {% for v in vehicles %}
+                <option value="{{ v.vehicle_id }}" data-plate="{{ v.plate_number or '' }}" data-capacity="{{ v.capacity_packs or '' }}" {{ 'selected' if rec.vehicle_id == v.vehicle_id }}>{{ v.vehicle_name }}{% if v.capacity_packs %} - {{ "{:,}".format(v.capacity_packs) }} packs capacity{% endif %}</option>
+                {% endfor %}
+            </select>
+
+            <label>Driver *</label>
+            <select name="driver_id" required>
+                <option value="">Select driver...</option>
+                {% for d in drivers %}
+                <option value="{{ d.driver_id }}" {{ 'selected' if rec.driver_id == d.driver_id }}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+
+            <div class="rd-form-row">
+                <div>
+                    <label>Plate Number *</label>
+                    <input type="text" name="plate_number" id="dd-plate-input" required value="{{ rec.vehicle.plate_number if rec.vehicle else '' }}">
+                </div>
+                <div>
+                    <label>Capacity (packs)</label>
+                    <input type="number" name="capacity_packs" id="dd-capacity-input" value="{{ rec.vehicle.capacity_packs if rec.vehicle else '' }}">
+                </div>
+            </div>
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('truck', 16, 'white') }} Confirm Assignment</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Confirm Delivery modal -->
+<div class="rd-modal-overlay" id="confirm-delivery-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Confirm Delivery</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('pswdo.confirm_delivery', distribution_id=rec.distribution_id) }}" enctype="multipart/form-data">
+            <label>Received By *</label>
+            <input type="text" name="received_by" required placeholder="e.g. Maria Santos">
+
+            <div class="rd-form-row">
+                <div>
+                    <label>Date Received</label>
+                    <input type="text" value="{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}" disabled>
+                </div>
+                <div>
+                    <label>Time Received</label>
+                    <input type="text" name="time_received" placeholder="e.g. 2:10 PM">
+                </div>
+            </div>
+
+            <label>Condition *</label>
+            <select name="condition" required>
+                <option value="">Select...</option>
+                <option value="complete">Complete</option>
+                <option value="partial">Partial</option>
+                <option value="damaged">Damaged</option>
+            </select>
+
+            <label>Total Travel Time</label>
+            <input type="text" name="travel_time" placeholder="e.g. 2 hrs 30 mins">
+
+            <label>Upload Proof of Delivery</label>
+            <div class="dd-upload-box">
+                {{ icon('download', 20, '#8a94a6') }}
+                <span>Click to upload Delivery Receipt, Photos</span>
+                <span class="rd-sub">PDF, JPG, PNG, ZIP accepted</span>
+                <input type="file" name="proof_files" multiple accept=".pdf,.jpg,.jpeg,.png,.zip">
+            </div>
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Confirm Delivery</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}" defer></script>
+<script>
+function dd_fillVehicle(select) {
+    var opt = select.options[select.selectedIndex];
+    document.getElementById('dd-plate-input').value = opt.dataset.plate || '';
+    document.getElementById('dd-capacity-input').value = opt.dataset.capacity || '';
+}
+</script>
+{% endblock %}

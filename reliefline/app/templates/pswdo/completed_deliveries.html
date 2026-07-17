@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Completed Deliveries - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'distribution' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        <div class="rd-breadcrumb">
+            <a href="{{ url_for('pswdo.distribution') }}">{{ icon('arrow-right', 14) }} Distribution Operations</a>
+        </div>
+
+        <section class="page-header">
+            <div>
+                <h2>Completed Deliveries</h2>
+                <p>{{ total_delivered }} completed{% if primary_event %} · {{ primary_event.event_name }}{% endif %}</p>
+            </div>
+            <div class="rr-actions">
+                <a href="{{ url_for('pswdo.export_distribution', status='delivered') }}" class="btn-outline">{{ icon('download', 14) }} Export Report</a>
+            </div>
+        </section>
+
+        <section class="stat-cards" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ total_delivered }}</span>
+                <span class="stat-label">Total Delivered</span>
+                <span class="stat-sub">This cycle</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ "{:,}".format(packs_delivered) }}</span>
+                <span class="stat-label">Food Packs Delivered</span>
+                <span class="stat-sub">Total released</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('map-pin', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ municipalities_served }}</span>
+                <span class="stat-label">Municipalities Served</span>
+                <span class="stat-sub">Unique areas</span>
+            </div>
+        </section>
+
+        <section class="panel rr-table-panel">
+            <div class="panel-header" style="padding: 16px 20px 0;">
+                <h3>Delivery History</h3>
+            </div>
+            <table class="rr-table">
+                <thead>
+                    <tr>
+                        <th>DISTRIBUTION ID</th>
+                        <th>MUNICIPALITY</th>
+                        <th>PACKS</th>
+                        <th>DATE</th>
+                        <th>RECEIVED BY</th>
+                        <th>CONDITION</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in delivered %}
+                    <tr>
+                        <td><strong class="dist-id">D-{{ rec.distribution_date.year }}-{{ '%03d'|format(rec.distribution_id) }}</strong></td>
+                        <td><strong>{{ rec.barangay.city_municipality }}</strong></td>
+                        <td><strong>{{ "{:,}".format(rec.quantity_released) }}</strong> <span class="rr-sub">packs</span></td>
+                        <td>{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}</td>
+                        <td>{{ rec.received_by or '—' }}</td>
+                        <td><span class="badge-status badge-status-delivered">{{ rec.condition|title if rec.condition else '—' }}</span></td>
+                        <td><a href="{{ url_for('pswdo.distribution_detail', distribution_id=rec.distribution_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="empty-note" style="text-align:center; padding: 30px;">Wala pang completed delivery.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Dashboard - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'dashboard' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <!-- Main content -->
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        <!-- Greeting banner -->
+        <section class="greeting-banner">
+            <div>
+                <p>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }},</p>
+                <h2>PSWDO Officer 👋</h2>
+                {% if primary_event %}
+                <div class="active-event-badge">
+                    <div>
+                        <span class="badge-label">ACTIVE TYPHOON EVENT</span>
+                        <strong>{{ icon('cloud-lightning', 14) }} {{ primary_event.event_name }}</strong>
+                    </div>
+                    <span class="badge-active">ACTIVE</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="banner-time">
+                <strong>{{ now.strftime('%I:%M:%S %p') }}</strong>
+                <span>{{ now.strftime('%a, %B') }} {{ now.day }}</span>
+                {% if primary_event and primary_event.weather_condition %}
+                <div class="banner-weather-block">
+                    <span class="banner-weather-label">Weather</span>
+                    <span class="banner-weather">{{ icon('cloud-lightning', 12) }} {{ primary_event.weather_condition }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
+                <span class="stat-value">{{ active_events|length }}</span>
+                <span class="stat-label">Active Typhoon</span>
+                <span class="stat-sub">{{ active_events|map(attribute='event_name')|join(' · ') if active_events else 'None' }}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">{{ icon('map-pin', 18, '#e67e22') }}</div>
+                <span class="stat-value">{{ affected_municipalities_count }}</span>
+                <span class="stat-label">Affected Municipalities</span>
+                <span class="stat-sub">Out of {{ total_target_lgus }}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_affected_families) }}</span>
+                <span class="stat-label">Affected Families</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span>
+                <span class="stat-label">Food Packs Available</span>
+                <span class="stat-sub">Across {{ warehouses|length }} warehouses</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('clipboard', 18, '#f39c12') }}</div>
+                <span class="stat-value">{{ pending_requests_count }}</span>
+                <span class="stat-label">Pending Requests</span>
+                <span class="stat-sub">Awaiting approval</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
+                <span class="stat-value">{{ low_stock_items|length }}</span>
+                <span class="stat-label">Low Stock Items</span>
+                <span class="stat-sub">
+                    {% for item in low_stock_items[:3] %}{{ item.item_type|replace('_',' ')|title }}{% if not loop.last %} · {% endif %}{% endfor %}
+                </span>
+            </div>
+        </section>
+
+        <!-- GIS Map + Pending Requests -->
+        <div class="main-grid">
+
+            <section class="panel map-panel">
+                <div class="panel-header">
+                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map — Province of Pangasinan</h3>
+                    <div class="map-legend">
+                        <span><i class="legend-dot normal"></i> Normal</span>
+                        <span><i class="legend-dot monitoring"></i> Monitoring</span>
+                        <span><i class="legend-dot needs-assistance"></i> Needs Assistance</span>
+                        <span><i class="legend-dot high-priority"></i> High Priority</span>
+                    </div>
+                </div>
+                <div class="map-placeholder-box">
+                    <span class="map-toggle">Province</span>
+                    <button type="button" class="map-fullscreen-btn">{{ icon('maximize', 16, '#444') }}</button>
+                    <p class="empty-note">Leaflet.js map integration — kailangan ng GeoJSON boundary file ng Urdaneta City, Santa Barbara, at Calasiao. Susunod na hakbang ito.</p>
+
+                    <div class="map-legend-box">
+                        <span class="map-legend-title">Legend</span>
+                        <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
+                        <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
+                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Monitoring</div>
+                        <div class="map-legend-row"><i class="legend-square normal"></i> Normal</div>
+                        <div class="map-legend-divider"></div>
+                        <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
+                        <div class="map-legend-row"><i class="legend-mark legend-typhoon"></i> Typhoon</div>
+                        <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit Route</div>
+                    </div>
+
+                    <div class="map-zoom-wrapper">
+                        <span class="map-zoom-pct">100%</span>
+                        <div class="map-zoom-controls">
+                            {{ icon('plus', 16) }}
+                            {{ icon('minus', 16) }}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel requests-panel">
+                <div class="panel-header">
+                    <h3>Pending Relief Requests</h3>
+                    <span class="badge-count">{{ pending_requests_count }}</span>
+                </div>
+
+                {% for req in pending_requests %}
+                <div class="request-card">
+                    <div class="request-top">
+                        <strong>{{ req.barangay.barangay_name }}</strong>
+                    </div>
+                    <span class="request-sub">{{ "{:,}".format(req.predicted_quantity) }} packs · {{ req.allocation_date.strftime('%b') }} {{ req.allocation_date.day }}</span>
+                    <div class="request-actions">
+                        <a href="{{ url_for('pswdo.relief_request_detail', allocation_id=req.allocation_id) }}" class="btn-approve">{{ icon('check-circle', 14, 'white') }} Review</a>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">Walang pending request ngayon.</p>
+                {% endfor %}
+
+                <a href="#" class="btn-view-all">View All →</a>
+            </section>
+
+        </div>
+<!-- Warehouse Status + Predictive Analytics -->
+        <div class="main-grid" style="margin-top: 16px;">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>{{ icon('building', 18, '#0f2547') }} Warehouse Status</h3>
+                    <a href="#" class="link-manage">Manage →</a>
+                </div>
+                {% for w in warehouses %}
+                <div class="warehouse-status-row">
+                    <div class="warehouse-status-top">
+                        <div class="warehouse-status-name">
+                            {{ icon('building', 16, '#8a94a6') }}
+                            <div>
+                                <strong>{{ w.office.office_name }}</strong>
+                                <span>{{ w.office.area_covered }}</span>
+                            </div>
+                        </div>
+                        <div class="warehouse-status-right">
+                            <strong>{{ "{:,}".format(w.food_pack_qty) }}</strong>
+                            <span class="badge-health badge-{{ w.health|lower }}">{{ w.health }}</span>
+                        </div>
+                    </div>
+                    <div class="warehouse-bar">
+                        <div class="warehouse-bar-fill fill-{{ w.health|lower }}" style="width: {{ w.pct if w.pct <= 100 else 100 }}%;"></div>
+                    </div>
+                    <span class="warehouse-status-sub">{{ w.pct|int }}% capacity · {{ "{:,}".format(w.food_pack_qty) }} / {{ "{:,}".format(w.capacity) }} packs</span>
+                </div>
+                {% endfor %}
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Predictive Analytics</h3>
+                    <span class="tag-outline">Next 3 Days Forecast</span>
+                </div>
+
+                <div class="pa-metrics">
+                    <div class="pa-metric pa-blue">
+                        <span>ESTIMATED NEED</span>
+                        <strong>{{ "{:,}".format(estimated_need) }}</strong>
+                        <span class="pa-sub">food packs</span>
+                    </div>
+                    <div class="pa-metric pa-green">
+                        <span>CURRENT STOCKS</span>
+                        <strong>{{ "{:,}".format(total_food_packs) }}</strong>
+                        <span class="pa-sub">available</span>
+                    </div>
+                    <div class="pa-metric pa-green">
+                        <span>REMAINING</span>
+                        <strong>{{ "{:,}".format(remaining_after_3days) }}</strong>
+                        <span class="pa-sub">after 3 days</span>
+                    </div>
+                </div>
+
+                <div class="pa-burn-row">
+                    <div>
+                        <span class="pa-burn-label">BURN RATE</span>
+                        <strong>~{{ burn_rate|int }} packs / day</strong>
+                    </div>
+                    <div class="pa-burn-good">
+                        <span class="pa-burn-label">GOOD FOR</span>
+                        <strong>{% if days_remaining %}{{ days_remaining|int }}+ Days{% else %}N/A{% endif %}</strong>
+                    </div>
+                </div>
+
+                <h4 class="pa-rec-title">SYSTEM RECOMMENDATIONS</h4>
+                {% for rec in recommendations %}
+                <div class="recommendation-row rec-{{ rec.type }}">
+                    {% if rec.type == 'info' %}{{ icon('arrow-right', 14) }}{% elif rec.type == 'warning' %}{{ icon('alert-triangle', 14) }}{% else %}{{ icon('alert-triangle', 14) }}{% endif %}
+                    <div>
+                        <strong>{{ rec.title }}</strong>
+                        <span>{{ rec.detail }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">Walang recommendations ngayon — malusog ang stock levels.</p>
+                {% endfor %}
+            </section>
+
+        </div>
+
+        <!-- Distribution Progress + Recent Activities -->
+        <div class="main-grid" style="margin-top: 16px;">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Today's Distribution Progress</h3>
+                    <a href="#" class="link-manage">Track →</a>
+                </div>
+
+                <div class="progress-summary">
+                    <div class="progress-ring-wrapper">
+                        <svg width="90" height="90" viewBox="0 0 90 90">
+                            <circle cx="45" cy="45" r="38" fill="none" stroke="#eee" stroke-width="8"/>
+                            <circle cx="45" cy="45" r="38" fill="none" stroke="#0f2547" stroke-width="8"
+                                stroke-dasharray="{{ (completion_pct / 100 * 238.76)|round(1) }} 238.76"
+                                stroke-linecap="round" transform="rotate(-90 45 45)"/>
+                        </svg>
+                        <div class="progress-ring-text">
+                            <strong>{{ completion_pct|int }}%</strong>
+                            <span>Complete</span>
+                        </div>
+                    </div>
+                    <div class="progress-stats-grid">
+                        <div><strong>{{ municipalities_served }}</strong><span>Municipalities Served</span></div>
+                        <div><strong class="text-green">{{ "{:,}".format(total_released_today) }}</strong><span>Food Packs Released</span></div>
+                        <div><strong class="text-amber">{{ vehicles_active }}</strong><span>Vehicles Active</span></div>
+                        <div><strong>{{ "{:,}".format(packs_remaining) }}</strong><span>Packs Remaining</span></div>
+                    </div>
+                </div>
+
+                <h4 class="pa-rec-title">BY MUNICIPALITY</h4>
+                {% for m in by_municipality %}
+                <div class="municipality-row">
+                    <div class="municipality-row-top">
+                        <span>{{ m.lgu }}</span>
+                        <span>{{ "{:,}".format(m.released) }} / {{ "{:,}".format(m.allocated) }}</span>
+                    </div>
+                    <div class="municipality-bar">
+                        <div class="municipality-bar-fill" style="width: {{ (m.released / m.allocated * 100) if m.allocated > 0 else 0 }}%;"></div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">Walang distribution data ngayon.</p>
+                {% endfor %}
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Recent Activities</h3>
+                    <span class="panel-date">{{ now.strftime('%B') }} {{ now.day }}, {{ now.strftime('%Y') }}</span>
+                </div>
+                {% for act in recent_activities %}
+                <div class="activity-row">
+                    <div class="activity-icon">{{ icon('check-circle', 14, '#27ae60') }}</div>
+                    <div>
+                        <span class="activity-time">{{ act.created_at.strftime('%H:%M') }}</span>
+                        <span class="activity-desc">{{ act.description }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">Wala pang activity.</p>
+                {% endfor %}
+
+                <h4 class="pa-rec-title" style="margin-top:16px;">NOTIFICATIONS</h4>
+                {% for n in notifications %}
+                <div class="notification-row">
+                    {{ icon('info', 14, '#3867d6') }}
+                    <div>
+                        <strong>{{ n.description }}</strong>
+                        <span>{{ n.created_at.strftime('%H:%M') }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </section>
+
+        </div>
+    </main>
+</div>
+{% endblock %}

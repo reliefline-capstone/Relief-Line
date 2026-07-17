@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}RR-{{ req.allocation_date.year }}-{{ '%03d'|format(req.allocation_id) }} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'relief_requests' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        <!-- Breadcrumb -->
+        <div class="rd-breadcrumb">
+            <a href="{{ url_for('pswdo.relief_requests') }}">{{ icon('arrow-right', 14) }} Relief Requests</a>
+            <span class="rd-crumb-sep">/</span>
+            <span>{{ req.barangay.city_municipality }} · RR-{{ req.allocation_date.year }}-{{ '%03d'|format(req.allocation_id) }}</span>
+            <span class="badge-priority badge-priority-{{ priority.tier }}"><i class="priority-dot"></i> {{ priority.label }}</span>
+            <span class="badge-status badge-status-{{ req.display_status }}">{{ req.display_status|replace('_', ' ')|title }}</span>
+        </div>
+
+        <div class="main-grid rd-grid">
+
+            <div class="rd-main-col">
+
+                <!-- Request Information -->
+                <section class="panel">
+                    <h3 class="rd-panel-title">Request Information</h3>
+                    <div class="rd-info-grid">
+                        <div><span class="rd-label">Municipality</span><strong>{{ req.barangay.city_municipality }}</strong></div>
+                        <div><span class="rd-label">Request ID</span><strong>RR-{{ req.allocation_date.year }}-{{ '%03d'|format(req.allocation_id) }}</strong></div>
+                        <div>
+                            <span class="rd-label">Typhoon Event</span>
+                            <strong>
+                                {% if req.event %}{{ icon('cloud-lightning', 14, '#3867d6') }} {{ req.event.event_name }}{% else %}{{ req.disaster_event or '—' }}{% endif %}
+                            </strong>
+                        </div>
+                        <div><span class="rd-label">Date Submitted</span><strong>{{ (req.created_at.strftime('%B') ~ ' ' ~ req.created_at.day ~ ', ' ~ req.created_at.strftime('%Y')) if req.created_at else (req.allocation_date.strftime('%B') ~ ' ' ~ req.allocation_date.day ~ ', ' ~ req.allocation_date.strftime('%Y')) }}</strong></div>
+                        <div><span class="rd-label">Submitted By</span><strong>{{ req.submitted_by.name if req.submitted_by else '—' }}</strong></div>
+                    </div>
+                </section>
+
+                <!-- Affected Information -->
+                <section class="panel">
+                    <h3 class="rd-panel-title">Affected Information</h3>
+                    <div class="rd-stat-tiles">
+                        <div class="rd-stat-tile">
+                            <div class="rd-stat-icon">{{ icon('users', 18, '#3867d6') }}</div>
+                            <strong>{{ "{:,}".format(affected_families) }}</strong>
+                            <span>Families</span>
+                        </div>
+                        <div class="rd-stat-tile">
+                            <div class="rd-stat-icon">{{ icon('map-pin', 18, '#e67e22') }}</div>
+                            <strong>{{ affected_barangays_count }}</strong>
+                            <span>Affected Barangays</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Municipal Inventory -->
+                <section class="panel">
+                    <h3 class="rd-panel-title">Current Municipal Inventory — Food Packs</h3>
+                    <div class="rd-inventory-row">
+                        <div class="rd-inventory-block">
+                            <span class="rd-label">Available at {{ municipal_office.office_name if municipal_office else 'Municipal Office' }}</span>
+                            <strong class="{{ 'rd-danger' if municipal_available < req.predicted_quantity }}">{{ "{:,}".format(municipal_available) }}</strong>
+                            <span class="rd-sub">of {{ "{:,}".format(municipal_capacity) }} capacity</span>
+                        </div>
+                        <div class="rd-inventory-block">
+                            <span class="rd-label">Requested</span>
+                            <strong>{{ "{:,}".format(req.predicted_quantity) }}</strong>
+                            <span class="rd-sub">food packs</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Decision / Actions -->
+                {% if req.display_status == 'pending' %}
+                <section class="rd-action-row">
+                    <button type="button" class="btn-decision btn-approve-full" data-open-modal="approve-modal">{{ icon('check-circle', 16, 'white') }} Approve</button>
+                    <button type="button" class="btn-decision btn-partial" data-open-modal="partial-modal">{{ icon('list', 16, 'white') }} Partial Approval</button>
+                    <button type="button" class="btn-decision btn-reject" data-open-modal="reject-modal">{{ icon('x-circle', 16, 'white') }} Reject</button>
+                </section>
+                {% else %}
+                <section class="panel rd-decision-summary rd-decision-{{ req.display_status }}">
+                    <h3 class="rd-panel-title">Decision</h3>
+                    {% if req.display_status == 'rejected' %}
+                    <p><strong>Rejected.</strong> {{ req.rejection_reason }}</p>
+                    {% else %}
+                    <p>
+                        <strong>{{ "{:,}".format(req.allocated_quantity) }} food packs</strong> allocated from
+                        <strong>{{ req.fulfilling_office.office_name if req.fulfilling_office else '—' }}</strong>.
+                        {% if req.expected_delivery_date %}Expected delivery: {{ req.expected_delivery_date.strftime('%B') }} {{ req.expected_delivery_date.day }}, {{ req.expected_delivery_date.strftime('%Y') }}.{% endif %}
+                    </p>
+                    {% if req.remarks %}<p class="rd-remarks">{{ req.remarks }}</p>{% endif %}
+                    {% endif %}
+                </section>
+                {% endif %}
+
+            </div>
+
+            <!-- Quick Summary sidebar -->
+            <aside class="rd-sidebar">
+                <section class="panel">
+                    <h3 class="rd-panel-title">Quick Summary</h3>
+
+                    <span class="rd-label">Priority</span>
+                    <span class="badge-priority badge-priority-{{ priority.tier }}"><i class="priority-dot"></i> {{ priority.label }}</span>
+
+                    <span class="rd-label rd-mt">Current Status</span>
+                    <span class="badge-status badge-status-{{ req.display_status }}">{{ req.display_status|replace('_', ' ')|title }}</span>
+
+                    <span class="rd-label rd-mt">Urgency Score</span>
+                    <div class="rd-urgency-row">
+                        <div class="rd-urgency-bar"><div class="rd-urgency-fill" style="width: {{ urgency_score }}%;"></div></div>
+                        <strong>{{ urgency_score }}</strong>
+                    </div>
+
+                    <span class="rd-label rd-mt">Provincial Stock</span>
+                    <strong class="rd-big text-green">{{ "{:,}".format(total_food_packs) }}</strong>
+                    <span class="rd-sub">food packs available</span>
+
+                    <span class="rd-label rd-mt">Suggested Allocation</span>
+                    <strong class="rd-big">{{ "{:,}".format(suggested_allocation) }}</strong>
+                    <span class="rd-sub">packs</span>
+
+                    <span class="rd-label rd-mt">Forecast</span>
+                    <span class="rd-forecast {{ 'rd-forecast-good' if enough_stock else 'rd-forecast-bad' }}">
+                        {{ icon('check-circle', 12) if enough_stock else icon('alert-triangle', 12) }}
+                        {{ 'Enough Stocks' if enough_stock else 'Stock Shortfall' }}
+                    </span>
+
+                    {% if deadline_label %}
+                    <span class="rd-label rd-mt">Approval Deadline</span>
+                    <span class="rd-deadline rd-deadline-{{ deadline_state }}">{{ icon('alert-triangle', 12) }} {{ deadline_label }}</span>
+                    {% endif %}
+                </section>
+
+                <section class="panel">
+                    <h3 class="rd-panel-title">Municipal Stock vs Need</h3>
+                    <div class="warehouse-bar">
+                        <div class="warehouse-bar-fill fill-{{ 'low' if municipal_available < req.predicted_quantity else 'healthy' }}"
+                             style="width: {{ (municipal_available / req.predicted_quantity * 100) if req.predicted_quantity > 0 else 0 }}%;"></div>
+                    </div>
+                    <span class="warehouse-status-sub">
+                        <span class="{{ 'rd-danger' if municipal_available < req.predicted_quantity }}">{{ "{:,}".format(municipal_available) }}</span>
+                        available of {{ "{:,}".format(req.predicted_quantity) }} needed
+                    </span>
+                </section>
+            </aside>
+
+        </div>
+
+    </main>
+</div>
+
+<!-- Approve modal -->
+<div class="rd-modal-overlay" id="approve-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <div>
+                <h3>Approve Request</h3>
+                <span class="rd-sub">RR-{{ req.allocation_date.year }}-{{ '%03d'|format(req.allocation_id) }} · {{ req.barangay.city_municipality }}</span>
+            </div>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <div class="rd-modal-banner rd-modal-banner-success">
+            {{ icon('check-circle', 18, '#1e8449') }}
+            <div>
+                <strong>Full Approval</strong>
+                <span>Releasing {{ "{:,}".format(req.predicted_quantity) }} food packs to {{ req.barangay.city_municipality }}</span>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('pswdo.approve_relief_request', allocation_id=req.allocation_id) }}">
+            <label>Assign Warehouse *</label>
+            <select name="fulfilling_office_id" required>
+                <option value="">Select warehouse...</option>
+                {% for w in fulfillable_warehouses %}
+                <option value="{{ w.office.office_id }}">{{ w.office.office_name }} - {{ "{:,}".format(w.food_pack_qty) }} packs ({{ w.office.area_covered }})</option>
+                {% endfor %}
+            </select>
+
+            <div class="rd-form-row">
+                <div>
+                    <label>Food Packs</label>
+                    <input type="number" name="quantity" min="1" max="{{ req.predicted_quantity }}" value="{{ req.predicted_quantity }}" required>
+                </div>
+                <div>
+                    <label>Expected Delivery</label>
+                    <input type="date" name="expected_delivery_date">
+                </div>
+            </div>
+
+            <label>Remarks</label>
+            <textarea name="remarks" rows="3" placeholder="Optional instructions for the MSWDO..."></textarea>
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Confirm Approval</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Partial Approval modal -->
+<div class="rd-modal-overlay" id="partial-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <div>
+                <h3>Partial Approval</h3>
+                <span class="rd-sub">RR-{{ req.allocation_date.year }}-{{ '%03d'|format(req.allocation_id) }} · {{ req.barangay.city_municipality }}</span>
+            </div>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <div class="rd-form-row">
+            <div class="rd-amount-tile">
+                <span class="rd-label">Requested</span>
+                <strong>{{ "{:,}".format(req.predicted_quantity) }}</strong>
+                <span class="rd-sub">food packs</span>
+            </div>
+            <div class="rd-amount-tile rd-amount-highlight">
+                <span class="rd-label">Approved Amount</span>
+                <strong id="partial-preview">0</strong>
+                <span class="rd-sub">food packs</span>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('pswdo.approve_relief_request', allocation_id=req.allocation_id) }}">
+            <label>Quantity to Approve *</label>
+            <input type="number" name="quantity" id="partial-quantity" min="1" max="{{ req.predicted_quantity }}" required oninput="document.getElementById('partial-preview').textContent = this.value || 0">
+
+            <label>Reason for Partial Approval *</label>
+            <textarea name="remarks" rows="3" required placeholder="e.g. Limited provincial stock — releasing what is available now..."></textarea>
+
+            <label>Warehouse</label>
+            <select name="fulfilling_office_id" required>
+                <option value="">Select warehouse...</option>
+                {% for w in fulfillable_warehouses %}
+                <option value="{{ w.office.office_id }}">{{ w.office.office_name }} - {{ "{:,}".format(w.food_pack_qty) }} packs ({{ w.office.area_covered }})</option>
+                {% endfor %}
+            </select>
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Confirm Partial Approval</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Reject modal -->
+<div class="rd-modal-overlay" id="reject-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <div>
+                <h3>Reject Request</h3>
+                <span class="rd-sub">RR-{{ req.allocation_date.year }}-{{ '%03d'|format(req.allocation_id) }} · {{ req.barangay.city_municipality }}</span>
+            </div>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <div class="rd-modal-banner rd-modal-banner-danger">
+            {{ icon('x-circle', 18, '#c0392b') }}
+            <span>This will deny the relief request from <strong>{{ req.barangay.city_municipality }}</strong>.</span>
+        </div>
+        <form method="POST" action="{{ url_for('pswdo.reject_relief_request', allocation_id=req.allocation_id) }}">
+            <label>Reason for Rejection *</label>
+            <textarea name="reason" rows="4" required placeholder="Provide a clear reason so the MSWDO can resubmit or escalate..."></textarea>
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-reject">{{ icon('x-circle', 16, 'white') }} Confirm Rejection</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}" defer></script>
+{% endblock %}

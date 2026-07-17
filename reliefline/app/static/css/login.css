@@ -1,0 +1,367 @@
+:root {
+    --navy: #0f2547;
+    --navy-light: #1a3a6b;
+    --text-muted: #8a94a6;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.hero {
+    position: relative;
+    flex: 1;
+    min-height: 90vh;
+    background: url('/static/img/capitol-bg.jpg') center/cover no-repeat;
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+        rgba(15,37,71,0.15) 0%,
+        rgba(15,37,71,0.35) 50%,
+        rgba(15,37,71,0.65) 100%);
+    z-index: 0;
+}
+
+.hero-inner {
+    position: relative;
+    max-width: 1600px;
+    height: 100%;
+    min-height: 90vh;
+    margin: 0 auto;
+    padding: 0 60px;
+}
+
+.top-bar {
+    position: absolute;
+    top: 30px;
+    left: 60px;
+    right: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2;
+}
+
+.office-id {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: white;
+}
+
+.seal {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+}
+
+.office-text .republic {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.office-text h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 2px 0;
+}
+
+.office-text .office-name {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.top-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: white;
+    font-size: 14px;
+}
+
+.top-links a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.top-links .divider {
+    opacity: 0.5;
+}
+
+.brand-content {
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    color: white;
+    max-width: 500px;
+}
+
+.brand-logo {
+    width: 70px;
+    margin-bottom: 20px;
+}
+
+.brand-content h1 {
+    font-size: 56px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.brand-rule {
+    width: 220px;
+    height: 3px;
+    background: white;
+    opacity: 0.6;
+    margin-bottom: 20px;
+}
+
+.brand-tagline {
+    font-size: 20px;
+    font-weight: 300;
+    margin-bottom: 20px;
+}
+
+.brand-location {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.login-card {
+    position: absolute;
+    right: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    width: 400px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.lock-badge {
+    width: 64px;
+    height: 64px;
+    background: #eef2f9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.login-card h2 {
+    text-align: center;
+    color: var(--navy);
+    font-size: 22px;
+    margin-bottom: 4px;
+}
+
+.login-card .subtext {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.login-card label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    margin-top: 16px;
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.input-wrapper input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+}
+
+.toggle-password {
+    background: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.toggle-password .icon-eye-off { display: none; }
+.toggle-password.is-visible .icon-eye { display: none; }
+.toggle-password.is-visible .icon-eye-off { display: flex; }
+
+.form-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    font-size: 13px;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #555;
+    font-weight: 400;
+    margin: 0;
+}
+
+.forgot-link {
+    color: var(--navy);
+    font-weight: 600;
+}
+
+.login-btn {
+    width: 100%;
+    background: var(--navy);
+    color: white;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.login-btn:hover {
+    background: var(--navy-light);
+}
+
+.secured-divider {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 24px;
+    position: relative;
+}
+
+.secured-divider span {
+    background: white;
+    padding: 0 10px;
+    position: relative;
+    top: -9px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.secured-note {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    align-items: flex-start;
+}
+
+.flash-message {
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.flash-message.error {
+    background: #fde8e8;
+    color: #c0392b;
+}
+
+.page-footer {
+    background: var(--navy);
+    color: white;
+    padding: 16px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+
+.page-footer nav {
+    display: flex;
+    gap: 20px;
+}
+
+.page-footer a {
+    opacity: 0.85;
+}
+
+.page-footer a:hover {
+    opacity: 1;
+}
+
+@media (max-width: 900px) {
+    .hero-inner {
+        padding: 0 20px;
+    }
+    .login-card {
+        position: static;
+        transform: none;
+        width: 100%;
+        margin-top: 40px;
+        right: auto;
+    }
+    .top-bar {
+        position: static;
+        left: auto;
+        right: auto;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    .brand-content {
+        position: static;
+        transform: none;
+        left: auto;
+        max-width: 100%;
+    }
+}
+
+.top-links a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.brand-location {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.secured-note {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}

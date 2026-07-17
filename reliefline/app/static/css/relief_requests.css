@@ -1,0 +1,207 @@
+.rr-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rr-search-form { display: flex; }
+
+.rr-search-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 260px;
+    padding: 9px 14px;
+    background: white;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+}
+
+.rr-search-wrapper input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 13px;
+}
+
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    font-size: 11px;
+    color: #8a94a6;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+}
+
+.filter-bar select {
+    padding: 8px 12px;
+    border: 1px solid #d8dee8;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #333;
+    background: white;
+}
+
+.date-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #d8dee8;
+    border-radius: 6px;
+}
+
+.date-input-wrapper input {
+    border: none;
+    outline: none;
+    font-size: 13px;
+}
+
+.summary-pills {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.pill {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pill strong { font-size: 15px; }
+
+.pill-pending { background: #fef5e3; color: #d68910; }
+.pill-approved { background: #e8faf0; color: #1e8449; }
+.pill-released { background: #ede7f6; color: #6c3483; }
+
+.summary-note {
+    margin-left: auto;
+    font-size: 12px;
+    color: #8a94a6;
+}
+
+.rr-table-panel { padding: 0; overflow: hidden; }
+
+.rr-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rr-table thead {
+    background: #f8f9fc;
+}
+
+.rr-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 11px;
+    color: #8a94a6;
+    letter-spacing: 0.4px;
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+}
+
+.rr-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f2f6;
+    font-size: 14px;
+    vertical-align: top;
+}
+
+.rr-sub {
+    display: block;
+    font-size: 11px;
+    color: #8a94a6;
+    margin-top: 2px;
+}
+
+.badge-status {
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-status-pending { background: #fef5e3; color: #d68910; }
+.badge-status-approved { background: #e8faf0; color: #1e8449; }
+.badge-status-released { background: #ede7f6; color: #6c3483; }
+.badge-status-partially_approved { background: #eaf0fd; color: #2c5aa0; }
+.badge-status-rejected { background: #fdecea; color: #c0392b; }
+
+.badge-priority {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-priority-critical { background: #fdecea; color: #c0392b; }
+.badge-priority-high { background: #fdf0e4; color: #d35400; }
+.badge-priority-medium { background: #fef5e3; color: #d68910; }
+.badge-priority-low { background: #e8faf0; color: #1e8449; }
+.badge-priority-unrated { background: #f0f2f6; color: #8a94a6; }
+
+.priority-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+}
+
+.btn-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #2c5aa0;
+    color: #2c5aa0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.rr-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    font-size: 12px;
+    color: #8a94a6;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.page-btn {
+    padding: 6px 12px;
+    border: 1px solid #d8dee8;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #444;
+}
+
+.page-btn.active {
+    background: #0f2547;
+    color: white;
+    border-color: #0f2547;
+}
