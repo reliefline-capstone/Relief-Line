@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}GIS Map - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gis_map.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'gis_map' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>GIS Map</h2>
+                <p>Barangay-level food pack demand — Urdaneta City, Santa Barbara, Calasiao</p>
+            </div>
+            <div class="gis-filters">
+                <select id="filter-event">
+                    <option value="">No active event</option>
+                    {% for e in active_events %}
+                    <option value="{{ e.event_id }}">{{ e.event_name }}</option>
+                    {% endfor %}
+                </select>
+                <select id="filter-lgu">
+                    <option value="">All Municipalities</option>
+                    {% for lgu in target_lgus %}
+                    <option value="{{ lgu }}">{{ lgu }}</option>
+                    {% endfor %}
+                </select>
+                <select id="filter-status">
+                    <option value="">All Status</option>
+                    <option value="high_priority">Critical</option>
+                    <option value="needs_assistance">High</option>
+                    <option value="monitoring">Monitoring</option>
+                    <option value="normal">Normal</option>
+                </select>
+                <button type="button" class="btn-icon" id="btn-refresh" title="Refresh">{{ icon('rotate-ccw', 16, '#555') }}</button>
+            </div>
+        </section>
+
+        <div class="main-grid">
+
+            <section class="panel gis-map-panel">
+                <div id="gis-map"></div>
+                <div class="map-legend-box">
+                    <span class="map-legend-title">Legend</span>
+                    <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
+                    <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
+                    <div class="map-legend-row"><i class="legend-square monitoring"></i> Monitoring</div>
+                    <div class="map-legend-row"><i class="legend-square normal"></i> Normal</div>
+                    <div class="map-legend-row"><i class="legend-square no-data"></i> No Data</div>
+                    <div class="map-legend-divider"></div>
+                    <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
+                    <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit (schematic)</div>
+                </div>
+            </section>
+
+            <aside class="wh-side-col">
+                <nav class="gis-breadcrumb" id="gis-breadcrumb"></nav>
+                <div id="gis-info-panel"></div>
+            </aside>
+
+        </div>
+
+        <section class="panel wh-table-panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>Active Distribution Routes</h3>
+                <span class="badge-count" id="routes-count">0</span>
+            </div>
+            <table class="wh-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ROUTE</th>
+                        <th>TRUCK</th>
+                        <th>DRIVER</th>
+                        <th>PACKS</th>
+                        <th>STATUS</th>
+                        <th>ETA</th>
+                    </tr>
+                </thead>
+                <tbody id="routes-table-body">
+                    <tr><td colspan="7" class="empty-note" style="text-align:center; padding:24px;">Loading…</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/gis_map.js') }}"></script>
+{% endblock %}

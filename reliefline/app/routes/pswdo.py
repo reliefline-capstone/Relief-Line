@@ -1,7 +1,9 @@
 import csv
 import io
+import json
 import os
 import re
+from math import radians, sin, cos, sqrt, atan2
 
 from flask import Blueprint, render_template, request, Response, redirect, url_for, flash, abort, current_app
 from flask_login import login_required, current_user
@@ -62,6 +64,166 @@ ROUTE_PROGRESS_BY_STATUS = {
 
 def _priority_info(status_key):
     return PRIORITY_BY_STATUS.get(status_key, DEFAULT_PRIORITY)
+
+
+# --- GIS map: real PSGC boundary data (faeldon/philippines-json-maps), scoped to
+# exactly what the manuscript covers — barangay-level for the 3 target LGUs, with
+# the rest of the province shown only as neutral geographic context (no disaster
+# data is tracked for those areas, so none is shown for them).
+GIS_LGU_FILES = {
+    "Urdaneta City": "urdaneta_barangays.json",
+    "Santa Barbara": "santabarbara_barangays.json",
+    "Calasiao": "calasiao_barangays.json",
+}
+
+_geojson_cache = {}
+
+
+def _load_geojson_file(filename):
+    if filename not in _geojson_cache:
+        path = os.path.join(current_app.root_path, "static", "geo", filename)
+        with open(path) as f:
+            _geojson_cache[filename] = json.load(f)
+    return _geojson_cache[filename]
+
+
+def _bbox_center(geometry):
+    """Bounding-box midpoint — stable for marker placement even on concave
+    polygons, where a naive vertex-average centroid could land oddly."""
+    lons, lats = [], []
+
+    def collect(coords):
+        if isinstance(coords[0], (int, float)):
+            lons.append(coords[0])
+            lats.append(coords[1])
+        else:
+            for c in coords:
+                collect(c)
+
+    collect(geometry["coordinates"])
+    return ((min(lats) + max(lats)) / 2, (min(lons) + max(lons)) / 2)
+
+
+def _normalize_muni_name(name):
+    """Collapse both PSGC naming conventions ("City of Urdaneta" from the
+    province boundary file vs. "Urdaneta City" used elsewhere in the app) to
+    the same bare name so lookups between the two match."""
+    name = name.strip()
+    lowered = name.lower()
+    if lowered.startswith("city of "):
+        name = name[len("city of "):]
+    elif lowered.endswith(" city"):
+        name = name[: -len(" city")]
+    return name.strip()
+
+
+def _haversine_km(point_a, point_b):
+    """Great-circle distance in km — used only for an approximate warehouse
+    distance estimate, not a claim of real road distance/travel time."""
+    lat1, lon1 = point_a
+    lat2, lon2 = point_b
+    r = 6371.0
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    return 2 * r * atan2(sqrt(a), sqrt(1 - a))
+
+
+def _municipality_centroid(area_covered):
+    """Approximate lat/lng for an office's LGU, from the province boundary file.
+    Used only to place warehouse markers — not a claim of a precise address."""
+    province = _load_geojson_file("pangasinan_municipalities.json")
+    target = _normalize_muni_name(area_covered).lower()
+    for feature in province["features"]:
+        if _normalize_muni_name(feature["properties"]["name"]).lower() == target:
+            return _bbox_center(feature["geometry"])
+    return None
+
+
+def _target_barangay_geojson(lgu, event_id):
+    """Barangay polygons for one target LGU, merged with real disaster-status
+    data for the given event. Barangays with no matching DB record (a known
+    data-quality gap for Santa Barbara — see conversation notes) render as
+    'no_data' rather than being silently guessed at."""
+    raw = _load_geojson_file(GIS_LGU_FILES[lgu])
+    db_barangays = {b.barangay_name: b for b in Barangay.query.filter_by(city_municipality=lgu).all()}
+
+    statuses = {}
+    if event_id:
+        rows = BarangayDisasterStatus.query.join(Barangay).filter(
+            BarangayDisasterStatus.event_id == event_id,
+            Barangay.city_municipality == lgu
+        ).all()
+        statuses = {r.barangay_id: r for r in rows}
+
+    features = []
+    for feature in raw["features"]:
+        name = feature["properties"]["name"]
+        barangay = db_barangays.get(name)
+        if barangay:
+            status_row = statuses.get(barangay.barangay_id)
+            status_key = status_row.status if status_row else "normal"
+            priority = _priority_info(status_key)
+            props = {
+                "name": name,
+                "barangay_id": barangay.barangay_id,
+                "has_data": True,
+                "status": status_key,
+                "priority_label": priority["label"],
+                "priority_tier": priority["tier"],
+                "affected_families": status_row.affected_families if status_row else 0,
+                "population": barangay.population,
+                "num_households": barangay.num_households,
+                "poverty_incidence": float(barangay.poverty_incidence) if barangay.poverty_incidence is not None else None,
+                "disaster_risk_index": float(barangay.disaster_risk_index) if barangay.disaster_risk_index is not None else None,
+                "past_calamity_freq": barangay.past_calamity_freq,
+            }
+        else:
+            props = {"name": name, "has_data": False, "status": None, "priority_tier": "unrated"}
+        features.append({"type": "Feature", "properties": props, "geometry": feature["geometry"]})
+
+    return {"type": "FeatureCollection", "features": features}
+
+
+def _target_barangay_centroid(lgu, barangay_name):
+    raw = _load_geojson_file(GIS_LGU_FILES[lgu])
+    for feature in raw["features"]:
+        if feature["properties"]["name"] == barangay_name:
+            return _bbox_center(feature["geometry"])
+    return None
+
+
+def _relief_summary(barangay_ids, event_id):
+    """Food-pack requested/approved/released rollup for a set of barangays,
+    built entirely from AllocationRecord + DistributionRecord — no invented
+    fields (this backs the GIS map's Relief Statistics card)."""
+    empty = {"requested": 0, "approved": 0, "released": 0, "remaining": 0, "progress_pct": 0}
+    if not barangay_ids:
+        return empty
+
+    alloc_query = AllocationRecord.query.filter(AllocationRecord.barangay_id.in_(barangay_ids))
+    if event_id:
+        alloc_query = alloc_query.filter(AllocationRecord.event_id == event_id)
+    allocations = alloc_query.all()
+    if not allocations:
+        return empty
+
+    requested = sum(a.predicted_quantity or 0 for a in allocations)
+    approved = sum(a.allocated_quantity or 0 for a in allocations if a.status in ("approved", "released"))
+
+    allocation_ids = [a.allocation_id for a in allocations]
+    released = int(db.session.query(db.func.sum(DistributionRecord.quantity_released)).filter(
+        DistributionRecord.allocation_id.in_(allocation_ids),
+        DistributionRecord.dispatch_status == "delivered"
+    ).scalar() or 0)
+
+    remaining = max(requested - released, 0)
+    progress_pct = int(round((released / requested) * 100)) if requested else 0
+
+    return {
+        "requested": requested, "approved": approved, "released": released,
+        "remaining": remaining, "progress_pct": progress_pct,
+    }
 
 
 def _load_warehouses():
@@ -824,6 +986,318 @@ def warehouse_reports():
     return render_template(
         "pswdo/warehouse_reports.html",
         default_office_id=warehouses[0]["office"].office_id if warehouses else None,
+    )
+
+
+@pswdo_bp.route("/gis-map")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def gis_map():
+    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).all()
+    return render_template(
+        "pswdo/gis_map.html",
+        active_events=active_events,
+        target_lgus=TARGET_LGUS,
+    )
+
+
+@pswdo_bp.route("/gis-map/data")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def gis_map_data():
+    event_id = _resolve_event_id(request.args.get("event_id", type=int))
+
+    # Barangay-level layer — the only areas the manuscript's predictive/status
+    # model actually covers. Everything else on the map is neutral context.
+    target_features = []
+    for lgu in TARGET_LGUS:
+        fc = _target_barangay_geojson(lgu, event_id)
+        for feature in fc["features"]:
+            feature["properties"]["lgu"] = lgu
+            target_features.append(feature)
+    target_barangays_geojson = {"type": "FeatureCollection", "features": target_features}
+
+    # Province context — geographic orientation only, no disaster data implied.
+    province_geojson = _load_geojson_file("pangasinan_municipalities.json")
+    target_by_normalized = {_normalize_muni_name(l).lower(): l for l in TARGET_LGUS}
+    province_features = []
+    for feature in province_geojson["features"]:
+        name = feature["properties"]["name"]
+        matched_lgu = target_by_normalized.get(_normalize_muni_name(name).lower())
+        province_features.append({
+            "type": "Feature",
+            "properties": {"name": name, "is_target": matched_lgu is not None, "lgu": matched_lgu},
+            "geometry": feature["geometry"],
+        })
+    province_context_geojson = {"type": "FeatureCollection", "features": province_features}
+
+    # Warehouses — real Office + WarehouseInventory data, placed at their LGU's
+    # approximate centroid (not a precise street address).
+    all_offices, warehouses, total_food_packs = _load_warehouses()
+    warehouse_markers = []
+    for w in warehouses:
+        centroid = _municipality_centroid(w["office"].area_covered)
+        if not centroid:
+            continue
+        warehouse_markers.append({
+            "name": w["office"].office_name,
+            "area_covered": w["office"].area_covered,
+            "lat": centroid[0], "lng": centroid[1],
+            "health": w["health"], "pct": w["pct"],
+            "food_pack_qty": w["food_pack_qty"], "capacity": w["capacity"],
+        })
+
+    # Schematic in-transit indicators — a straight line between known warehouse
+    # and barangay centroids, NOT a real road route (excluded by manuscript scope).
+    in_transit_lines = []
+    in_transit_records = DistributionRecord.query.join(Barangay).filter(
+        Barangay.city_municipality.in_(TARGET_LGUS),
+        DistributionRecord.dispatch_status == "in_transit"
+    ).all()
+    for d in in_transit_records:
+        allocation = d.allocation
+        office = allocation.fulfilling_office if allocation else None
+        if not office:
+            continue
+        from_point = _municipality_centroid(office.area_covered)
+        to_point = _target_barangay_centroid(d.barangay.city_municipality, d.barangay.barangay_name)
+        if from_point and to_point:
+            in_transit_lines.append({
+                "from": from_point, "to": to_point,
+                "barangay": d.barangay.barangay_name,
+            })
+
+    # Side-panel stats — real counts scoped to the 3 target LGUs only.
+    barangay_props = [f["properties"] for f in target_features if f["properties"]["has_data"]]
+    affected = [p for p in barangay_props if p["status"] != "normal"]
+    total_affected_families = sum(p["affected_families"] for p in affected)
+    priority_barangays = sorted(
+        affected,
+        key=lambda p: (_priority_info(p["status"])["rank"], p["affected_families"]),
+        reverse=True,
+    )[:5]
+
+    # Active distribution routes table — real DistributionRecord + logistics data.
+    active_routes = DistributionRecord.query.join(Barangay).join(AllocationRecord).filter(
+        Barangay.city_municipality.in_(TARGET_LGUS),
+        DistributionRecord.dispatch_status.in_(["preparing", "loaded", "dispatched", "in_transit"])
+    ).order_by(DistributionRecord.distribution_date.desc()).limit(10).all()
+
+    routes_table = []
+    for d in active_routes:
+        allocation = d.allocation
+        office = allocation.fulfilling_office if allocation else None
+        routes_table.append({
+            "distribution_id": d.distribution_id,
+            "from_office": office.office_name if office else "—",
+            "to_barangay": d.barangay.barangay_name,
+            "to_municipality": d.barangay.city_municipality,
+            "vehicle": d.vehicle.vehicle_name if d.vehicle else "—",
+            "driver": d.driver.name if d.driver else "—",
+            "packs": d.quantity_released,
+            "status": d.dispatch_status,
+            "status_label": DISPATCH_STATUS_LABELS.get(d.dispatch_status, d.dispatch_status),
+            "eta": d.expected_arrival_time.strftime("%I:%M %p") if d.expected_arrival_time else "—",
+        })
+
+    # Per-municipality rollups — backs the GIS map's drill-down "Municipality
+    # Information" panel. Built entirely from data already computed above plus
+    # real AllocationRecord/DistributionRecord aggregates (no invented fields).
+    municipalities = []
+    for lgu in TARGET_LGUS:
+        lgu_props = [f["properties"] for f in target_features if f["properties"]["lgu"] == lgu and f["properties"]["has_data"]]
+        lgu_affected = [p for p in lgu_props if p["status"] != "normal"]
+        barangay_ids = [p["barangay_id"] for p in lgu_props]
+        worst_rank = max((_priority_info(p["status"])["rank"] for p in lgu_props), default=0)
+        worst_tier = next((v for v in PRIORITY_BY_STATUS.values() if v["rank"] == worst_rank), DEFAULT_PRIORITY)
+
+        current_route = DistributionRecord.query.join(Barangay).filter(
+            Barangay.city_municipality == lgu,
+            DistributionRecord.dispatch_status.in_(["preparing", "loaded", "dispatched", "in_transit"])
+        ).order_by(DistributionRecord.distribution_date.desc()).first()
+        current_distribution = None
+        if current_route:
+            current_distribution = {
+                "distribution_id": current_route.distribution_id,
+                "vehicle": current_route.vehicle.vehicle_name if current_route.vehicle else "—",
+                "driver": current_route.driver.name if current_route.driver else "—",
+                "eta": current_route.expected_arrival_time.strftime("%I:%M %p") if current_route.expected_arrival_time else "—",
+                "status": current_route.dispatch_status,
+                "status_label": DISPATCH_STATUS_LABELS.get(current_route.dispatch_status, current_route.dispatch_status),
+            }
+
+        # "Assigned" warehouse — prefer the office actually fulfilling this
+        # municipality's requests (real AllocationRecord.fulfilling_office_id
+        # relationship) over a geographic guess; only fall back to nearest-by-
+        # distance when no fulfillment history exists yet.
+        fulfilling_office = None
+        if current_route and current_route.allocation:
+            fulfilling_office = current_route.allocation.fulfilling_office
+        if not fulfilling_office:
+            last_alloc = AllocationRecord.query.join(Barangay).filter(
+                Barangay.city_municipality == lgu,
+                AllocationRecord.fulfilling_office_id.isnot(None)
+            ).order_by(AllocationRecord.allocation_date.desc()).first()
+            if last_alloc:
+                fulfilling_office = last_alloc.fulfilling_office
+
+        warehouse_info = None
+        muni_centroid = _municipality_centroid(lgu)
+        if fulfilling_office:
+            wh_match = next((w for w in warehouse_markers if w["name"] == fulfilling_office.office_name), None)
+            distance_km = round(_haversine_km(muni_centroid, (wh_match["lat"], wh_match["lng"])), 1) if (wh_match and muni_centroid) else None
+            warehouse_info = {
+                "name": fulfilling_office.office_name,
+                "distance_km": distance_km,
+                "food_pack_qty": wh_match["food_pack_qty"] if wh_match else None,
+                "capacity": wh_match["capacity"] if wh_match else fulfilling_office.capacity_food_pack,
+            }
+        elif muni_centroid and warehouse_markers:
+            closest = min(warehouse_markers, key=lambda w: _haversine_km(muni_centroid, (w["lat"], w["lng"])))
+            warehouse_info = {
+                "name": closest["name"],
+                "distance_km": round(_haversine_km(muni_centroid, (closest["lat"], closest["lng"])), 1),
+                "food_pack_qty": closest["food_pack_qty"],
+                "capacity": closest["capacity"],
+            }
+
+        municipalities.append({
+            "lgu": lgu,
+            "total_barangays": len(lgu_props),
+            "affected_barangays": len(lgu_affected),
+            "total_affected_families": sum(p["affected_families"] for p in lgu_affected),
+            "total_population": sum(p["population"] for p in lgu_props),
+            "status_label": worst_tier["label"],
+            "status_tier": worst_tier["tier"],
+            "relief": _relief_summary(barangay_ids, event_id),
+            "warehouse": warehouse_info,
+            "current_distribution": current_distribution,
+        })
+
+    event = DisasterEvent.query.get(event_id) if event_id else None
+
+    return {
+        "event_id": event_id,
+        "event": {
+            "event_name": event.event_name,
+            "event_type": event.event_type,
+            "status": event.status,
+            "weather_condition": event.weather_condition,
+        } if event else None,
+        "target_barangays": target_barangays_geojson,
+        "province_context": province_context_geojson,
+        "warehouses": warehouse_markers,
+        "in_transit_lines": in_transit_lines,
+        "stats": {
+            "affected_barangays": len(affected),
+            "total_barangays": len(barangay_props),
+            "total_affected_families": total_affected_families,
+            "total_food_packs": total_food_packs,
+        },
+        "priority_barangays": priority_barangays,
+        "routes_table": routes_table,
+        "municipalities": municipalities,
+    }
+
+
+def _resolve_event_id(event_id):
+    if event_id:
+        return event_id
+    primary_event = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).first()
+    return primary_event.event_id if primary_event else None
+
+
+@pswdo_bp.route("/gis-map/barangay/<int:barangay_id>")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def gis_map_barangay_detail(barangay_id):
+    barangay = Barangay.query.get_or_404(barangay_id)
+    if barangay.city_municipality not in TARGET_LGUS:
+        abort(404)
+
+    event_id = _resolve_event_id(request.args.get("event_id", type=int))
+
+    status_row = None
+    if event_id:
+        status_row = BarangayDisasterStatus.query.filter_by(
+            barangay_id=barangay_id, event_id=event_id
+        ).first()
+    status_key = status_row.status if status_row else "normal"
+    priority = _priority_info(status_key)
+
+    relief = _relief_summary([barangay_id], event_id)
+
+    allocation_ids = [a.allocation_id for a in AllocationRecord.query.filter_by(barangay_id=barangay_id).all()]
+    history = []
+    if allocation_ids:
+        history = DistributionRecord.query.filter(
+            DistributionRecord.allocation_id.in_(allocation_ids)
+        ).order_by(DistributionRecord.distribution_date.desc()).limit(10).all()
+
+    distribution_history = [{
+        "distribution_id": d.distribution_id,
+        "date": d.distribution_date.strftime("%b %d, %Y"),
+        "packs": d.quantity_released,
+        "status": d.dispatch_status,
+        "status_label": DISPATCH_STATUS_LABELS.get(d.dispatch_status, d.dispatch_status),
+    } for d in history]
+
+    return {
+        "barangay_id": barangay.barangay_id,
+        "name": barangay.barangay_name,
+        "lgu": barangay.city_municipality,
+        "population": barangay.population,
+        "num_households": barangay.num_households,
+        "poverty_incidence": float(barangay.poverty_incidence) if barangay.poverty_incidence is not None else None,
+        "disaster_risk_index": float(barangay.disaster_risk_index) if barangay.disaster_risk_index is not None else None,
+        "past_calamity_freq": barangay.past_calamity_freq,
+        "status": status_key,
+        "priority_label": priority["label"],
+        "priority_tier": priority["tier"],
+        "affected_families": status_row.affected_families if status_row else 0,
+        "relief": relief,
+        "distribution_history": distribution_history,
+    }
+
+
+@pswdo_bp.route("/gis-map/municipality/<lgu>/report.csv")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def gis_map_municipality_report(lgu):
+    if lgu not in TARGET_LGUS:
+        abort(404)
+
+    event_id = _resolve_event_id(request.args.get("event_id", type=int))
+    fc = _target_barangay_geojson(lgu, event_id)
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow([
+        "Barangay", "Status", "Affected Families", "Population", "Households",
+        "Poverty Incidence (%)", "Disaster Risk Index",
+        "Food Packs Requested", "Food Packs Approved", "Food Packs Released",
+    ])
+    for feature in fc["features"]:
+        p = feature["properties"]
+        if not p["has_data"]:
+            writer.writerow([p["name"], "No data on record", "", "", "", "", "", "", "", ""])
+            continue
+        relief = _relief_summary([p["barangay_id"]], event_id)
+        writer.writerow([
+            p["name"], p["priority_label"], p["affected_families"], p["population"],
+            p["num_households"], p["poverty_incidence"], p["disaster_risk_index"],
+            relief["requested"], relief["approved"], relief["released"],
+        ])
+
+    filename = lgu.lower().replace(" ", "_")
+    return Response(
+        buffer.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=gis_report_{filename}.csv"},
     )
 
 

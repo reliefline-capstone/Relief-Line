@@ -370,6 +370,13 @@
 
 .map-placeholder-box .empty-note { max-width: 420px; }
 
+#dashboard-mini-map {
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    z-index: 1;
+}
+
 .map-toggle {
     position: absolute;
     top: 12px; left: 12px;
@@ -379,6 +386,7 @@
     font-size: 12px;
     font-weight: 600;
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    z-index: 2;
 }
 
 .map-fullscreen-btn {
@@ -389,6 +397,8 @@
     padding: 7px;
     display: flex;
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    z-index: 2;
+    cursor: pointer;
 }
 
 .map-legend-box {
@@ -400,6 +410,7 @@
     box-shadow: 0 1px 6px rgba(0,0,0,0.12);
     text-align: left;
     min-width: 140px;
+    z-index: 2;
 }
 
 .map-legend-title {
@@ -463,6 +474,7 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
+    z-index: 2;
 }
 
 .map-zoom-pct {
@@ -486,6 +498,14 @@
 }
 
 .map-zoom-controls svg { padding: 6px; }
+
+.map-zoom-controls button {
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    cursor: pointer;
+}
 
 /* Pending requests panel */
 .badge-count {
@@ -732,6 +752,7 @@
 
 .text-green { color: #27ae60; }
 .text-amber { color: #f39c12; }
+.text-red { color: #c0392b; }
 
 .municipality-row { margin-bottom: 10px; }
 

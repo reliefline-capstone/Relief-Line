@@ -1,0 +1,112 @@
+/* Demand-forecast bar fills, by priority tier (distinct from the
+   warehouse-health fill-* classes already in dashboard.css — same visual
+   language, different meaning, so kept as separate classes to avoid a name
+   collision on this page where both appear together). */
+.pa-fill-critical { background: #e74c3c; }
+.pa-fill-high { background: #e67e22; }
+.pa-fill-medium { background: #f1c40f; }
+.pa-fill-low { background: #27ae60; }
+.pa-fill-unrated { background: #d8dee8; }
+
+/* Warehouse Stock Forecast cards */
+.pa-wh-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.pa-wh-card {
+    border: 1px solid #e5e9f0;
+    border-radius: 10px;
+    padding: 16px;
+    background: #f8faf9;
+}
+
+.pa-wh-healthy { border-color: #b7e4c7; background: #f4fbf6; }
+.pa-wh-moderate { border-color: #f5dfa3; background: #fefbf3; }
+.pa-wh-low { border-color: #f3b8b0; background: #fdf4f3; }
+
+.pa-wh-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.pa-wh-card-top strong { font-size: 13px; }
+
+.pa-wh-qty {
+    display: block;
+    font-size: 24px;
+    color: #0f2547;
+}
+
+.pa-wh-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #555;
+    margin-top: 4px;
+}
+
+/* Historical trend — simple bar chart, honest about sparse real data */
+.pa-trend-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 200px;
+    padding: 10px 4px 0;
+}
+
+.pa-trend-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    gap: 6px;
+}
+
+.pa-trend-bar {
+    width: 100%;
+    max-width: 36px;
+    background: #3867d6;
+    border-radius: 4px 4px 0 0;
+    min-height: 2px;
+}
+
+.pa-trend-bar-wrap span {
+    font-size: 11px;
+    color: #8a94a6;
+}
+
+/* Model performance + decision logic */
+.pa-model-panel, .pa-decision-logic {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #f0f2f6;
+}
+
+.pa-model-rows {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+    margin-top: 8px;
+}
+
+.pa-model-rows div { display: flex; flex-direction: column; gap: 3px; }
+.pa-model-rows span { font-size: 11px; color: #8a94a6; }
+.pa-model-rows strong { font-size: 13px; }
+
+.pa-decision-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.pa-decision-grid span {
+    font-size: 11px;
+    color: #8a94a6;
+}

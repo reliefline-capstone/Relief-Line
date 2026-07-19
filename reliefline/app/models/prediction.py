@@ -7,6 +7,7 @@ class PredictionLog(db.Model):
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
     predicted_quantity = db.Column(db.Integer, nullable=False)
     input_snapshot = db.Column(db.Text, nullable=False)
+    predicted_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     model_version = db.Column(db.String(50), default="v1.0")
 
 
@@ -20,3 +21,4 @@ class ModelMetrics(db.Model):
     mape = db.Column(db.Numeric(10, 4), nullable=True)
     r_squared = db.Column(db.Numeric(10, 4), nullable=True)
     training_samples = db.Column(db.Integer, nullable=True)
+    trained_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))

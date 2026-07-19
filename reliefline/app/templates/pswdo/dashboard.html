@@ -4,6 +4,7 @@
 {% block title %}Dashboard - ReliefLine{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 {% endblock %}
 
@@ -101,9 +102,9 @@
                     </div>
                 </div>
                 <div class="map-placeholder-box">
+                    <div id="dashboard-mini-map"></div>
                     <span class="map-toggle">Province</span>
-                    <button type="button" class="map-fullscreen-btn">{{ icon('maximize', 16, '#444') }}</button>
-                    <p class="empty-note">Leaflet.js map integration — kailangan ng GeoJSON boundary file ng Urdaneta City, Santa Barbara, at Calasiao. Susunod na hakbang ito.</p>
+                    <a href="{{ url_for('pswdo.gis_map') }}" class="map-fullscreen-btn" title="Open full GIS Map">{{ icon('maximize', 16, '#444') }}</a>
 
                     <div class="map-legend-box">
                         <span class="map-legend-title">Legend</span>
@@ -113,15 +114,14 @@
                         <div class="map-legend-row"><i class="legend-square normal"></i> Normal</div>
                         <div class="map-legend-divider"></div>
                         <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
-                        <div class="map-legend-row"><i class="legend-mark legend-typhoon"></i> Typhoon</div>
                         <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit Route</div>
                     </div>
 
                     <div class="map-zoom-wrapper">
-                        <span class="map-zoom-pct">100%</span>
+                        <span class="map-zoom-pct" id="dashboard-map-zoom-pct">100%</span>
                         <div class="map-zoom-controls">
-                            {{ icon('plus', 16) }}
-                            {{ icon('minus', 16) }}
+                            <button type="button" id="dashboard-map-zoom-in" title="Zoom in">{{ icon('plus', 16) }}</button>
+                            <button type="button" id="dashboard-map-zoom-out" title="Zoom out">{{ icon('minus', 16) }}</button>
                         </div>
                     </div>
                 </div>
@@ -311,4 +311,9 @@
         </div>
     </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/dashboard_map.js') }}"></script>
 {% endblock %}

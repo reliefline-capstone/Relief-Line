@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Predictive Analytics - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gis_map.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/prediction.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'predictive_analytics' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Analytics &amp; Recommendations</h2>
+                <p>Data-driven decision support for PSWDO</p>
+            </div>
+            <form method="GET" class="gis-filters">
+                <select name="event_id" onchange="this.form.submit()">
+                    <option value="">No active event</option>
+                    {% for e in active_events %}
+                    <option value="{{ e.event_id }}" {{ 'selected' if event_id == e.event_id }}>{{ e.event_name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="municipality" onchange="this.form.submit()">
+                    <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All Municipalities</option>
+                    {% for lgu in target_lgus %}
+                    <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
+                    {% endfor %}
+                </select>
+                <select name="days" onchange="this.form.submit()">
+                    <option value="7" {{ 'selected' if days_filter == 7 }}>Last 7 Days</option>
+                    <option value="30" {{ 'selected' if days_filter == 30 }}>Last 30 Days</option>
+                    <option value="90" {{ 'selected' if days_filter == 90 }}>Last 90 Days</option>
+                </select>
+                <a href="{{ url_for('prediction.export_forecast', event_id=event_id, municipality=municipality_filter) }}" class="btn-outline">{{ icon('download', 14) }} Export Report</a>
+            </form>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon orange">{{ icon('package', 18, '#e67e22') }}</div>
+                <span class="stat-value">{{ "{:,}".format(estimated_need) }} Packs</span>
+                <span class="stat-label">Estimated Need</span>
+                <span class="stat-sub">Undelivered requests + model forecast</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('building', 18, '#2c5aa0') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_food_packs) }} Packs</span>
+                <span class="stat-label">Provincial Stock</span>
+                <span class="stat-sub">All warehouses combined</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('clock', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ days_remaining|int if days_remaining is not none else '—' }} Days</span>
+                <span class="stat-label">Days Remaining</span>
+                <span class="stat-sub">At current burn rate</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('trending-up', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ recommendations|length }}</span>
+                <span class="stat-label">Active Recommendations</span>
+                <span class="stat-sub">Rule-based + model-driven</span>
+            </div>
+        </section>
+
+        <div class="main-grid">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Demand Forecast by Municipality</h3>
+                    {% if event %}<span class="tag-outline">{{ icon('cloud-lightning', 12) }} {{ event.event_name }}</span>{% endif %}
+                </div>
+                {% for f in forecast_by_lgu %}
+                <div class="warehouse-status-row">
+                    <div class="warehouse-status-top">
+                        <div class="warehouse-status-name">
+                            <div>
+                                <strong>{{ f.lgu }}</strong>
+                            </div>
+                        </div>
+                        <div class="warehouse-status-right">
+                            <span class="badge-priority badge-priority-{{ f.priority_tier }}"><i class="priority-dot"></i> {{ f.priority_label }}</span>
+                            <strong>{{ "{:,}".format(f.packs_needed) }}</strong>
+                        </div>
+                    </div>
+                    <div class="warehouse-bar">
+                        <div class="warehouse-bar-fill pa-fill-{{ f.priority_tier }}" style="width: {{ f.pct_done if f.pct_done <= 100 else 100 }}%;"></div>
+                    </div>
+                    <span class="warehouse-status-sub">Delivered: {{ "{:,}".format(f.delivered) }}   Remaining: {{ "{:,}".format(f.remaining) }}   {{ f.pct_done }}% done</span>
+                </div>
+                {% else %}
+                <p class="empty-note">No municipalities in scope for this filter.</p>
+                {% endfor %}
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Barangay Priority Ranking</h3>
+                    <span class="rd-sub">Real status &amp; requests first</span>
+                </div>
+                {% for r in ranking %}
+                <div class="gis-priority-row">
+                    <div>
+                        <strong>{{ loop.index }}. {{ r.name }}</strong>
+                        <span>{{ r.lgu }} · {{ "{:,}".format(r.affected_families) }} families</span>
+                    </div>
+                    <div class="gis-priority-row-right">
+                        <span class="badge-priority badge-priority-{{ r.priority_tier }}"><i class="priority-dot"></i> {{ r.priority_label }}</span>
+                        <strong>{{ "{:,}".format(r.packs_needed) }} packs{% if r.need_source == 'model' %}*{% endif %}</strong>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">No barangays in scope for this filter.</p>
+                {% endfor %}
+                {% if ranking %}<p class="rd-sub" style="margin-top:10px;">* model-estimated — no request submitted yet</p>{% endif %}
+            </section>
+
+        </div>
+
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('building', 18, '#0f2547') }} Warehouse Stock Forecast</h3>
+                <span class="rd-sub">Below 30% = Warning · Below 15% = Critical</span>
+            </div>
+            <div class="pa-wh-cards">
+                {% for w in warehouse_cards %}
+                <div class="pa-wh-card pa-wh-{{ w.health|lower }}">
+                    <div class="pa-wh-card-top">
+                        <strong>{{ w.name }}</strong>
+                        <span class="badge-health badge-{{ w.health|lower }}">{{ w.health }}</span>
+                    </div>
+                    <strong class="pa-wh-qty">{{ "{:,}".format(w.food_pack_qty) }}</strong>
+                    <span class="rd-sub">current packs</span>
+                    <div class="warehouse-bar" style="margin-top:10px;">
+                        <div class="warehouse-bar-fill fill-{{ w.health|lower }}" style="width: {{ w.pct if w.pct <= 100 else 100 }}%;"></div>
+                    </div>
+                    <div class="pa-wh-card-bottom">
+                        <span>{{ w.pct|int }}% capacity</span>
+                        <span>{{ w.days_left|int if w.days_left is not none else '—' }} days left</span>
+                    </div>
+                    <span class="rd-sub">Burn rate: {{ w.burn_rate|int }}/day</span>
+                    {% if w.health != 'Healthy' %}
+                    <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="link-manage" style="display:block; margin-top:8px;">View Stock Transfer →</a>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="empty-note">No province-wide warehouses on record.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="main-grid" style="margin-top:16px;">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Historical Trends</h3>
+                </div>
+                {% if historical_trend|length >= 2 %}
+                <div class="pa-trend-chart">
+                    {% set max_packs = historical_trend|map(attribute='packs')|max %}
+                    {% for point in historical_trend %}
+                    <div class="pa-trend-bar-wrap">
+                        <div class="pa-trend-bar" style="height: {{ (point.packs / max_packs * 100) if max_packs else 0 }}%;" title="{{ point.date }}: {{ '{:,}'.format(point.packs) }} packs"></div>
+                        <span>{{ point.date }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% elif historical_trend|length == 1 %}
+                <p class="empty-note">Only one day of delivery history on record so far ({{ historical_trend[0].date }}: {{ "{:,}".format(historical_trend[0].packs) }} packs delivered) — not enough to chart a trend yet. This will fill in as more distributions are completed.</p>
+                {% else %}
+                <p class="empty-note">No delivered distributions in the selected time range yet.</p>
+                {% endif %}
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>{{ icon('trending-up', 18, '#0f2547') }} System Recommendations</h3>
+                    <span class="tag-outline">{{ recommendations|length }} active</span>
+                </div>
+                {% for rec in recommendations %}
+                <div class="recommendation-row rec-{{ rec.type }}">
+                    {% if rec.type == 'info' %}{{ icon('arrow-right', 14) }}{% else %}{{ icon('alert-triangle', 14) }}{% endif %}
+                    <div>
+                        <strong>{{ rec.title }}{% if rec.tag %} <span class="badge-priority badge-priority-{{ 'critical' if rec.type == 'critical' else 'high' }}">{{ rec.tag }}</span>{% endif %}</strong>
+                        <span>{{ rec.detail }}</span>
+                        {% if rec.link %}<a href="{{ rec.link }}" class="link-manage" style="display:block; margin-top:4px;">{{ rec.link_label }} →</a>{% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">Walang recommendations ngayon — malusog ang stock levels.</p>
+                {% endfor %}
+
+                <div class="pa-model-panel">
+                    <span class="pa-rec-title" style="margin-top:0;">MODEL PERFORMANCE</span>
+                    {% if latest_metrics %}
+                    <div class="pa-model-rows">
+                        <div><span>Trained on</span><strong>{{ latest_metrics.training_samples }} real allocation records</strong></div>
+                        <div><span>Mean Absolute Error</span><strong>{{ latest_metrics.mae|round(0) }} packs</strong></div>
+                        <div><span>R² (leave-one-out)</span><strong>{{ latest_metrics.r_squared }}</strong></div>
+                        <div><span>Confidence</span>
+                            <strong>
+                                {% if latest_metrics.r_squared >= 0.5 %}<span class="badge-priority badge-priority-low">Good</span>
+                                {% elif latest_metrics.r_squared >= 0 %}<span class="badge-priority badge-priority-medium">Fair</span>
+                                {% else %}<span class="badge-priority badge-priority-critical">Low — needs more data</span>{% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                    <p class="rd-sub" style="margin-top:8px;">Ridge regression (scikit-learn), auto-tuned regularization, evaluated with leave-one-out cross-validation. Estimates the demand for barangays that haven't submitted a request yet; accuracy will improve as more real allocation history accumulates.</p>
+                    {% else %}
+                    <p class="empty-note">Model not trained yet — run scripts/train_model.py.</p>
+                    {% endif %}
+                </div>
+
+                <div class="pa-decision-logic">
+                    <span class="pa-rec-title" style="margin-top:0;">DECISION LOGIC</span>
+                    <div class="pa-decision-grid">
+                        <span>Rule 1: Priority ranking — status tier + affected families</span>
+                        <span>Rule 2: Warehouse — nearest office actually fulfilling requests</span>
+                        <span>Rule 3: Transfer — suggested when stock falls below threshold</span>
+                        <span>Rule 4: Burn rate — stock ÷ daily distribution</span>
+                        <span>Model: Estimated Need for barangays without a request — Ridge regression (see Model Performance)</span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+</div>
+{% endblock %}
