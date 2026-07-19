@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Warehouses - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'warehouse_inventory' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        {% set crumbs = [{"label": "Dashboard", "url": url_for('pswdo.warehouse_inventory')}, {"label": "Warehouses", "url": none}] %}
+        {% include "pswdo/_warehouse_subnav.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Warehouses</h2>
+                <p>{{ warehouses|length }} warehouse{{ 's' if warehouses|length != 1 }} · {{ "{:,}".format(total_food_packs) }} food packs total</p>
+            </div>
+        </section>
+
+        <div class="wh-card-grid">
+            {% for w in warehouses %}
+            <div class="wh-warehouse-card">
+                <div class="wh-warehouse-card-top">
+                    <div class="wh-warehouse-card-icon">{{ icon('building', 20, '#3867d6') }}</div>
+                    <span class="badge-health badge-{{ w.health|lower }}">{{ 'Low Stock' if w.health == 'Low' else w.health }}</span>
+                </div>
+                <strong class="wh-warehouse-card-name">{{ w.office.office_name }}</strong>
+                <span class="wh-warehouse-card-loc">{{ icon('map-pin', 12, '#8a94a6') }} {{ w.office.area_covered }}</span>
+
+                <div class="wh-warehouse-card-stock">
+                    <strong>{{ "{:,}".format(w.food_pack_qty) }}</strong>
+                    <span>/ {{ "{:,}".format(w.capacity) }} packs</span>
+                </div>
+                <div class="warehouse-bar"><div class="warehouse-bar-fill fill-{{ w.health|lower }}" style="width: {{ w.pct if w.pct <= 100 else 100 }}%;"></div></div>
+                <span class="wh-sub">{{ w.pct|int }}% capacity</span>
+
+                <div class="wh-warehouse-card-actions">
+                    <a href="{{ url_for('pswdo.warehouse_detail', office_id=w.office.office_id) }}" class="btn-outline">{{ icon('eye', 14) }} Details</a>
+                    <a href="{{ url_for('pswdo.warehouse_inventory_items', office_id=w.office.office_id) }}" class="btn-view">{{ icon('package', 14) }} Inventory</a>
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-note">Walang warehouse na naka-record.</p>
+            {% endfor %}
+        </div>
+
+    </main>
+</div>
+{% endblock %}

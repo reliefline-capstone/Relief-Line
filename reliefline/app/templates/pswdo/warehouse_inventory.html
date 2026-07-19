@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Warehouse Inventory - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'warehouse_inventory' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <!-- Main content -->
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        {% set crumbs = [] %}
+        {% include "pswdo/_warehouse_subnav.html" %}
+
+        <!-- Page title -->
+        <section class="page-header">
+            <div>
+                <h2>Warehouse Management</h2>
+                <p>Provincial food pack storage monitoring</p>
+            </div>
+            <div class="wh-header-actions">
+                <a href="{{ url_for('pswdo.warehouse_stock_movements') }}" class="wh-text-link">{{ icon('list', 14) }} Movements</a>
+                <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-text-link">{{ icon('rotate-ccw', 14) }} Transfer</a>
+                <a href="{{ url_for('pswdo.warehouse_reports') }}" class="wh-text-link">{{ icon('bar-chart', 14) }} Reports</a>
+                <a href="{{ url_for('pswdo.warehouse_list') }}" class="btn-outline">{{ icon('building', 14) }} Warehouses</a>
+                <button type="button" class="btn-add-warehouse" data-open-modal="add-warehouse-modal">{{ icon('plus', 14, 'white') }} Add Warehouse</button>
+            </div>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="stat-cards wh-stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('building', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ warehouses|length }}</span>
+                <span class="stat-label">Total Warehouses</span>
+                <span class="stat-sub">Province of Pangasinan</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span>
+                <span class="stat-label">Total Food Packs</span>
+                <span class="stat-sub">Across all warehouses</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
+                <span class="stat-value">{{ low_stock_count }}</span>
+                <span class="stat-label">Low Stock</span>
+                <span class="stat-sub">Needs replenishment</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('truck', 18, '#f39c12') }}</div>
+                <span class="stat-value">{{ transfers_today_count }}</span>
+                <span class="stat-label">Transfers Today</span>
+                <span class="stat-sub">Completed redistributions</span>
+            </div>
+        </section>
+
+        <!-- System Recommendations -->
+        <section class="wh-reco-panel">
+            <div class="wh-reco-header">
+                <h3>{{ icon('trending-up', 18, '#d68910') }} System Recommendations</h3>
+                <span class="wh-reco-meta">Data-driven · Updated just now</span>
+            </div>
+            {% for rec in recommendations %}
+            <div class="wh-reco-item">
+                <span class="wh-reco-num">{{ loop.index }}</span>
+                <div class="wh-reco-text">
+                    <strong>{{ rec.title }}</strong>
+                    <span>{{ rec.detail }}</span>
+                </div>
+                <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-reco-action">Act Now {{ icon('arrow-right', 14) }}</a>
+            </div>
+            {% else %}
+            <p class="empty-note">Walang stock recommendations ngayon — malusog ang lahat ng warehouse.</p>
+            {% endfor %}
+        </section>
+
+        <!-- Warehouse Overview + side panels -->
+        <div class="main-grid" style="margin-top: 16px;">
+
+            <section class="panel wh-table-panel" id="warehouse-overview">
+                <div class="panel-header">
+                    <h3>Warehouse Overview</h3>
+                    <a href="{{ url_for('pswdo.warehouse_inventory') }}" class="btn-icon" title="Refresh">{{ icon('rotate-ccw', 16, '#555') }}</a>
+                </div>
+                <table class="wh-table">
+                    <thead>
+                        <tr>
+                            <th>WAREHOUSE</th>
+                            <th>LOCATION</th>
+                            <th>CURRENT STOCK</th>
+                            <th>CAPACITY</th>
+                            <th>FILL LEVEL</th>
+                            <th>STATUS</th>
+                            <th>ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for w in warehouses %}
+                        <tr>
+                            <td>
+                                <strong>{{ w.office.office_name }}</strong>
+                                <span class="wh-sub">{% if w.days_remaining is not none %}{{ w.days_remaining|int }} days remaining{% else %}No active demand data{% endif %}</span>
+                            </td>
+                            <td>{{ w.office.area_covered }}</td>
+                            <td>
+                                <strong>{{ "{:,}".format(w.food_pack_qty) }}</strong>
+                                <span class="wh-sub">food packs</span>
+                            </td>
+                            <td>{{ "{:,}".format(w.capacity) }}</td>
+                            <td>
+                                <div class="wh-fill-cell">
+                                    <div class="warehouse-bar wh-fill-bar"><div class="warehouse-bar-fill fill-{{ w.health|lower }}" style="width: {{ w.pct if w.pct <= 100 else 100 }}%;"></div></div>
+                                    <span>{{ w.pct|int }}%</span>
+                                </div>
+                            </td>
+                            <td><span class="badge-health badge-{{ w.health|lower }}">{{ 'Low Stock' if w.health == 'Low' else w.health }}</span></td>
+                            <td>
+                                <a href="{{ url_for('pswdo.warehouse_detail', office_id=w.office.office_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="empty-note" style="text-align:center; padding: 30px;">Walang warehouse data na naka-record.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+
+            <aside class="wh-side-col">
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3>Stock Levels</h3>
+                    </div>
+                    {% for w in warehouses %}
+                    <div class="warehouse-status-row">
+                        <div class="warehouse-status-top">
+                            <div class="warehouse-status-name">
+                                {{ icon('building', 16, '#8a94a6') }}
+                                <div><strong>{{ w.office.office_name }}</strong></div>
+                            </div>
+                            <div class="warehouse-status-right">
+                                <strong>{{ "{:,}".format(w.food_pack_qty) }}</strong>
+                                <span class="badge-health badge-{{ w.health|lower }}">{{ w.pct|int }}%</span>
+                            </div>
+                        </div>
+                        <div class="warehouse-bar"><div class="warehouse-bar-fill fill-{{ w.health|lower }}" style="width: {{ w.pct if w.pct <= 100 else 100 }}%;"></div></div>
+                        <span class="warehouse-status-sub">{{ "{:,}".format(w.food_pack_qty) }} / {{ "{:,}".format(w.capacity) }} packs · {{ w.health }}</span>
+                    </div>
+                    {% else %}
+                    <p class="empty-note">Walang warehouse data.</p>
+                    {% endfor %}
+                </section>
+
+                <section class="panel" id="recent-movements" style="margin-top:16px;">
+                    <div class="panel-header">
+                        <h3>Recent Stock Movements</h3>
+                        <a href="{{ url_for('pswdo.warehouse_stock_movements') }}" class="link-manage">View All →</a>
+                    </div>
+                    {% for m in recent_movements %}
+                    <div class="wh-movement-row">
+                        <div class="wh-movement-icon {{ 'wh-move-out' if m.qty < 0 else 'wh-move-in' }}">
+                            <span class="{{ 'wh-arrow-up' if m.qty < 0 else 'wh-arrow-down' }}">{{ icon('arrow-right', 14) }}</span>
+                        </div>
+                        <div class="wh-movement-text">
+                            <strong>{{ m.office_name }} — {{ m.direction }}</strong>
+                            <span>{{ m.context }}</span>
+                        </div>
+                        <div class="wh-movement-amount">
+                            <strong class="{{ 'text-red' if m.qty < 0 else 'text-green' }}">{{ '+' if m.qty > 0 }}{{ "{:,}".format(m.qty) }}</strong>
+                            <span>{% if m.when %}{{ m.when.strftime('%b') }} {{ m.when.day }}{% endif %}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="empty-note">Wala pang stock movement na naitala.</p>
+                    {% endfor %}
+                </section>
+            </aside>
+
+        </div>
+    </main>
+</div>
+
+<!-- Add Warehouse modal -->
+<div class="rd-modal-overlay" id="add-warehouse-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('building', 18, '#0f2547') }} Add Warehouse</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('pswdo.warehouse_create') }}">
+            <label for="office_name">Warehouse Name *</label>
+            <input type="text" name="office_name" id="office_name" placeholder="e.g. Warehouse D" required>
+
+            <label for="area_covered">Location *</label>
+            <input type="text" name="area_covered" id="area_covered" placeholder="e.g. Dagupan City" required>
+
+            <label for="full_address">Full Address</label>
+            <input type="text" name="full_address" id="full_address" placeholder="Optional">
+
+            <div class="rd-form-row">
+                <div>
+                    <label for="manager_name">Warehouse Manager</label>
+                    <input type="text" name="manager_name" id="manager_name" placeholder="Optional">
+                </div>
+                <div>
+                    <label for="capacity_food_pack">Storage Capacity (Packs)</label>
+                    <input type="number" name="capacity_food_pack" id="capacity_food_pack" min="1" value="20000">
+                </div>
+            </div>
+
+            <div class="rd-form-row">
+                <div>
+                    <label for="contact_number">Contact Number</label>
+                    <input type="text" name="contact_number" id="contact_number" placeholder="Optional">
+                </div>
+                <div>
+                    <label for="email">Email</label>
+                    <input type="email" name="email" id="email" placeholder="Optional">
+                </div>
+            </div>
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Add Warehouse</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Warehouse Reports - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'warehouse_inventory' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        {% set crumbs = [
+            {"label": "Dashboard", "url": url_for('pswdo.warehouse_inventory')},
+            {"label": "Reports", "url": none}
+        ] %}
+        {% include "pswdo/_warehouse_subnav.html" %}
+
+        <section class="panel wh-empty-state">
+            {{ icon('bar-chart', 40, '#c3cad6') }}
+            <h3>Reports coming soon</h3>
+            <p class="empty-note">Exportable warehouse reports (stock summaries, transfer logs, movement history) will appear here. In the meantime, use Export on the Inventory and Stock Movement pages.</p>
+            <div class="wh-empty-actions">
+                <a href="{{ url_for('pswdo.warehouse_stock_movements') }}" class="btn-outline">{{ icon('list', 14) }} Stock Movement History</a>
+            </div>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

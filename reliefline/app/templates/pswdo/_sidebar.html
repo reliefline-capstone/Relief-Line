@@ -11,7 +11,7 @@
         <a href="{{ url_for('pswdo.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} Dashboard</a>
         <a href="{{ url_for('pswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('clipboard', 18) }} Relief Requests</a>
         <a href="{{ url_for('pswdo.distribution') }}" class="{{ 'active' if active_page == 'distribution' }}">{{ icon('truck', 18) }} Distribution</a>
-        <a href="#">{{ icon('building', 18) }} Warehouse Inventory</a>
+        <a href="{{ url_for('pswdo.warehouse_inventory') }}" class="{{ 'active' if active_page == 'warehouse_inventory' }}">{{ icon('building', 18) }} Warehouse Inventory</a>
         <a href="#">{{ icon('map', 18) }} GIS Map</a>
         <a href="{{ url_for('prediction.index') }}">{{ icon('trending-up', 18) }} Predictive Analytics</a>
         <a href="#" class="nav-spaced">{{ icon('bar-chart', 18) }} Reports</a>

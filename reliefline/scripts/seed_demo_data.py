@@ -72,7 +72,29 @@ def run():
             db.session.add(wa_inventory)
         else:
             wa_inventory.quantity_available = 22000
+
+        # --- Warehouse A general info + extra stock catalog (demonstrates the
+        # flexible, non-food_pack inventory catalog alongside the reserved item) ---
+        if not warehouse_a.full_address:
+            warehouse_a.full_address = f"Capitol Compound, {warehouse_a.area_covered}, Pangasinan"
+            warehouse_a.manager_name = "Juan Dela Cruz"
+            warehouse_a.contact_number = "0917-123-4567"
+            warehouse_a.email = "warehouse.a@pangasinan.gov.ph"
+
+        extra_items = [
+            ("rice_50kg", "Rice (50kg)", "sacks", 820, 200),
+            ("water_1l", "Water (1L)", "bottles", 5000, 1000),
+            ("blankets", "Blankets", "pieces", 800, 200),
+            ("medicine_kit", "Medicine Kit", "kits", 450, 300),
+        ]
+        for item_type, item_name, unit, qty, min_level in extra_items:
+            if not WarehouseInventory.query.filter_by(office_id=warehouse_a.office_id, item_type=item_type).first():
+                db.session.add(WarehouseInventory(
+                    office_id=warehouse_a.office_id, item_type=item_type, item_name=item_name,
+                    unit=unit, quantity_available=qty, min_stock_level=min_level,
+                ))
         db.session.flush()
+        print("Seeded Warehouse A general info + extra stock catalog (rice, water, blankets, medicine kit)")
 
         # --- Barangay disaster statuses (drives Priority + Affected Families everywhere) ---
         status_plan = [

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}{{ office.office_name }} Inventory - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'warehouse_inventory' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        {% set crumbs = [
+            {"label": office.office_name, "url": url_for('pswdo.warehouse_detail', office_id=office.office_id)},
+            {"label": "Inventory Management", "url": none}
+        ] %}
+        {% include "pswdo/_warehouse_subnav.html" %}
+
+        <section class="page-header">
+            <form method="GET" class="wh-search-form">
+                <div class="wh-search-wrapper">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search item...">
+                </div>
+            </form>
+            <div class="wh-header-actions">
+                <a href="{{ url_for('pswdo.warehouse_inventory_export', office_id=office.office_id) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+                <button type="button" class="btn-add-warehouse" data-open-modal="add-stock-modal">{{ icon('plus', 14, 'white') }} Add Stock</button>
+            </div>
+        </section>
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table">
+                <thead>
+                    <tr>
+                        <th>ITEM</th>
+                        <th>CURRENT QTY</th>
+                        <th>UNIT</th>
+                        <th>MIN. LEVEL</th>
+                        <th>STOCK VS MIN</th>
+                        <th>STATUS</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    {% set item = row.item %}
+                    {% set pct = ((item.quantity_available / item.min_stock_level * 100)|round)|int if item.min_stock_level > 0 else none %}
+                    <tr>
+                        <td>
+                            <div class="wh-item-name-cell">
+                                <span class="wh-item-icon">{{ icon('package', 14, '#3867d6') }}</span>
+                                <strong>{{ item.item_name }}</strong>
+                            </div>
+                        </td>
+                        <td><strong>{{ "{:,}".format(item.quantity_available) }}</strong></td>
+                        <td>{{ item.unit }}</td>
+                        <td>{{ "{:,}".format(item.min_stock_level) }}</td>
+                        <td>
+                            <div class="wh-fill-cell">
+                                <div class="warehouse-bar wh-fill-bar"><div class="warehouse-bar-fill fill-{{ row.status|lower }}" style="width: {{ pct if pct and pct <= 100 else 100 }}%;"></div></div>
+                                <span>{% if pct is not none %}{{ pct }}%{% else %}—{% endif %}</span>
+                            </div>
+                        </td>
+                        <td><span class="badge-health badge-{{ row.status|lower }}">{{ 'Low Stock' if row.status == 'Low' else row.status }}</span></td>
+                        <td>
+                            <div class="wh-row-actions">
+                                <button type="button" class="wh-icon-btn" title="Update stock" data-open-modal="update-stock-modal-{{ item.inventory_id }}">{{ icon('external-link', 15, '#2c5aa0') }}</button>
+                                {% if item.item_type != 'food_pack' %}
+                                <form method="POST" action="{{ url_for('pswdo.warehouse_inventory_delete', inventory_id=item.inventory_id) }}" onsubmit="return confirm('Remove {{ item.item_name }} from this warehouse?');">
+                                    <button type="submit" class="wh-icon-btn wh-icon-btn-danger" title="Delete item">{{ icon('x-circle', 15, '#c0392b') }}</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="empty-note" style="text-align:center; padding:30px;">Walang item na tumutugma.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+
+<!-- Add Stock modal -->
+<div class="rd-modal-overlay" id="add-stock-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('plus', 18, '#0f2547') }} Add Stock Item</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('pswdo.warehouse_inventory_add', office_id=office.office_id) }}">
+            <label for="item_name">Item Name *</label>
+            <input type="text" name="item_name" id="item_name" placeholder="e.g. Rice (50kg)" required>
+
+            <div class="rd-form-row">
+                <div>
+                    <label for="unit">Unit</label>
+                    <input type="text" name="unit" id="unit" placeholder="e.g. sacks">
+                </div>
+                <div>
+                    <label for="quantity">Quantity *</label>
+                    <input type="number" name="quantity" id="quantity" min="0" required>
+                </div>
+            </div>
+
+            <label for="min_stock_level">Min Stock Level</label>
+            <input type="number" name="min_stock_level" id="min_stock_level" min="0" value="0">
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Add Stock</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Update Stock modals (one per item) -->
+{% for row in rows %}
+{% set item = row.item %}
+<div class="rd-modal-overlay" id="update-stock-modal-{{ item.inventory_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Update: {{ item.item_name }}</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('pswdo.warehouse_inventory_update', inventory_id=item.inventory_id) }}">
+            <div class="rd-form-row">
+                <div>
+                    <label for="quantity-{{ item.inventory_id }}">New Quantity *</label>
+                    <input type="number" name="quantity" id="quantity-{{ item.inventory_id }}" min="0" value="{{ item.quantity_available }}" required>
+                </div>
+                <div>
+                    <label for="unit-{{ item.inventory_id }}">Unit</label>
+                    <input type="text" name="unit" id="unit-{{ item.inventory_id }}" value="{{ item.unit }}">
+                </div>
+            </div>
+
+            <label for="reason-{{ item.inventory_id }}">Reason for Update</label>
+            <textarea name="reason" id="reason-{{ item.inventory_id }}" rows="2" placeholder="e.g. Received from provincial supply..."></textarea>
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Update Stock</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+{% endblock %}

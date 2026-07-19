@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}{{ office.office_name }} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'warehouse_inventory' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        {% set crumbs = [
+            {"label": "Warehouses", "url": url_for('pswdo.warehouse_list')},
+            {"label": office.office_name, "url": none, "status": ('Low Stock' if health == 'Low' else health)}
+        ] %}
+        {% include "pswdo/_warehouse_subnav.html" %}
+
+        <div class="main-grid">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>General Information</h3>
+                    <button type="button" class="btn-outline" data-open-modal="edit-warehouse-modal">{{ icon('external-link', 14) }} Edit</button>
+                </div>
+
+                <div class="wh-info-rows">
+                    <div class="wh-info-row"><span>Warehouse Name</span><strong>{{ office.office_name }}</strong></div>
+                    <div class="wh-info-row"><span>Location</span><strong>{{ office.area_covered }}</strong></div>
+                    <div class="wh-info-row"><span>Full Address</span><strong>{{ office.full_address or '—' }}</strong></div>
+                    <div class="wh-info-row"><span>Warehouse Manager</span><strong>{{ office.manager_name or '—' }}</strong></div>
+                    <div class="wh-info-row"><span>Contact Number</span><strong>{{ office.contact_number or '—' }}</strong></div>
+                    <div class="wh-info-row"><span>Email</span><strong>{{ office.email or '—' }}</strong></div>
+                    <div class="wh-info-row"><span>Storage Capacity</span><strong>{{ "{:,}".format(capacity) }} Packs</strong></div>
+                    <div class="wh-info-row"><span>Current Stock</span><strong>{{ "{:,}".format(food_pack_qty) }} Packs</strong></div>
+                    <div class="wh-info-row"><span>Burn Rate</span><strong>{% if burn %}~{{ burn|int }} packs/day{% else %}No active demand data{% endif %}</strong></div>
+                    <div class="wh-info-row"><span>Days Remaining</span><strong>{% if days_remaining is not none %}{{ days_remaining|int }} days at current rate{% else %}—{% endif %}</strong></div>
+                </div>
+            </section>
+
+            <aside class="wh-side-col">
+                <section class="panel">
+                    <div class="panel-header"><h3>Capacity</h3></div>
+                    <div class="wh-capacity-ring-wrapper">
+                        <svg width="140" height="140" viewBox="0 0 140 140">
+                            <circle cx="70" cy="70" r="58" fill="none" stroke="#eee" stroke-width="12"/>
+                            <circle cx="70" cy="70" r="58" fill="none" stroke="{{ '#27ae60' if health == 'Healthy' else ('#f1c40f' if health == 'Moderate' else '#e74c3c') }}" stroke-width="12"
+                                stroke-dasharray="{{ ((pct if pct <= 100 else 100) / 100 * 364.42)|round(1) }} 364.42"
+                                stroke-linecap="round" transform="rotate(-90 70 70)"/>
+                        </svg>
+                        <div class="wh-capacity-ring-text">
+                            <strong>{{ pct|int }}%</strong>
+                            <span>capacity</span>
+                        </div>
+                    </div>
+                    <div class="wh-info-rows">
+                        <div class="wh-info-row"><span>Current Stock</span><strong>{{ "{:,}".format(food_pack_qty) }}</strong></div>
+                        <div class="wh-info-row"><span>Max Capacity</span><strong>{{ "{:,}".format(capacity) }}</strong></div>
+                        <div class="wh-info-row"><span>Available Space</span><strong class="text-green">{{ "{:,}".format(capacity - food_pack_qty if capacity > food_pack_qty else 0) }}</strong></div>
+                        <div class="wh-info-row"><span>Days Remaining</span><strong class="text-green">{% if days_remaining is not none %}{{ days_remaining|int }} days{% else %}—{% endif %}</strong></div>
+                    </div>
+                    <a href="{{ url_for('pswdo.warehouse_inventory_items', office_id=office.office_id) }}" class="btn-add-warehouse wh-block-btn">{{ icon('package', 14, 'white') }} Manage Inventory</a>
+                    <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-text-link wh-block-link">{{ icon('rotate-ccw', 14) }} Stock Transfer</a>
+                </section>
+            </aside>
+
+        </div>
+
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>Inventory Summary</h3>
+                <a href="{{ url_for('pswdo.warehouse_inventory_items', office_id=office.office_id) }}" class="link-manage">Manage →</a>
+            </div>
+            <table class="wh-table">
+                <thead>
+                    <tr><th>ITEM</th><th>QUANTITY</th><th>UNIT</th><th>STATUS</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in inventory_summary %}
+                    <tr>
+                        <td>{{ row.item.item_name }}</td>
+                        <td><strong>{{ "{:,}".format(row.item.quantity_available) }}</strong></td>
+                        <td>{{ row.item.unit }}</td>
+                        <td><span class="badge-health badge-{{ row.status|lower }}">{{ 'Low Stock' if row.status == 'Low' else row.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="empty-note" style="text-align:center; padding:24px;">Walang naka-record na item para sa warehouse na ito.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>Distribution History</h3>
+                <a href="{{ url_for('pswdo.warehouse_stock_movements', office_id=office.office_id) }}" class="link-manage">View All →</a>
+            </div>
+            {% for m in movements %}
+            <div class="wh-movement-row">
+                <div class="wh-movement-icon {{ 'wh-move-out' if m.qty < 0 else 'wh-move-in' }}">
+                    <span class="{{ 'wh-arrow-up' if m.qty < 0 else 'wh-arrow-down' }}">{{ icon('arrow-right', 14) }}</span>
+                </div>
+                <div class="wh-movement-text">
+                    <strong>{{ m.direction }}</strong>
+                    <span>{{ m.context }}</span>
+                </div>
+                <div class="wh-movement-amount">
+                    <strong class="{{ 'text-red' if m.qty < 0 else 'text-green' }}">{{ '+' if m.qty > 0 }}{{ "{:,}".format(m.qty) }}</strong>
+                    <span>{% if m.when %}{{ m.when.strftime('%b') }} {{ m.when.day }}, {{ m.when.year }}{% endif %}</span>
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-note">Wala pang stock movement na naitala.</p>
+            {% endfor %}
+        </section>
+
+    </main>
+</div>
+
+<!-- Edit warehouse modal -->
+<div class="rd-modal-overlay" id="edit-warehouse-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('external-link', 18, '#0f2547') }} Edit Warehouse Information</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('pswdo.warehouse_edit', office_id=office.office_id) }}">
+            <label for="full_address">Full Address</label>
+            <input type="text" name="full_address" id="full_address" value="{{ office.full_address or '' }}" placeholder="e.g. Capitol Compound, {{ office.area_covered }}, Pangasinan">
+
+            <label for="manager_name">Warehouse Manager</label>
+            <input type="text" name="manager_name" id="manager_name" value="{{ office.manager_name or '' }}">
+
+            <div class="rd-form-row">
+                <div>
+                    <label for="contact_number">Contact Number</label>
+                    <input type="text" name="contact_number" id="contact_number" value="{{ office.contact_number or '' }}">
+                </div>
+                <div>
+                    <label for="email">Email</label>
+                    <input type="email" name="email" id="email" value="{{ office.email or '' }}">
+                </div>
+            </div>
+
+            <label for="capacity_food_pack">Storage Capacity (Packs)</label>
+            <input type="number" name="capacity_food_pack" id="capacity_food_pack" min="1" value="{{ capacity }}">
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Save Changes</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+{% endblock %}

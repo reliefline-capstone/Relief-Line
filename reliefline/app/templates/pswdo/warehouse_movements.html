@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Stock Movement History - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'warehouse_inventory' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        {% set crumbs = [
+            {"label": "Dashboard", "url": url_for('pswdo.warehouse_inventory')},
+            {"label": "Stock Movement History", "url": none}
+        ] %}
+        {% include "pswdo/_warehouse_subnav.html" %}
+
+        <section class="page-header">
+            <form method="GET" class="wh-movement-filters">
+                <select name="office_id" onchange="this.form.submit()">
+                    <option value="">All Warehouse</option>
+                    {% for w in warehouses %}
+                    <option value="{{ w.office.office_id }}" {{ 'selected' if office_filter == w.office.office_id }}>{{ w.office.office_name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="type" onchange="this.form.submit()">
+                    <option value="all" {{ 'selected' if type_filter == 'all' }}>All Types</option>
+                    <option value="released" {{ 'selected' if type_filter == 'released' }}>Released</option>
+                    <option value="transferred_out" {{ 'selected' if type_filter == 'transferred_out' }}>Transferred Out</option>
+                    <option value="transferred_in" {{ 'selected' if type_filter == 'transferred_in' }}>Transferred In</option>
+                    <option value="received" {{ 'selected' if type_filter == 'received' }}>Received</option>
+                </select>
+                <div class="date-input-wrapper">
+                    {{ icon('calendar', 14, '#8a94a6') }}
+                    <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
+                </div>
+            </form>
+            <div class="wh-header-actions">
+                <span class="wh-sub">{{ movements|length }} record{{ 's' if movements|length != 1 }}</span>
+                <a href="{{ url_for('pswdo.warehouse_stock_movements_export', office_id=office_filter, type=type_filter, date=date_filter) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+            </div>
+        </section>
+
+        <div class="main-grid">
+
+            <section class="panel">
+                <div class="panel-header"><h3>Timeline</h3></div>
+                {% for m in movements %}
+                <div class="wh-timeline-row">
+                    <div class="wh-movement-icon {{ 'wh-move-out' if m.qty < 0 else 'wh-move-in' }}">
+                        <span class="{{ 'wh-arrow-up' if m.qty < 0 else 'wh-arrow-down' }}">{{ icon('arrow-right', 14) }}</span>
+                    </div>
+                    <div class="wh-timeline-body">
+                        <span class="wh-timeline-time">{{ m.sort_at.strftime('%I:%M %p') }} · {{ m.when.strftime('%b') }} {{ m.when.day }}</span>
+                        <strong>{{ m.direction }}</strong>
+                        <span class="wh-sub">{{ m.context }}</span>
+                        <strong class="{{ 'text-red' if m.qty < 0 else 'text-green' }}">{{ '+' if m.qty > 0 }}{{ "{:,}".format(m.qty) }} packs</strong>
+                    </div>
+                    <span class="wh-timeline-office">{{ m.office_name }}</span>
+                </div>
+                {% else %}
+                <p class="empty-note">Walang stock movement na tumutugma sa filter mo.</p>
+                {% endfor %}
+            </section>
+
+            <section class="panel wh-table-panel">
+                <div class="panel-header"><h3>Movements Table</h3></div>
+                <table class="wh-table">
+                    <thead>
+                        <tr><th>DATE</th><th>TIME</th><th>WAREHOUSE</th><th>ACTIVITY</th><th>QUANTITY</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for m in movements %}
+                        <tr>
+                            <td>{{ m.when.strftime('%b') }} {{ m.when.day }}</td>
+                            <td>{{ m.sort_at.strftime('%I:%M %p') }}</td>
+                            <td>{{ m.office_name }}</td>
+                            <td>
+                                <span class="badge-health badge-{{ 'low' if m.qty < 0 else 'healthy' }}">{{ m.direction }}</span>
+                                <span class="wh-sub">{{ m.context }}</span>
+                            </td>
+                            <td><strong class="{{ 'text-red' if m.qty < 0 else 'text-green' }}">{{ '+' if m.qty > 0 }}{{ "{:,}".format(m.qty) }}</strong></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Walang record.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+
+        </div>
+
+    </main>
+</div>
+{% endblock %}

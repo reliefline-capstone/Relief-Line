@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Stock Transfer - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'warehouse_inventory' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_topbar.html" %}
+        {% include "pswdo/_flash.html" %}
+
+        {% set crumbs = [
+            {"label": "Dashboard", "url": url_for('pswdo.warehouse_inventory')},
+            {"label": "Stock Transfer", "url": none}
+        ] %}
+        {% include "pswdo/_warehouse_subnav.html" %}
+
+        {% if success %}
+        <div class="main-grid">
+            <section class="panel wh-success-panel">
+                <div class="wh-success-icon">{{ icon('check-circle', 36, '#27ae60') }}</div>
+                <h3>Transfer Approved!</h3>
+                <p>{{ "{:,}".format(success.qty) }} packs transferred from {{ success.from_name }} → {{ success.to_name }}</p>
+                <div class="wh-success-actions">
+                    <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="btn-decision btn-partial">New Transfer</a>
+                    <a href="{{ url_for('pswdo.warehouse_stock_movements') }}" class="btn-cancel">View Movements</a>
+                </div>
+            </section>
+        </div>
+        {% else %}
+        <div class="main-grid">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Transfer Stock</h3>
+                    <span class="wh-reco-meta">Manual status update — no live GPS</span>
+                </div>
+
+                <form method="POST" action="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" id="transfer-form" class="wh-form">
+                    <div class="wh-transfer-row">
+                        <div class="wh-transfer-field">
+                            <label for="from_office_id">From *</label>
+                            <select name="from_office_id" id="from_office_id" required>
+                                <option value="">Select source</option>
+                                {% for w in warehouses %}
+                                <option value="{{ w.office.office_id }}" data-qty="{{ w.food_pack_qty }}" data-location="{{ w.office.area_covered }}">{{ w.office.office_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="wh-sub" id="from-hint">Select a warehouse</span>
+                        </div>
+
+                        <div class="wh-transfer-arrow">{{ icon('arrow-right', 18, 'white') }}</div>
+
+                        <div class="wh-transfer-field">
+                            <label for="to_office_id">To *</label>
+                            <select name="to_office_id" id="to_office_id" required>
+                                <option value="">Select destination</option>
+                                {% for w in warehouses %}
+                                <option value="{{ w.office.office_id }}" data-qty="{{ w.food_pack_qty }}" data-location="{{ w.office.area_covered }}">{{ w.office.office_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="wh-sub" id="to-hint">Select a warehouse</span>
+                        </div>
+                    </div>
+
+                    <div class="rd-form-row" style="margin-top:16px;">
+                        <div>
+                            <label for="quantity">Quantity (Food Packs) *</label>
+                            <input type="number" name="quantity" id="quantity" min="1" required>
+                        </div>
+                        <div>
+                            <label for="reason">Reason</label>
+                            <input type="text" name="reason" id="reason" placeholder="Optional">
+                        </div>
+                    </div>
+
+                    <div class="wh-transfer-preview" id="transfer-preview" hidden>
+                        <div>
+                            <span class="wh-transfer-preview-label" id="from-preview-label">WAREHOUSE AFTER TRANSFER</span>
+                            <strong id="from-preview-value">—</strong>
+                            <span class="wh-sub">remaining packs</span>
+                        </div>
+                        <div>
+                            <span class="wh-transfer-preview-label" id="to-preview-label">WAREHOUSE AFTER TRANSFER</span>
+                            <strong id="to-preview-value" class="text-green">—</strong>
+                            <span class="wh-sub">projected packs</span>
+                        </div>
+                    </div>
+
+                    <div class="wh-transfer-actions">
+                        <button type="button" class="btn-outline" disabled>{{ icon('trending-up', 14) }} Calculate Remaining Stock</button>
+                        <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Approve Transfer</button>
+                    </div>
+                </form>
+            </section>
+
+            <aside class="wh-side-col">
+                <section class="panel">
+                    <div class="panel-header"><h3>All Warehouse Stocks</h3></div>
+                    {% for w in warehouses %}
+                    <div class="warehouse-status-row">
+                        <div class="warehouse-status-top">
+                            <div class="warehouse-status-name"><div><strong>{{ w.office.office_name }}</strong></div></div>
+                            <div class="warehouse-status-right">
+                                <span class="badge-health badge-{{ w.health|lower }}">{{ w.pct|int }}%</span>
+                            </div>
+                        </div>
+                        <div class="warehouse-bar"><div class="warehouse-bar-fill fill-{{ w.health|lower }}" style="width: {{ w.pct if w.pct <= 100 else 100 }}%;"></div></div>
+                        <span class="warehouse-status-sub">{{ "{:,}".format(w.food_pack_qty) }} / {{ "{:,}".format(w.capacity) }}</span>
+                    </div>
+                    {% endfor %}
+                </section>
+
+                {% if recommendations %}
+                <section class="wh-reco-panel" style="margin-top:16px;">
+                    <div class="wh-reco-header"><h3 style="font-size:12px; letter-spacing:0.4px; color:#8a94a6;">RECOMMENDATION</h3></div>
+                    <p style="font-size:13px;"><strong>{{ recommendations[0].title }}</strong></p>
+                    <p class="wh-sub">{{ recommendations[0].detail }}</p>
+                </section>
+                {% endif %}
+            </aside>
+
+        </div>
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/warehouse_transfer.js') }}"></script>
+{% endblock %}

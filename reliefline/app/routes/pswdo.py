@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+import re
 
 from flask import Blueprint, render_template, request, Response, redirect, url_for, flash, abort, current_app
 from flask_login import login_required, current_user
@@ -10,19 +11,17 @@ from app.extensions import db
 from app.utils.decorators import role_required
 from app.models.office import Office
 from app.models.barangay import Barangay
-from app.models.warehouse import WarehouseInventory
+from app.models.warehouse import WarehouseInventory, WarehouseStockLog
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.activity_log import ActivityLog, DailyOpsStat
-from app.models.logistics import Vehicle, Driver
+from app.models.logistics import Vehicle, Driver, WarehouseTransfer
 
 pswdo_bp = Blueprint("pswdo", __name__)
 
 TARGET_LGUS = ["Urdaneta City", "Santa Barbara", "Calasiao"]
-LOW_STOCK_THRESHOLD = 0.30
-MAX_CAPACITY_BY_TYPE = {"hygiene_kit": 5000, "kitchen_kit": 5000}
 
 WAREHOUSE_HEALTHY = 0.70
 WAREHOUSE_MODERATE = 0.30
@@ -100,6 +99,171 @@ def _load_warehouses():
     return all_offices, warehouses, total_food_packs
 
 
+def _stock_recommendations(warehouses):
+    """Threshold-based redistribution suggestions, food_pack only. Shared by the
+    dashboard's compact panel and the full Warehouse Inventory page."""
+    recommendations = []
+    healthy_wh = [w for w in warehouses if w["health"] == "Healthy"]
+    low_wh = [w for w in warehouses if w["health"] == "Low"]
+
+    if low_wh and healthy_wh:
+        source = max(healthy_wh, key=lambda w: w["food_pack_qty"])
+        target = min(low_wh, key=lambda w: w["pct"])
+        transfer_qty = min(2000, source["food_pack_qty"])
+        recommendations.append({
+            "type": "info",
+            "title": f"Transfer {transfer_qty:,} packs → {target['office'].area_covered}",
+            "detail": f"From {source['office'].office_name} · High Priority"
+        })
+
+    for w in warehouses:
+        if w["pct"] < 15:
+            recommendations.append({
+                "type": "warning",
+                "title": "Increase food pack procurement",
+                "detail": f"{w['office'].office_name} stock: {w['pct']:.0f}% only"
+            })
+
+    for w in warehouses:
+        if w["office"].office_type == "cswdo" and w["health"] == "Low":
+            recommendations.append({
+                "type": "critical",
+                "title": f"Prioritize {w['office'].area_covered} next dispatch",
+                "detail": "Critical stock level"
+            })
+
+    return recommendations
+
+
+def _lgu_burn_rate(office, active_events):
+    """Packs/day burn rate for a warehouse's own LGU, same 3-day-per-pack basis
+    as the dashboard's province-wide burn rate. Returns None when the warehouse
+    isn't tied to one of the target LGUs or there's no active-event demand data."""
+    if office.area_covered not in TARGET_LGUS or not active_events:
+        return None
+    event_ids = [e.event_id for e in active_events]
+    affected = db.session.query(db.func.sum(BarangayDisasterStatus.affected_families)).join(
+        Barangay, Barangay.barangay_id == BarangayDisasterStatus.barangay_id
+    ).filter(
+        BarangayDisasterStatus.event_id.in_(event_ids),
+        BarangayDisasterStatus.status != "normal",
+        Barangay.city_municipality == office.area_covered
+    ).scalar() or 0
+    return (affected / 3) if affected > 0 else None
+
+
+def _item_status(qty, min_level):
+    """Status relative to an item's own reorder point (min_stock_level) — distinct
+    from _load_warehouses()'s food-pack health, which is relative to max capacity."""
+    if min_level <= 0:
+        return "Healthy" if qty > 0 else "Low"
+    pct = qty / min_level
+    if pct >= 1.0:
+        return "Healthy"
+    elif pct >= 0.5:
+        return "Moderate"
+    return "Low"
+
+
+def _slugify(text):
+    slug = re.sub(r"[^a-z0-9]+", "_", text.strip().lower()).strip("_")
+    return slug or "item"
+
+
+def _full_stock_movements(office_ids, type_filter="all", date_str=""):
+    """Structured movement ledger (releases, completed transfers, manual stock
+    adjustments) for warehouses in office_ids — real data, not free-text logs.
+    type_filter: all | released | transferred_out | transferred_in | received"""
+    movements = []
+    filter_date = None
+    if date_str:
+        try:
+            filter_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            filter_date = None
+
+    if type_filter in ("all", "released"):
+        release_q = DistributionRecord.query.join(AllocationRecord).filter(
+            AllocationRecord.fulfilling_office_id.in_(office_ids)
+        )
+        if filter_date:
+            release_q = release_q.filter(DistributionRecord.distribution_date == filter_date)
+        for d in release_q.order_by(DistributionRecord.distribution_date.desc()).all():
+            office = d.allocation.fulfilling_office
+            movements.append({
+                "office_id": office.office_id if office else None,
+                "office_name": office.office_name if office else "Unknown",
+                "direction": "Released",
+                "qty": -d.quantity_released,
+                "context": d.barangay.city_municipality if d.barangay else "",
+                "when": d.distribution_date,
+                # distribution_date has no time component — submitted_at is the closest
+                # real timestamp on this row, used only to interleave with other sources.
+                "sort_at": d.submitted_at or datetime.combine(d.distribution_date, datetime.min.time()),
+            })
+
+    if type_filter in ("all", "transferred_out", "transferred_in"):
+        transfer_q = WarehouseTransfer.query.filter(
+            WarehouseTransfer.status == "completed",
+            db.or_(
+                WarehouseTransfer.from_office_id.in_(office_ids),
+                WarehouseTransfer.to_office_id.in_(office_ids)
+            )
+        )
+        if filter_date:
+            transfer_q = transfer_q.filter(db.func.date(WarehouseTransfer.completed_at) == filter_date)
+        for t in transfer_q.order_by(WarehouseTransfer.completed_at.desc()).all():
+            completed_date = t.completed_at.date() if t.completed_at else None
+            if type_filter in ("all", "transferred_out") and t.from_office_id in office_ids:
+                movements.append({
+                    "office_id": t.from_office_id,
+                    "office_name": t.from_office.office_name,
+                    "direction": "Transferred Out",
+                    "qty": -t.quantity,
+                    "context": f"To {t.to_office.office_name}",
+                    "when": completed_date,
+                    "sort_at": t.completed_at or datetime.min,
+                })
+            if type_filter in ("all", "transferred_in") and t.to_office_id in office_ids:
+                movements.append({
+                    "office_id": t.to_office_id,
+                    "office_name": t.to_office.office_name,
+                    "direction": "Transferred In",
+                    "qty": t.quantity,
+                    "context": f"From {t.from_office.office_name}",
+                    "when": completed_date,
+                    "sort_at": t.completed_at or datetime.min,
+                })
+
+    if type_filter in ("all", "received"):
+        log_q = WarehouseStockLog.query.filter(
+            WarehouseStockLog.office_id.in_(office_ids),
+            WarehouseStockLog.delta > 0
+        )
+        if filter_date:
+            log_q = log_q.filter(db.func.date(WarehouseStockLog.created_at) == filter_date)
+        for log in log_q.order_by(WarehouseStockLog.created_at.desc()).all():
+            movements.append({
+                "office_id": log.office_id,
+                "office_name": log.office.office_name,
+                "direction": "Received",
+                "qty": log.delta,
+                "context": log.reason or f"{log.item_name} stock update",
+                "when": log.created_at.date(),
+                "sort_at": log.created_at,
+            })
+
+    movements.sort(key=lambda m: m["sort_at"], reverse=True)
+    return movements
+
+
+def _recent_stock_movements(office_ids, limit=6):
+    # Over-fetch on each side before merging — otherwise a same-day tie between
+    # a release and a transfer can get the transfer truncated before the merge
+    # even sees it (list.sort() is stable, so pre-limited insertion order wins).
+    return _full_stock_movements(office_ids)[:limit]
+
+
 @pswdo_bp.route("/dashboard")
 @login_required
 @role_required("pswdo_admin", "system_admin")
@@ -157,46 +321,16 @@ def dashboard():
         WarehouseInventory.office_id.in_([o.office_id for o in all_offices])
     ).all()
 
-    low_stock_items = []
-    for item in all_inventory:
-        if item.item_type == "food_pack":
-            office = next((o for o in all_offices if o.office_id == item.office_id), None)
-            max_capacity = office.capacity_food_pack if office else 20000
-        else:
-            max_capacity = MAX_CAPACITY_BY_TYPE.get(item.item_type, 5000)
-        if item.quantity_available <= (max_capacity * LOW_STOCK_THRESHOLD):
-            low_stock_items.append(item)
+    # Reorder-point based, same as the Inventory Management page's status column —
+    # a flexible item catalog can't use a fixed per-type capacity table (that only
+    # ever covered food_pack/hygiene_kit/kitchen_kit).
+    low_stock_items = [
+        item for item in all_inventory
+        if _item_status(item.quantity_available, item.min_stock_level) == "Low"
+    ]
 
     # System Recommendations — simple threshold-based logic, food_pack only
-    recommendations = []
-    healthy_wh = [w for w in warehouses if w["health"] == "Healthy"]
-    low_wh = [w for w in warehouses if w["health"] == "Low"]
-
-    if low_wh and healthy_wh:
-        source = max(healthy_wh, key=lambda w: w["food_pack_qty"])
-        target = min(low_wh, key=lambda w: w["pct"])
-        transfer_qty = min(2000, source["food_pack_qty"])
-        recommendations.append({
-            "type": "info",
-            "title": f"Transfer {transfer_qty:,} packs → {target['office'].area_covered}",
-            "detail": f"From {source['office'].office_name} · High Priority"
-        })
-
-    for w in warehouses:
-        if w["pct"] < 15:
-            recommendations.append({
-                "type": "warning",
-                "title": "Increase food pack procurement",
-                "detail": f"{w['office'].office_name} stock: {w['pct']:.0f}% only"
-            })
-
-    for w in warehouses:
-        if w["office"].office_type == "cswdo" and w["health"] == "Low":
-            recommendations.append({
-                "type": "critical",
-                "title": f"Prioritize {w['office'].area_covered} next dispatch",
-                "detail": "Critical stock level"
-            })
+    recommendations = _stock_recommendations(warehouses)
 
     # Today's Distribution Progress (3 target LGUs, active event)
     today_allocations = []
@@ -261,6 +395,435 @@ def dashboard():
         recent_activities=recent_activities,
         notifications=notifications,
         now=now
+    )
+
+
+@pswdo_bp.route("/warehouse-inventory")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_inventory():
+    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).all()
+
+    all_offices, warehouses, total_food_packs = _load_warehouses()
+    office_ids = [o.office_id for o in all_offices]
+
+    for w in warehouses:
+        burn = _lgu_burn_rate(w["office"], active_events)
+        w["days_remaining"] = round(w["food_pack_qty"] / burn, 0) if burn else None
+
+    low_stock_count = len([w for w in warehouses if w["health"] == "Low"])
+    recommendations = _stock_recommendations(warehouses)
+
+    today = date.today()
+    transfers_today_count = WarehouseTransfer.query.filter(
+        WarehouseTransfer.status == "completed",
+        db.func.date(WarehouseTransfer.completed_at) == today
+    ).count()
+
+    recent_movements = _recent_stock_movements(office_ids, limit=6)
+
+    return render_template(
+        "pswdo/warehouse_inventory.html",
+        warehouses=warehouses,
+        total_food_packs=total_food_packs,
+        low_stock_count=low_stock_count,
+        recommendations=recommendations,
+        transfers_today_count=transfers_today_count,
+        recent_movements=recent_movements,
+        default_office_id=warehouses[0]["office"].office_id if warehouses else None,
+    )
+
+
+@pswdo_bp.route("/warehouse-inventory/create", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_create():
+    office_name = request.form.get("office_name", "").strip()
+    area_covered = request.form.get("area_covered", "").strip()
+    capacity_food_pack = request.form.get("capacity_food_pack", type=int) or 20000
+
+    if not office_name or not area_covered:
+        flash("Enter a warehouse name and location.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory"))
+
+    if Office.query.filter_by(office_name=office_name).first():
+        flash(f"A warehouse named '{office_name}' already exists.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory"))
+
+    # office_type="pswdo" marks it as province-managed warehouse infrastructure,
+    # so it's picked up by _load_warehouses() regardless of which LGU it's in —
+    # same pattern as the existing "Warehouse A"/"Warehouse C" seed offices.
+    office = Office(
+        office_name=office_name, office_type="pswdo", area_covered=area_covered,
+        capacity_food_pack=capacity_food_pack,
+        full_address=request.form.get("full_address", "").strip() or None,
+        manager_name=request.form.get("manager_name", "").strip() or None,
+        contact_number=request.form.get("contact_number", "").strip() or None,
+        email=request.form.get("email", "").strip() or None,
+    )
+    db.session.add(office)
+    db.session.flush()
+
+    db.session.add(WarehouseInventory(
+        office_id=office.office_id, item_type="food_pack", item_name="Food Packs",
+        unit="packs", quantity_available=0, min_stock_level=0,
+        updated_by=current_user.user_id,
+    ))
+    db.session.commit()
+
+    flash(f"{office_name} added.", "success")
+    return redirect(url_for("pswdo.warehouse_detail", office_id=office.office_id))
+
+
+@pswdo_bp.route("/warehouse-inventory/warehouses")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_list():
+    all_offices, warehouses, total_food_packs = _load_warehouses()
+    return render_template(
+        "pswdo/warehouse_list.html",
+        warehouses=warehouses,
+        total_food_packs=total_food_packs,
+    )
+
+
+@pswdo_bp.route("/warehouse-inventory/<int:office_id>")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_detail(office_id):
+    office = Office.query.get_or_404(office_id)
+    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).all()
+
+    food_pack_item = WarehouseInventory.query.filter_by(office_id=office_id, item_type="food_pack").first()
+    food_pack_qty = food_pack_item.quantity_available if food_pack_item else 0
+    capacity = office.capacity_food_pack or 20000
+    pct = round((food_pack_qty / capacity) * 100, 0) if capacity > 0 else 0
+
+    if pct >= WAREHOUSE_HEALTHY * 100:
+        health = "Healthy"
+    elif pct >= WAREHOUSE_MODERATE * 100:
+        health = "Moderate"
+    else:
+        health = "Low"
+
+    burn = _lgu_burn_rate(office, active_events)
+    days_remaining = round(food_pack_qty / burn, 0) if burn else None
+
+    items = WarehouseInventory.query.filter_by(office_id=office_id).order_by(
+        WarehouseInventory.item_name
+    ).all()
+    inventory_summary = [
+        {"item": item, "status": _item_status(item.quantity_available, item.min_stock_level)}
+        for item in items
+    ]
+
+    movements = _recent_stock_movements([office_id], limit=6)
+
+    return render_template(
+        "pswdo/warehouse_detail.html",
+        office=office, food_pack_qty=food_pack_qty, capacity=capacity, pct=pct, health=health,
+        burn=burn, days_remaining=days_remaining, inventory_summary=inventory_summary,
+        movements=movements,
+    )
+
+
+@pswdo_bp.route("/warehouse-inventory/<int:office_id>/edit", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_edit(office_id):
+    office = Office.query.get_or_404(office_id)
+    office.full_address = request.form.get("full_address", "").strip() or None
+    office.manager_name = request.form.get("manager_name", "").strip() or None
+    office.contact_number = request.form.get("contact_number", "").strip() or None
+    office.email = request.form.get("email", "").strip() or None
+
+    capacity = request.form.get("capacity_food_pack", type=int)
+    if capacity and capacity > 0:
+        office.capacity_food_pack = capacity
+
+    db.session.commit()
+    flash("Warehouse information updated.", "success")
+    return redirect(url_for("pswdo.warehouse_detail", office_id=office_id))
+
+
+@pswdo_bp.route("/warehouse-inventory/<int:office_id>/inventory")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_inventory_items(office_id):
+    office = Office.query.get_or_404(office_id)
+    search_query = request.args.get("q", "").strip()
+
+    items_q = WarehouseInventory.query.filter_by(office_id=office_id)
+    if search_query:
+        items_q = items_q.filter(WarehouseInventory.item_name.ilike(f"%{search_query}%"))
+    items = items_q.order_by(WarehouseInventory.item_name).all()
+
+    rows = [
+        {"item": item, "status": _item_status(item.quantity_available, item.min_stock_level)}
+        for item in items
+    ]
+
+    return render_template(
+        "pswdo/warehouse_items.html",
+        office=office, rows=rows, search_query=search_query,
+    )
+
+
+@pswdo_bp.route("/warehouse-inventory/<int:office_id>/inventory/add", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_inventory_add(office_id):
+    office = Office.query.get_or_404(office_id)
+    item_name = request.form.get("item_name", "").strip()
+    unit = request.form.get("unit", "").strip() or "units"
+    quantity = request.form.get("quantity", type=int)
+    min_stock_level = request.form.get("min_stock_level", type=int) or 0
+
+    if not item_name or quantity is None or quantity < 0:
+        flash("Enter a valid item name and quantity.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+
+    item_type = _slugify(item_name)
+    if WarehouseInventory.query.filter_by(office_id=office_id, item_type=item_type).first():
+        flash(f"{item_name} already exists for this warehouse — use Update instead.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+
+    item = WarehouseInventory(
+        office_id=office_id, item_type=item_type, item_name=item_name, unit=unit,
+        quantity_available=quantity, min_stock_level=min_stock_level,
+        updated_by=current_user.user_id,
+    )
+    db.session.add(item)
+
+    if quantity > 0:
+        db.session.add(WarehouseStockLog(
+            office_id=office_id, item_type=item_type, item_name=item_name,
+            delta=quantity, reason="Initial stock", updated_by=current_user.user_id,
+        ))
+
+    db.session.commit()
+    flash(f"Added {item_name} to {office.office_name}.", "success")
+    return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+
+
+@pswdo_bp.route("/warehouse-inventory/inventory/<int:inventory_id>/update", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_inventory_update(inventory_id):
+    item = WarehouseInventory.query.get_or_404(inventory_id)
+    new_quantity = request.form.get("quantity", type=int)
+    unit = request.form.get("unit", "").strip()
+    reason = request.form.get("reason", "").strip() or None
+
+    if new_quantity is None or new_quantity < 0:
+        flash("Enter a valid quantity.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
+
+    delta = new_quantity - item.quantity_available
+    item.quantity_available = new_quantity
+    if unit:
+        item.unit = unit
+    item.updated_by = current_user.user_id
+
+    if delta != 0:
+        db.session.add(WarehouseStockLog(
+            office_id=item.office_id, item_type=item.item_type, item_name=item.item_name,
+            delta=delta, reason=reason, updated_by=current_user.user_id,
+        ))
+
+    db.session.commit()
+    flash(f"Updated {item.item_name} stock.", "success")
+    return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
+
+
+@pswdo_bp.route("/warehouse-inventory/inventory/<int:inventory_id>/delete", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_inventory_delete(inventory_id):
+    item = WarehouseInventory.query.get_or_404(inventory_id)
+    office_id = item.office_id
+
+    if item.item_type == "food_pack":
+        flash("Food Packs can't be removed — it's required for allocation and prediction.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+
+    db.session.delete(item)
+    db.session.commit()
+    flash(f"{item.item_name} removed.", "success")
+    return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+
+
+@pswdo_bp.route("/warehouse-inventory/<int:office_id>/inventory/export")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_inventory_export(office_id):
+    office = Office.query.get_or_404(office_id)
+    items = WarehouseInventory.query.filter_by(office_id=office_id).order_by(
+        WarehouseInventory.item_name
+    ).all()
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Item", "Current Qty", "Unit", "Min Level", "Stock vs Min", "Status"])
+    for item in items:
+        pct = round((item.quantity_available / item.min_stock_level) * 100) if item.min_stock_level > 0 else None
+        writer.writerow([
+            item.item_name, item.quantity_available, item.unit, item.min_stock_level,
+            f"{pct}%" if pct is not None else "—",
+            _item_status(item.quantity_available, item.min_stock_level),
+        ])
+
+    return Response(
+        buffer.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={office.office_name.replace(' ', '_')}_inventory.csv"},
+    )
+
+
+@pswdo_bp.route("/warehouse-inventory/transfer", methods=["GET", "POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_stock_transfer_page():
+    all_offices, warehouses, total_food_packs = _load_warehouses()
+
+    if request.method == "POST":
+        from_office_id = request.form.get("from_office_id", type=int)
+        to_office_id = request.form.get("to_office_id", type=int)
+        quantity = request.form.get("quantity", type=int)
+        reason = request.form.get("reason", "").strip() or None
+
+        if not from_office_id or not to_office_id or from_office_id == to_office_id or not quantity or quantity <= 0:
+            flash("Select two different warehouses and a valid quantity.", "error")
+            return redirect(url_for("pswdo.warehouse_stock_transfer_page"))
+
+        source_inventory = WarehouseInventory.query.filter_by(
+            office_id=from_office_id, item_type="food_pack"
+        ).first()
+        if not source_inventory or source_inventory.quantity_available < quantity:
+            flash("Source warehouse does not have enough food pack stock for this transfer.", "error")
+            return redirect(url_for("pswdo.warehouse_stock_transfer_page"))
+
+        dest_inventory = WarehouseInventory.query.filter_by(
+            office_id=to_office_id, item_type="food_pack"
+        ).first()
+        if not dest_inventory:
+            dest_inventory = WarehouseInventory(
+                office_id=to_office_id, item_type="food_pack",
+                item_name="Food Packs", unit="packs", quantity_available=0,
+            )
+            db.session.add(dest_inventory)
+
+        source_inventory.quantity_available -= quantity
+        dest_inventory.quantity_available += quantity
+
+        from_office = Office.query.get(from_office_id)
+        to_office = Office.query.get(to_office_id)
+
+        db.session.add(WarehouseTransfer(
+            from_office_id=from_office_id, to_office_id=to_office_id,
+            item_type="food_pack", quantity=quantity,
+            status="completed", requested_by=current_user.user_id,
+            completed_at=datetime.utcnow(),
+        ))
+        db.session.add(ActivityLog(
+            actor_id=current_user.user_id, action_type="warehouse_transfer_completed",
+            description=(
+                f"Transferred {quantity:,} food packs from {from_office.office_name} to {to_office.office_name}"
+                + (f" — {reason}" if reason else "")
+            ),
+            office_id=to_office_id,
+        ))
+        db.session.commit()
+
+        return redirect(url_for(
+            "pswdo.warehouse_stock_transfer_page",
+            success=1, qty=quantity, from_name=from_office.office_name, to_name=to_office.office_name,
+        ))
+
+    recommendations = _stock_recommendations(warehouses)
+    success_ctx = None
+    if request.args.get("success"):
+        success_ctx = {
+            "qty": request.args.get("qty", type=int),
+            "from_name": request.args.get("from_name"),
+            "to_name": request.args.get("to_name"),
+        }
+
+    return render_template(
+        "pswdo/warehouse_transfer.html",
+        warehouses=warehouses,
+        recommendations=recommendations,
+        success=success_ctx,
+        default_office_id=warehouses[0]["office"].office_id if warehouses else None,
+    )
+
+
+@pswdo_bp.route("/warehouse-inventory/movements")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_stock_movements():
+    all_offices, warehouses, total_food_packs = _load_warehouses()
+    office_ids = [o.office_id for o in all_offices]
+
+    office_filter = request.args.get("office_id", type=int)
+    type_filter = request.args.get("type", "all")
+    date_filter = request.args.get("date", "")
+
+    scoped_ids = [office_filter] if office_filter else office_ids
+    movements = _full_stock_movements(scoped_ids, type_filter, date_filter)
+
+    return render_template(
+        "pswdo/warehouse_movements.html",
+        warehouses=warehouses,
+        movements=movements,
+        office_filter=office_filter,
+        type_filter=type_filter,
+        date_filter=date_filter,
+        default_office_id=warehouses[0]["office"].office_id if warehouses else None,
+    )
+
+
+@pswdo_bp.route("/warehouse-inventory/movements/export")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_stock_movements_export():
+    all_offices, warehouses, total_food_packs = _load_warehouses()
+    office_ids = [o.office_id for o in all_offices]
+
+    office_filter = request.args.get("office_id", type=int)
+    type_filter = request.args.get("type", "all")
+    date_filter = request.args.get("date", "")
+    scoped_ids = [office_filter] if office_filter else office_ids
+    movements = _full_stock_movements(scoped_ids, type_filter, date_filter)
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Date", "Warehouse", "Activity", "Context", "Quantity"])
+    for m in movements:
+        writer.writerow([
+            m["when"].isoformat() if m["when"] else "",
+            m["office_name"], m["direction"], m["context"], m["qty"],
+        ])
+
+    return Response(
+        buffer.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=stock_movements.csv"},
+    )
+
+
+@pswdo_bp.route("/warehouse-inventory/reports")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_reports():
+    all_offices, warehouses, total_food_packs = _load_warehouses()
+    return render_template(
+        "pswdo/warehouse_reports.html",
+        default_office_id=warehouses[0]["office"].office_id if warehouses else None,
     )
 
 

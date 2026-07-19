@@ -13,13 +13,14 @@ def create_app():
     from app.models.user import User
     from app.models.office import Office
     from app.models.barangay import Barangay
-    from app.models.warehouse import WarehouseInventory
+    from app.models.warehouse import WarehouseInventory, WarehouseStockLog
     from app.models.allocation import AllocationRecord, PrepositionRecord
     from app.models.validation import DistributionRecord
     from app.models.prediction import PredictionLog, ModelMetrics
     from app.models.disaster_event import DisasterEvent
     from app.models.barangay_status import BarangayDisasterStatus
     from app.models.activity_log import ActivityLog, DailyOpsStat
+    from app.models.logistics import Vehicle, Driver, WarehouseTransfer
 
     @login_manager.user_loader
     def load_user(user_id):
