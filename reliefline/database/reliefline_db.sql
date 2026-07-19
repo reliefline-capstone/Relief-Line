@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 17, 2026 at 04:34 AM
+-- Generation Time: Jul 18, 2026 at 06:47 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -37,6 +37,21 @@ CREATE TABLE `activity_logs` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `activity_logs`
+--
+
+INSERT INTO `activity_logs` (`log_id`, `actor_id`, `action_type`, `description`, `office_id`, `barangay_id`, `created_at`) VALUES
+(3, 2, 'allocation_approved', 'Approved 2,300 food packs for Urdaneta City from Warehouse A', 5, 1, '2026-07-16 21:35:28'),
+(4, 2, 'distribution_delivered', 'D-2026-005 delivered to Urdaneta City, received by Aivan Flores', 5, 1, '2026-07-16 21:35:28'),
+(5, 2, 'allocation_approved', 'Approved 900 food packs for Santa Barbara from Warehouse A', 5, 15, '2026-07-16 21:35:28'),
+(6, 2, 'distribution_status', 'Distribution marked In Transit for Bactad East, Urdaneta City', 5, 2, '2026-07-16 21:35:28'),
+(7, 2, 'allocation_rejected', 'Rejected relief request from Urdaneta City: adequate stock on hand', 5, 5, '2026-07-16 21:35:28'),
+(8, 2, 'distribution_status', 'D-2026-009 marked Loaded', 5, 30, '2026-07-16 21:45:02'),
+(9, 2, 'distribution_status', 'D-2026-009 marked Dispatched', 5, 30, '2026-07-16 21:45:02'),
+(10, 2, 'distribution_status', 'D-2026-009 marked In Transit', 5, 30, '2026-07-16 21:45:02'),
+(11, 2, 'distribution_delivered', 'D-2026-009 delivered to Calasiao, received by Test Recipient', 5, 30, '2026-07-16 21:45:02');
+
 -- --------------------------------------------------------
 
 --
@@ -55,8 +70,30 @@ CREATE TABLE `allocation_records` (
   `event_id` int(11) DEFAULT NULL,
   `status` enum('pending','approved','released') NOT NULL DEFAULT 'pending',
   `created_by` int(11) DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  `rejection_reason` text DEFAULT NULL,
+  `fulfilling_office_id` int(11) DEFAULT NULL,
+  `expected_delivery_date` date DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `decided_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `allocation_records`
+--
+
+INSERT INTO `allocation_records` (`allocation_id`, `barangay_id`, `office_id`, `predicted_quantity`, `allocated_quantity`, `historical_allocation`, `allocation_date`, `disaster_event`, `event_id`, `status`, `created_by`, `created_at`, `rejection_reason`, `fulfilling_office_id`, `expected_delivery_date`, `remarks`, `decided_by`) VALUES
+(8, 1, 2, 2300, 2300, 0, '2026-07-16', NULL, 1, 'approved', 2, '2026-07-17 13:35:28', NULL, 5, '2026-07-19', NULL, 2),
+(9, 2, 2, 1500, 1500, 0, '2026-07-16', NULL, 1, 'approved', 2, '2026-07-17 13:35:28', NULL, 5, '2026-07-19', NULL, 2),
+(10, 15, 3, 900, 900, 0, '2026-07-16', NULL, 1, 'approved', 2, '2026-07-17 13:35:28', NULL, 5, '2026-07-19', NULL, 2),
+(11, 18, 3, 600, 600, 0, '2026-07-16', NULL, 1, 'approved', 2, '2026-07-17 13:35:28', NULL, 5, '2026-07-19', NULL, 2),
+(12, 30, 4, 1800, 1800, 0, '2026-07-16', NULL, 1, 'approved', 2, '2026-07-17 13:35:28', NULL, 5, '2026-07-19', NULL, 2),
+(13, 26, 4, 1200, 1200, 0, '2026-07-16', NULL, 1, 'approved', 2, '2026-07-17 13:35:28', NULL, 5, '2026-07-19', NULL, 2),
+(14, 28, 4, 1100, 1100, 0, '2026-07-16', NULL, 1, 'approved', 2, '2026-07-17 13:35:28', NULL, 5, '2026-07-19', NULL, 2),
+(15, 3, 2, 1000, 0, 0, '2026-07-16', NULL, 1, 'pending', NULL, '2026-07-17 13:35:28', NULL, NULL, NULL, NULL, NULL),
+(16, 12, 3, 700, 0, 0, '2026-07-16', NULL, 1, 'pending', NULL, '2026-07-17 13:35:28', NULL, NULL, NULL, NULL, NULL),
+(17, 23, 4, 500, 300, 0, '2026-07-16', NULL, 1, 'approved', 2, '2026-07-17 13:35:28', NULL, 5, '2026-07-18', NULL, 2),
+(18, 5, 2, 800, 0, 0, '2026-07-16', NULL, 1, 'pending', NULL, '2026-07-17 13:35:28', 'Municipal warehouse already has adequate stock for this barangay; redirected to Bayaoas instead.', NULL, NULL, NULL, 2);
 
 -- --------------------------------------------------------
 
@@ -127,6 +164,23 @@ CREATE TABLE `barangay_disaster_status` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `barangay_disaster_status`
+--
+
+INSERT INTO `barangay_disaster_status` (`status_id`, `event_id`, `barangay_id`, `status`, `affected_families`, `updated_by`, `updated_at`) VALUES
+(1, 1, 1, 'high_priority', 1200, 2, '2026-07-17 05:35:28'),
+(2, 1, 2, 'needs_assistance', 800, 2, '2026-07-17 05:35:28'),
+(3, 1, 3, 'monitoring', 400, 2, '2026-07-17 05:35:28'),
+(4, 1, 5, 'needs_assistance', 600, 2, '2026-07-17 05:35:28'),
+(5, 1, 15, 'high_priority', 900, 2, '2026-07-17 05:35:28'),
+(6, 1, 18, 'needs_assistance', 600, 2, '2026-07-17 05:35:28'),
+(7, 1, 12, 'monitoring', 300, 2, '2026-07-17 05:35:28'),
+(8, 1, 30, 'high_priority', 700, 2, '2026-07-17 05:35:28'),
+(9, 1, 26, 'needs_assistance', 500, 2, '2026-07-17 05:35:28'),
+(10, 1, 28, 'monitoring', 350, 2, '2026-07-17 05:35:28'),
+(11, 1, 23, 'monitoring', 250, 2, '2026-07-17 05:35:28');
+
 -- --------------------------------------------------------
 
 --
@@ -157,6 +211,15 @@ CREATE TABLE `daily_ops_stats` (
   `vehicles_active` int(11) DEFAULT 0,
   `updated_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `daily_ops_stats`
+--
+
+INSERT INTO `daily_ops_stats` (`stat_id`, `office_id`, `stat_date`, `vehicles_active`, `updated_by`) VALUES
+(1, 2, '2026-07-17', 1, 2),
+(2, 3, '2026-07-17', 1, 2),
+(3, 4, '2026-07-17', 1, 2);
 
 -- --------------------------------------------------------
 
@@ -195,12 +258,55 @@ CREATE TABLE `distribution_records` (
   `allocation_id` int(11) NOT NULL,
   `quantity_released` int(11) NOT NULL DEFAULT 0,
   `distribution_date` date NOT NULL,
-  `validation_type` enum('photo','signature') NOT NULL,
-  `validation_file` varchar(255) DEFAULT NULL,
+  `validation_type` enum('photo','signature') DEFAULT NULL,
+  `validation_file` varchar(500) DEFAULT NULL,
   `submitted_by` int(11) DEFAULT NULL,
   `status` enum('pending','confirmed') NOT NULL DEFAULT 'pending',
-  `submitted_at` datetime DEFAULT current_timestamp()
+  `submitted_at` datetime DEFAULT current_timestamp(),
+  `vehicle_id` int(11) DEFAULT NULL,
+  `driver_id` int(11) DEFAULT NULL,
+  `dispatch_status` enum('preparing','loaded','dispatched','in_transit','delivered','delayed') DEFAULT 'preparing',
+  `departure_time` time DEFAULT NULL,
+  `expected_arrival_time` time DEFAULT NULL,
+  `received_by` varchar(150) DEFAULT NULL,
+  `time_received` time DEFAULT NULL,
+  `condition` enum('complete','partial','damaged') DEFAULT NULL,
+  `travel_time` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `distribution_records`
+--
+
+INSERT INTO `distribution_records` (`distribution_id`, `barangay_id`, `allocation_id`, `quantity_released`, `distribution_date`, `validation_type`, `validation_file`, `submitted_by`, `status`, `submitted_at`, `vehicle_id`, `driver_id`, `dispatch_status`, `departure_time`, `expected_arrival_time`, `received_by`, `time_received`, `condition`, `travel_time`) VALUES
+(5, 1, 8, 2300, '2026-07-17', NULL, NULL, 2, 'confirmed', '2026-07-17 13:35:28', 4, 4, 'delivered', '08:00:00', '10:30:00', 'Aivan Flores', NULL, 'complete', '2 hrs 30 mins'),
+(6, 2, 9, 1500, '2026-07-17', NULL, NULL, 2, 'pending', '2026-07-17 13:35:28', 5, 5, 'in_transit', '07:30:00', '09:45:00', NULL, NULL, NULL, NULL),
+(7, 15, 10, 900, '2026-07-17', NULL, NULL, 2, 'pending', '2026-07-17 13:35:28', 6, 6, 'dispatched', '09:00:00', '11:15:00', NULL, NULL, NULL, NULL),
+(8, 18, 11, 600, '2026-07-17', NULL, NULL, 2, 'pending', '2026-07-17 13:35:28', 5, 5, 'loaded', NULL, NULL, NULL, NULL, NULL, NULL),
+(9, 30, 12, 1800, '2026-07-17', 'photo', 'delivery_receipt_test.pdf', 2, 'confirmed', '2026-07-17 13:35:28', 5, 5, 'delivered', '13:45:02', NULL, 'Test Recipient', '15:15:00', 'complete', '1 hr 45 mins'),
+(10, 26, 13, 1200, '2026-07-17', NULL, NULL, 2, 'pending', '2026-07-17 13:35:28', NULL, NULL, 'delayed', NULL, NULL, NULL, NULL, NULL, NULL),
+(11, 28, 14, 1100, '2026-07-17', NULL, NULL, 2, 'confirmed', '2026-07-17 13:35:28', 4, 4, 'delivered', '06:45:00', '09:00:00', 'Maria Santos', NULL, 'complete', '2 hrs 15 mins');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `drivers`
+--
+
+CREATE TABLE `drivers` (
+  `driver_id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `office_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `drivers`
+--
+
+INSERT INTO `drivers` (`driver_id`, `name`, `office_id`) VALUES
+(4, 'Juan Dela Cruz', 5),
+(5, 'Pedro Santos', 5),
+(6, 'Mark Reyes', 5);
 
 -- --------------------------------------------------------
 
@@ -1732,6 +1838,29 @@ INSERT INTO `users` (`user_id`, `name`, `email`, `password`, `role`, `office_id`
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `vehicles`
+--
+
+CREATE TABLE `vehicles` (
+  `vehicle_id` int(11) NOT NULL,
+  `vehicle_name` varchar(100) NOT NULL,
+  `office_id` int(11) DEFAULT NULL,
+  `plate_number` varchar(20) DEFAULT NULL,
+  `capacity_packs` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `vehicles`
+--
+
+INSERT INTO `vehicles` (`vehicle_id`, `vehicle_name`, `office_id`, `plate_number`, `capacity_packs`) VALUES
+(4, 'Truck 001', 5, 'ABC-1234', 2000),
+(5, 'Truck 002', 5, 'DEF-5678', 1500),
+(6, 'Truck 003', 5, 'GHI-9012', 1800);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `warehouse_inventory`
 --
 
@@ -1750,7 +1879,7 @@ CREATE TABLE `warehouse_inventory` (
 --
 
 INSERT INTO `warehouse_inventory` (`inventory_id`, `office_id`, `item_type`, `quantity_available`, `min_stock_level`, `last_updated`, `updated_by`) VALUES
-(1, 1, 'food_pack', 5000, 0, '2026-06-25 10:39:04', 2),
+(1, 1, 'food_pack', 5000, 0, '2026-07-17 12:23:28', 2),
 (2, 1, 'hygiene_kit', 1200, 0, '2026-06-25 10:39:04', 2),
 (3, 1, 'kitchen_kit', 800, 0, '2026-06-25 10:39:04', 2),
 (4, 2, 'food_pack', 1500, 0, '2026-06-25 10:39:04', 3),
@@ -1761,7 +1890,8 @@ INSERT INTO `warehouse_inventory` (`inventory_id`, `office_id`, `item_type`, `qu
 (9, 3, 'kitchen_kit', 150, 0, '2026-06-25 10:39:04', 4),
 (10, 4, 'food_pack', 1800, 0, '2026-06-25 10:39:04', 5),
 (11, 4, 'hygiene_kit', 500, 0, '2026-06-25 10:39:04', 5),
-(12, 4, 'kitchen_kit', 250, 0, '2026-06-25 10:39:04', 5);
+(12, 4, 'kitchen_kit', 250, 0, '2026-06-25 10:39:04', 5),
+(13, 5, 'food_pack', 12600, 3000, '2026-07-17 13:35:28', NULL);
 
 --
 -- Indexes for dumped tables
@@ -1784,7 +1914,9 @@ ALTER TABLE `allocation_records`
   ADD KEY `barangay_id` (`barangay_id`),
   ADD KEY `office_id` (`office_id`),
   ADD KEY `created_by` (`created_by`),
-  ADD KEY `fk_alloc_event` (`event_id`);
+  ADD KEY `fk_alloc_event` (`event_id`),
+  ADD KEY `fk_alloc_fulfilling_office` (`fulfilling_office_id`),
+  ADD KEY `fk_alloc_decided_by` (`decided_by`);
 
 --
 -- Indexes for table `barangays`
@@ -1830,7 +1962,16 @@ ALTER TABLE `distribution_records`
   ADD PRIMARY KEY (`distribution_id`),
   ADD KEY `barangay_id` (`barangay_id`),
   ADD KEY `allocation_id` (`allocation_id`),
-  ADD KEY `submitted_by` (`submitted_by`);
+  ADD KEY `submitted_by` (`submitted_by`),
+  ADD KEY `fk_dist_vehicle` (`vehicle_id`),
+  ADD KEY `fk_dist_driver` (`driver_id`);
+
+--
+-- Indexes for table `drivers`
+--
+ALTER TABLE `drivers`
+  ADD PRIMARY KEY (`driver_id`),
+  ADD KEY `office_id` (`office_id`);
 
 --
 -- Indexes for table `model_metrics`
@@ -1871,6 +2012,13 @@ ALTER TABLE `users`
   ADD KEY `users_barangay_fk` (`barangay_id`);
 
 --
+-- Indexes for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  ADD PRIMARY KEY (`vehicle_id`),
+  ADD KEY `office_id` (`office_id`);
+
+--
 -- Indexes for table `warehouse_inventory`
 --
 ALTER TABLE `warehouse_inventory`
@@ -1886,13 +2034,13 @@ ALTER TABLE `warehouse_inventory`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `allocation_records`
 --
 ALTER TABLE `allocation_records`
-  MODIFY `allocation_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `allocation_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `barangays`
@@ -1904,7 +2052,7 @@ ALTER TABLE `barangays`
 -- AUTO_INCREMENT for table `barangay_disaster_status`
 --
 ALTER TABLE `barangay_disaster_status`
-  MODIFY `status_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `status_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `city_demand_summary`
@@ -1916,7 +2064,7 @@ ALTER TABLE `city_demand_summary`
 -- AUTO_INCREMENT for table `daily_ops_stats`
 --
 ALTER TABLE `daily_ops_stats`
-  MODIFY `stat_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `stat_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `disaster_events`
@@ -1928,7 +2076,13 @@ ALTER TABLE `disaster_events`
 -- AUTO_INCREMENT for table `distribution_records`
 --
 ALTER TABLE `distribution_records`
-  MODIFY `distribution_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `distribution_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `drivers`
+--
+ALTER TABLE `drivers`
+  MODIFY `driver_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `model_metrics`
@@ -1961,10 +2115,16 @@ ALTER TABLE `users`
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  MODIFY `vehicle_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT for table `warehouse_inventory`
 --
 ALTER TABLE `warehouse_inventory`
-  MODIFY `inventory_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `inventory_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Constraints for dumped tables
@@ -1985,7 +2145,9 @@ ALTER TABLE `allocation_records`
   ADD CONSTRAINT `allocation_records_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `allocation_records_ibfk_2` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `allocation_records_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_alloc_event` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`);
+  ADD CONSTRAINT `fk_alloc_decided_by` FOREIGN KEY (`decided_by`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `fk_alloc_event` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
+  ADD CONSTRAINT `fk_alloc_fulfilling_office` FOREIGN KEY (`fulfilling_office_id`) REFERENCES `offices` (`office_id`);
 
 --
 -- Constraints for table `barangay_disaster_status`
@@ -2014,7 +2176,15 @@ ALTER TABLE `disaster_events`
 ALTER TABLE `distribution_records`
   ADD CONSTRAINT `distribution_records_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `distribution_records_ibfk_2` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `distribution_records_ibfk_3` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `distribution_records_ibfk_3` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_dist_driver` FOREIGN KEY (`driver_id`) REFERENCES `drivers` (`driver_id`),
+  ADD CONSTRAINT `fk_dist_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`vehicle_id`);
+
+--
+-- Constraints for table `drivers`
+--
+ALTER TABLE `drivers`
+  ADD CONSTRAINT `drivers_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`);
 
 --
 -- Constraints for table `prediction_logs`
@@ -2037,6 +2207,12 @@ ALTER TABLE `preposition_records`
 ALTER TABLE `users`
   ADD CONSTRAINT `users_barangay_fk` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE SET NULL,
   ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  ADD CONSTRAINT `vehicles_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`);
 
 --
 -- Constraints for table `warehouse_inventory`
