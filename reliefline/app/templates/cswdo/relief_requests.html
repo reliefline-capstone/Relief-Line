@@ -1,0 +1,500 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, prediction_disclaimer with context %}
+
+{% block title %}Relief Requests - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/damage_assessment.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cswdo_relief_requests.css') }}">
+{% endblock %}
+
+{% macro rr_stepper(steps) %}
+<div class="rr-stepper">
+    {% for step in steps %}
+    <div class="rr-step {{ step.state }}">
+        <div class="rr-step-track">
+            <div class="rr-step-dot">
+                {% if step.state == 'done' %}{{ icon('check-circle', 12, 'white') }}
+                {% elif step.state == 'rejected' %}{{ icon('x', 12, 'white') }}
+                {% endif %}
+            </div>
+            {% if not loop.last %}<div class="rr-step-line"></div>{% endif %}
+        </div>
+        <div class="rr-step-body">
+            <strong>{{ step.label }}{% if step.state == 'rejected' %} <span class="rr-reject-tag">(Rejected)</span>{% endif %}</strong>
+            {% if step.time %}<span>{{ step.time.strftime('%B %d, %I:%M %p') }}</span>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro request_modal(view) %}
+{% set batch = view.batch %}
+<div class="da-modal-overlay" id="request-modal-{{ batch.batch_id }}" hidden>
+    <div class="da-modal" style="max-width: 680px;">
+        <div class="da-modal-header">
+            <div class="da-modal-title">
+                <span class="da-modal-icon status-{{ 'verified' if view.status in ('approved','partially_approved') else ('returned' if view.status == 'rejected' else 'pending') }}">{{ icon('file-text', 16) }}</span>
+                <div>
+                    <strong>{{ batch.ref }} <span class="badge-status badge-status-{{ view.status }}">{{ view.status_label }}</span> <span class="badge-priority badge-priority-{{ batch.priority }}">{{ view.priority_label }}</span></strong>
+                    <span class="da-modal-sub">{{ batch.event.event_name if batch.event else '—' }} · {{ lgu }} · {{ (batch.submitted_at or batch.created_at).strftime('%B %d, %Y') }}</span>
+                </div>
+            </div>
+            <button type="button" class="da-modal-close" onclick="closeRequestModal({{ batch.batch_id }})">{{ icon('x', 18) }}</button>
+        </div>
+
+        <div class="da-modal-tabs">
+            <button type="button" class="da-modal-tab active" data-pane="details" onclick="switchRequestModalTab({{ batch.batch_id }}, 'details')">{{ icon('file-text', 14) }} Details</button>
+            <button type="button" class="da-modal-tab" data-pane="resources" onclick="switchRequestModalTab({{ batch.batch_id }}, 'resources')">{{ icon('package', 14) }} Resources</button>
+            <button type="button" class="da-modal-tab" data-pane="timeline" onclick="switchRequestModalTab({{ batch.batch_id }}, 'timeline')">{{ icon('map-pin', 14) }} Timeline</button>
+        </div>
+
+        <div class="da-modal-body">
+            <div class="da-modal-pane active" data-pane="details">
+                <span class="da-evidence-label">REQUEST INFORMATION</span>
+                <div class="da-data-grid">
+                    <div class="da-data-field"><span>Request ID</span><strong>{{ batch.ref }}</strong></div>
+                    <div class="da-data-field"><span>Municipality</span><strong>{{ lgu }}</strong></div>
+                    <div class="da-data-field"><span>Submitted By</span><strong>{{ batch.created_by_user.name if batch.created_by_user else '—' }}</strong></div>
+                    <div class="da-data-field"><span>Submitted At</span><strong>{{ (batch.submitted_at or batch.created_at).strftime('%B %d, %Y, %I:%M %p') }}</strong></div>
+                    <div class="da-data-field"><span>Typhoon Event</span><strong>{{ batch.event.event_name if batch.event else '—' }}</strong></div>
+                    <div class="da-data-field"><span>Priority</span><strong><span class="badge-priority badge-priority-{{ batch.priority }}">{{ view.priority_label }}</span></strong></div>
+                    <div class="da-data-field"><span>Verified Barangays</span><strong>{{ view.covered_barangays|length }}</strong></div>
+                    <div class="da-data-field"><span>Affected Families</span><strong>{{ "{:,}".format(view.affected_families) }}</strong></div>
+                    <div class="da-data-field"><span>Affected Individuals</span><strong>{{ "{:,}".format(view.affected_individuals) }}</strong></div>
+                    <div class="da-data-field"><span>Warehouse</span><strong>{{ view.warehouse_label }}</strong></div>
+                    <div class="da-data-field"><span>Dispatch Date</span><strong>{{ view.dispatch_date.strftime('%B %d, %Y') if view.dispatch_date else '—' }}</strong></div>
+                    <div class="da-data-field"><span>ETA</span><strong>{{ view.eta_label or '—' }}</strong></div>
+                </div>
+                <span class="da-evidence-label">REASON FOR REQUEST</span>
+                <p class="da-remarks-box">{{ batch.reason or '—' }}</p>
+                {% if batch.remarks %}
+                <span class="da-evidence-label">ADDITIONAL REMARKS</span>
+                <p class="da-remarks-box">{{ batch.remarks }}</p>
+                {% endif %}
+                {% if view.rejection_reasons %}
+                <span class="da-evidence-label">REJECTION NOTE</span>
+                <div class="da-verification-record status-returned">{{ icon('x-circle', 14) }}<div><span>{{ view.rejection_reasons[0] }}</span></div></div>
+                {% endif %}
+                <span class="da-evidence-label" style="margin-top:16px; display:block;">COVERED BARANGAYS</span>
+                <div class="da-evidence-grid" style="gap:8px;">
+                    {% for b in view.covered_barangays %}
+                    <span class="badge-priority tier-low" style="border-radius:20px;">{{ b.barangay_name }}</span>
+                    {% else %}
+                    <p class="empty-note">No barangays linked yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="da-modal-pane" data-pane="resources">
+                <span class="da-evidence-label">REQUESTED FOOD PACKS BY BARANGAY</span>
+                <table class="da-table" style="margin-bottom:16px;">
+                    <thead><tr><th>Barangay</th><th>Predicted Quantity</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for c in view.children %}
+                        <tr>
+                            <td class="da-barangay-name">{{ c.barangay.barangay_name }}</td>
+                            <td>{{ "{:,}".format(c.predicted_quantity) }} packs</td>
+                            <td><span class="badge-status badge-status-{{ c.display_status }}">{{ c.display_status|replace('_',' ')|title }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3"><p class="empty-note" style="padding:10px 0;">No barangays linked yet.</p></td></tr>
+                        {% endfor %}
+                        {% if view.children %}
+                        <tr><td><strong>TOTAL</strong></td><td><strong>{{ "{:,}".format(batch.requested_food_packs) }} packs</strong></td><td></td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+                <span class="da-evidence-label">DAMAGE ASSESSMENT BASIS</span>
+                <div class="da-data-grid">
+                    <div class="da-data-field" style="text-align:center;"><span>Verified Barangays</span><strong style="justify-content:center;">{{ view.covered_barangays|length }}</strong></div>
+                    <div class="da-data-field" style="text-align:center;"><span>Affected Families</span><strong style="justify-content:center;">{{ "{:,}".format(view.affected_families) }}</strong></div>
+                </div>
+                {{ prediction_disclaimer() }}
+            </div>
+
+            <div class="da-modal-pane" data-pane="timeline">
+                {{ rr_stepper(view.stepper) }}
+            </div>
+        </div>
+
+        <div class="da-modal-footer">
+            <span>Last updated: {{ (batch.submitted_at or batch.created_at).strftime('%I:%M %p') }}</span>
+            <button type="button" class="btn-outline" onclick="closeRequestModal({{ batch.batch_id }})">Close</button>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro action_cell(view) %}
+<div class="da-table-actions">
+    <button type="button" class="btn-view-sm" onclick="openRequestModal({{ view.batch.batch_id }})">{{ icon('eye', 13) }} View</button>
+    {% if view.status == 'draft' %}
+    <a href="{{ url_for('cswdo.relief_requests', tab='create', draft_id=view.batch.batch_id) }}" class="btn-view-sm">{{ icon('file-text', 13) }} Edit</a>
+    {% else %}
+    <a href="{{ url_for('cswdo.relief_requests', tab='tracking', batch_id=view.batch.batch_id) }}" class="btn-review-sm">{{ icon('map-pin', 13) }} Track</a>
+    {% endif %}
+</div>
+{{ request_modal(view) }}
+{% endmacro %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'relief_requests' %}
+    {% include "cswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "cswdo/_flash.html" %}
+
+        <div class="page-header">
+            <div>
+                <h2>Relief Requests</h2>
+                <p>{{ lgu or '—' }} · Requests submitted to PSWDO</p>
+            </div>
+            <div class="rr-header-actions">
+                {% if draft_count %}
+                <a href="{{ url_for('cswdo.relief_requests', tab='overview', status='draft') }}" class="pill pill-draft">{{ icon('file-text', 13) }} {{ draft_count }} Draft{{ 's' if draft_count != 1 }}</a>
+                {% endif %}
+                <a href="{{ url_for('cswdo.relief_requests', tab='create') }}" class="btn-approve" style="text-decoration:none; width:auto; padding:11px 18px;">{{ icon('plus', 14, 'white') }} Create New Request</a>
+            </div>
+        </div>
+
+        <div class="page-tabs">
+            <a href="{{ url_for('cswdo.relief_requests', tab='overview') }}" class="page-tab {{ 'active' if tab == 'overview' }}">Overview</a>
+            <a href="{{ url_for('cswdo.relief_requests', tab='create') }}" class="page-tab {{ 'active' if tab == 'create' }}">{{ icon('plus', 14) }} Create Request</a>
+            <a href="{{ url_for('cswdo.relief_requests', tab='tracking') }}" class="page-tab {{ 'active' if tab == 'tracking' }}">{{ icon('map-pin', 14) }} Request Tracking</a>
+            <a href="{{ url_for('cswdo.relief_requests', tab='history') }}" class="page-tab {{ 'active' if tab == 'history' }}">{{ icon('clock', 14) }} History</a>
+        </div>
+
+        {% if tab == 'overview' %}
+        <section class="stat-cards stat-cards-4">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('file-text', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ total_requests }}</span>
+                <span class="stat-label">Total Requests</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('clock', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ pending_count }}</span>
+                <span class="stat-label">Pending Approval</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ approved_count }}</span>
+                <span class="stat-label">Approved</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('x-circle', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ rejected_count }}</span>
+                <span class="stat-label">Rejected</span>
+            </div>
+        </section>
+
+        <form class="da-filter-bar" method="GET">
+            <input type="hidden" name="tab" value="overview">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search Request ID...">
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if status_filter == 'all' }}>All statuses</option>
+                <option value="draft" {{ 'selected' if status_filter == 'draft' }}>Draft</option>
+                <option value="pending" {{ 'selected' if status_filter == 'pending' }}>Under Review</option>
+                <option value="approved" {{ 'selected' if status_filter == 'approved' }}>Approved</option>
+                <option value="partially_approved" {{ 'selected' if status_filter == 'partially_approved' }}>Partially Approved</option>
+                <option value="rejected" {{ 'selected' if status_filter == 'rejected' }}>Rejected</option>
+            </select>
+            <button type="submit" class="btn-outline">{{ icon('search', 14) }} Filter</button>
+            <span class="da-filter-count">{{ total_filtered }} requests</span>
+        </form>
+
+        <div class="da-table-wrap">
+            <table class="da-table">
+                <thead>
+                    <tr><th>Request ID</th><th>Typhoon Event</th><th>Requested Packs</th><th>Priority</th><th>Date</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    <tr>
+                        <td class="da-barangay-name">{{ r.batch.ref }}<br><span style="font-size:11px; color:#8a94a6; font-weight:400;">By {{ r.batch.created_by_user.name if r.batch.created_by_user else '—' }}</span></td>
+                        <td>{{ icon('cloud-lightning', 12) }} {{ r.batch.event.event_name if r.batch.event else '—' }}</td>
+                        <td>{{ "{:,}".format(r.batch.requested_food_packs) }} packs</td>
+                        <td><span class="badge-priority badge-priority-{{ r.batch.priority }}">{{ r.priority_label }}</span></td>
+                        <td>{{ (r.batch.submitted_at or r.batch.created_at).strftime('%B %d, %Y') }}</td>
+                        <td><span class="badge-status badge-status-{{ r.status }}">{{ r.status_label }}</span></td>
+                        <td>{{ action_cell(r) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7"><p class="empty-note" style="padding:14px 0;">Wala pang relief request. Click "Create New Request" to start one.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="rr-pagination">
+                <span>Showing {{ rows|length }} of {{ total_filtered }} requests</span>
+                <div class="pagination-controls">
+                    <a class="page-btn" href="{{ url_for('cswdo.relief_requests', tab='overview', q=search_query, status=status_filter, page=page-1) }}{% if page <= 1 %} style="pointer-events:none;opacity:.5;"{% endif %}">Previous</a>
+                    <span class="page-btn active">{{ page }}</span>
+                    <a class="page-btn" href="{{ url_for('cswdo.relief_requests', tab='overview', q=search_query, status=status_filter, page=page+1) }}{% if page >= total_pages %} style="pointer-events:none;opacity:.5;"{% endif %}">Next</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if tab == 'create' %}
+        {% if not primary_event %}
+        <div class="rr-panel"><p class="empty-note">There is no active typhoon event right now, so a new relief request can't be filed.</p></div>
+        {% else %}
+        <div class="rr-muni-banner">
+            <strong>Municipality Information</strong>
+            <span>Auto-filled · Read-only</span>
+        </div>
+        <div class="rr-muni-body">
+            <div><span>MUNICIPALITY</span><strong>{{ lgu }}</strong></div>
+            <div><span>TYPHOON EVENT</span><strong>{{ icon('cloud-lightning', 12) }} {{ primary_event.event_name }}</strong></div>
+            <div><span>DATE</span><strong>{{ today.strftime('%B %d, %Y') }}</strong></div>
+        </div>
+
+        <div class="rr-panel">
+            <div class="rr-panel-header">
+                <div>
+                    <h3>Auto-filled Assessment Summary</h3>
+                    <p>From verified barangay damage reports · Not editable</p>
+                </div>
+                <span class="badge-verified">{{ icon('check-circle', 12) }} Verified Data</span>
+            </div>
+            {% if not eligible_reports and not editing_draft %}
+            <div class="rr-empty-eligible">
+                {{ icon('alert-triangle', 22, '#8a94a6') }}
+                <strong>No newly verified barangays are ready to request yet.</strong>
+                <span>Verify barangay reports in Damage Assessment first — barangays that already have a relief request for this typhoon won't show up here again.</span>
+                <a href="{{ url_for('cswdo.damage_assessment', tab='pending') }}" class="btn-outline">{{ icon('alert-triangle', 14) }} Go to Damage Assessment</a>
+            </div>
+            {% else %}
+            <section class="stat-cards stat-cards-4" style="margin-bottom:0;">
+                <div class="stat-card">
+                    <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                    <span class="stat-value">{{ verified_count }}</span>
+                    <span class="stat-label">Verified Barangays</span>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
+                    <span class="stat-value">{{ "{:,}".format(affected_families) }}</span>
+                    <span class="stat-label">Affected Families</span>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">{{ icon('users', 18, '#3867d6') }}</div>
+                    <span class="stat-value">{{ "{:,}".format(affected_individuals) }}</span>
+                    <span class="stat-label">Affected Individuals</span>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber">{{ icon('package', 18, '#d68910') }}</div>
+                    <span class="stat-value">{{ "{:,}".format(model_total) }}</span>
+                    <span class="stat-label">Predicted Food Packs</span>
+                    <span class="stat-sub">from the barangay-level model</span>
+                </div>
+            </section>
+            {% if editing_draft and not eligible_reports %}
+            <p class="empty-note" style="margin-top:14px;">{{ icon('alert-triangle', 12) }} No barangays are currently eligible — you can still save this draft, but it can't be submitted until at least one verified barangay is available.</p>
+            {% endif %}
+            {% endif %}
+        </div>
+
+        <form method="POST" action="{{ url_for('cswdo.relief_request_save_draft') }}" enctype="multipart/form-data">
+            {% if editing_draft %}<input type="hidden" name="draft_id" value="{{ editing_draft.batch_id }}">{% endif %}
+
+            <div class="rr-panel">
+                <div class="rr-panel-header"><div><h3>Request Details</h3></div></div>
+                <div class="rr-form-grid">
+                    <div class="rr-field">
+                        <label>Food Packs <span class="required">*</span></label>
+                        <input type="number" name="food_packs" min="1" value="{{ food_packs_value }}" required>
+                    </div>
+                </div>
+
+                <label style="display:block; font-size:12.5px; font-weight:600; color:#333; margin-bottom:8px;">Priority Level <span class="required">*</span></label>
+                <div class="rr-priority-group">
+                    <div class="rr-priority-option priority-high">
+                        <input type="radio" name="priority" id="priority-high" value="high" {{ 'checked' if priority_value == 'high' }}>
+                        <label for="priority-high"><span class="rr-priority-dot"></span> High</label>
+                    </div>
+                    <div class="rr-priority-option priority-medium">
+                        <input type="radio" name="priority" id="priority-medium" value="medium" {{ 'checked' if priority_value == 'medium' }}>
+                        <label for="priority-medium"><span class="rr-priority-dot"></span> Medium</label>
+                    </div>
+                    <div class="rr-priority-option priority-low">
+                        <input type="radio" name="priority" id="priority-low" value="low" {{ 'checked' if priority_value == 'low' }}>
+                        <label for="priority-low"><span class="rr-priority-dot"></span> Low</label>
+                    </div>
+                </div>
+
+                <div class="rr-field" style="margin-bottom:16px;">
+                    <label>Reason for Request <span class="required">*</span></label>
+                    <textarea name="reason" placeholder="Explain why this relief request is needed. Reference the verified barangay reports and affected population.">{{ reason_value }}</textarea>
+                </div>
+                <div class="rr-field">
+                    <label>Additional Remarks (optional)</label>
+                    <textarea name="remarks" placeholder="Additional notes, priority barangays, special instructions...">{{ remarks_value }}</textarea>
+                </div>
+            </div>
+
+            <div class="rr-panel">
+                <div class="rr-panel-header"><div><h3>Supporting Documents</h3><p>All uploads are optional</p></div></div>
+
+                <div class="rr-upload-row">
+                    <div class="rr-upload-icon">{{ icon('file-text', 16, '#2c5aa0') }}</div>
+                    <div class="rr-upload-row-label">
+                        <strong>Damage Assessment Report</strong>
+                        <span>{% if editing_draft and editing_draft.damage_report_file %}{{ editing_draft.damage_report_file }}{% else %}PDF, DOC — up to one file{% endif %}</span>
+                    </div>
+                    <label class="rr-upload-btn">Upload<input type="file" name="damage_report_file" accept=".pdf,.doc,.docx"></label>
+                </div>
+                <div class="rr-upload-row">
+                    <div class="rr-upload-icon">{{ icon('eye', 16, '#2c5aa0') }}</div>
+                    <div class="rr-upload-row-label">
+                        <strong>Photos</strong>
+                        <span>{% if editing_draft and editing_draft.photo_files %}{{ editing_draft.photo_files.split(',')|length }} photo(s) attached{% else %}JPG, PNG — multiple allowed{% endif %}</span>
+                    </div>
+                    <label class="rr-upload-btn">Upload<input type="file" name="photo_files" accept=".jpg,.jpeg,.png" multiple></label>
+                </div>
+                <div class="rr-upload-row">
+                    <div class="rr-upload-icon">{{ icon('file-text', 16, '#2c5aa0') }}</div>
+                    <div class="rr-upload-row-label">
+                        <strong>Other Supporting Documents</strong>
+                        <span>{% if editing_draft and editing_draft.other_files %}{{ editing_draft.other_files.split(',')|length }} file(s) attached{% else %}PDF, DOC, ZIP — multiple allowed{% endif %}</span>
+                    </div>
+                    <label class="rr-upload-btn">Upload<input type="file" name="other_files" accept=".pdf,.doc,.docx,.zip" multiple></label>
+                </div>
+            </div>
+
+            <div class="rr-form-actions">
+                <a href="{{ url_for('cswdo.relief_requests', tab='overview') }}" class="btn-outline">Cancel</a>
+                <button type="submit" class="btn-outline">{{ icon('file-text', 14) }} Save as Draft</button>
+                <button type="submit" formaction="{{ url_for('cswdo.relief_request_submit') }}" class="btn-submit-request">{{ icon('arrow-right', 14, 'white') }} Submit to PSWDO</button>
+            </div>
+        </form>
+        {% endif %}
+        {% endif %}
+
+        {% if tab == 'tracking' %}
+        {% if not trackable_batches %}
+        <div class="rr-panel"><p class="empty-note">No submitted requests yet — once you submit a request, you can track its progress here.</p></div>
+        {% else %}
+        <div class="rr-track-pills">
+            <span style="font-size:11px; color:#8a94a6; font-weight:700; align-self:center; margin-right:4px;">TRACK REQUEST:</span>
+            {% for b in trackable_batches %}
+            <a href="{{ url_for('cswdo.relief_requests', tab='tracking', batch_id=b.batch_id) }}" class="rr-track-pill {{ 'active' if selected and selected.batch.batch_id == b.batch_id }}">{{ b.ref }}</a>
+            {% endfor %}
+        </div>
+
+        {% if selected %}
+        <div class="rr-track-card">
+            <div class="rr-status-banner rr-status-{{ selected.status }}">
+                <div class="rr-status-banner-label">
+                    <div class="rr-status-banner-icon" style="background:rgba(255,255,255,0.5);">
+                        {% if selected.status in ('approved','partially_approved') %}{{ icon('check-circle', 20) }}
+                        {% elif selected.status == 'rejected' %}{{ icon('x-circle', 20) }}
+                        {% else %}{{ icon('clock', 20) }}{% endif %}
+                    </div>
+                    <div>
+                        <span class="rr-status-tag">CURRENT STATUS</span>
+                        <strong>{{ selected.status_label }}</strong>
+                    </div>
+                </div>
+                <div class="rr-status-banner-ref"><span>Request ID</span><strong>{{ selected.batch.ref }}</strong></div>
+            </div>
+            <div class="rr-handler-row">
+                <div><span>CURRENT HANDLER</span><strong>{{ selected.current_handler }}</strong></div>
+                <div><span>EXPECTED REVIEW</span><strong>{{ selected.expected_review }}</strong></div>
+                <div><span>LATEST UPDATE</span><strong>{{ selected.latest_update }}</strong></div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div>
+                {% if selected.status in ('approved', 'partially_approved') %}
+                <div class="rr-track-card" style="padding:16px;">
+                    <div class="dd-wh-tiles">
+                        <div class="dd-wh-tile dd-wh-blue">{{ icon('building', 18, '#2c5aa0') }}<strong>{{ selected.warehouse_label }}</strong><span>WAREHOUSE ASSIGNED</span></div>
+                        <div class="dd-wh-tile dd-wh-orange">{{ icon('calendar', 18, '#d35400') }}<strong>{{ selected.dispatch_date.strftime('%B %d, %Y') if selected.dispatch_date else 'Not yet scheduled' }}</strong><span>DISTRIBUTION SCHEDULED</span></div>
+                        <div class="dd-wh-tile dd-wh-green">{{ icon('clock', 18, '#1e8449') }}<strong>{{ selected.eta_label or '—' }}</strong><span>ETA</span></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="rr-track-card">
+                    <div class="rr-panel-header" style="padding:20px 22px 0;"><h3>Request Progress</h3></div>
+                    {{ rr_stepper(selected.stepper) }}
+                    {% if selected.rejection_reasons %}
+                    <div class="rr-reject-note" style="margin:0 22px 22px;">{{ selected.rejection_reasons[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <div class="rr-side-panel">
+                    <h4>REQUEST SUMMARY</h4>
+                    <div class="rr-side-row"><span>Priority</span><strong>{{ selected.priority_label }}</strong></div>
+                    <div class="rr-side-row"><span>Submitted</span><strong>{{ (selected.batch.submitted_at or selected.batch.created_at).strftime('%B %d, %I:%M %p') }}</strong></div>
+                    <div class="rr-side-row"><span>Municipality</span><strong>{{ lgu }}</strong></div>
+                    <div class="rr-side-row"><span>Typhoon</span><strong>{{ selected.batch.event.event_name if selected.batch.event else '—' }}</strong></div>
+                </div>
+                <div class="rr-side-panel">
+                    <h4>REQUESTED ITEMS</h4>
+                    <div class="rr-item-row"><div class="rr-item-row-label">{{ icon('package', 14, '#8a94a6') }} Food Packs</div><strong>{{ "{:,}".format(selected.batch.requested_food_packs) }}</strong></div>
+                    <button type="button" class="btn-track-full" onclick="openRequestModal({{ selected.batch.batch_id }})">{{ icon('eye', 14, 'white') }} View Full Details</button>
+                </div>
+            </div>
+        </div>
+        {{ request_modal(selected) }}
+        {% endif %}
+        {% endif %}
+        {% endif %}
+
+        {% if tab == 'history' %}
+        <form class="da-filter-bar" method="GET">
+            <input type="hidden" name="tab" value="history">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search history...">
+            <select name="event_id" onchange="this.form.submit()">
+                <option value="">All Events</option>
+                {% for ev in ended_events %}
+                <option value="{{ ev.event_id }}" {{ 'selected' if event_filter == ev.event_id }}>{{ ev.event_name }}</option>
+                {% endfor %}
+            </select>
+            <a href="{{ url_for('cswdo.relief_request_export') }}" class="btn-outline" style="margin-left:auto;">{{ icon('download', 14) }} Export History</a>
+        </form>
+
+        <div class="da-table-wrap">
+            <table class="da-table">
+                <thead><tr><th>Request ID</th><th>Event</th><th>Requested Packs</th><th>Barangays</th><th>Status</th><th>Date</th><th></th></tr></thead>
+                <tbody>
+                    {% for r in history_rows %}
+                    <tr>
+                        <td class="da-barangay-name">{{ r.batch.ref }}</td>
+                        <td>{{ icon('cloud-lightning', 12) }} {{ r.batch.event.event_name if r.batch.event else '—' }}</td>
+                        <td>{{ "{:,}".format(r.batch.requested_food_packs) }}</td>
+                        <td>
+                            {% for b in r.covered_barangays[:2] %}{{ b.barangay_name }}{% if not loop.last %}, {% endif %}{% endfor %}
+                            {% if r.covered_barangays|length > 2 %} +{{ r.covered_barangays|length - 2 }}{% endif %}
+                        </td>
+                        <td><span class="badge-status badge-status-{{ r.status }}">{{ r.status_label }}</span></td>
+                        <td>{{ (r.batch.submitted_at or r.batch.created_at).strftime('%B %d, %Y') }}</td>
+                        <td>{{ action_cell(r) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7"><p class="empty-note" style="padding:14px 0;">Walang naitalang history mula sa nakaraang typhoon events.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/cswdo_relief_requests.js') }}"></script>
+{% endblock %}

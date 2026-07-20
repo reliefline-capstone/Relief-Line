@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Damage Assessment - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/damage_assessment.css') }}">
+{% endblock %}
+
+{% macro report_modal(r) %}
+{% set report = r.report %}
+{% if report %}
+<div class="da-modal-overlay" id="report-modal-{{ report.report_id }}" hidden>
+    <div class="da-modal">
+        <div class="da-modal-header">
+            <div class="da-modal-title">
+                <span class="da-modal-icon status-{{ report.status }}">{{ icon('check-circle', 16) if report.status == 'verified' else (icon('rotate-ccw', 16) if report.status == 'returned' else icon('file-text', 16)) }}</span>
+                <div>
+                    <strong>{{ report.ref }} — {{ r.barangay.barangay_name }} <span class="badge-status status-{{ report.status }}">{{ status_labels.get(report.status, report.status) }}</span></strong>
+                    <span class="da-modal-sub">Submitted by {{ report.submitted_by_name }}{% if report.submitted_by_designation %} · {{ report.submitted_by_designation }}{% endif %} · {{ report.submitted_at.strftime('%B %d, %Y, %I:%M %p') }}</span>
+                </div>
+            </div>
+            <button type="button" class="da-modal-close" onclick="closeReportModal({{ report.report_id }})">{{ icon('x', 18) }}</button>
+        </div>
+
+        <div class="da-modal-tabs">
+            <button type="button" class="da-modal-tab active" data-pane="info" onclick="switchModalTab({{ report.report_id }}, 'info')">{{ icon('user', 14) }} Barangay Info</button>
+            <button type="button" class="da-modal-tab" data-pane="data" onclick="switchModalTab({{ report.report_id }}, 'data')">{{ icon('bar-chart', 14) }} Damage Data</button>
+            <button type="button" class="da-modal-tab" data-pane="evidence" onclick="switchModalTab({{ report.report_id }}, 'evidence')">{{ icon('file-text', 14) }} Evidence</button>
+        </div>
+
+        <div class="da-modal-body">
+            <div class="da-modal-pane active" data-pane="info">
+                <span class="da-evidence-label">BARANGAY INFORMATION</span>
+                <div class="da-data-grid">
+                    <div class="da-data-field"><span>Barangay</span><strong>{{ r.barangay.barangay_name }}</strong></div>
+                    <div class="da-data-field"><span>Barangay Code</span><strong>{{ "BR-%03d"|format(r.barangay.barangay_id) }}</strong></div>
+                    <div class="da-data-field"><span>Submitted By</span><strong>{{ report.submitted_by_name }}</strong></div>
+                    <div class="da-data-field"><span>Designation</span><strong>{{ report.submitted_by_designation or '—' }}</strong></div>
+                    <div class="da-data-field"><span>Date Submitted</span><strong>{{ report.submitted_at.strftime('%B %d, %Y') }}</strong></div>
+                    <div class="da-data-field"><span>Time Submitted</span><strong>{{ report.submitted_at.strftime('%I:%M %p') }}</strong></div>
+                    <div class="da-data-field"><span>Typhoon Event</span><strong>{{ report.event.event_name if report.event else '—' }}</strong></div>
+                    <div class="da-data-field"><span>Report ID</span><strong>{{ report.ref }}</strong></div>
+                </div>
+                {% if report.remarks %}
+                <span class="da-evidence-label">REMARKS FROM BARANGAY</span>
+                <p class="da-remarks-box">{{ report.remarks }}</p>
+                {% endif %}
+                {% if report.status != 'pending' %}
+                <span class="da-evidence-label">VERIFICATION RECORD</span>
+                <div class="da-verification-record status-{{ report.status }}">
+                    {{ icon('check-circle', 14) if report.status == 'verified' else icon('rotate-ccw', 14) }}
+                    <div>
+                        <strong>{{ 'Verified' if report.status == 'verified' else 'Returned' }} by {{ report.reviewed_by_user.name if report.reviewed_by_user else 'CSWDO/MSWDO' }}{% if report.reviewed_at %} · {{ report.reviewed_at.strftime('%B %d, %I:%M %p') }}{% endif %}</strong>
+                        {% if report.review_remarks %}<span>{{ report.review_remarks }}</span>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="da-modal-pane" data-pane="data">
+                <span class="da-evidence-label">DAMAGE INFORMATION</span>
+                <div class="da-data-grid">
+                    <div class="da-data-field"><span>Affected Families</span><strong>{{ "{:,}".format(report.affected_families) }}</strong></div>
+                    <div class="da-data-field"><span>Affected Individuals</span><strong>{{ "{:,}".format(report.affected_individuals) }}</strong></div>
+                    <div class="da-data-field"><span>Totally Damaged Houses</span><strong>{{ report.totally_damaged_houses }}</strong></div>
+                    <div class="da-data-field"><span>Partially Damaged Houses</span><strong>{{ report.partially_damaged_houses }}</strong></div>
+                    <div class="da-data-field"><span>Flood Level</span><strong>{{ r.priority.label }} <span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span></strong></div>
+                    <div class="da-data-field"><span>Flood Depth</span><strong>{{ '%.1f'|format(report.flood_depth_m) ~ 'm' if report.flood_depth_m is not none else '—' }}</strong></div>
+                </div>
+                <p style="font-size:11.5px; color:#8a94a6; line-height:1.5;">{{ icon('info', 12, '#8a94a6') }} Estimated relief-pack quantities are not calculated from this report — food pack allocation for {{ r.barangay.barangay_name }} comes from the predictive model on the Relief Requests page.</p>
+            </div>
+
+            <div class="da-modal-pane" data-pane="evidence">
+                {% set photos = report.photo_paths.split(',') if report.photo_paths else [] %}
+                <span class="da-evidence-label">UPLOADED PHOTOS ({{ photos|length }})</span>
+                <div class="da-evidence-grid">
+                    {% for photo in photos %}
+                    <div class="da-evidence-chip">{{ icon('file-text', 22, '#3867d6') }}<span>{{ photo.strip() }}</span></div>
+                    {% else %}
+                    <p class="empty-note">No photos attached.</p>
+                    {% endfor %}
+                </div>
+                {% if report.remarks %}
+                <span class="da-evidence-label">BARANGAY REMARKS</span>
+                <p class="da-remarks-box">{{ report.remarks }}</p>
+                {% endif %}
+
+                {% if report.status == 'pending' %}
+                <div class="da-verify-section">
+                    <h4>{{ icon('file-text', 14) }} Verification Section</h4>
+                    <form method="POST" action="{{ url_for('cswdo.verify_damage_report', report_id=report.report_id) }}">
+                        <label for="remarks-{{ report.report_id }}">Verification Remarks (optional)</label>
+                        <textarea id="remarks-{{ report.report_id }}" name="review_remarks" placeholder="Enter your verification notes, observations, or additional information..."></textarea>
+                        <div class="da-verify-actions">
+                            <button type="submit" formaction="{{ url_for('cswdo.return_damage_report', report_id=report.report_id) }}" class="btn-return">{{ icon('rotate-ccw', 14) }} Return for Correction</button>
+                            <button type="submit" class="btn-verify">{{ icon('check-circle', 14) }} Verify Report</button>
+                        </div>
+                    </form>
+                </div>
+                {% elif report.status == 'returned' %}
+                <div class="da-verify-section">
+                    <h4>{{ icon('file-text', 14) }} Verification Section</h4>
+                    <p style="font-size:12px; color:#8a94a6; margin-bottom:12px;">This report was returned for correction. You can still verify it directly once the field data checks out.</p>
+                    <form method="POST" action="{{ url_for('cswdo.verify_damage_report', report_id=report.report_id) }}">
+                        <label for="remarks-r-{{ report.report_id }}">Verification Remarks (optional)</label>
+                        <textarea id="remarks-r-{{ report.report_id }}" name="review_remarks" placeholder="Enter your verification notes..."></textarea>
+                        <div class="da-verify-actions">
+                            <button type="submit" class="btn-verify" style="flex:none; padding-left:20px; padding-right:20px;">{{ icon('check-circle', 14) }} Verify Report</button>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="da-modal-footer">
+            <span>Last updated: {{ (report.reviewed_at or report.submitted_at).strftime('%I:%M %p') }}</span>
+            <button type="button" class="btn-outline" onclick="closeReportModal({{ report.report_id }})">Close</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro action_cell(r) %}
+{% if r.report %}
+<div class="da-table-actions">
+    <button type="button" class="btn-view-sm" onclick="openReportModal({{ r.report.report_id }})">{{ icon('eye', 13) }} View</button>
+    {% if r.status in ('pending', 'returned') %}
+    <button type="button" class="btn-review-sm" onclick="openReportModal({{ r.report.report_id }})">{{ icon('check-circle', 13) }} Review</button>
+    {% endif %}
+</div>
+{{ report_modal(r) }}
+{% else %}
+<span class="empty-note">No report yet</span>
+{% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'damage_assessment' %}
+    {% include "cswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "cswdo/_flash.html" %}
+
+        <div class="page-header">
+            <div>
+                <h2>Damage Assessment</h2>
+                <p>{{ lgu or '—' }}{% if primary_event %} · {{ icon('cloud-lightning', 12) }} {{ primary_event.event_name }}{% endif %} · {{ now.strftime('%B %d, %Y') }}</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <a href="{{ url_for('cswdo.damage_assessment', tab='summary') }}" class="btn-outline">{{ icon('bar-chart', 16) }} Municipality Summary</a>
+                <a href="{{ url_for('cswdo.damage_assessment_export') }}" class="btn-outline">{{ icon('download', 16) }} Export</a>
+            </div>
+        </div>
+
+        <div class="page-tabs">
+            <a href="{{ url_for('cswdo.damage_assessment', tab='overview') }}" class="page-tab {{ 'active' if tab == 'overview' }}">Overview</a>
+            <a href="{{ url_for('cswdo.damage_assessment', tab='reports') }}" class="page-tab {{ 'active' if tab == 'reports' }}">Barangay Reports <span class="page-tab-badge">{{ submitted_rows|length }}</span></a>
+            <a href="{{ url_for('cswdo.damage_assessment', tab='pending') }}" class="page-tab {{ 'active' if tab == 'pending' }}">Pending Verification <span class="page-tab-badge">{{ pending_rows|length }}</span></a>
+            <a href="{{ url_for('cswdo.damage_assessment', tab='verified') }}" class="page-tab {{ 'active' if tab == 'verified' }}">Verified Reports <span class="page-tab-badge">{{ verified_rows|length }}</span></a>
+            <a href="{{ url_for('cswdo.damage_assessment', tab='summary') }}" class="page-tab {{ 'active' if tab == 'summary' }}">Municipality Summary</a>
+        </div>
+
+        {% if tab == 'overview' %}
+        <section class="stat-cards stat-cards-4">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('file-text', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ submitted_rows|length }}</span>
+                <span class="stat-label">Reports Submitted</span>
+                <span class="stat-sub">Total barangay reports</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('clock', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ pending_rows|length }}</span>
+                <span class="stat-label">Pending Verification</span>
+                <span class="stat-sub">Awaiting CSWDO/MSWDO review</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ verified_rows|length }}</span>
+                <span class="stat-label">Verified Reports</span>
+                <span class="stat-sub">Ready for relief request</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('rotate-ccw', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ returned_rows|length }}</span>
+                <span class="stat-label">Returned Reports</span>
+                <span class="stat-sub">Needs barangay correction</span>
+            </div>
+        </section>
+
+        <div class="da-summary-bar">
+            <div class="da-summary-bar-title">{{ icon('info', 14, '#2c5aa0') }} Municipality Summary <span style="font-weight:400; color:#6c86b8;">(from verified reports)</span></div>
+            <div class="da-summary-item"><span>FAMILIES</span><strong>{{ "{:,}".format(verified_families) }}</strong></div>
+            <div class="da-summary-item"><span>INDIVIDUALS</span><strong>{{ "{:,}".format(verified_individuals) }}</strong></div>
+            <div class="da-summary-item"><span>VERIFIED</span><strong>{{ verified_rows|length }} of {{ total_barangays }} barangays</strong></div>
+            {% if pending_rows %}
+            <div class="da-summary-pill">{{ icon('alert-triangle', 13) }} {{ pending_rows|length }} still pending</div>
+            {% endif %}
+        </div>
+
+        <div class="da-table-wrap">
+            <div class="panel-header" style="padding: 18px 20px 0;">
+                <h3>Barangay Status Summary</h3>
+                <a href="{{ url_for('cswdo.damage_assessment', tab='reports') }}" class="link-manage">View All Reports →</a>
+            </div>
+            <table class="da-table">
+                <thead>
+                    <tr>
+                        <th>Barangay</th><th>Status</th><th>Families</th><th>Flood Level</th><th>Last Updated</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    <tr>
+                        <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
+                        <td><span class="status-dot-label status-{{ r.status }}"><i class="status-dot status-{{ r.status }}"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
+                        <td>{{ "{:,}".format(r.report.affected_families) if r.report else '—' }}</td>
+                        <td>{% if r.report %}<span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span>{% else %}—{% endif %}</td>
+                        <td>{{ (r.report.reviewed_at or r.report.submitted_at).strftime('%I:%M %p') if r.report else '—' }}</td>
+                        <td>{{ action_cell(r) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if tab == 'reports' %}
+        <form class="da-filter-bar" method="GET">
+            <input type="hidden" name="tab" value="reports">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search barangay, report ID...">
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if status_filter == 'all' }}>All statuses</option>
+                <option value="pending" {{ 'selected' if status_filter == 'pending' }}>Pending</option>
+                <option value="verified" {{ 'selected' if status_filter == 'verified' }}>Verified</option>
+                <option value="returned" {{ 'selected' if status_filter == 'returned' }}>Returned</option>
+            </select>
+            <button type="submit" class="btn-outline">{{ icon('search', 14) }} Filter</button>
+            <span class="da-filter-count">{{ filtered_rows|length }} reports</span>
+        </form>
+
+        <div class="da-table-wrap">
+            <table class="da-table">
+                <thead>
+                    <tr>
+                        <th>Report ID</th><th>Barangay</th><th>Submitted By</th><th>Families</th><th>Flood Level</th><th>Status</th><th>Last Updated</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in filtered_rows %}
+                    <tr>
+                        <td>{{ r.report.ref }}</td>
+                        <td>
+                            <span class="da-barangay-name">{{ r.barangay.barangay_name }}</span><br>
+                            <span style="font-size:11px; color:#8a94a6;">{{ "BR-%03d"|format(r.barangay.barangay_id) }}</span>
+                        </td>
+                        <td>{{ r.report.submitted_by_name }}<br><span style="font-size:11px; color:#8a94a6;">{{ r.report.submitted_by_designation or '' }}</span></td>
+                        <td>{{ "{:,}".format(r.report.affected_families) }}</td>
+                        <td><span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span></td>
+                        <td><span class="status-dot-label status-{{ r.status }}"><i class="status-dot status-{{ r.status }}"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
+                        <td>{{ (r.report.reviewed_at or r.report.submitted_at).strftime('%I:%M %p') }}</td>
+                        <td>{{ action_cell(r) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8"><p class="empty-note" style="padding: 10px 0;">Walang report na tumugma sa filter.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if tab == 'pending' %}
+        {% if pending_rows %}
+        <div class="da-banner da-banner-warning">
+            {{ icon('alert-triangle', 16) }}
+            <span><strong>{{ pending_rows|length }} barangay reports</strong> need your verification before a relief request can reference them.</span>
+        </div>
+        {% endif %}
+        <div class="da-table-wrap">
+            <table class="da-table">
+                <thead>
+                    <tr>
+                        <th>Report ID</th><th>Barangay</th><th>Submitted By</th><th>Families</th><th>Flood Level</th><th>Last Updated</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in pending_rows %}
+                    <tr>
+                        <td>{{ r.report.ref }}</td>
+                        <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
+                        <td>{{ r.report.submitted_by_name }}<br><span style="font-size:11px; color:#8a94a6;">{{ r.report.submitted_by_designation or '' }}</span></td>
+                        <td>{{ "{:,}".format(r.report.affected_families) }}</td>
+                        <td><span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span></td>
+                        <td>{{ r.report.submitted_at.strftime('%I:%M %p') }}</td>
+                        <td>{{ action_cell(r) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7"><p class="empty-note" style="padding: 10px 0;">Wala nang pending na report — updated na lahat.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if tab == 'verified' %}
+        {% if verified_rows %}
+        <div class="da-banner da-banner-success">
+            <span>{{ icon('check-circle', 16) }} <strong>{{ verified_rows|length }} verified reports</strong> · {{ "{:,}".format(verified_families) }} families documented</span>
+            <a href="{{ url_for('cswdo.damage_assessment', tab='summary') }}">View Summary →</a>
+        </div>
+        {% endif %}
+        <div class="da-table-wrap">
+            <table class="da-table">
+                <thead>
+                    <tr>
+                        <th>Report ID</th><th>Barangay</th><th>Submitted By</th><th>Families</th><th>Flood Level</th><th>Last Updated</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in verified_rows %}
+                    <tr>
+                        <td>{{ r.report.ref }}</td>
+                        <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
+                        <td>{{ r.report.submitted_by_name }}<br><span style="font-size:11px; color:#8a94a6;">{{ r.report.submitted_by_designation or '' }}</span></td>
+                        <td>{{ "{:,}".format(r.report.affected_families) }}</td>
+                        <td><span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span></td>
+                        <td>{{ r.report.reviewed_at.strftime('%I:%M %p') if r.report.reviewed_at else '—' }}</td>
+                        <td>{{ action_cell(r) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7"><p class="empty-note" style="padding: 10px 0;">Wala pang verified report.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if tab == 'summary' %}
+        <div class="da-summary-header">
+            <div class="da-summary-header-top">
+                <div>
+                    <span class="da-summary-header-label">MUNICIPALITY ASSESSMENT SUMMARY</span>
+                    <h2>{{ lgu or '—' }}</h2>
+                    <span class="da-summary-header-sub">{% if primary_event %}{{ icon('cloud-lightning', 12) }} {{ primary_event.event_name }} · {% endif %}Based on verified barangay reports</span>
+                </div>
+                <div class="da-summary-header-ratio">
+                    <span>Verified Barangays</span>
+                    <strong>{{ verified_rows|length }}/{{ total_barangays }}</strong>
+                </div>
+            </div>
+            <div class="da-progress-label">Verification Progress</div>
+            <div class="da-progress-track">
+                <div class="da-progress-fill" style="width: {{ (verified_rows|length / total_barangays * 100) if total_barangays else 0 }}%;"></div>
+            </div>
+        </div>
+
+        <section class="stat-cards stat-cards-4">
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ "{:,}".format(verified_families) }}</span>
+                <span class="stat-label">Affected Families</span>
+                <span class="stat-sub">from verified barangays</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('users', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ "{:,}".format(verified_individuals) }}</span>
+                <span class="stat-label">Affected Individuals</span>
+                <span class="stat-sub">total headcount</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('home', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ verified_totally_damaged }}</span>
+                <span class="stat-label">Totally Damaged Houses</span>
+                <span class="stat-sub">+{{ verified_partially_damaged }} partially damaged</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('navigation', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ avg_flood_depth if avg_flood_depth is not none else '—' }}{% if avg_flood_depth is not none %}m{% endif %}</span>
+                <span class="stat-label">Average Flood Depth</span>
+                <span class="stat-sub">across verified reports</span>
+            </div>
+        </section>
+
+        <div class="panel-header"><h3>Flood Level Distribution (Verified)</h3></div>
+        <div class="da-flood-distribution-grid">
+            {% for status_key in ['high_priority', 'needs_assistance', 'monitoring', 'normal'] %}
+            {% set p = priority_by_status[status_key] %}
+            <div class="da-flood-box tier-{{ p.tier }}">
+                <strong>{{ flood_distribution.get(status_key, 0) }}</strong>
+                <span>{{ p.label }} barangay{{ 's' if flood_distribution.get(status_key, 0) != 1 }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="da-table-wrap">
+            <div class="panel-header" style="padding: 18px 20px 0;"><h3>Verified Barangay Breakdown</h3></div>
+            <table class="da-table">
+                <thead>
+                    <tr><th>Barangay</th><th>Families</th><th>Individuals</th><th>Flood Level</th><th>Damaged Houses</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in verified_rows %}
+                    <tr>
+                        <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
+                        <td>{{ "{:,}".format(r.report.affected_families) }}</td>
+                        <td>{{ "{:,}".format(r.report.affected_individuals) }}</td>
+                        <td><span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span></td>
+                        <td>{{ r.report.totally_damaged_houses }} total · {{ r.report.partially_damaged_houses }} partial</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5"><p class="empty-note" style="padding: 10px 0;">Wala pang verified report.</p></td></tr>
+                    {% endfor %}
+                    {% if verified_rows %}
+                    <tr>
+                        <td><strong>TOTAL</strong></td>
+                        <td><strong>{{ "{:,}".format(verified_families) }}</strong></td>
+                        <td><strong>{{ "{:,}".format(verified_individuals) }}</strong></td>
+                        <td></td>
+                        <td><strong>{{ verified_totally_damaged }} total · {{ verified_partially_damaged }} partial</strong></td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="da-cta-banner">
+            <div>
+                <strong>{{ icon('check-circle', 14, '#0f2547') }} {{ verified_rows|length }} of {{ total_barangays }} barangays verified · {{ "{:,}".format(verified_families) }} families documented</strong>
+                <span>Food pack quantities for your next relief request are generated by the predictive model, not by this report.</span>
+            </div>
+            <a href="#" class="btn-approve" style="text-decoration:none; width:auto; padding: 11px 20px;">{{ icon('clipboard', 14, 'white') }} Go to Relief Requests</a>
+        </div>
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/damage_assessment.js') }}"></script>
+{% endblock %}

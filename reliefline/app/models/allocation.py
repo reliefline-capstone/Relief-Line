@@ -24,6 +24,12 @@ class AllocationRecord(db.Model):
     remarks = db.Column(db.Text, nullable=True)
     decided_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
 
+    # Set only for records created via the CSWDO/MSWDO "Relief Requests" batch
+    # flow (app/routes/cswdo.py) — NULL for province-level records created any
+    # other way (e.g. scripts/seed_demo_data.py), which PSWDO still processes
+    # exactly the same either way.
+    batch_id = db.Column(db.Integer, db.ForeignKey("relief_request_batches.batch_id"), nullable=True)
+
     barangay = db.relationship("Barangay", backref="allocation_records")
     office = db.relationship("Office", backref="allocation_records", foreign_keys=[office_id])
     fulfilling_office = db.relationship("Office", foreign_keys=[fulfilling_office_id])

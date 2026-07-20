@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, prediction_disclaimer with context %}
+
+{% block title %}Dashboard - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'dashboard' %}
+    {% include "cswdo/_sidebar.html" %}
+
+    <!-- Main content -->
+    <main class="dashboard-main">
+
+        {% include "cswdo/_flash.html" %}
+
+        <!-- Greeting banner -->
+        <section class="greeting-banner">
+            <div>
+                <p>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }},</p>
+                <h2>{{ current_user.name }} 👋</h2>
+                <p style="margin-bottom: 12px;">{{ ROLE_LABELS.get(current_user.role, current_user.role) }}{% if lgu %} · {{ lgu }}{% endif %}</p>
+                {% if primary_event %}
+                <div class="active-event-badge">
+                    <div>
+                        <span class="badge-label">ACTIVE TYPHOON EVENT</span>
+                        <strong>{{ icon('cloud-lightning', 14) }} {{ primary_event.event_name }}</strong>
+                    </div>
+                    <span class="badge-active">ACTIVE</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="banner-time">
+                <strong id="live-clock">{{ now.strftime('%I:%M:%S %p') }}</strong>
+                <span id="live-date">{{ now.strftime('%a, %B') }} {{ now.day }}</span>
+                {% if primary_event and primary_event.weather_condition %}
+                <div class="banner-weather-block">
+                    <span class="banner-weather-label">Weather</span>
+                    <span class="banner-weather">{{ icon('cloud-lightning', 12) }} {{ primary_event.weather_condition }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon orange">{{ icon('map-pin', 18, '#e67e22') }}</div>
+                <span class="stat-value">{{ affected_barangays_count }}</span>
+                <span class="stat-label">Affected Barangays</span>
+                <span class="stat-sub">of {{ total_barangays }} total</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_affected_families) }}</span>
+                <span class="stat-label">Affected Families</span>
+                <span class="stat-sub">{{ lgu or '—' }}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
+                <span class="stat-value">{{ "{:,}".format(food_pack_qty) }}</span>
+                <span class="stat-label">Municipal Food Packs</span>
+                <span class="stat-sub">{{ stock_health }} stock level</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon brown">{{ icon('clipboard', 18, '#8d6e4b') }}</div>
+                <span class="stat-value">{{ pending_requests_count }}</span>
+                <span class="stat-label">Pending Requests</span>
+                <span class="stat-sub">Awaiting PSWDO approval</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ incoming_deliveries_count }}</span>
+                <span class="stat-label">Incoming Deliveries</span>
+                <span class="stat-sub">
+                    {% if next_delivery %}{{ dispatch_status_labels.get(next_delivery.dispatch_status, next_delivery.dispatch_status) }}{% if next_delivery.expected_arrival_time %} · ETA {{ next_delivery.expected_arrival_time.strftime('%I:%M %p') }}{% endif %}{% else %}None scheduled{% endif %}
+                </span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('check-circle', 18, '#e74c3c') }}</div>
+                <span class="stat-value">{{ pending_validations_count }}</span>
+                <span class="stat-label">Pending Validations</span>
+                <span class="stat-sub">Awaiting barangay confirmation</span>
+            </div>
+        </section>
+
+        <!-- GIS Map + Relief Request Status -->
+        <div class="main-grid">
+
+            <section class="panel map-panel">
+                <div class="panel-header">
+                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map — Province of Pangasinan</h3>
+                    <div class="map-legend">
+                        <span><i class="legend-dot normal"></i> Normal</span>
+                        <span><i class="legend-dot monitoring"></i> Monitoring</span>
+                        <span><i class="legend-dot needs-assistance"></i> Needs Assistance</span>
+                        <span><i class="legend-dot high-priority"></i> High Priority</span>
+                    </div>
+                </div>
+                <div class="map-placeholder-box">
+                    <div id="dashboard-mini-map"></div>
+                    <span class="map-toggle">Province</span>
+                    <a href="{{ url_for('pswdo.gis_map', municipality=lgu) }}" class="map-fullscreen-btn" title="Open full GIS Map">{{ icon('maximize', 16, '#444') }}</a>
+
+                    <div class="map-legend-box">
+                        <span class="map-legend-title">Legend</span>
+                        <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
+                        <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
+                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Monitoring</div>
+                        <div class="map-legend-row"><i class="legend-square normal"></i> Normal</div>
+                        <div class="map-legend-divider"></div>
+                        <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
+                        <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit Route</div>
+                    </div>
+
+                    <div class="map-zoom-wrapper">
+                        <span class="map-zoom-pct" id="dashboard-map-zoom-pct">100%</span>
+                        <div class="map-zoom-controls">
+                            <button type="button" id="dashboard-map-zoom-in" title="Zoom in">{{ icon('plus', 16) }}</button>
+                            <button type="button" id="dashboard-map-zoom-out" title="Zoom out">{{ icon('minus', 16) }}</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel requests-panel">
+                <div class="panel-header">
+                    <h3>Relief Request Status</h3>
+                    <a href="#" class="link-manage">View All →</a>
+                </div>
+
+                {% for row in relief_request_rows %}
+                <div class="request-card">
+                    <div class="request-top">
+                        <strong>{{ row.ref }}</strong>
+                        <span class="badge-status status-{{ row.status }}">{{ row.status|replace('_', ' ')|title }}</span>
+                    </div>
+                    <div class="request-detail-grid">
+                        <span>Requested</span><strong>{{ "{:,}".format(row.record.predicted_quantity) }} packs</strong>
+                        <span>Warehouse</span><strong>{{ row.record.fulfilling_office.office_name if row.record.fulfilling_office else '—' }}</strong>
+                        <span>Date</span><strong>{{ row.record.allocation_date.strftime('%B %d') }}</strong>
+                        <span>ETA</span><strong>{{ row.record.expected_delivery_date.strftime('%B %d') if row.record.expected_delivery_date else 'Waiting' }}</strong>
+                    </div>
+                    {% if row.active_distribution %}
+                    <div class="request-progress-note">
+                        {{ icon('truck', 12, '#3867d6') }}
+                        {{ dispatch_status_labels.get(row.active_distribution.dispatch_status, row.active_distribution.dispatch_status) }}
+                        {% if row.record.fulfilling_office %}from {{ row.record.fulfilling_office.office_name }}{% endif %}
+                    </div>
+                    <div class="request-progress-track">
+                        <div class="request-progress-fill" style="width: {{ row.progress_pct }}%;"></div>
+                    </div>
+                    {% endif %}
+                    <a href="#" class="link-manage" style="display:block; margin-top:8px;">View Details →</a>
+                </div>
+                {% else %}
+                <p class="empty-note">Walang relief request na naitala ngayon.</p>
+                {% endfor %}
+
+                <a href="#" class="btn-approve" style="text-decoration:none; margin-top: 12px;">{{ icon('plus', 14, 'white') }} Submit New Request</a>
+            </section>
+
+        </div>
+
+        <!-- Municipal Inventory + Recent Barangay Reports -->
+        <div class="main-grid" style="margin-top: 16px;">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Municipal Inventory</h3>
+                    <a href="#" class="link-manage">Manage →</a>
+                </div>
+
+                <div class="inventory-grid">
+                    <div class="inventory-box">
+                        <strong>{{ "{:,}".format(food_pack_qty) }}</strong>
+                        <span class="inventory-unit">packs</span>
+                        <span class="inventory-label">Food Packs</span>
+                        <div class="inventory-bar"><div class="inventory-bar-fill" style="width: {{ stock_pct if stock_pct <= 100 else 100 }}%;"></div></div>
+                    </div>
+                    {% for row in other_items %}
+                    <div class="inventory-box">
+                        <strong>{{ "{:,}".format(row.item.quantity_available) }}</strong>
+                        <span class="inventory-unit">{{ row.item.unit }}</span>
+                        <span class="inventory-label">{{ row.item.item_name }}</span>
+                        <div class="inventory-bar"><div class="inventory-bar-fill" style="width: {{ row.pct }}%;"></div></div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if stock_health != 'Healthy' %}
+                <div class="stock-warning">
+                    {{ icon('alert-triangle', 14, '#b7791f') }}
+                    <span><strong>{{ stock_health }} stock level.</strong> Submit a relief request to PSWDO if deliveries from Brgy reports increase.</span>
+                </div>
+                {% endif %}
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Recent Barangay Reports</h3>
+                    <a href="{{ url_for('cswdo.damage_assessment') }}" class="link-manage">View All →</a>
+                </div>
+                {% for r in barangay_reports %}
+                <div class="barangay-report-row">
+                    <a href="{{ url_for('cswdo.damage_assessment', tab='reports', q=r.barangay.barangay_name) }}">
+                        <strong>{{ r.barangay.barangay_name }}</strong>
+                        <span>{{ "{:,}".format(r.affected_families) }} affected families</span>
+                    </a>
+                    <span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span>
+                </div>
+                {% else %}
+                <p class="empty-note">Walang barangay report ngayon.</p>
+                {% endfor %}
+            </section>
+
+        </div>
+
+        <!-- Notifications + Recent Activities -->
+        <div class="main-grid" style="margin-top: 16px;">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Notifications</h3>
+                    {% if notifications|length %}<span class="badge-count">{{ notifications|length }} new</span>{% endif %}
+                </div>
+                {% for n in notifications %}
+                <div class="notification-row">
+                    {{ icon('info', 14, '#3867d6') }}
+                    <div>
+                        <strong>{{ n.description }}</strong>
+                        <span>{{ n.created_at.strftime('%H:%M') }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">Walang unread notifications.</p>
+                {% endfor %}
+                <a href="#" class="btn-view-all">View All →</a>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Recent Activities</h3>
+                    <span class="panel-date">{{ now.strftime('%B') }} {{ now.day }}, {{ now.strftime('%Y') }}</span>
+                </div>
+                {% for act in recent_activities %}
+                <div class="activity-row">
+                    <div class="activity-icon">{{ icon('check-circle', 14, '#27ae60') }}</div>
+                    <div>
+                        <span class="activity-time">{{ act.created_at.strftime('%H:%M') }}</span>
+                        <span class="activity-desc">{{ act.description }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">Wala pang activity.</p>
+                {% endfor %}
+            </section>
+
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/dashboard_map.js') }}"></script>
+<script>
+(function () {
+    var clockEl = document.getElementById('live-clock');
+    var dateEl = document.getElementById('live-date');
+    if (!clockEl || !dateEl) return;
+
+    var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'];
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function tick() {
+        var now = new Date();
+        var hours24 = now.getHours();
+        var period = hours24 >= 12 ? 'PM' : 'AM';
+        var hours12 = hours24 % 12 || 12;
+        clockEl.textContent = pad(hours12) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()) + ' ' + period;
+        dateEl.textContent = weekdays[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+    }
+
+    tick();
+    setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}

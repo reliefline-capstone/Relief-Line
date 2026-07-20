@@ -1087,7 +1087,7 @@ def warehouse_reports():
 
 @pswdo_bp.route("/gis-map")
 @login_required
-@role_required("pswdo_admin", "system_admin")
+@role_required("pswdo_admin", "cswdo_admin", "system_admin")
 def gis_map():
     active_events = DisasterEvent.query.filter_by(status="active").order_by(
         DisasterEvent.start_date.desc()
@@ -1101,7 +1101,7 @@ def gis_map():
 
 @pswdo_bp.route("/gis-map/data")
 @login_required
-@role_required("pswdo_admin", "system_admin")
+@role_required("pswdo_admin", "cswdo_admin", "system_admin")
 def gis_map_data():
     event_id = _resolve_event_id(request.args.get("event_id", type=int))
 
@@ -1309,7 +1309,7 @@ def _resolve_event_id(event_id):
 
 @pswdo_bp.route("/gis-map/barangay/<int:barangay_id>")
 @login_required
-@role_required("pswdo_admin", "system_admin")
+@role_required("pswdo_admin", "cswdo_admin", "system_admin")
 def gis_map_barangay_detail(barangay_id):
     barangay = Barangay.query.get_or_404(barangay_id)
     if barangay.city_municipality not in TARGET_LGUS:

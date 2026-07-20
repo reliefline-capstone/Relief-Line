@@ -20,6 +20,8 @@ def create_app():
     from app.models.prediction import PredictionLog, ModelMetrics
     from app.models.disaster_event import DisasterEvent
     from app.models.barangay_status import BarangayDisasterStatus
+    from app.models.barangay_report import BarangayReport
+    from app.models.relief_request_batch import ReliefRequestBatch
     from app.models.activity_log import ActivityLog, DailyOpsStat
     from app.models.logistics import Vehicle, Driver, WarehouseTransfer
     from app.models.report import ReportLog

@@ -76,7 +76,8 @@ CREATE TABLE `allocation_records` (
   `fulfilling_office_id` int(11) DEFAULT NULL,
   `expected_delivery_date` date DEFAULT NULL,
   `remarks` text DEFAULT NULL,
-  `decided_by` int(11) DEFAULT NULL
+  `decided_by` int(11) DEFAULT NULL,
+  `batch_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -2341,6 +2342,118 @@ ALTER TABLE `warehouse_inventory`
 ALTER TABLE `warehouse_stock_logs`
   ADD CONSTRAINT `warehouse_stock_logs_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `warehouse_stock_logs_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `barangay_reports`
+--
+-- Barangay-submitted disaster impact reports, reviewed/verified by
+-- CSWDO/MSWDO (added for the Damage Assessment module). Deliberately has no
+-- evacuee/evacuation-center columns and no relief-pack quantity column — see
+-- app/models/barangay_report.py for why.
+--
+
+CREATE TABLE `barangay_reports` (
+  `report_id` int(11) NOT NULL,
+  `barangay_id` int(11) NOT NULL,
+  `event_id` int(11) NOT NULL,
+  `submitted_by_name` varchar(150) NOT NULL,
+  `submitted_by_designation` varchar(100) DEFAULT NULL,
+  `submitted_at` datetime DEFAULT current_timestamp(),
+  `affected_families` int(11) DEFAULT 0,
+  `affected_individuals` int(11) DEFAULT 0,
+  `totally_damaged_houses` int(11) DEFAULT 0,
+  `partially_damaged_houses` int(11) DEFAULT 0,
+  `flood_level` enum('normal','monitoring','needs_assistance','high_priority') DEFAULT 'normal',
+  `flood_depth_m` decimal(4,2) DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `photo_paths` varchar(500) DEFAULT NULL,
+  `status` enum('pending','verified','returned') DEFAULT 'pending',
+  `review_remarks` text DEFAULT NULL,
+  `reviewed_by` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for table `barangay_reports`
+--
+ALTER TABLE `barangay_reports`
+  ADD PRIMARY KEY (`report_id`),
+  ADD KEY `barangay_id` (`barangay_id`),
+  ADD KEY `event_id` (`event_id`),
+  ADD KEY `reviewed_by` (`reviewed_by`);
+
+--
+-- AUTO_INCREMENT for table `barangay_reports`
+--
+ALTER TABLE `barangay_reports`
+  MODIFY `report_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for table `barangay_reports`
+--
+ALTER TABLE `barangay_reports`
+  ADD CONSTRAINT `barangay_reports_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `barangay_reports_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `barangay_reports_ibfk_3` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `relief_request_batches`
+--
+-- CSWDO/MSWDO-initiated relief requests (Relief Requests module). Submitting
+-- one creates a normal `allocation_records` row per covered barangay, tagged
+-- with `batch_id` below — PSWDO's existing approve/reject flow needs no
+-- changes at all. See app/models/relief_request_batch.py.
+--
+
+CREATE TABLE `relief_request_batches` (
+  `batch_id` int(11) NOT NULL,
+  `office_id` int(11) NOT NULL,
+  `event_id` int(11) NOT NULL,
+  `requested_food_packs` int(11) DEFAULT 0,
+  `priority` enum('high','medium','low') DEFAULT 'medium',
+  `reason` text DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `damage_report_file` varchar(255) DEFAULT NULL,
+  `photo_files` varchar(500) DEFAULT NULL,
+  `other_files` varchar(500) DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `submitted_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for table `relief_request_batches`
+--
+ALTER TABLE `relief_request_batches`
+  ADD PRIMARY KEY (`batch_id`),
+  ADD KEY `office_id` (`office_id`),
+  ADD KEY `event_id` (`event_id`),
+  ADD KEY `created_by` (`created_by`);
+
+--
+-- AUTO_INCREMENT for table `relief_request_batches`
+--
+ALTER TABLE `relief_request_batches`
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for table `relief_request_batches`
+--
+ALTER TABLE `relief_request_batches`
+  ADD CONSTRAINT `relief_request_batches_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `relief_request_batches_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `relief_request_batches_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `allocation_records` (added: batch_id)
+--
+ALTER TABLE `allocation_records`
+  ADD CONSTRAINT `fk_alloc_batch` FOREIGN KEY (`batch_id`) REFERENCES `relief_request_batches` (`batch_id`) ON DELETE SET NULL;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
