@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, prediction_disclaimer with context %}
 
 {% block title %}Warehouse Inventory - ReliefLine{% endblock %}
 
@@ -18,7 +18,6 @@
     <!-- Main content -->
     <main class="dashboard-main">
 
-        {% include "pswdo/_topbar.html" %}
         {% include "pswdo/_flash.html" %}
 
         {% set crumbs = [] %}
@@ -85,6 +84,7 @@
             {% else %}
             <p class="empty-note">Walang stock recommendations ngayon — malusog ang lahat ng warehouse.</p>
             {% endfor %}
+            {{ prediction_disclaimer() }}
         </section>
 
         <!-- Warehouse Overview + side panels -->

@@ -6,3 +6,5 @@ python-dotenv==1.0.1
 pandas==2.2.2
 scikit-learn==1.5.1
 numpy==1.26.4
+reportlab==5.0.0
+openpyxl==3.1.5

@@ -8,9 +8,12 @@ class ActivityLog(db.Model):
     actor_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
     action_type = db.Column(db.String(50), nullable=False)
     description = db.Column(db.String(255), nullable=False)
+    is_read = db.Column(db.Boolean, nullable=False, default=False)
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    barangay = db.relationship("Barangay")
 
 
 class DailyOpsStat(db.Model):

@@ -20,6 +20,7 @@ from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.activity_log import ActivityLog, DailyOpsStat
 from app.models.logistics import Vehicle, Driver, WarehouseTransfer
+from app.models.user import User
 
 pswdo_bp = Blueprint("pswdo", __name__)
 
@@ -60,6 +61,37 @@ ROUTE_PROGRESS_BY_STATUS = {
     "preparing": 0, "loaded": 10, "dispatched": 35,
     "in_transit": 65, "delivered": 100, "delayed": 50,
 }
+
+# Every ActivityLog.action_type actually written anywhere in this app (see the
+# ActivityLog(...) call sites) — the Notifications page and dashboard mini
+# panel both render off of this, so a new action_type must be added here too.
+NOTIFICATION_META = {
+    "allocation_approved": {"icon": "check-circle", "color": "#1e8449", "category": "relief_requests", "category_label": "Relief Requests"},
+    "allocation_rejected": {"icon": "x-circle", "color": "#c0392b", "category": "relief_requests", "category_label": "Relief Requests"},
+    "distribution_status": {"icon": "truck", "color": "#2c5aa0", "category": "distribution", "category_label": "Distribution"},
+    "distribution_delivered": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Distribution"},
+    "warehouse_transfer_completed": {"icon": "rotate-ccw", "color": "#6c5ce7", "category": "warehouse", "category_label": "Warehouse"},
+}
+DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
+
+NOTIFICATION_LINKS = {
+    "relief_requests": lambda log: url_for("pswdo.relief_requests", municipality=log.barangay.city_municipality) if log.barangay else url_for("pswdo.relief_requests"),
+    "distribution": lambda log: url_for("pswdo.distribution", q=log.barangay.city_municipality) if log.barangay else url_for("pswdo.distribution"),
+    "warehouse": lambda log: url_for("pswdo.warehouse_stock_movements"),
+}
+
+
+def _notification_view(log):
+    meta = NOTIFICATION_META.get(log.action_type, DEFAULT_NOTIFICATION_META)
+    link_fn = NOTIFICATION_LINKS.get(meta["category"])
+    return {
+        "log": log,
+        "icon": meta["icon"],
+        "color": meta["color"],
+        "category": meta["category"],
+        "category_label": meta["category_label"],
+        "link": link_fn(log) if link_fn else None,
+    }
 
 
 def _priority_info(status_key):
@@ -527,9 +559,12 @@ def dashboard():
         if lgu_allocated > 0:
             by_municipality.append({"lgu": lgu, "released": lgu_released, "allocated": lgu_allocated})
 
-    # Recent activity feed
+    # Recent activity feed — "Recent Activities" is the general audit trail,
+    # "Notifications" below it is only the unread subset needing attention.
     recent_activities = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(4).all()
-    notifications = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(3).all()
+    notifications = ActivityLog.query.filter(ActivityLog.is_read.is_(False)).order_by(
+        ActivityLog.created_at.desc()
+    ).limit(3).all()
 
     return render_template(
         "pswdo/dashboard.html",
@@ -982,10 +1017,71 @@ def warehouse_stock_movements_export():
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def warehouse_reports():
-    all_offices, warehouses, total_food_packs = _load_warehouses()
+    # Deferred import — report_data imports helpers back from this module,
+    # so this must be a call-time import to avoid a circular import.
+    from app.models.report import ReportLog
+    from app.routes.report_data import REPORT_TYPES, resolve_filters
+
+    filters = resolve_filters(request.args)
+    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).all()
+
+    barangay_ids = [b.barangay_id for b in Barangay.query.filter(
+        Barangay.city_municipality.in_(filters["lgus"])
+    ).all()]
+
+    approved_q = AllocationRecord.query.filter(
+        AllocationRecord.status.in_(("approved", "released")),
+        AllocationRecord.allocation_date >= filters["start_date"],
+        AllocationRecord.barangay_id.in_(barangay_ids),
+    )
+    delivered_q = DistributionRecord.query.filter(
+        DistributionRecord.dispatch_status == "delivered",
+        DistributionRecord.distribution_date >= filters["start_date"],
+        DistributionRecord.barangay_id.in_(barangay_ids),
+    )
+    if filters["event_id"]:
+        approved_q = approved_q.filter(AllocationRecord.event_id == filters["event_id"])
+        delivered_q = delivered_q.join(AllocationRecord).filter(AllocationRecord.event_id == filters["event_id"])
+
+    reports_generated = ReportLog.query.filter(ReportLog.generated_at >= filters["start_date"]).count()
+    approved_requests = approved_q.count()
+    packs_distributed = sum(d.quantity_released for d in delivered_q.all())
+    completed_deliveries = delivered_q.count()
+
+    query_params = {"event_id": filters["event_id"], "municipality": filters["municipality"], "days": filters["days"]}
+    report_cards = [
+        {"slug": slug, **info, "generate_url": url_for("reports.view", report_type=slug, **query_params)}
+        for slug, info in REPORT_TYPES.items()
+    ]
+
+    recent_logs = ReportLog.query.order_by(ReportLog.generated_at.desc()).limit(10).all()
+    recent_reports = []
+    for log in recent_logs:
+        stored = json.loads(log.filters_json) if log.filters_json else {}
+        recent_reports.append({
+            "log": log,
+            "title": REPORT_TYPES.get(log.report_type, {}).get("title", log.report_type),
+            "view_url": url_for("reports.view", report_type=log.report_type, **stored),
+            "download_url": url_for("reports.download", report_id=log.report_id),
+        })
+
+    coverage_range = f"{filters['start_date'].strftime('%b %d')} - {date.today().strftime('%b %d, %Y')}"
+
     return render_template(
         "pswdo/warehouse_reports.html",
-        default_office_id=warehouses[0]["office"].office_id if warehouses else None,
+        active_events=active_events,
+        target_lgus=TARGET_LGUS,
+        filters=filters,
+        coverage_range=coverage_range,
+        reports_generated=reports_generated,
+        approved_requests=approved_requests,
+        packs_distributed=packs_distributed,
+        completed_deliveries=completed_deliveries,
+        report_cards=report_cards,
+        recent_reports=recent_reports,
+        download_all_url=url_for("reports.download_all"),
     )
 
 
@@ -1957,3 +2053,123 @@ def completed_deliveries():
         packs_delivered=packs_delivered,
         municipalities_served=municipalities_served,
     )
+
+
+@pswdo_bp.route("/notifications")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def notifications():
+    category_filter = request.args.get("category", "all")
+    status_filter = request.args.get("status", "all")
+
+    query = ActivityLog.query
+    if category_filter != "all":
+        action_types = [k for k, v in NOTIFICATION_META.items() if v["category"] == category_filter]
+        query = query.filter(ActivityLog.action_type.in_(action_types))
+    if status_filter == "unread":
+        query = query.filter(ActivityLog.is_read.is_(False))
+
+    unread_count = ActivityLog.query.filter(ActivityLog.is_read.is_(False)).count()
+    total_count = ActivityLog.query.count()
+
+    per_page = 15
+    all_matching = query.order_by(ActivityLog.created_at.desc()).all()
+    total_filtered = len(all_matching)
+    total_pages = max((total_filtered + per_page - 1) // per_page, 1)
+    page = max(request.args.get("page", 1, type=int), 1)
+    page = min(page, total_pages)
+    page_items = [_notification_view(log) for log in all_matching[(page - 1) * per_page: page * per_page]]
+
+    categories = [
+        {"value": "all", "label": "All"},
+        {"value": "relief_requests", "label": "Relief Requests"},
+        {"value": "distribution", "label": "Distribution"},
+        {"value": "warehouse", "label": "Warehouse"},
+    ]
+
+    return render_template(
+        "pswdo/notifications.html",
+        items=page_items,
+        unread_count=unread_count,
+        total_count=total_count,
+        total_filtered=total_filtered,
+        category_filter=category_filter,
+        status_filter=status_filter,
+        categories=categories,
+        page=page,
+        total_pages=total_pages,
+    )
+
+
+@pswdo_bp.route("/notifications/<int:log_id>/read", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def mark_notification_read(log_id):
+    log = ActivityLog.query.get_or_404(log_id)
+    log.is_read = True
+    db.session.commit()
+    return redirect(request.referrer or url_for("pswdo.notifications"))
+
+
+@pswdo_bp.route("/notifications/mark-all-read", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def mark_all_notifications_read():
+    ActivityLog.query.filter(ActivityLog.is_read.is_(False)).update({"is_read": True})
+    db.session.commit()
+    flash("All notifications marked as read.", "success")
+    return redirect(request.referrer or url_for("pswdo.notifications"))
+
+
+@pswdo_bp.route("/settings/profile")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def profile_settings():
+    return render_template("pswdo/profile_settings.html")
+
+
+@pswdo_bp.route("/settings/profile", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def update_profile_info():
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+
+    if not name or not email:
+        flash("Name and email are required.", "error")
+        return redirect(url_for("pswdo.profile_settings"))
+
+    email_taken = User.query.filter(
+        User.email == email, User.user_id != current_user.user_id
+    ).first()
+    if email_taken:
+        flash(f"{email} is already in use by another account.", "error")
+        return redirect(url_for("pswdo.profile_settings"))
+
+    current_user.name = name
+    current_user.email = email
+    db.session.commit()
+    flash("Profile information updated.", "success")
+    return redirect(url_for("pswdo.profile_settings"))
+
+
+@pswdo_bp.route("/settings/password", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def change_password():
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not current_user.check_password(current_password):
+        flash("Current password is incorrect.", "error")
+    elif len(new_password) < 8:
+        flash("New password must be at least 8 characters long.", "error")
+    elif new_password != confirm_password:
+        flash("New password and confirmation do not match.", "error")
+    else:
+        current_user.set_password(new_password)
+        db.session.commit()
+        flash("Password updated successfully.", "success")
+
+    return redirect(url_for("pswdo.profile_settings"))

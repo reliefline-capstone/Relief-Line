@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, prediction_disclaimer with context %}
 
 {% block title %}Dashboard - ReliefLine{% endblock %}
 
@@ -17,7 +17,6 @@
     <!-- Main content -->
     <main class="dashboard-main">
 
-        {% include "pswdo/_topbar.html" %}
         {% include "pswdo/_flash.html" %}
 
         <!-- Greeting banner -->
@@ -36,8 +35,8 @@
                 {% endif %}
             </div>
             <div class="banner-time">
-                <strong>{{ now.strftime('%I:%M:%S %p') }}</strong>
-                <span>{{ now.strftime('%a, %B') }} {{ now.day }}</span>
+                <strong id="live-clock">{{ now.strftime('%I:%M:%S %p') }}</strong>
+                <span id="live-date">{{ now.strftime('%a, %B') }} {{ now.day }}</span>
                 {% if primary_event and primary_event.weather_condition %}
                 <div class="banner-weather-block">
                     <span class="banner-weather-label">Weather</span>
@@ -229,6 +228,7 @@
                 {% else %}
                 <p class="empty-note">Walang recommendations ngayon — malusog ang stock levels.</p>
                 {% endfor %}
+                {{ prediction_disclaimer() }}
             </section>
 
         </div>
@@ -296,7 +296,7 @@
                 <p class="empty-note">Wala pang activity.</p>
                 {% endfor %}
 
-                <h4 class="pa-rec-title" style="margin-top:16px;">NOTIFICATIONS</h4>
+                <h4 class="pa-rec-title" style="margin-top:16px;">NOTIFICATIONS {% if unread_notification_count %}({{ unread_notification_count }} unread){% endif %}</h4>
                 {% for n in notifications %}
                 <div class="notification-row">
                     {{ icon('info', 14, '#3867d6') }}
@@ -305,7 +305,10 @@
                         <span>{{ n.created_at.strftime('%H:%M') }}</span>
                     </div>
                 </div>
+                {% else %}
+                <p class="empty-note">Walang unread notifications.</p>
                 {% endfor %}
+                <a href="{{ url_for('pswdo.notifications') }}" class="btn-view-all">View All →</a>
             </section>
 
         </div>
@@ -316,4 +319,29 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="{{ url_for('static', filename='js/dashboard_map.js') }}"></script>
+<script>
+(function () {
+    var clockEl = document.getElementById('live-clock');
+    var dateEl = document.getElementById('live-date');
+    if (!clockEl || !dateEl) return;
+
+    var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'];
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function tick() {
+        var now = new Date();
+        var hours24 = now.getHours();
+        var period = hours24 >= 12 ? 'PM' : 'AM';
+        var hours12 = hours24 % 12 || 12;
+        clockEl.textContent = pad(hours12) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()) + ' ' + period;
+        dateEl.textContent = weekdays[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+    }
+
+    tick();
+    setInterval(tick, 1000);
+})();
+</script>
 {% endblock %}

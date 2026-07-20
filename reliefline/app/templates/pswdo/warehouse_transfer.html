@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, prediction_disclaimer with context %}
 
 {% block title %}Stock Transfer - ReliefLine{% endblock %}
 
@@ -17,7 +17,6 @@
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_topbar.html" %}
         {% include "pswdo/_flash.html" %}
 
         {% set crumbs = [
@@ -127,6 +126,7 @@
                     <div class="wh-reco-header"><h3 style="font-size:12px; letter-spacing:0.4px; color:#8a94a6;">RECOMMENDATION</h3></div>
                     <p style="font-size:13px;"><strong>{{ recommendations[0].title }}</strong></p>
                     <p class="wh-sub">{{ recommendations[0].detail }}</p>
+                    {{ prediction_disclaimer() }}
                 </section>
                 {% endif %}
             </aside>

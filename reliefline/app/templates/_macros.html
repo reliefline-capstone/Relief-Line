@@ -1,3 +1,10 @@
 {% macro icon(name, size=20, color='currentColor', stroke_width=2) %}
 <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="{{ color }}" stroke-width="{{ stroke_width }}" stroke-linecap="round" stroke-linejoin="round">{{ ICONS[name]|safe }}</svg>
 {% endmacro %}
+
+{% macro prediction_disclaimer() %}
+<div class="pa-disclaimer">
+    {{ icon('info', 13, '#8a94a6') }}
+    <span>Predictions and recommendations are system-generated estimates, not guaranteed outcomes. Use them to support — not replace — your own judgment when making decisions.</span>
+</div>
+{% endmacro %}

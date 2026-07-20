@@ -1,5 +1,5 @@
 """
-Loads the Ridge regression trained by app.ml.train and predicts a barangay's
+Loads the Linear Regression model trained by app.ml.train and predicts a barangay's
 food-pack demand from its real profile fields (population, poverty
 incidence, disaster risk index, past calamity frequency).
 

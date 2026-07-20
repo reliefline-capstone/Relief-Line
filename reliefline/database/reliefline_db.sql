@@ -32,6 +32,7 @@ CREATE TABLE `activity_logs` (
   `actor_id` int(11) DEFAULT NULL,
   `action_type` varchar(50) NOT NULL,
   `description` varchar(255) NOT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT 0,
   `office_id` int(11) DEFAULT NULL,
   `barangay_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
@@ -41,16 +42,16 @@ CREATE TABLE `activity_logs` (
 -- Dumping data for table `activity_logs`
 --
 
-INSERT INTO `activity_logs` (`log_id`, `actor_id`, `action_type`, `description`, `office_id`, `barangay_id`, `created_at`) VALUES
-(3, 2, 'allocation_approved', 'Approved 2,300 food packs for Urdaneta City from Warehouse A', 5, 1, '2026-07-16 21:35:28'),
-(4, 2, 'distribution_delivered', 'D-2026-005 delivered to Urdaneta City, received by Aivan Flores', 5, 1, '2026-07-16 21:35:28'),
-(5, 2, 'allocation_approved', 'Approved 900 food packs for Santa Barbara from Warehouse A', 5, 15, '2026-07-16 21:35:28'),
-(6, 2, 'distribution_status', 'Distribution marked In Transit for Bactad East, Urdaneta City', 5, 2, '2026-07-16 21:35:28'),
-(7, 2, 'allocation_rejected', 'Rejected relief request from Urdaneta City: adequate stock on hand', 5, 5, '2026-07-16 21:35:28'),
-(8, 2, 'distribution_status', 'D-2026-009 marked Loaded', 5, 30, '2026-07-16 21:45:02'),
-(9, 2, 'distribution_status', 'D-2026-009 marked Dispatched', 5, 30, '2026-07-16 21:45:02'),
-(10, 2, 'distribution_status', 'D-2026-009 marked In Transit', 5, 30, '2026-07-16 21:45:02'),
-(11, 2, 'distribution_delivered', 'D-2026-009 delivered to Calasiao, received by Test Recipient', 5, 30, '2026-07-16 21:45:02');
+INSERT INTO `activity_logs` (`log_id`, `actor_id`, `action_type`, `description`, `is_read`, `office_id`, `barangay_id`, `created_at`) VALUES
+(3, 2, 'allocation_approved', 'Approved 2,300 food packs for Urdaneta City from Warehouse A', 1, 5, 1, '2026-07-16 21:35:28'),
+(4, 2, 'distribution_delivered', 'D-2026-005 delivered to Urdaneta City, received by Aivan Flores', 1, 5, 1, '2026-07-16 21:35:28'),
+(5, 2, 'allocation_approved', 'Approved 900 food packs for Santa Barbara from Warehouse A', 1, 5, 15, '2026-07-16 21:35:28'),
+(6, 2, 'distribution_status', 'Distribution marked In Transit for Bactad East, Urdaneta City', 1, 5, 2, '2026-07-16 21:35:28'),
+(7, 2, 'allocation_rejected', 'Rejected relief request from Urdaneta City: adequate stock on hand', 1, 5, 5, '2026-07-16 21:35:28'),
+(8, 2, 'distribution_status', 'D-2026-009 marked Loaded', 1, 5, 30, '2026-07-16 21:45:02'),
+(9, 2, 'distribution_status', 'D-2026-009 marked Dispatched', 1, 5, 30, '2026-07-16 21:45:02'),
+(10, 2, 'distribution_status', 'D-2026-009 marked In Transit', 1, 5, 30, '2026-07-16 21:45:02'),
+(11, 2, 'distribution_delivered', 'D-2026-009 delivered to Calasiao, received by Test Recipient', 1, 5, 30, '2026-07-16 21:45:02');
 
 -- --------------------------------------------------------
 
@@ -336,7 +337,11 @@ CREATE TABLE `offices` (
   `office_name` varchar(100) NOT NULL,
   `office_type` enum('pswdo','cswdo','barangay') NOT NULL,
   `area_covered` varchar(100) NOT NULL,
-  `capacity_food_pack` int(11) NOT NULL DEFAULT 20000
+  `capacity_food_pack` int(11) NOT NULL DEFAULT 20000,
+  `full_address` varchar(255) DEFAULT NULL,
+  `manager_name` varchar(100) DEFAULT NULL,
+  `contact_number` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -1810,6 +1815,22 @@ CREATE TABLE `preposition_records` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `report_logs`
+--
+
+CREATE TABLE `report_logs` (
+  `report_id` int(11) NOT NULL,
+  `report_type` varchar(50) NOT NULL,
+  `format` enum('pdf','excel') NOT NULL,
+  `pages` int(11) DEFAULT 1,
+  `filters_json` text DEFAULT NULL,
+  `generated_by` int(11) DEFAULT NULL,
+  `generated_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `users`
 --
 
@@ -1861,13 +1882,33 @@ INSERT INTO `vehicles` (`vehicle_id`, `vehicle_name`, `office_id`, `plate_number
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `warehouse_transfers`
+--
+
+CREATE TABLE `warehouse_transfers` (
+  `transfer_id` int(11) NOT NULL,
+  `from_office_id` int(11) NOT NULL,
+  `to_office_id` int(11) NOT NULL,
+  `item_type` enum('food_pack','hygiene_kit','kitchen_kit') DEFAULT 'food_pack',
+  `quantity` int(11) NOT NULL,
+  `status` enum('pending','completed','cancelled') DEFAULT 'pending',
+  `requested_by` int(11) DEFAULT NULL,
+  `requested_at` datetime DEFAULT current_timestamp(),
+  `completed_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `warehouse_inventory`
 --
 
 CREATE TABLE `warehouse_inventory` (
   `inventory_id` int(11) NOT NULL,
   `office_id` int(11) NOT NULL,
-  `item_type` enum('food_pack','hygiene_kit','kitchen_kit') NOT NULL,
+  `item_type` varchar(50) NOT NULL,
+  `item_name` varchar(100) NOT NULL DEFAULT 'Food Packs',
+  `unit` varchar(20) NOT NULL DEFAULT 'packs',
   `quantity_available` int(11) NOT NULL DEFAULT 0,
   `min_stock_level` int(11) NOT NULL DEFAULT 0,
   `last_updated` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -1878,20 +1919,37 @@ CREATE TABLE `warehouse_inventory` (
 -- Dumping data for table `warehouse_inventory`
 --
 
-INSERT INTO `warehouse_inventory` (`inventory_id`, `office_id`, `item_type`, `quantity_available`, `min_stock_level`, `last_updated`, `updated_by`) VALUES
-(1, 1, 'food_pack', 5000, 0, '2026-07-17 12:23:28', 2),
-(2, 1, 'hygiene_kit', 1200, 0, '2026-06-25 10:39:04', 2),
-(3, 1, 'kitchen_kit', 800, 0, '2026-06-25 10:39:04', 2),
-(4, 2, 'food_pack', 1500, 0, '2026-06-25 10:39:04', 3),
-(5, 2, 'hygiene_kit', 400, 0, '2026-06-25 10:39:04', 3),
-(6, 2, 'kitchen_kit', 200, 0, '2026-06-25 10:39:04', 3),
-(7, 3, 'food_pack', 1200, 0, '2026-06-25 10:39:04', 4),
-(8, 3, 'hygiene_kit', 300, 0, '2026-06-25 10:39:04', 4),
-(9, 3, 'kitchen_kit', 150, 0, '2026-06-25 10:39:04', 4),
-(10, 4, 'food_pack', 1800, 0, '2026-06-25 10:39:04', 5),
-(11, 4, 'hygiene_kit', 500, 0, '2026-06-25 10:39:04', 5),
-(12, 4, 'kitchen_kit', 250, 0, '2026-06-25 10:39:04', 5),
-(13, 5, 'food_pack', 12600, 3000, '2026-07-17 13:35:28', NULL);
+INSERT INTO `warehouse_inventory` (`inventory_id`, `office_id`, `item_type`, `item_name`, `unit`, `quantity_available`, `min_stock_level`, `last_updated`, `updated_by`) VALUES
+(1, 1, 'food_pack', 'Food Packs', 'packs', 5000, 0, '2026-07-17 12:23:28', 2),
+(2, 1, 'hygiene_kit', 'Hygiene Kits', 'kits', 1200, 0, '2026-06-25 10:39:04', 2),
+(3, 1, 'kitchen_kit', 'Kitchen Kits', 'kits', 800, 0, '2026-06-25 10:39:04', 2),
+(4, 2, 'food_pack', 'Food Packs', 'packs', 1500, 0, '2026-06-25 10:39:04', 3),
+(5, 2, 'hygiene_kit', 'Hygiene Kits', 'kits', 400, 0, '2026-06-25 10:39:04', 3),
+(6, 2, 'kitchen_kit', 'Kitchen Kits', 'kits', 200, 0, '2026-06-25 10:39:04', 3),
+(7, 3, 'food_pack', 'Food Packs', 'packs', 1200, 0, '2026-06-25 10:39:04', 4),
+(8, 3, 'hygiene_kit', 'Hygiene Kits', 'kits', 300, 0, '2026-06-25 10:39:04', 4),
+(9, 3, 'kitchen_kit', 'Kitchen Kits', 'kits', 150, 0, '2026-06-25 10:39:04', 4),
+(10, 4, 'food_pack', 'Food Packs', 'packs', 1800, 0, '2026-06-25 10:39:04', 5),
+(11, 4, 'hygiene_kit', 'Hygiene Kits', 'kits', 500, 0, '2026-06-25 10:39:04', 5),
+(12, 4, 'kitchen_kit', 'Kitchen Kits', 'kits', 250, 0, '2026-06-25 10:39:04', 5),
+(13, 5, 'food_pack', 'Food Packs', 'packs', 12600, 3000, '2026-07-17 13:35:28', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `warehouse_stock_logs`
+--
+
+CREATE TABLE `warehouse_stock_logs` (
+  `log_id` int(11) NOT NULL,
+  `office_id` int(11) NOT NULL,
+  `item_type` varchar(50) NOT NULL,
+  `item_name` varchar(100) NOT NULL,
+  `delta` int(11) NOT NULL,
+  `reason` varchar(255) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Indexes for dumped tables
@@ -2003,6 +2061,13 @@ ALTER TABLE `preposition_records`
   ADD KEY `fk_prepo_event` (`event_id`);
 
 --
+-- Indexes for table `report_logs`
+--
+ALTER TABLE `report_logs`
+  ADD PRIMARY KEY (`report_id`),
+  ADD KEY `generated_by` (`generated_by`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -2019,10 +2084,27 @@ ALTER TABLE `vehicles`
   ADD KEY `office_id` (`office_id`);
 
 --
+-- Indexes for table `warehouse_transfers`
+--
+ALTER TABLE `warehouse_transfers`
+  ADD PRIMARY KEY (`transfer_id`),
+  ADD KEY `from_office_id` (`from_office_id`),
+  ADD KEY `to_office_id` (`to_office_id`),
+  ADD KEY `requested_by` (`requested_by`);
+
+--
 -- Indexes for table `warehouse_inventory`
 --
 ALTER TABLE `warehouse_inventory`
   ADD PRIMARY KEY (`inventory_id`),
+  ADD KEY `office_id` (`office_id`),
+  ADD KEY `updated_by` (`updated_by`);
+
+--
+-- Indexes for table `warehouse_stock_logs`
+--
+ALTER TABLE `warehouse_stock_logs`
+  ADD PRIMARY KEY (`log_id`),
   ADD KEY `office_id` (`office_id`),
   ADD KEY `updated_by` (`updated_by`);
 
@@ -2109,6 +2191,12 @@ ALTER TABLE `preposition_records`
   MODIFY `preposition_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `report_logs`
+--
+ALTER TABLE `report_logs`
+  MODIFY `report_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
@@ -2121,10 +2209,22 @@ ALTER TABLE `vehicles`
   MODIFY `vehicle_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT for table `warehouse_transfers`
+--
+ALTER TABLE `warehouse_transfers`
+  MODIFY `transfer_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `warehouse_inventory`
 --
 ALTER TABLE `warehouse_inventory`
   MODIFY `inventory_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT for table `warehouse_stock_logs`
+--
+ALTER TABLE `warehouse_stock_logs`
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -2202,6 +2302,12 @@ ALTER TABLE `preposition_records`
   ADD CONSTRAINT `preposition_records_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
 
 --
+-- Constraints for table `report_logs`
+--
+ALTER TABLE `report_logs`
+  ADD CONSTRAINT `report_logs_ibfk_1` FOREIGN KEY (`generated_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+--
 -- Constraints for table `users`
 --
 ALTER TABLE `users`
@@ -2215,11 +2321,26 @@ ALTER TABLE `vehicles`
   ADD CONSTRAINT `vehicles_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`);
 
 --
+-- Constraints for table `warehouse_transfers`
+--
+ALTER TABLE `warehouse_transfers`
+  ADD CONSTRAINT `warehouse_transfers_ibfk_1` FOREIGN KEY (`from_office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `warehouse_transfers_ibfk_2` FOREIGN KEY (`to_office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `warehouse_transfers_ibfk_3` FOREIGN KEY (`requested_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+--
 -- Constraints for table `warehouse_inventory`
 --
 ALTER TABLE `warehouse_inventory`
   ADD CONSTRAINT `warehouse_inventory_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `warehouse_inventory_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `warehouse_stock_logs`
+--
+ALTER TABLE `warehouse_stock_logs`
+  ADD CONSTRAINT `warehouse_stock_logs_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `warehouse_stock_logs_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

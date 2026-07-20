@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Notifications - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'notifications' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Notifications</h2>
+                <p>{{ unread_count }} unread of {{ total_count }} total system notifications</p>
+            </div>
+            {% if unread_count %}
+            <form method="POST" action="{{ url_for('pswdo.mark_all_notifications_read') }}">
+                <button type="submit" class="btn-outline">{{ icon('check-circle', 14) }} Mark All as Read</button>
+            </form>
+            {% endif %}
+        </section>
+
+        <div class="notif-filter-tabs">
+            {% for cat in categories %}
+            <a href="{{ url_for('pswdo.notifications', category=cat.value, status=status_filter) }}"
+               class="notif-filter-tab {{ 'active' if category_filter == cat.value }}">{{ cat.label }}</a>
+            {% endfor %}
+        </div>
+
+        <section class="panel">
+            <div class="notif-panel-header">
+                <h3>{{ icon('bell', 18, '#0f2547') }} All Notifications</h3>
+                <form method="GET" class="filter-bar" style="padding:0; background:none;">
+                    <input type="hidden" name="category" value="{{ category_filter }}">
+                    <select name="status" onchange="this.form.submit()">
+                        <option value="all" {{ 'selected' if status_filter == 'all' }}>All</option>
+                        <option value="unread" {{ 'selected' if status_filter == 'unread' }}>Unread Only</option>
+                    </select>
+                </form>
+            </div>
+
+            {% if items %}
+            {% for item in items %}
+            <div class="notification-item {{ 'unread' if not item.log.is_read }}">
+                <div class="notification-item-icon">{{ icon(item.icon, 16, item.color) }}</div>
+                <div class="notification-item-body">
+                    <div class="notification-item-top">
+                        {% if not item.log.is_read %}<span class="unread-dot"></span>{% endif %}
+                        <span class="notification-item-desc">{{ item.log.description }}</span>
+                    </div>
+                    <div class="notification-item-meta">
+                        <span>{{ item.log.created_at.strftime('%b %d, %Y · %I:%M %p') }}</span>
+                        <span class="notif-category-tag">{{ item.category_label }}</span>
+                    </div>
+                    <div class="notification-item-actions">
+                        {% if item.link %}
+                        <a href="{{ item.link }}" class="notif-view-link">View {{ icon('arrow-right', 11) }}</a>
+                        {% endif %}
+                        {% if not item.log.is_read %}
+                        <form method="POST" action="{{ url_for('pswdo.mark_notification_read', log_id=item.log.log_id) }}">
+                            <button type="submit" class="notif-mark-read-btn">Mark as read</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="rr-pagination">
+                <span>Showing {{ items|length }} of {{ total_filtered }} notification{{ 's' if total_filtered != 1 }}</span>
+                <div class="pagination-controls">
+                    {% if page > 1 %}
+                    <a href="{{ url_for('pswdo.notifications', page=page-1, category=category_filter, status=status_filter) }}" class="page-btn">Previous</a>
+                    {% endif %}
+                    <span class="page-btn active">{{ page }}</span>
+                    {% if page < total_pages %}
+                    <a href="{{ url_for('pswdo.notifications', page=page+1, category=category_filter, status=status_filter) }}" class="page-btn">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-note">{{ "Walang unread notifications — nakabasa ka na sa lahat." if status_filter == 'unread' else "Walang notifications pa dito." }}</p>
+            {% endif %}
+        </section>
+
+    </main>
+</div>
+{% endblock %}

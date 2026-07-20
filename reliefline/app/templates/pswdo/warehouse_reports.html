@@ -1,39 +1,159 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
-{% block title %}Warehouse Reports - ReliefLine{% endblock %}
+{% block title %}Reports - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-layout">
 
-    {% set active_page = 'warehouse_inventory' %}
+    {% set active_page = 'reports' %}
     {% include "pswdo/_sidebar.html" %}
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_topbar.html" %}
         {% include "pswdo/_flash.html" %}
 
-        {% set crumbs = [
-            {"label": "Dashboard", "url": url_for('pswdo.warehouse_inventory')},
-            {"label": "Reports", "url": none}
-        ] %}
-        {% include "pswdo/_warehouse_subnav.html" %}
-
-        <section class="panel wh-empty-state">
-            {{ icon('bar-chart', 40, '#c3cad6') }}
-            <h3>Reports coming soon</h3>
-            <p class="empty-note">Exportable warehouse reports (stock summaries, transfer logs, movement history) will appear here. In the meantime, use Export on the Inventory and Stock Movement pages.</p>
-            <div class="wh-empty-actions">
-                <a href="{{ url_for('pswdo.warehouse_stock_movements') }}" class="btn-outline">{{ icon('list', 14) }} Stock Movement History</a>
+        <section class="page-header">
+            <div>
+                <h2>Reports</h2>
+                <p>Generate, preview, and export operational reports</p>
             </div>
+            <form method="GET" class="gis-filters">
+                <input type="text" id="report-search" placeholder="Search report type..." autocomplete="off">
+                <select name="event_id" onchange="this.form.submit()">
+                    <option value="">No active event</option>
+                    {% for e in active_events %}
+                    <option value="{{ e.event_id }}" {{ 'selected' if filters.event_id == e.event_id }}>{{ e.event_name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="municipality" onchange="this.form.submit()">
+                    <option value="all" {{ 'selected' if filters.municipality == 'all' }}>All Municipalities</option>
+                    {% for lgu in target_lgus %}
+                    <option value="{{ lgu }}" {{ 'selected' if filters.municipality == lgu }}>{{ lgu }}</option>
+                    {% endfor %}
+                </select>
+                <select name="days" onchange="this.form.submit()">
+                    <option value="7" {{ 'selected' if filters.days == 7 }}>Last 7 Days</option>
+                    <option value="30" {{ 'selected' if filters.days == 30 }}>Last 30 Days</option>
+                    <option value="90" {{ 'selected' if filters.days == 90 }}>Last 90 Days</option>
+                </select>
+            </form>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="reports-stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('file-text', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ reports_generated }}</span>
+                <span class="stat-label">Reports Generated</span>
+                <span class="stat-sub">Coverage: {{ coverage_range }}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ approved_requests }}</span>
+                <span class="stat-label">Approved Requests</span>
+                <span class="stat-sub">Coverage: {{ coverage_range }}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('package', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ "{:,}".format(packs_distributed) }}</span>
+                <span class="stat-label">Packs Distributed</span>
+                <span class="stat-sub">Coverage: {{ coverage_range }}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('truck', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ completed_deliveries }}</span>
+                <span class="stat-label">Completed Deliveries</span>
+                <span class="stat-sub">Coverage: {{ coverage_range }}</span>
+            </div>
+        </section>
+
+        <h4 class="reports-section-label">SELECT REPORT TYPE</h4>
+        <section class="report-cards-grid" id="report-cards-grid">
+            {% for card in report_cards %}
+            <div class="report-card" data-search="{{ (card.title ~ ' ' ~ card.description)|lower }}">
+                <div class="report-card-top">
+                    <div class="report-card-icon">{{ icon(card.icon, 20, 'white') }}</div>
+                </div>
+                <h4>{{ card.title }}</h4>
+                <p>{{ card.description }}</p>
+                <div class="report-card-footer">
+                    <div class="report-format-badges">
+                        <span class="report-format-badge">PDF</span>
+                        <span class="report-format-badge">Excel</span>
+                    </div>
+                    <a href="{{ card.generate_url }}" class="btn-generate">{{ icon('eye', 14, 'white') }} Generate</a>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+        <p class="empty-note" id="report-search-empty" style="display:none;">No report types match your search.</p>
+
+        <section class="panel" style="margin-top:8px;">
+            <div class="panel-header">
+                <h3>Recent Reports</h3>
+                <a href="{{ download_all_url }}" class="btn-outline">{{ icon('download', 14) }} Download All</a>
+            </div>
+
+            {% if recent_reports %}
+            <div class="rpt-table-wrap">
+                <table class="rpt-table recent-reports-table">
+                    <thead>
+                        <tr>
+                            <th>Report Type</th>
+                            <th>Date Generated</th>
+                            <th>Prepared By</th>
+                            <th>Format</th>
+                            <th>Pages</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recent_reports %}
+                        <tr>
+                            <td><strong>{{ item.title }}</strong></td>
+                            <td>{{ item.log.generated_at.strftime('%B %d, %Y') }}</td>
+                            <td>{{ item.log.generated_by_user.name if item.log.generated_by_user else '—' }}</td>
+                            <td><span class="format-tag {{ item.log.format }}">{{ item.log.format|upper }}</span></td>
+                            <td>{{ item.log.pages }} page{{ 's' if item.log.pages != 1 }}</td>
+                            <td>
+                                <a href="{{ item.view_url }}" class="btn-mini">{{ icon('eye', 12) }} View</a>
+                                <a href="{{ item.download_url }}" class="btn-mini">{{ icon('download', 12) }} Download</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty-note">No reports generated yet — click Generate on any report type above, then Export PDF or Export Excel.</p>
+            {% endif %}
         </section>
 
     </main>
 </div>
+
+<script>
+(function () {
+    var input = document.getElementById('report-search');
+    var cards = document.querySelectorAll('#report-cards-grid .report-card');
+    var emptyNote = document.getElementById('report-search-empty');
+    input.addEventListener('input', function () {
+        var q = input.value.trim().toLowerCase();
+        var visible = 0;
+        cards.forEach(function (card) {
+            var match = !q || card.getAttribute('data-search').indexOf(q) !== -1;
+            card.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        emptyNote.style.display = visible === 0 ? '' : 'none';
+    });
+})();
+</script>
 {% endblock %}

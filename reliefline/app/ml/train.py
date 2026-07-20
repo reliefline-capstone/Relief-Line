@@ -1,7 +1,13 @@
 """
-Trains the food-pack demand model: a Ridge regression that estimates how many
+Trains the food-pack demand model: a Linear Regression that estimates how many
 food packs a barangay needs from its profile (population, poverty incidence,
 disaster risk index, past calamity frequency).
+
+Linear Regression is used per the ReliefLine capstone manuscript (Chapter 2 —
+Predictive Model for Relief Goods): it produces interpretable, numerical
+allocation outputs that LGU personnel can directly use for decision-making,
+and it is practical for government settings where historical datasets may be
+limited in size.
 
 Trained on real AllocationRecord history — every allocation request PSWDO has
 ever logged doubles as a labeled training example (features = the barangay's
@@ -15,9 +21,6 @@ shapes several choices below:
   - historical_allocation is dropped: it is 0 for every row so far (there has
     only ever been one disaster event on record), so it has zero variance to
     learn from. Wire it back in once repeat-event history exists.
-  - Ridge, not plain LinearRegression, is used on purpose: 4 features over
-    ~11 samples is a near-saturated fit, and L2 regularization keeps
-    coefficients from swinging wildly to chase noise in such a small sample.
   - Leave-one-out cross-validation (not a train/test split) is used to
     estimate real-world error — holding out a fixed test slice from ~11 rows
     would be statistically meaningless either way, and LOOCV uses every row
@@ -28,23 +31,16 @@ Run scripts/train_model.py to (re)fit this against the current database.
 import os
 import numpy as np
 import joblib
-from sklearn.linear_model import RidgeCV
+from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 FEATURES = ["population", "poverty_incidence", "disaster_risk_index", "past_calamity_freq"]
-MODEL_VERSION = "v2.0-ridgecv"
+MODEL_VERSION = "v3.0-linreg"
 ARTIFACT_PATH = os.path.join(os.path.dirname(__file__), "artifacts", "food_pack_demand.joblib")
 MIN_TRAINING_SAMPLES = 5
-
-# Regularization strength is auto-tuned per fit (RidgeCV), not hand-picked —
-# with only a handful of labeled barangays, the model itself decides, via its
-# own inner cross-validation, how much to trust the features vs. fall back
-# toward the historical average. Scored on MAE rather than R² because R² is
-# undefined for the single-point folds a leave-one-out inner split produces.
-ALPHA_GRID = np.logspace(-1, 4, 40)
 
 
 def _load_training_rows():
@@ -68,7 +64,7 @@ def _load_training_rows():
 def build_pipeline():
     return Pipeline([
         ("scale", StandardScaler()),
-        ("ridge", RidgeCV(alphas=ALPHA_GRID, cv=LeaveOneOut(), scoring="neg_mean_absolute_error")),
+        ("linreg", LinearRegression()),
     ])
 
 

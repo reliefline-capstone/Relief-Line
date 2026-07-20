@@ -1,0 +1,139 @@
+.settings-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 16px;
+    align-items: start;
+}
+@media (max-width: 900px) {
+    .settings-grid { grid-template-columns: 1fr; }
+}
+
+.profile-summary-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+}
+
+.profile-summary-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #0f2547;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.profile-summary-card h3 { font-size: 16px; color: #1a1a1a; }
+
+.profile-role-badge {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #eaf0fd;
+    color: #2c5aa0;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.profile-summary-details {
+    width: 100%;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f2f6;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    text-align: left;
+}
+
+.profile-summary-details div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.profile-summary-details span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #8a94a6;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.profile-summary-details strong {
+    font-size: 13.5px;
+    color: #1a1a1a;
+    font-weight: 600;
+}
+
+.settings-forms {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 480px;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-row label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-row input {
+    padding: 10px 12px;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #1a1a1a;
+}
+
+.form-row input:focus {
+    outline: none;
+    border-color: #2c5aa0;
+}
+
+.form-row input:disabled {
+    background: #f4f6fa;
+    color: #8a94a6;
+}
+
+.form-hint { font-size: 11.5px; color: #8a94a6; }
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #0f2547;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-start;
+}
+.btn-primary:hover { background: #1a3a6b; }

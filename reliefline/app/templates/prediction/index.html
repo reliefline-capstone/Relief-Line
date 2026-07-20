@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, prediction_disclaimer with context %}
 
 {% block title %}Predictive Analytics - ReliefLine{% endblock %}
 
@@ -19,7 +19,6 @@
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_topbar.html" %}
         {% include "pswdo/_flash.html" %}
 
         <section class="page-header">
@@ -219,7 +218,7 @@
                             </strong>
                         </div>
                     </div>
-                    <p class="rd-sub" style="margin-top:8px;">Ridge regression (scikit-learn), auto-tuned regularization, evaluated with leave-one-out cross-validation. Estimates the demand for barangays that haven't submitted a request yet; accuracy will improve as more real allocation history accumulates.</p>
+                    <p class="rd-sub" style="margin-top:8px;">Linear Regression (scikit-learn), evaluated with leave-one-out cross-validation. Estimates the demand for barangays that haven't submitted a request yet; accuracy will improve as more real allocation history accumulates.</p>
                     {% else %}
                     <p class="empty-note">Model not trained yet — run scripts/train_model.py.</p>
                     {% endif %}
@@ -235,6 +234,7 @@
                         <span>Model: Estimated Need for barangays without a request — Ridge regression (see Model Performance)</span>
                     </div>
                 </div>
+                {{ prediction_disclaimer() }}
             </section>
 
         </div>
