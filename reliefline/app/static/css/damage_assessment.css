@@ -47,7 +47,8 @@
 }
 
 .da-banner-warning { background: #fef5e3; color: #7d5a12; }
-.da-banner-success { background: #e8faf0; color: #1e8449; display: flex; justify-content: space-between; }
+.da-banner-success { background: #e8faf0; color: #1e8449; display: flex; justify-content: space-between; align-items: center; }
+.da-banner-success span { display: inline-flex; align-items: center; gap: 6px; }
 .da-banner-success a { color: #1e8449; font-weight: 700; text-decoration: underline; }
 .da-banner strong { font-weight: 700; }
 

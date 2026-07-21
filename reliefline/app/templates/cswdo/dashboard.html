@@ -131,7 +131,7 @@
             <section class="panel requests-panel">
                 <div class="panel-header">
                     <h3>Relief Request Status</h3>
-                    <a href="#" class="link-manage">View All →</a>
+                    <a href="{{ url_for('cswdo.relief_requests') }}" class="link-manage">View All →</a>
                 </div>
 
                 {% for row in relief_request_rows %}
@@ -156,13 +156,17 @@
                         <div class="request-progress-fill" style="width: {{ row.progress_pct }}%;"></div>
                     </div>
                     {% endif %}
-                    <a href="#" class="link-manage" style="display:block; margin-top:8px;">View Details →</a>
+                    {% if row.record.batch_id %}
+                    <a href="{{ url_for('cswdo.relief_requests', tab='tracking', batch_id=row.record.batch_id) }}" class="link-manage" style="display:block; margin-top:8px;">View Details →</a>
+                    {% else %}
+                    <a href="{{ url_for('cswdo.relief_requests') }}" class="link-manage" style="display:block; margin-top:8px;">View Details →</a>
+                    {% endif %}
                 </div>
                 {% else %}
                 <p class="empty-note">Walang relief request na naitala ngayon.</p>
                 {% endfor %}
 
-                <a href="#" class="btn-approve" style="text-decoration:none; margin-top: 12px;">{{ icon('plus', 14, 'white') }} Submit New Request</a>
+                <a href="{{ url_for('cswdo.relief_requests', tab='create') }}" class="btn-approve" style="text-decoration:none; margin-top: 12px;">{{ icon('plus', 14, 'white') }} Submit New Request</a>
             </section>
 
         </div>
@@ -173,7 +177,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h3>Municipal Inventory</h3>
-                    <a href="#" class="link-manage">Manage →</a>
+                    <a href="{{ url_for('cswdo.municipal_inventory') }}" class="link-manage">View Details →</a>
                 </div>
 
                 <div class="inventory-grid">
@@ -240,7 +244,7 @@
                 {% else %}
                 <p class="empty-note">Walang unread notifications.</p>
                 {% endfor %}
-                <a href="#" class="btn-view-all">View All →</a>
+                <a href="{{ url_for('cswdo.notifications') }}" class="btn-view-all">View All →</a>
             </section>
 
             <section class="panel">

@@ -43,6 +43,28 @@ def create_app():
         from flask_login import current_user
         if not current_user.is_authenticated:
             return dict(unread_notification_count=0)
+
+        if current_user.role == "cswdo_admin":
+            # Scoped to this office's own LGU — must match the count shown on
+            # the CSWDO Notifications page and dashboard widget (see
+            # app.routes.cswdo._own_activity_filters), otherwise the sidebar
+            # badge would disagree with the page it links to.
+            office = current_user.office
+            lgu = office.area_covered if office else None
+            filters = []
+            if office:
+                filters.append(ActivityLog.office_id == office.office_id)
+            if lgu:
+                barangay_ids = [b.barangay_id for b in Barangay.query.filter_by(city_municipality=lgu).all()]
+                if barangay_ids:
+                    filters.append(ActivityLog.barangay_id.in_(barangay_ids))
+            if not filters:
+                return dict(unread_notification_count=0)
+            count = ActivityLog.query.filter(db.or_(*filters), ActivityLog.is_read.is_(False)).count()
+            return dict(unread_notification_count=count)
+
+        # pswdo_admin / system_admin see the province-wide count, matching the
+        # unscoped PSWDO Notifications page (app.routes.pswdo.notifications).
         return dict(unread_notification_count=ActivityLog.query.filter(ActivityLog.is_read.is_(False)).count())
 
     from app.routes.auth import auth_bp

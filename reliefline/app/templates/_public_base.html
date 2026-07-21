@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+{% block page_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="login-page">
+
+    <div class="hero">
+        <div class="hero-overlay"></div>
+
+        <div class="hero-inner">
+
+            <header class="top-bar">
+                <div class="office-id">
+                    <img src="{{ url_for('static', filename='img/province-seal.png') }}" alt="Province of Pangasinan Seal" class="seal">
+                    <div class="office-text">
+                        <span class="republic">Republic of the Philippines</span>
+                        <h2>Province of Pangasinan</h2>
+                        <span class="office-name">Provincial Social Welfare and Development Office</span>
+                    </div>
+                </div>
+                <nav class="top-links">
+                    <a href="{{ url_for('auth.help_page') }}">{{ icon('help-circle', 18) }} Help</a>
+                    <span class="divider">|</span>
+                    <a href="{{ url_for('auth.contact_page') }}">{{ icon('phone', 18) }} Contact</a>
+                </nav>
+            </header>
+
+            <div class="brand-content">
+                <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="ReliefLine" class="brand-logo">
+                <h1>ReliefLine</h1>
+                <div class="brand-rule"></div>
+                <p class="brand-tagline">Data-Driven Relief Supplies<br>Pipeline System</p>
+                <div class="brand-location">
+                    {{ icon('map-pin', 14) }} Province of Pangasinan
+                </div>
+            </div>
+
+            <div class="login-card static-page-card">
+                {% block page_content %}{% endblock %}
+            </div>
+
+        </div>
+    </div>
+
+    <footer class="page-footer">
+        <span>© 2026 Province of Pangasinan. All rights reserved.</span>
+        <nav>
+            <a href="{{ url_for('auth.privacy_page') }}">Privacy Notice</a>
+            <a href="{{ url_for('auth.terms_page') }}">Terms of Use</a>
+            <a href="{{ url_for('auth.contact_page') }}">Contact Support</a>
+        </nav>
+    </footer>
+
+</div>
+{% endblock %}

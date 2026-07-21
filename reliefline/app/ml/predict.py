@@ -1,7 +1,9 @@
 """
-Loads the Linear Regression model trained by app.ml.train and predicts a barangay's
-food-pack demand from its real profile fields (population, poverty
-incidence, disaster risk index, past calamity frequency).
+Loads the Linear Regression model trained by app.ml.train and predicts a
+barangay's food-pack demand from its real profile fields — the same six
+manuscript-specified predictors app.ml.train fits on (see FEATURES /
+feature_row there): population, poverty incidence, disaster risk index, past
+calamity frequency, historical allocation, and number of households.
 
 Used by the Predictive Analytics page to estimate demand for barangays that
 haven't had a formal relief request submitted yet — for barangays that
@@ -14,7 +16,7 @@ from datetime import date
 
 import joblib
 
-from app.ml.train import ARTIFACT_PATH
+from app.ml.train import ARTIFACT_PATH, feature_row, historical_allocation_for
 
 _cached_artifact = None
 _load_attempted = False
@@ -35,22 +37,13 @@ def is_model_available():
     return _load_artifact() is not None
 
 
-def _feature_row(barangay):
-    return [[
-        barangay.population or 0,
-        float(barangay.poverty_incidence or 0),
-        float(barangay.disaster_risk_index or 0),
-        barangay.past_calamity_freq or 0,
-    ]]
-
-
 def predict_quantity(barangay):
     """Estimated food-pack demand for one barangay, or None if no model has
     been trained yet (see scripts/train_model.py)."""
     artifact = _load_artifact()
     if artifact is None:
         return None
-    raw = artifact["pipeline"].predict(_feature_row(barangay))[0]
+    raw = artifact["pipeline"].predict(feature_row(barangay))[0]
     return max(int(round(raw)), 0)
 
 
@@ -79,6 +72,7 @@ def log_prediction_once_per_day(barangay, predicted_quantity):
         "poverty_incidence": float(barangay.poverty_incidence) if barangay.poverty_incidence is not None else None,
         "disaster_risk_index": float(barangay.disaster_risk_index) if barangay.disaster_risk_index is not None else None,
         "past_calamity_freq": barangay.past_calamity_freq,
+        "historical_allocation": historical_allocation_for(barangay.barangay_id),
     }
     log = PredictionLog(
         barangay_id=barangay.barangay_id,

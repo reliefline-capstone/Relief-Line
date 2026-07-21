@@ -11,7 +11,7 @@
 
 .notification-item {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
     padding: 14px 12px;
     border-radius: 10px;
@@ -22,6 +22,17 @@
 .notification-item.unread {
     background: #eef4fd;
     border-color: #d7e3fb;
+}
+.notification-item-clickable {
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+}
+.notification-item-clickable:hover {
+    background: #f4f6fa;
+    border-color: #d8dee8;
+}
+.notification-item-clickable.unread:hover {
+    background: #e2edfc;
 }
 
 .notification-item-icon {
@@ -68,26 +79,13 @@
     background: #f4f6fa;
     color: #555;
 }
-.notification-item-actions {
+.notification-item-arrow {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding-left: 12px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-top: 8px;
 }
-.notification-item-actions a,
-.notification-item-actions button {
-    font-size: 12px;
-    font-weight: 600;
-    text-decoration: none;
-    border: none;
-    background: none;
-    cursor: pointer;
-    padding: 0;
-}
-.notif-view-link { color: #2c5aa0; }
-.notif-view-link:hover { text-decoration: underline; }
-.notif-mark-read-btn { color: #8a94a6; }
-.notif-mark-read-btn:hover { color: #333; }
 
 .notif-filter-tabs {
     display: flex;

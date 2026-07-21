@@ -11,13 +11,12 @@
         <a href="{{ url_for('cswdo.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} Dashboard</a>
         <a href="{{ url_for('cswdo.damage_assessment') }}" class="{{ 'active' if active_page == 'damage_assessment' }}">{{ icon('alert-triangle', 18) }} Damage Assessment</a>
         <a href="{{ url_for('cswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('clipboard', 18) }} Relief Requests</a>
-        <a href="#" class="{{ 'active' if active_page == 'beneficiaries' }}">{{ icon('users', 18) }} Beneficiaries</a>
-        <a href="#" class="{{ 'active' if active_page == 'reports' }}">{{ icon('bar-chart', 18) }} Reports</a>
-        <a href="#" class="{{ 'active' if active_page == 'notifications' }}">{{ icon('bell', 18) }} Notifications {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}</a>
+        <a href="{{ url_for('cswdo.reports') }}" class="{{ 'active' if active_page == 'reports' }}">{{ icon('bar-chart', 18) }} Reports</a>
+        <a href="{{ url_for('cswdo.notifications') }}" class="{{ 'active' if active_page == 'notifications' }}">{{ icon('bell', 18) }} Notifications {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}</a>
     </nav>
     <div class="sidebar-footer">
         {% set name_parts = current_user.name.split() %}
-        <a href="#" class="sidebar-user {{ 'active' if active_page == 'profile_settings' }}">
+        <a href="{{ url_for('cswdo.profile_settings') }}" class="sidebar-user {{ 'active' if active_page == 'profile_settings' }}">
             <div class="user-avatar">{{ (name_parts[0][0] + name_parts[-1][0])|upper if name_parts|length > 1 else current_user.name[:2]|upper }}</div>
             <div class="sidebar-user-info">
                 <span class="user-name">{{ current_user.name }}</span>

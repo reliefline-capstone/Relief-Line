@@ -1,0 +1,29 @@
+{% extends "_public_base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Help - ReliefLine{% endblock %}
+
+{% block page_content %}
+<div class="static-page-header">
+    <div class="lock-badge">{{ icon('help-circle', 28, '#0f2547') }}</div>
+    <h2>Help</h2>
+</div>
+<div class="static-page-body">
+    <p>ReliefLine supports the relief supplies pipeline for Urdaneta City, Santa Barbara, and Calasiao, under the coordination of the Provincial Social Welfare and Development Office (PSWDO).</p>
+
+    <h3>Signing in</h3>
+    <p>Use the username/email and password issued to you by your office administrator. If you've forgotten your password, use <a href="{{ url_for('auth.forgot_password') }}">Forgot Password</a> on the login page.</p>
+
+    <h3>What each office can do</h3>
+    <ul>
+        <li><strong>PSWDO</strong> — monitors province-wide warehouse stock, approves or rejects relief requests, and coordinates pre-positioning and distribution.</li>
+        <li><strong>CSWDO/MSWDO</strong> — submits relief requests for its own municipality, reviews barangay damage reports, and monitors its own municipal food pack stock.</li>
+        <li><strong>Barangay-level users</strong> — confirm that food packs reached their intended recipients.</li>
+    </ul>
+
+    <h3>Need more help?</h3>
+    <p>See <a href="{{ url_for('auth.contact_page') }}">Contact Support</a> to reach the right office for your question.</p>
+
+    <a href="{{ url_for('auth.login') }}" class="back-to-login">{{ icon('arrow-left', 14) }} Back to Login</a>
+</div>
+{% endblock %}

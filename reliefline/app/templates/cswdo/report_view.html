@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}{{ report.title }} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'reports' %}
+    {% include "cswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "cswdo/_flash.html" %}
+
+        {% set crumbs = [
+            {"label": "Reports", "url": url_for('cswdo.reports')},
+            {"label": report.title, "url": none}
+        ] %}
+        {% include "pswdo/_warehouse_subnav.html" %}
+
+        <section class="rpt-filterbar">
+            <div class="rpt-filter-chips">
+                {{ icon('list', 14, '#2c5aa0') }}
+                <strong>Filters:</strong>
+                <span class="rpt-chip">Event: {{ report.event_name }}</span>
+                <span class="rpt-chip">Municipality: {{ report.municipality_label }}</span>
+                <span class="rpt-chip">Date: {{ report.coverage }}</span>
+            </div>
+            <a href="{{ url_for('cswdo.reports') }}" class="rpt-edit-filters">Edit Filters</a>
+        </section>
+
+        {% set pdf_url = url_for('cswdo.report_export_pdf', report_type=report.report_type, event_id=filters.event_id, days=filters.days) %}
+        {% set excel_url = url_for('cswdo.report_export_excel', report_type=report.report_type, event_id=filters.event_id, days=filters.days) %}
+
+        <section class="rpt-export-row">
+            <span class="rpt-export-label">Export as:</span>
+            <a href="{{ pdf_url }}" class="btn-export btn-export-pdf">{{ icon('file-text', 14, 'white') }} Export PDF</a>
+            <a href="{{ excel_url }}" class="btn-export btn-export-excel">{{ icon('download', 14, 'white') }} Export Excel</a>
+            <button type="button" class="btn-export btn-export-print" onclick="window.print()">{{ icon('list', 14, 'white') }} Print</button>
+            <a href="{{ url_for('cswdo.reports') }}" class="rpt-back-link">{{ icon('rotate-ccw', 12) }} Back to Reports</a>
+        </section>
+
+        <section class="rpt-document" id="report-document">
+            <div class="rpt-doc-header">
+                <div class="rpt-doc-brand">
+                    <div class="rpt-doc-icon">{{ icon('file-text', 20, 'white') }}</div>
+                    <div>
+                        <span class="rpt-doc-eyebrow">REPUBLIC OF THE PHILIPPINES</span>
+                        <span class="rpt-doc-eyebrow">{{ lgu|upper }} &middot; CSWDO/MSWDO</span>
+                        <h2>{{ report.title }}</h2>
+                    </div>
+                </div>
+                <div class="rpt-doc-meta">
+                    <div><span>Coverage:</span><strong>{{ report.coverage }}</strong></div>
+                    <div><span>Typhoon Event:</span><strong>{{ report.event_name }}</strong></div>
+                    <div><span>Date Generated:</span><strong>{{ report.date_generated.strftime('%B %d, %Y') }}</strong></div>
+                    <div><span>Prepared By:</span><strong>{{ report.prepared_by_role }}</strong></div>
+                    <div><span>System:</span><strong>ReliefLine v1.0</strong></div>
+                </div>
+            </div>
+
+            <div class="rpt-doc-strip">
+                <span>{{ icon('cloud-lightning', 12) }} <strong>Event:</strong> {{ report.event_name }}</span>
+                <span><strong>Municipality:</strong> {{ report.municipality_label }}</span>
+                <span><strong>Records:</strong> {{ report.record_count }} entries</span>
+                <span class="rpt-status-ready"><strong>Status:</strong> Ready for Export</span>
+            </div>
+
+            <h3 class="rpt-doc-title">{{ report.title.upper() }}</h3>
+
+            {% if report.rows %}
+            <div class="rpt-table-wrap">
+                <table class="rpt-table">
+                    <thead>
+                        <tr>{% for col in report.columns %}<th>{{ col }}</th>{% endfor %}</tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report.rows %}
+                        <tr>
+                            {% for cell in row %}
+                            <td>
+                                {% if loop.last and report.columns[-1] == 'Status' %}
+                                <span class="rpt-status-pill rpt-status-{{ cell|lower|replace(' ', '-') }}">{{ cell }}</span>
+                                {% else %}{{ cell }}{% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty-note">No records match the selected filters.</p>
+            {% endif %}
+
+            {% if report.notes %}
+            <div class="rpt-notes">
+                <strong>NOTES</strong>
+                <ul>{% for note in report.notes %}<li>{{ note }}</li>{% endfor %}</ul>
+            </div>
+            {% endif %}
+
+            <div class="rpt-signatures">
+                <div><span class="rpt-sig-line"></span><strong>Prepared By</strong><span>{{ report.prepared_by_role }}</span></div>
+                <div><span class="rpt-sig-line"></span><strong>Reviewed By</strong><span>Municipal/City Social Welfare Officer</span></div>
+                <div><span class="rpt-sig-line"></span><strong>Approved By</strong><span>PSWDO Office</span></div>
+            </div>
+
+            <p class="rpt-doc-footer">Generated by ReliefLine — Data-Driven Food Pack Allocation System &middot; {{ lgu }} &middot; {{ report.date_generated.strftime('%B %d, %Y') }}</p>
+        </section>
+
+        <section class="rpt-export-row rpt-export-row-bottom">
+            <a href="{{ pdf_url }}" class="btn-export btn-export-pdf">{{ icon('file-text', 14, 'white') }} Export PDF</a>
+            <a href="{{ excel_url }}" class="btn-export btn-export-excel">{{ icon('download', 14, 'white') }} Export Excel</a>
+            <button type="button" class="btn-export btn-export-print" onclick="window.print()">{{ icon('list', 14, 'white') }} Print</button>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

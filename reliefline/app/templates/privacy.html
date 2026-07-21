@@ -1,0 +1,29 @@
+{% extends "_public_base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Privacy Notice - ReliefLine{% endblock %}
+
+{% block page_content %}
+<div class="static-page-header">
+    <div class="lock-badge">{{ icon('shield', 28, '#0f2547') }}</div>
+    <h2>Privacy Notice</h2>
+</div>
+<div class="static-page-body">
+    <p>ReliefLine is a restricted-access system used by the Provincial Social Welfare and Development Office (PSWDO), City/Municipal Social Welfare and Development Offices (CSWDO/MSWDO), and authorized barangay personnel of the Province of Pangasinan to coordinate typhoon-related relief operations.</p>
+
+    <h3>What we collect</h3>
+    <ul>
+        <li>Account information for authorized users — name, email, and office or barangay assignment.</li>
+        <li>Disaster response records submitted through the system — barangay damage reports, relief requests, allocation and distribution records, and warehouse stock levels.</li>
+        <li>Basic system activity logs (who approved or updated a record, and when) kept for accountability.</li>
+    </ul>
+
+    <h3>How it's used</h3>
+    <p>Data in ReliefLine is used solely to plan, coordinate, and monitor food pack allocation, pre-positioning, and distribution during typhoon-related disaster response in the Province of Pangasinan. It is not shared outside the PSWDO, CSWDO/MSWDO, and barangay offices involved in relief operations.</p>
+
+    <h3>Access</h3>
+    <p>Access is limited to authorized personnel with an assigned account. Every account's actions are logged for accountability, consistent with the system's role-based design.</p>
+
+    <a href="{{ url_for('auth.login') }}" class="back-to-login">{{ icon('arrow-left', 14) }} Back to Login</a>
+</div>
+{% endblock %}

@@ -157,12 +157,11 @@
                 <h2>Relief Requests</h2>
                 <p>{{ lgu or '—' }} · Requests submitted to PSWDO</p>
             </div>
+            {% if draft_count %}
             <div class="rr-header-actions">
-                {% if draft_count %}
                 <a href="{{ url_for('cswdo.relief_requests', tab='overview', status='draft') }}" class="pill pill-draft">{{ icon('file-text', 13) }} {{ draft_count }} Draft{{ 's' if draft_count != 1 }}</a>
-                {% endif %}
-                <a href="{{ url_for('cswdo.relief_requests', tab='create') }}" class="btn-approve" style="text-decoration:none; width:auto; padding:11px 18px;">{{ icon('plus', 14, 'white') }} Create New Request</a>
             </div>
+            {% endif %}
         </div>
 
         <div class="page-tabs">
@@ -228,7 +227,7 @@
                         <td>{{ action_cell(r) }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="7"><p class="empty-note" style="padding:14px 0;">Wala pang relief request. Click "Create New Request" to start one.</p></td></tr>
+                    <tr><td colspan="7"><p class="empty-note" style="padding:14px 0;">Wala pang relief request. Click "Create Request" above to start one.</p></td></tr>
                     {% endfor %}
                 </tbody>
             </table>

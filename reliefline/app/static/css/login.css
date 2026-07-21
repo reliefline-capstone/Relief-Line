@@ -365,3 +365,58 @@
     justify-content: center;
     gap: 8px;
 }
+
+/* Privacy/Terms/Help/Contact — reuse .login-card's positioning but widen it
+   and allow it to scroll, since article-style content is usually taller than
+   a login form and this card is vertically centered + absolutely positioned. */
+.static-page-card {
+    width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.static-page-header {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.static-page-body {
+    text-align: left;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.static-page-body h3 {
+    margin-top: 18px;
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: #0f2547;
+}
+
+.static-page-body p {
+    margin-bottom: 10px;
+}
+
+.static-page-body ul {
+    margin: 0 0 10px 20px;
+}
+
+.static-page-body li {
+    margin-bottom: 4px;
+}
+
+.static-page-body a {
+    color: #3867d6;
+    text-decoration: underline;
+}
+
+.back-to-login {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f2547;
+}

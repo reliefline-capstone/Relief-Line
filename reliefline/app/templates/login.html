@@ -30,9 +30,9 @@
                     </div>
                 </div>
                 <nav class="top-links">
-                    <a href="#">{{ icon('help-circle', 18) }} Help</a>
+                    <a href="{{ url_for('auth.help_page') }}">{{ icon('help-circle', 18) }} Help</a>
                     <span class="divider">|</span>
-                    <a href="#">{{ icon('phone', 18) }} Contact</a>
+                    <a href="{{ url_for('auth.contact_page') }}">{{ icon('phone', 18) }} Contact</a>
                 </nav>
             </header>
 
@@ -85,7 +85,7 @@
                             <input type="checkbox" name="remember">
                             Remember me
                         </label>
-                        <a href="#" class="forgot-link">Forgot Password?</a>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">Forgot Password?</a>
                     </div>
 
                     <button type="submit" class="login-btn">
@@ -106,9 +106,9 @@
     <footer class="page-footer">
         <span>© 2026 Province of Pangasinan. All rights reserved.</span>
         <nav>
-            <a href="#">Privacy Notice</a>
-            <a href="#">Terms of Use</a>
-            <a href="#">Contact Support</a>
+            <a href="{{ url_for('auth.privacy_page') }}">Privacy Notice</a>
+            <a href="{{ url_for('auth.terms_page') }}">Terms of Use</a>
+            <a href="{{ url_for('auth.contact_page') }}">Contact Support</a>
         </nav>
     </footer>
 

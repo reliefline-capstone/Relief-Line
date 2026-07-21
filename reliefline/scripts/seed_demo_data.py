@@ -15,7 +15,7 @@ Usage:
 """
 import sys
 import os
-from datetime import date, timedelta, time as dtime
+from datetime import date, datetime, timedelta, time as dtime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -30,6 +30,7 @@ from app.models.validation import DistributionRecord
 from app.models.logistics import Vehicle, Driver
 from app.models.warehouse import WarehouseInventory
 from app.models.activity_log import ActivityLog, DailyOpsStat
+from app.models.relief_request_batch import ReliefRequestBatch
 from app.models.user import User
 
 app = create_app()
@@ -52,6 +53,7 @@ def run():
         warehouse_a = Office.query.filter_by(office_name="Warehouse A").first()
         admin_users = {u.role: u for u in User.query.all()}
         pswdo_admin = admin_users.get("pswdo_admin") or admin_users.get("system_admin")
+        cswdo_admin_by_office = {u.office_id: u for u in User.query.filter_by(role="cswdo_admin").all()}
 
         event = DisasterEvent.query.filter_by(status="active").order_by(DisasterEvent.start_date.desc()).first()
         if not event:
@@ -139,15 +141,43 @@ def run():
         db.session.flush()
         print("Seeded 3 vehicles and 3 drivers")
 
+        # One ReliefRequestBatch per office, created lazily on first use — every
+        # AllocationRecord below now goes through the same submission wrapper the
+        # real CSWDO "Relief Requests" flow uses (app.routes.cswdo.relief_request_submit),
+        # instead of being created directly. Without this, these records would be
+        # invisible on the CSWDO Relief Requests page (which only reads
+        # ReliefRequestBatch) while still showing up on the CSWDO Dashboard's
+        # "Relief Request Status" widget (which reads AllocationRecord directly) —
+        # the two pages would silently disagree about how many requests exist.
+        _relief_batches = {}
+        submitted_at = datetime.combine(today - timedelta(days=1), dtime(9, 0))
+
+        def _get_or_create_batch(office):
+            if office.office_id not in _relief_batches:
+                cswdo_admin = cswdo_admin_by_office.get(office.office_id)
+                batch = ReliefRequestBatch(
+                    office_id=office.office_id, event_id=event.event_id,
+                    requested_food_packs=0, priority="medium",
+                    reason="Verified barangay reports show typhoon-related flooding requiring food pack support.",
+                    created_by=cswdo_admin.user_id if cswdo_admin else None,
+                    created_at=submitted_at, submitted_at=submitted_at,
+                )
+                db.session.add(batch)
+                db.session.flush()
+                _relief_batches[office.office_id] = batch
+            return _relief_batches[office.office_id]
+
         def make_allocation(barangay_name, muni, predicted, alloc_status, allocated=0,
                              expected_delivery_days=2, rejection_reason=None):
             b = barangays[barangay_name]
             office = muni_offices[muni]
+            batch = _get_or_create_batch(office)
+            batch.requested_food_packs += predicted
             alloc = AllocationRecord(
                 barangay_id=b.barangay_id, office_id=office.office_id,
                 predicted_quantity=predicted, allocated_quantity=allocated,
                 allocation_date=today - timedelta(days=1), event_id=event.event_id,
-                status=alloc_status,
+                status=alloc_status, batch_id=batch.batch_id,
             )
             if alloc_status == "approved":
                 alloc.fulfilling_office_id = warehouse_a.office_id

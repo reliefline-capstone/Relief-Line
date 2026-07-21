@@ -1,0 +1,26 @@
+{% extends "_public_base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Terms of Use - ReliefLine{% endblock %}
+
+{% block page_content %}
+<div class="static-page-header">
+    <div class="lock-badge">{{ icon('file-text', 28, '#0f2547') }}</div>
+    <h2>Terms of Use</h2>
+</div>
+<div class="static-page-body">
+    <p>By accessing ReliefLine, you agree to use the system only for the authorized disaster-response coordination duties assigned to your role — PSWDO, CSWDO/MSWDO, or barangay-level personnel — in the Province of Pangasinan.</p>
+
+    <h3>Account use</h3>
+    <ul>
+        <li>Accounts are personal and must not be shared.</li>
+        <li>Reports submitted through the system — damage assessments, relief requests, and distribution/validation records — must reflect actual, good-faith information.</li>
+        <li>Unauthorized access or use of ReliefLine outside of official relief operations is prohibited.</li>
+    </ul>
+
+    <h3>System availability</h3>
+    <p>ReliefLine requires an active internet connection. It is provided as a decision-support tool — its predictions and recommendations are estimates and do not replace the professional judgment of PSWDO, CSWDO/MSWDO, and barangay personnel.</p>
+
+    <a href="{{ url_for('auth.login') }}" class="back-to-login">{{ icon('arrow-left', 14) }} Back to Login</a>
+</div>
+{% endblock %}

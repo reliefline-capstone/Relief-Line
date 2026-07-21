@@ -1,6 +1,8 @@
 import csv
 import io
+import json
 import os
+import zipfile
 from datetime import datetime, date
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, Response, current_app
@@ -19,6 +21,7 @@ from app.models.barangay_status import BarangayDisasterStatus
 from app.models.barangay_report import BarangayReport
 from app.models.relief_request_batch import ReliefRequestBatch
 from app.models.activity_log import ActivityLog
+from app.models.user import User
 from app.ml import predict as ml_predict
 
 # Reused from the PSWDO route module rather than redefined, so the two offices
@@ -27,8 +30,54 @@ from app.ml import predict as ml_predict
 from app.routes.pswdo import (
     WAREHOUSE_HEALTHY, WAREHOUSE_MODERATE, DISPATCH_STATUS_LABELS,
     ROUTE_PROGRESS_BY_STATUS, PRIORITY_BY_STATUS, DEFAULT_PRIORITY,
-    _item_status, _priority_info,
+    NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
+    _item_status, _priority_info, _lgu_burn_rate, _recent_stock_movements,
 )
+
+# CSWDO's own link targets for notification "View" buttons — deliberately NOT
+# the pswdo.* links NOTIFICATION_LINK_BUILDERS (app/routes/pswdo.py) resolves
+# to, since those point at pages role_required("pswdo_admin", "system_admin")
+# would 403 a cswdo_admin out of. Both resolve down to the same destination —
+# the Relief Requests Tracking tab for the specific batch a record belongs
+# to — since that's the one CSWDO screen that shows an individual request's
+# full status, distribution stepper, and history in one place. warehouse-
+# category notifications (inter-warehouse transfers between PSWDO-managed
+# offices) never reach a CSWDO office's own office_id/barangay_id scope in
+# the first place, so no entry is needed for that category here.
+
+def _cswdo_batch_tracking_link(batch_id):
+    if not batch_id:
+        return None
+    return url_for("cswdo.relief_requests", tab="tracking", batch_id=batch_id)
+
+
+def _cswdo_allocation_link(log):
+    allocation = AllocationRecord.query.get(log.allocation_id) if log.allocation_id else None
+    return (
+        _cswdo_batch_tracking_link(allocation.batch_id) if allocation and allocation.batch_id
+        else url_for("cswdo.relief_requests")
+    )
+
+
+def _cswdo_distribution_link(log):
+    distribution = DistributionRecord.query.get(log.distribution_id) if log.distribution_id else None
+    batch_id = distribution.allocation.batch_id if distribution and distribution.allocation else None
+    return _cswdo_batch_tracking_link(batch_id) or url_for("cswdo.dashboard")
+
+
+CSWDO_NOTIFICATION_LINK_BUILDERS = {
+    "allocation_approved": _cswdo_allocation_link,
+    "allocation_rejected": _cswdo_allocation_link,
+    "relief_request_submitted": lambda log: _cswdo_batch_tracking_link(log.batch_id) or url_for("cswdo.relief_requests"),
+    "distribution_status": _cswdo_distribution_link,
+    "distribution_delivered": _cswdo_distribution_link,
+}
+
+CSWDO_NOTIFICATION_CATEGORIES = [
+    {"value": "all", "label": "All"},
+    {"value": "relief_requests", "label": "Relief Requests"},
+    {"value": "distribution", "label": "Distribution"},
+]
 
 ALLOWED_UPLOAD_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "zip", "doc", "docx"}
 
@@ -67,6 +116,49 @@ def _assert_own_lgu(report):
     lgu = office.area_covered if office else None
     if not lgu or report.barangay.city_municipality != lgu:
         abort(403)
+
+
+def _own_activity_filters():
+    """Same office_id/barangay_id OR-scoping the dashboard already applies to
+    ActivityLog — the single source of truth for "this CSWDO office's own
+    activity," reused by the dashboard's notification preview, the full
+    Notifications page, and its mark-as-read actions so all three always
+    agree on the same scoped set."""
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    filters = []
+    if office:
+        filters.append(ActivityLog.office_id == office.office_id)
+    if lgu:
+        barangay_ids = [b.barangay_id for b in Barangay.query.filter_by(city_municipality=lgu).all()]
+        if barangay_ids:
+            filters.append(ActivityLog.barangay_id.in_(barangay_ids))
+    return filters
+
+
+def _assert_own_activity(log):
+    """A cswdo_admin may only act on notifications scoped to their own office
+    or their own LGU's barangays — mirrors _assert_own_lgu's role/office
+    boundary check for the notifications module."""
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    owns_by_office = office and log.office_id == office.office_id
+    owns_by_barangay = log.barangay and lgu and log.barangay.city_municipality == lgu
+    if not (owns_by_office or owns_by_barangay):
+        abort(403)
+
+
+def _cswdo_notification_view(log):
+    meta = NOTIFICATION_META.get(log.action_type, DEFAULT_NOTIFICATION_META)
+    link_fn = CSWDO_NOTIFICATION_LINK_BUILDERS.get(log.action_type)
+    return {
+        "log": log,
+        "icon": meta["icon"],
+        "color": meta["color"],
+        "category": meta["category"],
+        "category_label": meta["category_label"],
+        "link": link_fn(log) if link_fn else None,
+    }
 
 
 @cswdo_bp.route("/dashboard")
@@ -198,12 +290,10 @@ def dashboard():
         barangay_reports.sort(key=lambda r: (r["priority"]["rank"], r["affected_families"]), reverse=True)
         barangay_reports = barangay_reports[:5]
 
-    # Recent activity + notifications — scoped to this office and/or this LGU's barangays
-    activity_filters = []
-    if office:
-        activity_filters.append(ActivityLog.office_id == office.office_id)
-    if lgu_barangay_ids:
-        activity_filters.append(ActivityLog.barangay_id.in_(lgu_barangay_ids))
+    # Recent activity + notifications — scoped to this office and/or this LGU's
+    # barangays, same scope the full Notifications page and mark-as-read
+    # actions use (see _own_activity_filters).
+    activity_filters = _own_activity_filters()
 
     recent_activities = []
     notifications = []
@@ -852,6 +942,11 @@ def relief_request_submit():
         db.session.add(AllocationRecord(
             barangay_id=report.barangay_id, office_id=office.office_id,
             predicted_quantity=max(scaled_qty, 0), allocated_quantity=0,
+            # Snapshot of the model's "Historical Allocation" predictor at request
+            # time (see app.ml.train.historical_allocation_for) — kept on the row
+            # itself as an audit trail, separate from how the model recomputes it
+            # fresh from AllocationRecord history on every future training run.
+            historical_allocation=ml_predict.historical_allocation_for(report.barangay_id),
             allocation_date=today, event_id=primary_event.event_id,
             status="pending", created_by=current_user.user_id, batch_id=batch.batch_id,
         ))
@@ -860,7 +955,7 @@ def relief_request_submit():
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="relief_request_submitted",
         description=f"{office.office_name} submitted {batch.ref} to PSWDO — {batch.requested_food_packs:,} food packs across {len(eligible)} barangays",
-        office_id=office.office_id,
+        office_id=office.office_id, batch_id=batch.batch_id,
     ))
     db.session.commit()
 
@@ -896,4 +991,444 @@ def relief_request_export():
     return Response(
         buffer.getvalue(), mimetype="text/csv",
         headers={"Content-Disposition": f"attachment; filename={(office.area_covered if office else 'relief').replace(' ', '_')}_relief_requests.csv"},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Notifications
+# ---------------------------------------------------------------------------
+
+@cswdo_bp.route("/notifications")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def notifications():
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    filters = _own_activity_filters()
+    category_filter = request.args.get("category", "all")
+    status_filter = request.args.get("status", "all")
+
+    if not filters:
+        return render_template(
+            "cswdo/notifications.html", items=[], unread_count=0, total_count=0,
+            total_filtered=0, category_filter=category_filter, status_filter=status_filter,
+            categories=CSWDO_NOTIFICATION_CATEGORIES, page=1, total_pages=1, lgu=lgu,
+        )
+
+    scope = db.or_(*filters)
+    query = ActivityLog.query.filter(scope)
+    if category_filter != "all":
+        action_types = [k for k, v in NOTIFICATION_META.items() if v["category"] == category_filter]
+        query = query.filter(ActivityLog.action_type.in_(action_types))
+    if status_filter == "unread":
+        query = query.filter(ActivityLog.is_read.is_(False))
+
+    unread_count = ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).count()
+    total_count = ActivityLog.query.filter(scope).count()
+
+    per_page = 15
+    all_matching = query.order_by(ActivityLog.created_at.desc()).all()
+    total_filtered = len(all_matching)
+    total_pages = max((total_filtered + per_page - 1) // per_page, 1)
+    page = max(request.args.get("page", 1, type=int), 1)
+    page = min(page, total_pages)
+    page_items = [_cswdo_notification_view(log) for log in all_matching[(page - 1) * per_page: page * per_page]]
+
+    return render_template(
+        "cswdo/notifications.html",
+        items=page_items, unread_count=unread_count, total_count=total_count,
+        total_filtered=total_filtered, category_filter=category_filter, status_filter=status_filter,
+        categories=CSWDO_NOTIFICATION_CATEGORIES, page=page, total_pages=total_pages, lgu=lgu,
+    )
+
+
+@cswdo_bp.route("/notifications/<int:log_id>/view")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def view_notification(log_id):
+    """The Notifications page's "View" link routes through here instead of
+    linking to item.link directly, so opening a notification is what marks
+    it read — no separate "Mark as read" click required."""
+    log = ActivityLog.query.get_or_404(log_id)
+    _assert_own_activity(log)
+    log.is_read = True
+    db.session.commit()
+    destination = _cswdo_notification_view(log)["link"]
+    return redirect(destination or url_for("cswdo.notifications"))
+
+
+@cswdo_bp.route("/notifications/mark-all-read", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def mark_all_notifications_read():
+    filters = _own_activity_filters()
+    if filters:
+        ActivityLog.query.filter(db.or_(*filters), ActivityLog.is_read.is_(False)).update(
+            {"is_read": True}, synchronize_session=False
+        )
+        db.session.commit()
+    flash("All notifications marked as read.", "success")
+    return redirect(request.referrer or url_for("cswdo.notifications"))
+
+
+# ---------------------------------------------------------------------------
+# Profile Settings
+# ---------------------------------------------------------------------------
+
+@cswdo_bp.route("/settings/profile")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def profile_settings():
+    return render_template("cswdo/profile_settings.html")
+
+
+@cswdo_bp.route("/settings/profile", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def update_profile_info():
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+
+    if not name or not email:
+        flash("Name and email are required.", "error")
+        return redirect(url_for("cswdo.profile_settings"))
+
+    email_taken = User.query.filter(
+        User.email == email, User.user_id != current_user.user_id
+    ).first()
+    if email_taken:
+        flash(f"{email} is already in use by another account.", "error")
+        return redirect(url_for("cswdo.profile_settings"))
+
+    current_user.name = name
+    current_user.email = email
+    db.session.commit()
+    flash("Profile information updated.", "success")
+    return redirect(url_for("cswdo.profile_settings"))
+
+
+@cswdo_bp.route("/settings/password", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def change_password():
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not current_user.check_password(current_password):
+        flash("Current password is incorrect.", "error")
+    elif len(new_password) < 8:
+        flash("New password must be at least 8 characters long.", "error")
+    elif new_password != confirm_password:
+        flash("New password and confirmation do not match.", "error")
+    else:
+        current_user.set_password(new_password)
+        db.session.commit()
+        flash("Password updated successfully.", "success")
+    return redirect(url_for("cswdo.profile_settings"))
+
+
+# ---------------------------------------------------------------------------
+# Reports
+# ---------------------------------------------------------------------------
+# Reuses app.routes.report_data's report builders and app.routes.report_files'
+# PDF/Excel generation as-is (both are pure data-in/file-out, no role
+# dependency) — but NOT app.routes.reports' routes/templates, since those are
+# pswdo_admin-only, live under /pswdo/reports, and let the caller pick "All
+# Municipalities" or any of the 3 target LGUs via a municipality query param.
+# A cswdo_admin must never see another LGU's data, so filters["municipality"]
+# is always forced to this office's own LGU here, ignoring any query param —
+# these routes exist entirely so that forcing can happen server-side rather
+# than relying on a template to not offer the other choices.
+
+REPORTS_MIME_TYPES = {
+    "pdf": "application/pdf",
+    "excel": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
+REPORTS_EXTENSIONS = {"pdf": "pdf", "excel": "xlsx"}
+
+
+def _resolve_cswdo_report_filters(lgu):
+    from app.routes.report_data import resolve_filters
+    filters = resolve_filters(request.args)
+    filters["municipality"] = lgu
+    filters["lgus"] = [lgu]
+    return filters
+
+
+def _cswdo_report_filters_snapshot(filters):
+    return {"event_id": filters["event_id"], "days": filters["days"]}
+
+
+def _regenerate_cswdo_report(log, lgu):
+    from app.routes.reports import _StoredArgs
+    from app.routes.report_data import resolve_filters, build_report
+    from app.routes.report_files import generate_file
+
+    stored = json.loads(log.filters_json) if log.filters_json else {}
+    filters = resolve_filters(_StoredArgs(stored))
+    filters["municipality"] = lgu
+    filters["lgus"] = [lgu]
+    report = build_report(log.report_type, filters, log.generated_by_user)
+    return generate_file(report, log.format)
+
+
+@cswdo_bp.route("/reports")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def reports():
+    from app.models.report import ReportLog
+    from app.routes.report_data import REPORT_TYPES
+
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    if not lgu:
+        abort(404)
+
+    filters = _resolve_cswdo_report_filters(lgu)
+    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).all()
+
+    barangay_ids = [b.barangay_id for b in Barangay.query.filter_by(city_municipality=lgu).all()]
+
+    approved_q = AllocationRecord.query.filter(
+        AllocationRecord.status.in_(("approved", "released")),
+        AllocationRecord.allocation_date >= filters["start_date"],
+        AllocationRecord.barangay_id.in_(barangay_ids),
+    )
+    delivered_q = DistributionRecord.query.filter(
+        DistributionRecord.dispatch_status == "delivered",
+        DistributionRecord.distribution_date >= filters["start_date"],
+        DistributionRecord.barangay_id.in_(barangay_ids),
+    )
+    if filters["event_id"]:
+        approved_q = approved_q.filter(AllocationRecord.event_id == filters["event_id"])
+        delivered_q = delivered_q.join(AllocationRecord).filter(AllocationRecord.event_id == filters["event_id"])
+
+    # "This office's own reports" — ReportLog has no office_id column, so
+    # generated_by is the scoping key (matches this office's single
+    # cswdo_admin in current seed data; safe even with more than one, since
+    # each admin then just sees their own generated history).
+    reports_generated = ReportLog.query.filter(
+        ReportLog.generated_by == current_user.user_id,
+        ReportLog.generated_at >= filters["start_date"],
+    ).count()
+    approved_requests = approved_q.count()
+    packs_distributed = sum(d.quantity_released for d in delivered_q.all())
+    completed_deliveries = delivered_q.count()
+
+    query_params = {"event_id": filters["event_id"], "days": filters["days"]}
+    report_cards = [
+        {"slug": slug, **info, "generate_url": url_for("cswdo.report_view", report_type=slug, **query_params)}
+        for slug, info in REPORT_TYPES.items()
+    ]
+
+    recent_logs = ReportLog.query.filter_by(generated_by=current_user.user_id).order_by(
+        ReportLog.generated_at.desc()
+    ).limit(10).all()
+    recent_reports = []
+    for log in recent_logs:
+        stored = json.loads(log.filters_json) if log.filters_json else {}
+        recent_reports.append({
+            "log": log,
+            "title": REPORT_TYPES.get(log.report_type, {}).get("title", log.report_type),
+            "view_url": url_for("cswdo.report_view", report_type=log.report_type, **stored),
+            "download_url": url_for("cswdo.report_download", report_id=log.report_id),
+        })
+
+    coverage_range = f"{filters['start_date'].strftime('%b %d')} - {date.today().strftime('%b %d, %Y')}"
+
+    return render_template(
+        "cswdo/reports.html",
+        active_events=active_events,
+        lgu=lgu,
+        filters=filters,
+        coverage_range=coverage_range,
+        reports_generated=reports_generated,
+        approved_requests=approved_requests,
+        packs_distributed=packs_distributed,
+        completed_deliveries=completed_deliveries,
+        report_cards=report_cards,
+        recent_reports=recent_reports,
+        download_all_url=url_for("cswdo.report_download_all"),
+    )
+
+
+@cswdo_bp.route("/reports/<report_type>")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def report_view(report_type):
+    from app.routes.report_data import REPORT_TYPES, build_report
+
+    if report_type not in REPORT_TYPES:
+        abort(404)
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    if not lgu:
+        abort(404)
+
+    filters = _resolve_cswdo_report_filters(lgu)
+    report = build_report(report_type, filters, current_user)
+    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).all()
+
+    return render_template(
+        "cswdo/report_view.html",
+        report=report, filters=filters, active_events=active_events, lgu=lgu,
+    )
+
+
+def _cswdo_export_report(report_type, fmt):
+    from app.models.report import ReportLog
+    from app.routes.report_data import REPORT_TYPES, build_report
+    from app.routes.report_files import generate_file
+
+    if report_type not in REPORT_TYPES:
+        abort(404)
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    if not lgu:
+        abort(404)
+
+    filters = _resolve_cswdo_report_filters(lgu)
+    report = build_report(report_type, filters, current_user)
+    content, pages = generate_file(report, fmt)
+
+    db.session.add(ReportLog(
+        report_type=report_type, format=fmt, pages=pages,
+        filters_json=json.dumps(_cswdo_report_filters_snapshot(filters)),
+        generated_by=current_user.user_id,
+    ))
+    db.session.commit()
+
+    filename = f"{report_type}_{datetime.now().strftime('%Y%m%d')}.{REPORTS_EXTENSIONS[fmt]}"
+    return Response(
+        content, mimetype=REPORTS_MIME_TYPES[fmt],
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@cswdo_bp.route("/reports/<report_type>/pdf")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def report_export_pdf(report_type):
+    return _cswdo_export_report(report_type, "pdf")
+
+
+@cswdo_bp.route("/reports/<report_type>/excel")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def report_export_excel(report_type):
+    return _cswdo_export_report(report_type, "excel")
+
+
+@cswdo_bp.route("/reports/download/<int:report_id>")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def report_download(report_id):
+    from app.models.report import ReportLog
+    from app.routes.report_data import REPORT_TYPES
+
+    log = ReportLog.query.get_or_404(report_id)
+    if log.generated_by != current_user.user_id:
+        abort(403)
+    if log.report_type not in REPORT_TYPES:
+        abort(404)
+
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    content, _ = _regenerate_cswdo_report(log, lgu)
+    filename = f"{log.report_type}_{log.generated_at.strftime('%Y%m%d')}.{REPORTS_EXTENSIONS[log.format]}"
+    return Response(
+        content, mimetype=REPORTS_MIME_TYPES[log.format],
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@cswdo_bp.route("/reports/download-all")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def report_download_all():
+    from app.models.report import ReportLog
+    from app.routes.report_data import REPORT_TYPES
+
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    logs = ReportLog.query.filter_by(generated_by=current_user.user_id).order_by(
+        ReportLog.generated_at.desc()
+    ).limit(10).all()
+    if not logs:
+        flash("No reports have been generated yet — export one first.", "error")
+        return redirect(url_for("cswdo.reports"))
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for i, log in enumerate(logs, start=1):
+            if log.report_type not in REPORT_TYPES:
+                continue
+            content, _ = _regenerate_cswdo_report(log, lgu)
+            fname = f"{i:02d}_{log.report_type}_{log.generated_at.strftime('%Y%m%d')}.{REPORTS_EXTENSIONS[log.format]}"
+            zf.writestr(fname, content)
+    buffer.seek(0)
+
+    return Response(
+        buffer.getvalue(), mimetype="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename={lgu.replace(' ', '_')}_reports_{datetime.now().strftime('%Y%m%d')}.zip"
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Municipal Inventory (read-only) — per Table 10 the CSWDO/MSWDO role is
+# "inventory monitoring," not management; every add/update/transfer action
+# stays PSWDO-only (app/routes/pswdo.py). This page is the dashboard's
+# Municipal Inventory panel's "View Details" destination, showing this
+# office's own stock in more depth without exposing any write action.
+# ---------------------------------------------------------------------------
+
+@cswdo_bp.route("/municipal-inventory")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def municipal_inventory():
+    office = current_user.office
+    if not office:
+        abort(404)
+
+    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).all()
+
+    food_pack_item = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first()
+    food_pack_qty = food_pack_item.quantity_available if food_pack_item else 0
+    capacity = office.capacity_food_pack or 20000
+    pct = round((food_pack_qty / capacity) * 100, 0) if capacity > 0 else 0
+
+    if pct >= WAREHOUSE_HEALTHY * 100:
+        health = "Healthy"
+    elif pct >= WAREHOUSE_MODERATE * 100:
+        health = "Moderate"
+    else:
+        health = "Low"
+
+    burn = _lgu_burn_rate(office, active_events)
+    days_remaining = round(food_pack_qty / burn, 0) if burn else None
+
+    items = WarehouseInventory.query.filter_by(office_id=office.office_id).order_by(
+        WarehouseInventory.item_name
+    ).all()
+    inventory_summary = [
+        {"item": item, "status": _item_status(item.quantity_available, item.min_stock_level)}
+        for item in items
+    ]
+
+    movements = _recent_stock_movements([office.office_id], limit=6)
+
+    return render_template(
+        "cswdo/municipal_inventory.html",
+        office=office, food_pack_qty=food_pack_qty, capacity=capacity, pct=pct, health=health,
+        burn=burn, days_remaining=days_remaining, inventory_summary=inventory_summary,
+        movements=movements,
     )

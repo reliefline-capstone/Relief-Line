@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -27,7 +28,7 @@
             </div>
             <div class="rr-actions">
                 <a href="{{ url_for('pswdo.completed_deliveries') }}" class="btn-outline">{{ icon('file-text', 14) }} Completed</a>
-                <a href="#" class="btn-primary">{{ icon('plus', 14, 'white') }} New Distribution</a>
+                <button type="button" class="btn-primary" data-open-modal="new-distribution-modal">{{ icon('plus', 14, 'white') }} New Distribution</button>
             </div>
         </section>
 
@@ -140,4 +141,49 @@
 
     </main>
 </div>
+
+<!-- New Distribution modal -->
+<div class="rd-modal-overlay" id="new-distribution-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('plus', 18, '#0f2547') }} New Distribution</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        {% if eligible_allocations %}
+        <form method="POST" action="{{ url_for('pswdo.create_distribution') }}">
+            <label for="allocation_id">Approved Relief Request *</label>
+            <select name="allocation_id" id="allocation_id" required>
+                <option value="">Select a barangay...</option>
+                {% for a in eligible_allocations %}
+                <option value="{{ a.allocation_id }}">
+                    {{ a.barangay.barangay_name }}, {{ a.barangay.city_municipality }} —
+                    {{ "{:,}".format(a.allocated_quantity) }} packs
+                    {% if a.fulfilling_office %}(from {{ a.fulfilling_office.office_name }}){% endif %}
+                </option>
+                {% endfor %}
+            </select>
+            <span class="form-hint">Vehicle and driver are assigned afterward from the distribution's detail page.</span>
+
+            <label for="distribution_date">Distribution Date</label>
+            <input type="date" name="distribution_date" id="distribution_date" value="{{ today_str }}">
+
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Schedule Distribution</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+        {% else %}
+        <p class="empty-note" style="padding: 8px 0 16px;">No approved relief requests are waiting to be scheduled right now — approve a relief request first.</p>
+        <div class="rd-modal-actions">
+            <a href="{{ url_for('pswdo.relief_requests', status='approved') }}" class="btn-decision btn-partial" style="text-decoration:none; text-align:center;">{{ icon('clipboard', 16, 'white') }} View Approved Requests</a>
+            <button type="button" class="btn-cancel" data-close-modal>Close</button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
 {% endblock %}

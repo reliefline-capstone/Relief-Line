@@ -4,6 +4,15 @@
     box-sizing: border-box;
 }
 
+/* Icons render as raw <svg> (see _macros.html's icon() macro) with no
+   vertical-align of their own, so a plain inline icon-then-text pairing sits
+   on the text baseline — visibly low relative to the text's cap-height.
+   Anywhere an icon+text pair isn't already inside a flex/align-items
+   container, this is what keeps it level. */
+svg {
+    vertical-align: middle;
+}
+
 body {
     font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
     color: #1a1a1a;

@@ -1,0 +1,22 @@
+{% extends "_public_base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Contact Support - ReliefLine{% endblock %}
+
+{% block page_content %}
+<div class="static-page-header">
+    <div class="lock-badge">{{ icon('phone', 28, '#0f2547') }}</div>
+    <h2>Contact Support</h2>
+</div>
+<div class="static-page-body">
+    <p>For account access, password issues, or technical support with ReliefLine, reach out through your own office's usual chain:</p>
+    <ul>
+        <li><strong>Barangay-level users</strong> — contact your City/Municipal Social Welfare and Development Office (CSWDO/MSWDO).</li>
+        <li><strong>CSWDO/MSWDO personnel</strong> — contact the Provincial Social Welfare and Development Office (PSWDO).</li>
+        <li><strong>PSWDO personnel</strong> — contact your ReliefLine System Administrator.</li>
+    </ul>
+    <p>Locked out of your account? Use <a href="{{ url_for('auth.forgot_password') }}">Forgot Password</a> on the login page to reset it yourself.</p>
+
+    <a href="{{ url_for('auth.login') }}" class="back-to-login">{{ icon('arrow-left', 14) }} Back to Login</a>
+</div>
+{% endblock %}

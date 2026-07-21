@@ -13,19 +13,19 @@
 <div class="dashboard-layout">
 
     {% set active_page = 'notifications' %}
-    {% include "pswdo/_sidebar.html" %}
+    {% include "cswdo/_sidebar.html" %}
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_flash.html" %}
+        {% include "cswdo/_flash.html" %}
 
         <section class="page-header">
             <div>
                 <h2>Notifications</h2>
-                <p>{{ unread_count }} unread of {{ total_count }} total system notifications</p>
+                <p>{{ unread_count }} unread of {{ total_count }} total notifications{% if lgu %} · {{ lgu }}{% endif %}</p>
             </div>
             {% if unread_count %}
-            <form method="POST" action="{{ url_for('pswdo.mark_all_notifications_read') }}">
+            <form method="POST" action="{{ url_for('cswdo.mark_all_notifications_read') }}">
                 <button type="submit" class="btn-outline">{{ icon('check-circle', 14) }} Mark All as Read</button>
             </form>
             {% endif %}
@@ -33,7 +33,7 @@
 
         <div class="notif-filter-tabs">
             {% for cat in categories %}
-            <a href="{{ url_for('pswdo.notifications', category=cat.value, status=status_filter) }}"
+            <a href="{{ url_for('cswdo.notifications', category=cat.value, status=status_filter) }}"
                class="notif-filter-tab {{ 'active' if category_filter == cat.value }}">{{ cat.label }}</a>
             {% endfor %}
         </div>
@@ -53,7 +53,7 @@
             {% if items %}
             {% for item in items %}
             {% set tag = 'a' if item.link else 'div' %}
-            <{{ tag }} {% if item.link %}href="{{ url_for('pswdo.view_notification', log_id=item.log.log_id) }}"{% endif %} class="notification-item {{ 'unread' if not item.log.is_read }} {{ 'notification-item-clickable' if item.link }}">
+            <{{ tag }} {% if item.link %}href="{{ url_for('cswdo.view_notification', log_id=item.log.log_id) }}"{% endif %} class="notification-item {{ 'unread' if not item.log.is_read }} {{ 'notification-item-clickable' if item.link }}">
                 <div class="notification-item-icon">{{ icon(item.icon, 16, item.color) }}</div>
                 <div class="notification-item-body">
                     <div class="notification-item-top">
@@ -75,11 +75,11 @@
                 <span>Showing {{ items|length }} of {{ total_filtered }} notification{{ 's' if total_filtered != 1 }}</span>
                 <div class="pagination-controls">
                     {% if page > 1 %}
-                    <a href="{{ url_for('pswdo.notifications', page=page-1, category=category_filter, status=status_filter) }}" class="page-btn">Previous</a>
+                    <a href="{{ url_for('cswdo.notifications', page=page-1, category=category_filter, status=status_filter) }}" class="page-btn">Previous</a>
                     {% endif %}
                     <span class="page-btn active">{{ page }}</span>
                     {% if page < total_pages %}
-                    <a href="{{ url_for('pswdo.notifications', page=page+1, category=category_filter, status=status_filter) }}" class="page-btn">Next</a>
+                    <a href="{{ url_for('cswdo.notifications', page=page+1, category=category_filter, status=status_filter) }}" class="page-btn">Next</a>
                     {% endif %}
                 </div>
             </div>

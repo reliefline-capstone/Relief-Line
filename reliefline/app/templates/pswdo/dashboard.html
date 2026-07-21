@@ -146,7 +146,7 @@
                 <p class="empty-note">Walang pending request ngayon.</p>
                 {% endfor %}
 
-                <a href="#" class="btn-view-all">View All →</a>
+                <a href="{{ url_for('pswdo.relief_requests', status='pending') }}" class="btn-view-all">View All →</a>
             </section>
 
         </div>
@@ -156,7 +156,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h3>{{ icon('building', 18, '#0f2547') }} Warehouse Status</h3>
-                    <a href="#" class="link-manage">Manage →</a>
+                    <a href="{{ url_for('pswdo.warehouse_inventory') }}" class="link-manage">Manage →</a>
                 </div>
                 {% for w in warehouses %}
                 <div class="warehouse-status-row">
@@ -239,7 +239,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h3>Today's Distribution Progress</h3>
-                    <a href="#" class="link-manage">Track →</a>
+                    <a href="{{ url_for('pswdo.distribution') }}" class="link-manage">Track →</a>
                 </div>
 
                 <div class="progress-summary">

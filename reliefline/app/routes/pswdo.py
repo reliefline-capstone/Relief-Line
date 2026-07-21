@@ -68,22 +68,57 @@ ROUTE_PROGRESS_BY_STATUS = {
 NOTIFICATION_META = {
     "allocation_approved": {"icon": "check-circle", "color": "#1e8449", "category": "relief_requests", "category_label": "Relief Requests"},
     "allocation_rejected": {"icon": "x-circle", "color": "#c0392b", "category": "relief_requests", "category_label": "Relief Requests"},
+    "relief_request_submitted": {"icon": "clipboard", "color": "#3867d6", "category": "relief_requests", "category_label": "Relief Requests"},
     "distribution_status": {"icon": "truck", "color": "#2c5aa0", "category": "distribution", "category_label": "Distribution"},
     "distribution_delivered": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Distribution"},
     "warehouse_transfer_completed": {"icon": "rotate-ccw", "color": "#6c5ce7", "category": "warehouse", "category_label": "Warehouse"},
 }
 DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
 
-NOTIFICATION_LINKS = {
-    "relief_requests": lambda log: url_for("pswdo.relief_requests", municipality=log.barangay.city_municipality) if log.barangay else url_for("pswdo.relief_requests"),
-    "distribution": lambda log: url_for("pswdo.distribution", q=log.barangay.city_municipality) if log.barangay else url_for("pswdo.distribution"),
-    "warehouse": lambda log: url_for("pswdo.warehouse_stock_movements"),
+def _relief_request_submitted_link(log):
+    """PSWDO reviews relief requests per barangay (AllocationRecord), not per
+    batch, so the "exact" screen for a submission notification is the first
+    AllocationRecord that submitted batch created — falls back to the
+    unfiltered Relief Requests list on the rare chance the batch has no
+    children yet (e.g. the batch was submitted but its eligible-barangay
+    pool was empty)."""
+    if not log.batch_id:
+        return url_for("pswdo.relief_requests")
+    first_child = AllocationRecord.query.filter_by(batch_id=log.batch_id).order_by(
+        AllocationRecord.allocation_id
+    ).first()
+    if first_child:
+        return url_for("pswdo.relief_request_detail", allocation_id=first_child.allocation_id)
+    return url_for("pswdo.relief_requests")
+
+
+# Keyed by action_type (not category) since two action_types in the same
+# category — e.g. allocation_approved vs. relief_request_submitted, both
+# "relief_requests" — point at different kinds of records (an allocation vs.
+# a batch) and need different resolution logic.
+NOTIFICATION_LINK_BUILDERS = {
+    "allocation_approved": lambda log: (
+        url_for("pswdo.relief_request_detail", allocation_id=log.allocation_id) if log.allocation_id else None
+    ),
+    "allocation_rejected": lambda log: (
+        url_for("pswdo.relief_request_detail", allocation_id=log.allocation_id) if log.allocation_id else None
+    ),
+    "relief_request_submitted": _relief_request_submitted_link,
+    "distribution_status": lambda log: (
+        url_for("pswdo.distribution_detail", distribution_id=log.distribution_id) if log.distribution_id else None
+    ),
+    "distribution_delivered": lambda log: (
+        url_for("pswdo.distribution_detail", distribution_id=log.distribution_id) if log.distribution_id else None
+    ),
+    "warehouse_transfer_completed": lambda log: (
+        url_for("pswdo.warehouse_detail", office_id=log.office_id) if log.office_id else None
+    ),
 }
 
 
 def _notification_view(log):
     meta = NOTIFICATION_META.get(log.action_type, DEFAULT_NOTIFICATION_META)
-    link_fn = NOTIFICATION_LINKS.get(meta["category"])
+    link_fn = NOTIFICATION_LINK_BUILDERS.get(log.action_type)
     return {
         "log": log,
         "icon": meta["icon"],
@@ -1694,6 +1729,7 @@ def approve_relief_request(allocation_id):
         description=f"{label} {quantity:,} food packs for {req.barangay.city_municipality} from {office.office_name}",
         office_id=office.office_id,
         barangay_id=req.barangay_id,
+        allocation_id=req.allocation_id,
     ))
 
     db.session.commit()
@@ -1724,6 +1760,7 @@ def reject_relief_request(allocation_id):
         description=f"Rejected relief request from {req.barangay.city_municipality}: {reason}",
         office_id=req.office_id,
         barangay_id=req.barangay_id,
+        allocation_id=req.allocation_id,
     ))
     db.session.commit()
     flash(f"Request from {req.barangay.city_municipality} has been rejected.", "success")
@@ -1777,6 +1814,19 @@ def _filtered_distributions():
     }
 
 
+def _eligible_for_distribution():
+    """Approved relief requests with no DistributionRecord yet — the pool
+    "New Distribution" can schedule from. Once scheduled, an allocation drops
+    out of this list (see create_distribution) since vehicle assignment and
+    dispatch-status changes happen afterward via the existing distribution
+    detail actions, not by creating a second DistributionRecord."""
+    return AllocationRecord.query.join(Barangay).filter(
+        Barangay.city_municipality.in_(TARGET_LGUS),
+        AllocationRecord.status == "approved",
+        ~AllocationRecord.distribution_records.any(),
+    ).order_by(AllocationRecord.allocation_date.desc()).all()
+
+
 @pswdo_bp.route("/distribution")
 @login_required
 @role_required("pswdo_admin", "system_admin")
@@ -1785,8 +1835,63 @@ def distribution():
     return render_template(
         "pswdo/distribution.html",
         dispatch_labels=DISPATCH_STATUS_LABELS,
+        eligible_allocations=_eligible_for_distribution(),
+        today_str=date.today().isoformat(),
         **ctx,
     )
+
+
+@pswdo_bp.route("/distribution/create", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def create_distribution():
+    allocation_id = request.form.get("allocation_id", type=int)
+    allocation = _get_target_scoped_request(allocation_id) if allocation_id else None
+
+    if not allocation:
+        flash("Select a relief request to schedule.", "error")
+        return redirect(url_for("pswdo.distribution"))
+    if allocation.status != "approved":
+        flash("Only approved relief requests can be scheduled for distribution.", "error")
+        return redirect(url_for("pswdo.distribution"))
+    if allocation.distribution_records:
+        flash("A distribution has already been scheduled for this request.", "error")
+        return redirect(url_for("pswdo.distribution"))
+
+    distribution_date = date.today()
+    date_str = request.form.get("distribution_date", "")
+    if date_str:
+        try:
+            distribution_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    rec = DistributionRecord(
+        barangay_id=allocation.barangay_id,
+        allocation_id=allocation.allocation_id,
+        quantity_released=allocation.allocated_quantity,
+        distribution_date=distribution_date,
+        dispatch_status="preparing",
+        submitted_by=current_user.user_id,
+    )
+    db.session.add(rec)
+    db.session.flush()
+
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id,
+        action_type="distribution_status",
+        description=(
+            f"New distribution scheduled for {allocation.barangay.barangay_name}, "
+            f"{allocation.barangay.city_municipality} — {allocation.allocated_quantity:,} food packs"
+        ),
+        office_id=allocation.fulfilling_office_id,
+        barangay_id=allocation.barangay_id,
+        distribution_id=rec.distribution_id,
+    ))
+    db.session.commit()
+
+    flash(f"Distribution scheduled for {allocation.barangay.barangay_name}.", "success")
+    return redirect(url_for("pswdo.distribution_detail", distribution_id=rec.distribution_id))
 
 
 @pswdo_bp.route("/distribution/export")
@@ -1954,6 +2059,7 @@ def advance_distribution(distribution_id):
         description=f"D-{rec.distribution_date.year}-{rec.distribution_id:03d} marked {DISPATCH_STATUS_LABELS[target]}",
         office_id=rec.allocation.fulfilling_office_id,
         barangay_id=rec.barangay_id,
+        distribution_id=rec.distribution_id,
     ))
     db.session.commit()
     flash(f"Status updated to {DISPATCH_STATUS_LABELS[target]}.", "success")
@@ -2022,6 +2128,7 @@ def confirm_delivery(distribution_id):
         description=f"D-{rec.distribution_date.year}-{rec.distribution_id:03d} delivered to {rec.barangay.city_municipality}, received by {received_by}",
         office_id=rec.allocation.fulfilling_office_id,
         barangay_id=rec.barangay_id,
+        distribution_id=rec.distribution_id,
     ))
     db.session.commit()
     flash("Delivery confirmed.", "success")
@@ -2101,14 +2208,18 @@ def notifications():
     )
 
 
-@pswdo_bp.route("/notifications/<int:log_id>/read", methods=["POST"])
+@pswdo_bp.route("/notifications/<int:log_id>/view")
 @login_required
 @role_required("pswdo_admin", "system_admin")
-def mark_notification_read(log_id):
+def view_notification(log_id):
+    """The Notifications page's "View" link routes through here instead of
+    linking to item.link directly, so opening a notification is what marks
+    it read — no separate "Mark as read" click required."""
     log = ActivityLog.query.get_or_404(log_id)
     log.is_read = True
     db.session.commit()
-    return redirect(request.referrer or url_for("pswdo.notifications"))
+    destination = _notification_view(log)["link"]
+    return redirect(destination or url_for("pswdo.notifications"))
 
 
 @pswdo_bp.route("/notifications/mark-all-read", methods=["POST"])
