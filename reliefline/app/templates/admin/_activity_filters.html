@@ -1,0 +1,10 @@
+<!-- Role sub-navigation — filters the table below by the actor's role
+     (PSWDO / CSWDO-MSWDO / Barangay-Level User / System Administrator);
+     a green dot marks roles with someone active now. -->
+<div class="page-tabs">
+    {% for g in groups %}
+    <a href="{{ url_for(endpoint, role=g.key, q=search_query) }}" class="page-tab {{ 'active' if selected_group == g.key }}">
+        {{ g.label }}{% if g.online %}<span class="online-dot" style="color:#1e8449;" title="Someone from this group is active now"></span>{% endif %}
+    </a>
+    {% endfor %}
+</div>

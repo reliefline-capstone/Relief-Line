@@ -21,7 +21,7 @@
         <section class="page-header">
             <div>
                 <h2>System Administration</h2>
-                <p>ReliefLine Platform · System Overview · {{ now.strftime('%B') }} {{ now.day }}, {{ now.strftime('%Y') }}</p>
+                <p>ReliefLine Platform · System Overview · {{ now | ph_time('%B %d, %Y') }}</p>
             </div>
         </section>
 
@@ -36,7 +36,7 @@
                 <div class="stat-icon green">{{ icon('activity', 18, '#20bf6b') }}</div>
                 <span class="stat-value">{{ active_sessions }}</span>
                 <span class="stat-label">Active Sessions</span>
-                <span class="stat-sub">logged in today</span>
+                <span class="stat-sub">online right now</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('x-circle', 18, '#f39c12') }}</div>
@@ -46,8 +46,8 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon purple">{{ icon('file-text', 18, '#6c5ce7') }}</div>
-                <span class="stat-value">{{ "{:,}".format(audit_entries_this_month) }}</span>
-                <span class="stat-label">Audit Entries</span>
+                <span class="stat-value">{{ "{:,}".format(activity_entries_this_month) }}</span>
+                <span class="stat-label">Activity Logs</span>
                 <span class="stat-sub">recorded this month</span>
             </div>
         </section>
@@ -69,8 +69,11 @@
                             <span>{{ ROLE_LABELS.get(user.role, user.role) }}{% if user.office %} · {{ user.office.office_name }}{% endif %}</span>
                         </div>
                     </div>
-                    <span class="admin-user-row-time">{{ user.last_login.strftime('%b %d, %Y %I:%M %p') if user.last_login else 'Never logged in' }}</span>
-                    <span class="badge-status-pill {{ 'is-active' if user.is_active else 'is-inactive' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span>
+                    <div class="admin-user-row-right">
+                        <span class="admin-user-row-time">{{ user.last_login | ph_time if user.last_login else 'Never logged in' }}</span>
+                        <span class="online-indicator {{ 'is-online' if is_online(user) }}"><span class="online-dot"></span>{{ 'Online' if is_online(user) else 'Offline' }}</span>
+                        <span class="badge-status-pill {{ 'is-active' if user.is_active else 'is-inactive' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span>
+                    </div>
                 </div>
                 {% else %}
                 <p class="empty-note">No users yet.</p>
@@ -85,7 +88,6 @@
                     <a href="{{ url_for('admin.users') }}" class="admin-quick-action">{{ icon('plus', 16) }} Add New User <span class="admin-quick-action-arrow">{{ icon('arrow-right', 14) }}</span></a>
                     <a href="{{ url_for('admin.roles_permissions') }}" class="admin-quick-action">{{ icon('shield', 16) }} Manage Roles &amp; Permissions <span class="admin-quick-action-arrow">{{ icon('arrow-right', 14) }}</span></a>
                     <a href="{{ url_for('admin.offices') }}" class="admin-quick-action">{{ icon('building', 16) }} Office Management <span class="admin-quick-action-arrow">{{ icon('arrow-right', 14) }}</span></a>
-                    <a href="{{ url_for('admin.audit_logs') }}" class="admin-quick-action">{{ icon('file-text', 16) }} View Audit Logs <span class="admin-quick-action-arrow">{{ icon('arrow-right', 14) }}</span></a>
                     <a href="{{ url_for('admin.activity') }}" class="admin-quick-action">{{ icon('activity', 16) }} System Activity <span class="admin-quick-action-arrow">{{ icon('arrow-right', 14) }}</span></a>
                     <a href="{{ url_for('admin.settings_page') }}" class="admin-quick-action">{{ icon('sliders', 16) }} System Settings <span class="admin-quick-action-arrow">{{ icon('arrow-right', 14) }}</span></a>
                 </div>

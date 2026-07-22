@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}{{ user.name }} — Activity - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'users' %}
+    {% include "admin/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "admin/_flash.html" %}
+
+        <div class="wh-breadcrumb">
+            <a href="{{ url_for('admin.users') }}"><span class="wh-breadcrumb-back">{{ icon('chevron-down', 14) }}</span>User Management</a>
+            <span class="wh-breadcrumb-sep">/</span>
+            <span class="wh-breadcrumb-current">{{ user.name }}</span>
+        </div>
+
+        <section class="page-header">
+            <div>
+                {% set name_parts = user.name.split() %}
+                <div class="admin-user-row-left" style="margin-bottom: 6px;">
+                    <div class="user-avatar">{{ (name_parts[0][0] + name_parts[-1][0])|upper if name_parts|length > 1 else user.name[:2]|upper }}</div>
+                    <div class="admin-user-row-name">
+                        <strong style="font-size: 18px;">{{ user.name }}</strong>
+                        <span>{{ ROLE_LABELS.get(user.role, user.role) }}{% if user.office %} · {{ user.office.office_name }}{% elif user.barangay %} · {{ user.barangay.barangay_name }}, {{ user.barangay.city_municipality }}{% endif %}</span>
+                    </div>
+                </div>
+                <p>
+                    <span class="badge-status-pill {{ 'is-active' if user.is_active else 'is-inactive' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span>
+                    · Last login: {{ user.last_login | ph_time if user.last_login else 'Never' }}
+                    · {{ rows|length }} action{{ 's' if rows|length != 1 }} recorded
+                </p>
+            </div>
+            <a href="{{ url_for('admin.export_user_activity', user_id=user.user_id) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+        </section>
+
+        <section class="page-header" style="margin-bottom: 12px;">
+            <form method="GET" class="wh-search-form">
+                <div class="wh-search-wrapper">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search this user's activity...">
+                </div>
+            </form>
+        </section>
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table">
+                <thead>
+                    <tr>
+                        <th>ACTION</th>
+                        <th>MODULE</th>
+                        <th>TIMESTAMP</th>
+                        <th>IP ADDRESS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    {% set log = row.log %}
+                    <tr>
+                        <td>{{ log.description }}</td>
+                        <td><span class="badge-module {{ row.badge_class }}">{{ row.module }}</span></td>
+                        <td>{{ log.created_at | ph_time if log.created_at else '—' }}</td>
+                        <td><code>{{ log.ip_address or '—' }}</code></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="empty-note" style="text-align:center; padding:30px;">No activity recorded for {{ user.name }} yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

@@ -56,9 +56,9 @@
                         <td><span class="badge-status-pill {{ 'is-active' if office.is_active else 'is-inactive' }}">{{ 'Active' if office.is_active else 'Inactive' }}</span></td>
                         <td>
                             <div class="admin-row-actions">
-                                <button type="button" class="admin-link-btn" data-open-modal="edit-office-modal-{{ office.office_id }}">Edit</button>
+                                <button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-office-modal-{{ office.office_id }}">Edit</button>
                                 <form method="POST" action="{{ url_for('admin.toggle_office_active', office_id=office.office_id) }}" onsubmit="return confirm('{{ 'Deactivate' if office.is_active else 'Activate' }} {{ office.office_name }}?');">
-                                    <button type="submit" class="admin-link-btn {{ 'admin-link-btn-danger' if office.is_active else 'admin-link-btn-success' }}">{{ 'Deactivate' if office.is_active else 'Activate' }}</button>
+                                    <button type="submit" class="admin-btn {{ 'admin-btn-danger' if office.is_active else 'admin-btn-success' }}">{{ 'Deactivate' if office.is_active else 'Activate' }}</button>
                                 </form>
                             </div>
                         </td>

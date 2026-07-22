@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Keeps reliefline/database/reliefline_db.sql in sync with the devcontainer's
+# live MariaDB on every commit, so `git push` always hands groupmates a
+# working snapshot of the current schema + data — .devcontainer/setup.sh
+# loads this exact file to provision a fresh database for anyone who opens
+# the project.
+#
+# No-ops (does nothing, never blocks the commit) when mysqldump or the
+# devcontainer's MariaDB aren't reachable — e.g. committing from outside the
+# devcontainer. Enabled repo-wide via `git config core.hooksPath .githooks`
+# (set automatically by .devcontainer/setup.sh).
+set -euo pipefail
+
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DUMP_FILE="$PROJECT_DIR/reliefline/database/reliefline_db.sql"
+DB_USER="reliefline"
+DB_PASS="reliefline_dev_pw"
+DB_NAME="reliefline_db"
+DB_HOST="127.0.0.1"
+
+if ! command -v mysqldump >/dev/null 2>&1; then
+    exit 0
+fi
+if ! mysqladmin ping -u "$DB_USER" -p"$DB_PASS" -h "$DB_HOST" --silent >/dev/null 2>&1; then
+    exit 0
+fi
+
+mysqldump -u "$DB_USER" -p"$DB_PASS" -h "$DB_HOST" "$DB_NAME" > "$DUMP_FILE"
+git add "$DUMP_FILE"

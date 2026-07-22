@@ -3,6 +3,13 @@
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "postStartCommand": "sudo service mariadb start",
+  "forwardPorts": [5000, 3306],
+  "portsAttributes": {
+    "3306": {
+      "label": "MariaDB (reliefline_db)",
+      "onAutoForward": "silent"
+    }
+  },
   "customizations": {
     "vscode": {
       "extensions": ["ms-python.python"]

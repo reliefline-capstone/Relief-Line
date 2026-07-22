@@ -8,8 +8,10 @@ from flask_login import login_required, current_user
 
 from app.extensions import db
 from app.utils.decorators import role_required
-from app.utils.activity import log_admin_activity, module_for_action, module_badge_class, AUDIT_ACTION_TYPES
+from app.utils.activity import log_admin_activity, module_for_action, module_badge_class
+from app.utils.presence import is_online, ONLINE_THRESHOLD
 from app.utils.settings import SETTINGS_SCHEMA, get_setting, set_setting
+from app.utils.timezone import ph_time
 from app.utils.roles import ROLE_LABELS
 from app.utils.mail import send_email
 from app.models.user import User
@@ -82,11 +84,6 @@ def _risk_level(disaster_risk_index):
     return "Low"
 
 
-def _today_start():
-    now = datetime.utcnow()
-    return datetime(now.year, now.month, now.day)
-
-
 # ---------------------------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------------------------
@@ -96,10 +93,10 @@ def _today_start():
 @role_required("system_admin")
 def dashboard():
     total_users = User.query.count()
-    active_sessions = User.query.filter(User.last_login >= _today_start()).count()
+    active_sessions = User.query.filter(User.last_activity >= datetime.utcnow() - ONLINE_THRESHOLD).count()
     inactive_accounts = User.query.filter_by(is_active=False).count()
     month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    audit_entries_this_month = ActivityLog.query.filter(ActivityLog.created_at >= month_start).count()
+    activity_entries_this_month = ActivityLog.query.filter(ActivityLog.created_at >= month_start).count()
 
     recent_users = User.query.order_by(
         db.func.coalesce(User.last_login, User.created_at).desc()
@@ -108,8 +105,8 @@ def dashboard():
     return render_template(
         "admin/dashboard.html", now=datetime.now(),
         total_users=total_users, active_sessions=active_sessions,
-        inactive_accounts=inactive_accounts, audit_entries_this_month=audit_entries_this_month,
-        recent_users=recent_users,
+        inactive_accounts=inactive_accounts, activity_entries_this_month=activity_entries_this_month,
+        recent_users=recent_users, is_online=is_online,
     )
 
 
@@ -122,10 +119,23 @@ def dashboard():
 @role_required("system_admin")
 def users():
     search_query = request.args.get("q", "").strip()
-    users_q = User.query
+    status_filter = request.args.get("status", "all")
+
+    base_q = User.query
     if search_query:
         like = f"%{search_query}%"
-        users_q = users_q.filter(db.or_(User.name.ilike(like), User.email.ilike(like)))
+        base_q = base_q.filter(db.or_(User.name.ilike(like), User.email.ilike(like)))
+
+    # Counts always reflect the search term but ignore the status filter
+    # itself, so the tab badges show what each tab would contain if clicked.
+    active_count = base_q.filter(User.is_active.is_(True)).count()
+    inactive_count = base_q.filter(User.is_active.is_(False)).count()
+
+    users_q = base_q
+    if status_filter == "active":
+        users_q = users_q.filter(User.is_active.is_(True))
+    elif status_filter == "inactive":
+        users_q = users_q.filter(User.is_active.is_(False))
 
     user_list = users_q.order_by(User.name).all()
     offices = Office.query.order_by(Office.office_name).all()
@@ -133,7 +143,9 @@ def users():
 
     return render_template(
         "admin/users.html", users=user_list, offices=offices, barangays=barangays,
-        search_query=search_query, role_choices=ROLE_CHOICES,
+        search_query=search_query, role_choices=ROLE_CHOICES, status_filter=status_filter,
+        active_count=active_count, inactive_count=inactive_count, total_count=active_count + inactive_count,
+        is_online=is_online,
     )
 
 
@@ -267,6 +279,28 @@ def toggle_user_active(user_id):
     return redirect(url_for("admin.users"))
 
 
+@admin_bp.route("/users/<int:user_id>/activity")
+@login_required
+@role_required("system_admin")
+def user_activity(user_id):
+    """Everything a single user has done — the drill-down behind User
+    Management's "View Activity" action. Same ActivityLog rows System
+    Activity shows, just scoped to one actor instead of everyone."""
+    user = User.query.get_or_404(user_id)
+    search_query = request.args.get("q", "").strip()
+    rows = _activity_rows(ActivityLog.query.filter_by(actor_id=user_id), search_query, limit=500)
+    return render_template("admin/user_activity.html", user=user, rows=rows, search_query=search_query)
+
+
+@admin_bp.route("/users/<int:user_id>/activity/export")
+@login_required
+@role_required("system_admin")
+def export_user_activity(user_id):
+    user = User.query.get_or_404(user_id)
+    filename = f"{user.name.replace(' ', '_')}_activity.csv"
+    return _export_activity(ActivityLog.query.filter_by(actor_id=user_id), filename)
+
+
 # ---------------------------------------------------------------------------
 # Roles & Permissions — static, read-only. Mirrors the @role_required(...)
 # checks actually enforced in app/routes/{pswdo,cswdo,barangay,prediction,
@@ -291,7 +325,7 @@ PERMISSION_MATRIX = [
     {"label": "User Management", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
     {"label": "Office Management", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
     {"label": "Barangay Management", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "System Activity / Audit Logs", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
+    {"label": "System Activity", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
     {"label": "System Settings", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
 ]
 
@@ -493,10 +527,53 @@ def export_barangays():
 
 
 # ---------------------------------------------------------------------------
-# System Activity / Audit Logs — same table, different slice. Audit Logs
-# narrows to AUDIT_ACTION_TYPES (account/security actions); System Activity
-# shows everything so admins get one full operational feed.
+# System Activity — full feed off activity_logs, with an office
+# sub-navigation (who did this — grouped by which office the actor belongs
+# to) and a "Currently Active" panel built from real presence data (see
+# app.utils.presence), not from is_active or last_login.
 # ---------------------------------------------------------------------------
+
+# Fixed order matching the manuscript's role taxonomy (PSWDO -> CSWDO/MSWDO
+# -> Barangay-Level User -> System Administrator) rather than one tab per
+# office — keeps the sub-nav to at most 5 tabs no matter how many offices or
+# barangay-level accounts get added later.
+ROLE_GROUP_ORDER = ["pswdo_admin", "cswdo_admin", "barangay_user", "system_admin"]
+
+
+def _actor_groups():
+    """One tab per role — always all 4 from ROLE_GROUP_ORDER, even ones with
+    zero users yet (e.g. Barangay-Level User before any such account
+    exists), so the filter is there and ready as soon as one is added."""
+    groups = [{"key": "all", "label": "All Users"}]
+    for role in ROLE_GROUP_ORDER:
+        groups.append({"key": f"role:{role}", "label": ROLE_LABELS.get(role, role)})
+    return groups
+
+
+def _group_user_filter(query, group_key):
+    """Applies a group_key (see _actor_groups) to a User query."""
+    if group_key and group_key.startswith("role:"):
+        return query.filter_by(role=group_key.split(":", 1)[1])
+    return query
+
+
+def _apply_actor_group_filter(query, group_key):
+    if not group_key or group_key == "all":
+        return query
+    return _group_user_filter(query.join(User, ActivityLog.actor_id == User.user_id), group_key)
+
+
+def _groups_with_online_flag():
+    """Role tabs, each flagged with whether anyone in that role is
+    currently active (green dot) — see app.utils.presence."""
+    online_cutoff = datetime.utcnow() - ONLINE_THRESHOLD
+    groups = _actor_groups()
+    for g in groups:
+        g["online"] = _group_user_filter(
+            User.query.filter(User.last_activity >= online_cutoff), None if g["key"] == "all" else g["key"]
+        ).count() > 0
+    return groups
+
 
 def _activity_rows(query, search_query, limit=200):
     if search_query:
@@ -515,27 +592,23 @@ def _activity_rows(query, search_query, limit=200):
 @role_required("system_admin")
 def activity():
     search_query = request.args.get("q", "").strip()
-    rows = _activity_rows(ActivityLog.query, search_query)
-    return render_template("admin/activity.html", rows=rows, search_query=search_query)
-
-
-@admin_bp.route("/audit-logs")
-@login_required
-@role_required("system_admin")
-def audit_logs():
-    search_query = request.args.get("q", "").strip()
-    rows = _activity_rows(ActivityLog.query.filter(ActivityLog.action_type.in_(AUDIT_ACTION_TYPES)), search_query)
-    return render_template("admin/audit_logs.html", rows=rows, search_query=search_query)
+    group_key = request.args.get("role", "all")
+    rows = _activity_rows(_apply_actor_group_filter(ActivityLog.query, group_key), search_query)
+    groups = _groups_with_online_flag()
+    return render_template(
+        "admin/activity.html", rows=rows, search_query=search_query,
+        groups=groups, selected_group=group_key,
+    )
 
 
 def _export_activity(query, filename):
     logs = query.order_by(ActivityLog.created_at.desc()).limit(1000).all()
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Timestamp", "User", "Action", "Module", "Description", "IP Address"])
+    writer.writerow(["Timestamp (PH Time)", "User", "Action", "Module", "Description", "IP Address"])
     for log in logs:
         writer.writerow([
-            log.created_at.strftime("%Y-%m-%d %H:%M:%S") if log.created_at else "",
+            ph_time(log.created_at, "%Y-%m-%d %H:%M:%S") if log.created_at else "",
             log.actor.name if log.actor else "System",
             log.action_type, module_for_action(log.action_type), log.description,
             log.ip_address or "",
@@ -550,14 +623,8 @@ def _export_activity(query, filename):
 @login_required
 @role_required("system_admin")
 def export_activity():
-    return _export_activity(ActivityLog.query, "system_activity.csv")
-
-
-@admin_bp.route("/audit-logs/export")
-@login_required
-@role_required("system_admin")
-def export_audit_logs():
-    return _export_activity(ActivityLog.query.filter(ActivityLog.action_type.in_(AUDIT_ACTION_TYPES)), "audit_logs.csv")
+    query = _apply_actor_group_filter(ActivityLog.query, request.args.get("role", "all"))
+    return _export_activity(query, "system_activity.csv")
 
 
 # ---------------------------------------------------------------------------
@@ -592,3 +659,60 @@ def settings_page():
     return render_template(
         "admin/settings.html", values=current_values, schema=SETTINGS_SCHEMA, target_lgus=TARGET_LGUS,
     )
+
+
+# ---------------------------------------------------------------------------
+# Profile Settings (the System Administrator's own account) — same pattern
+# as pswdo.profile_settings / update_profile_info / change_password.
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/profile-settings")
+@login_required
+@role_required("system_admin")
+def profile_settings():
+    return render_template("admin/profile_settings.html")
+
+
+@admin_bp.route("/profile-settings", methods=["POST"])
+@login_required
+@role_required("system_admin")
+def update_profile_info():
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+
+    if not name or not email:
+        flash("Name and email are required.", "error")
+        return redirect(url_for("admin.profile_settings"))
+
+    email_taken = User.query.filter(User.email == email, User.user_id != current_user.user_id).first()
+    if email_taken:
+        flash(f"{email} is already in use by another account.", "error")
+        return redirect(url_for("admin.profile_settings"))
+
+    current_user.name = name
+    current_user.email = email
+    db.session.commit()
+    flash("Profile information updated.", "success")
+    return redirect(url_for("admin.profile_settings"))
+
+
+@admin_bp.route("/profile-settings/password", methods=["POST"])
+@login_required
+@role_required("system_admin")
+def change_password():
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not current_user.check_password(current_password):
+        flash("Current password is incorrect.", "error")
+    elif len(new_password) < 8:
+        flash("New password must be at least 8 characters long.", "error")
+    elif new_password != confirm_password:
+        flash("New password and confirmation do not match.", "error")
+    else:
+        current_user.set_password(new_password)
+        db.session.commit()
+        flash("Password updated successfully.", "success")
+
+    return redirect(url_for("admin.profile_settings"))

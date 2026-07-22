@@ -2,7 +2,7 @@
 (System Administration actions — user/office/barangay management, auth,
 settings). Operational rows written elsewhere (allocation, distribution,
 warehouse — see app.routes.pswdo/cswdo) are untouched and simply fall back
-to DEFAULT_MODULE_LABEL / are excluded from AUDIT_ACTION_TYPES.
+to DEFAULT_MODULE_LABEL.
 """
 from datetime import datetime
 
@@ -58,22 +58,12 @@ def module_badge_class(action_type):
     return MODULE_BADGE_CLASS.get(module_for_action(action_type), DEFAULT_MODULE_BADGE_CLASS)
 
 
-# The Audit Logs page is this filtered subset of activity_logs (security /
-# account-management actions) rather than a separate table — System Activity
-# shows everything, Audit Logs narrows to these action_types.
-AUDIT_ACTION_TYPES = {
-    "login", "user_created", "user_updated", "user_activated", "user_deactivated",
-    "user_password_reset", "office_created", "office_updated", "office_activated",
-    "office_deactivated", "barangay_created", "barangay_updated", "settings_updated",
-}
-
-
 def log_admin_activity(actor_id, action_type, description, office_id=None, barangay_id=None):
     """Writes an ActivityLog row for a System Administration action.
 
     is_read=True on purpose: these rows are visible on the admin's own
-    System Activity / Audit Logs pages (which don't filter by is_read), but
-    shouldn't inflate the PSWDO/CSWDO notification bell — that feed is for
+    System Activity page (which doesn't filter by is_read), but shouldn't
+    inflate the PSWDO/CSWDO notification bell — that feed is for
     operational items awaiting their review, not admin housekeeping.
     """
     log = ActivityLog(

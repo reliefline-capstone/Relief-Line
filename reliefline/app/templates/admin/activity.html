@@ -24,11 +24,15 @@
                 <h2>System Activity</h2>
                 <p>Recent user actions and platform interactions{% if rows %} — showing latest {{ rows|length }}{% endif %}</p>
             </div>
-            <a href="{{ url_for('admin.export_activity') }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+            <a href="{{ url_for('admin.export_activity', role=selected_group) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
         </section>
+
+        {% set endpoint = 'admin.activity' %}
+        {% include "admin/_activity_filters.html" with context %}
 
         <section class="page-header" style="margin-bottom: 12px;">
             <form method="GET" class="wh-search-form">
+                <input type="hidden" name="role" value="{{ selected_group }}">
                 <div class="wh-search-wrapper">
                     {{ icon('search', 14, '#8a94a6') }}
                     <input type="text" name="q" value="{{ search_query }}" placeholder="Search activity...">
@@ -54,7 +58,7 @@
                         <td><strong>{{ log.actor.name if log.actor else 'System' }}</strong></td>
                         <td>{{ log.description }}</td>
                         <td><span class="badge-module {{ row.badge_class }}">{{ row.module }}</span></td>
-                        <td>{{ log.created_at.strftime('%b %d, %Y %I:%M %p') if log.created_at else '—' }}</td>
+                        <td>{{ log.created_at | ph_time if log.created_at else '—' }}</td>
                         <td><code>{{ log.ip_address or '—' }}</code></td>
                     </tr>
                     {% else %}

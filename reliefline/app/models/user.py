@@ -17,6 +17,12 @@ class User(UserMixin, db.Model):
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))
     last_login = db.Column(db.DateTime, nullable=True)
+    # Heartbeat updated on every authenticated request (see app.__init__'s
+    # before_request hook) — distinct from last_login, which only moves at
+    # sign-in. app.utils.presence.is_online() compares this against "now" to
+    # decide whether someone is genuinely online right now, not just logged
+    # in at some point today.
+    last_activity = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
     office = db.relationship("Office")

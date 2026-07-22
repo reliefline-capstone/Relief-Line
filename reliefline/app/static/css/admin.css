@@ -4,6 +4,41 @@
    .form rows) and profile_settings.css (.form-row). Only net-new admin-only
    styles live here. */
 
+/* Online presence — distinct from .badge-status-pill (account enabled vs
+   disabled). A small dot + label wherever a user/office is genuinely online
+   right now (app.utils.presence.is_online), not just "logged in earlier". */
+.online-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #8a94a6;
+}
+
+.online-indicator.is-online { color: #1e8449; }
+
+.online-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.online-indicator.is-online .online-dot {
+    animation: admin-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes admin-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+/* Office sub-navigation (System Activity / Audit Logs) — .page-tabs with an
+   online dot appended per tab when that group has someone active now. */
+.page-tab .online-dot { margin-left: 6px; color: #1e8449; }
+
+
 /* Dashboard — Recent Users list */
 .admin-user-row {
     display: flex;
@@ -28,6 +63,13 @@
 .admin-user-row-name span { font-size: 11px; color: #8a94a6; }
 
 .admin-user-row-time { font-size: 11px; color: #8a94a6; flex-shrink: 0; margin-right: 4px; }
+
+.admin-user-row-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
 
 /* Dashboard — Quick Actions */
 .admin-quick-actions { display: flex; flex-direction: column; gap: 6px; }
@@ -100,23 +142,39 @@
 
 .user-avatar-sm { width: 28px; height: 28px; font-size: 11px; }
 
-/* Text-link row actions (User/Office/Barangay Management tables) */
+/* Row action buttons (User/Office/Barangay Management tables) — same pastel
+   chip language as .badge-health / .btn-view elsewhere in the app, just
+   clickable instead of purely decorative. */
 .admin-row-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
     flex-wrap: wrap;
 }
 
-.admin-link-btn {
-    font-size: 12.5px;
+.admin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 600;
-    color: #2c5aa0;
+    white-space: nowrap;
 }
 
-.admin-link-btn:hover { text-decoration: underline; }
-.admin-link-btn-success { color: #1e8449; }
-.admin-link-btn-danger { color: #c0392b; }
+.admin-btn-edit { background: #eaf0fd; color: #2c5aa0; }
+.admin-btn-edit:hover { background: #dbe6fb; }
+
+.admin-btn-neutral { background: #f0f2f6; color: #444; }
+.admin-btn-neutral:hover { background: #e4e7ee; }
+
+.admin-btn-danger { background: #fdecea; color: #c0392b; }
+.admin-btn-danger:hover { background: #fbdedb; }
+
+.admin-btn-success { background: #e8faf0; color: #1e8449; }
+.admin-btn-success:hover { background: #d7f5e3; }
 
 /* Roles & Permissions matrix */
 .perm-table-panel { padding: 0; overflow-x: auto; }

@@ -3,6 +3,7 @@ from app.config import Config
 from app.extensions import db, login_manager
 from app.utils.icons import ICONS
 from app.utils.roles import ROLE_LABELS
+from app.utils.timezone import ph_time
 
 def create_app():
     app = Flask(__name__)
@@ -10,6 +11,7 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
+    app.jinja_env.filters["ph_time"] = ph_time
 
     from app.models.user import User
     from app.models.office import Office
@@ -30,6 +32,26 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+
+    @app.before_request
+    def _track_last_activity():
+        # Heartbeat for app.utils.presence.is_online() — throttled to once a
+        # minute per user so normal browsing doesn't turn into a write on
+        # every single request. Skips static assets (no endpoint / a
+        # 'static' endpoint) since those aren't a meaningful "user is here".
+        from datetime import datetime, timedelta
+        from flask import request
+        from flask_login import current_user
+
+        if not request.endpoint or request.endpoint == "static":
+            return
+        if not current_user.is_authenticated:
+            return
+
+        now = datetime.utcnow()
+        if not current_user.last_activity or now - current_user.last_activity > timedelta(seconds=60):
+            current_user.last_activity = now
+            db.session.commit()
 
     @app.context_processor
     def inject_icons():

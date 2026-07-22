@@ -89,7 +89,7 @@
                         <td>{{ "%.1f"|format(barangay.poverty_incidence|float) }}%</td>
                         <td>{{ "%.2f"|format(barangay.disaster_risk_index|float) }}</td>
                         <td>{{ "{:,}".format(row.historical_allocation) }}</td>
-                        <td><button type="button" class="admin-link-btn" data-open-modal="edit-barangay-modal-{{ barangay.barangay_id }}">Edit</button></td>
+                        <td><button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-barangay-modal-{{ barangay.barangay_id }}">Edit</button></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="9" class="empty-note" style="text-align:center; padding:30px;">No barangays match your search.</td></tr>

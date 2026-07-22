@@ -29,8 +29,15 @@
             <button type="button" class="btn-add-warehouse" data-open-modal="add-user-modal">{{ icon('plus', 14, 'white') }} Add User</button>
         </section>
 
+        <div class="page-tabs">
+            <a href="{{ url_for('admin.users', status='all', q=search_query) }}" class="page-tab {{ 'active' if status_filter == 'all' }}">All Users <span class="page-tab-badge">{{ total_count }}</span></a>
+            <a href="{{ url_for('admin.users', status='active', q=search_query) }}" class="page-tab {{ 'active' if status_filter == 'active' }}">Active <span class="page-tab-badge">{{ active_count }}</span></a>
+            <a href="{{ url_for('admin.users', status='inactive', q=search_query) }}" class="page-tab {{ 'active' if status_filter == 'inactive' }}">Inactive <span class="page-tab-badge">{{ inactive_count }}</span></a>
+        </div>
+
         <section class="page-header" style="margin-bottom: 12px;">
             <form method="GET" class="wh-search-form">
+                <input type="hidden" name="status" value="{{ status_filter }}">
                 <div class="wh-search-wrapper">
                     {{ icon('search', 14, '#8a94a6') }}
                     <input type="text" name="q" value="{{ search_query }}" placeholder="Search name or email...">
@@ -68,16 +75,20 @@
                             {% else %}<span class="wh-sub">Province-wide</span>{% endif %}
                         </td>
                         <td>{{ user.email }}</td>
-                        <td>{{ user.last_login.strftime('%b %d, %Y %I:%M %p') if user.last_login else 'Never' }}</td>
+                        <td>
+                            <div>{{ user.last_login | ph_time if user.last_login else 'Never' }}</div>
+                            <div class="online-indicator {{ 'is-online' if is_online(user) }}"><span class="online-dot"></span>{{ 'Online now' if is_online(user) else 'Offline' }}</div>
+                        </td>
                         <td><span class="badge-status-pill {{ 'is-active' if user.is_active else 'is-inactive' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span></td>
                         <td>
                             <div class="admin-row-actions">
-                                <button type="button" class="admin-link-btn" data-open-modal="edit-user-modal-{{ user.user_id }}">Edit</button>
+                                <a href="{{ url_for('admin.user_activity', user_id=user.user_id) }}" class="admin-btn admin-btn-neutral">{{ icon('activity', 12) }} Activity</a>
+                                <button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-user-modal-{{ user.user_id }}">Edit</button>
                                 <form method="POST" action="{{ url_for('admin.reset_user_password', user_id=user.user_id) }}" onsubmit="return confirm('Reset the password for {{ user.name }}? A new temporary password will be generated.');">
-                                    <button type="submit" class="admin-link-btn">Reset PW</button>
+                                    <button type="submit" class="admin-btn admin-btn-neutral">Reset PW</button>
                                 </form>
                                 <form method="POST" action="{{ url_for('admin.toggle_user_active', user_id=user.user_id) }}" onsubmit="return confirm('{{ 'Deactivate' if user.is_active else 'Activate' }} {{ user.name }}\'s account?');">
-                                    <button type="submit" class="admin-link-btn {{ 'admin-link-btn-danger' if user.is_active else 'admin-link-btn-success' }}">{{ 'Deactivate' if user.is_active else 'Activate' }}</button>
+                                    <button type="submit" class="admin-btn {{ 'admin-btn-danger' if user.is_active else 'admin-btn-success' }}">{{ 'Deactivate' if user.is_active else 'Activate' }}</button>
                                 </form>
                             </div>
                         </td>

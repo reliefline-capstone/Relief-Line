@@ -39,4 +39,10 @@ python3 -m venv .venv
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install -r requirements.txt
 
+echo "==> Enabling repo-tracked git hooks (.githooks/)"
+# Keeps database/reliefline_db.sql synced to this database on every commit —
+# see .githooks/pre-commit. Local git config, so every teammate's devcontainer
+# picks it up automatically on creation without a manual step.
+git -C "$PROJECT_DIR" config core.hooksPath .githooks
+
 echo "==> Setup complete"
