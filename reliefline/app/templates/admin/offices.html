@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Office Management - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'offices' %}
+    {% include "admin/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "admin/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Office Management</h2>
+                <p>{{ rows|length }} registered office{{ 's' if rows|length != 1 }} and their assignments</p>
+            </div>
+            <button type="button" class="btn-add-warehouse" data-open-modal="add-office-modal">{{ icon('plus', 14, 'white') }} Add Office</button>
+        </section>
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table">
+                <thead>
+                    <tr>
+                        <th>OFFICE NAME</th>
+                        <th>CODE</th>
+                        <th>TYPE</th>
+                        <th>LOCATION</th>
+                        <th>HEAD OF OFFICE</th>
+                        <th>USERS</th>
+                        <th>STATUS</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    {% set office = row.office %}
+                    <tr>
+                        <td><strong>{{ office.office_name }}</strong></td>
+                        <td><span class="badge-module mod-blue">{{ row.code }}</span></td>
+                        <td>{{ row.type_label }}</td>
+                        <td>{{ office.area_covered }}</td>
+                        <td>{{ office.manager_name or '—' }}</td>
+                        <td>{{ row.user_count }}</td>
+                        <td><span class="badge-status-pill {{ 'is-active' if office.is_active else 'is-inactive' }}">{{ 'Active' if office.is_active else 'Inactive' }}</span></td>
+                        <td>
+                            <div class="admin-row-actions">
+                                <button type="button" class="admin-link-btn" data-open-modal="edit-office-modal-{{ office.office_id }}">Edit</button>
+                                <form method="POST" action="{{ url_for('admin.toggle_office_active', office_id=office.office_id) }}" onsubmit="return confirm('{{ 'Deactivate' if office.is_active else 'Activate' }} {{ office.office_name }}?');">
+                                    <button type="submit" class="admin-link-btn {{ 'admin-link-btn-danger' if office.is_active else 'admin-link-btn-success' }}">{{ 'Deactivate' if office.is_active else 'Activate' }}</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="empty-note" style="text-align:center; padding:30px;">No offices registered yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+
+<!-- Add Office modal -->
+<div class="rd-modal-overlay" id="add-office-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('plus', 18, '#0f2547') }} Add Office</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.add_office') }}" class="settings-form">
+            <div class="form-row">
+                <label for="add-office-name">Office Name *</label>
+                <input type="text" name="office_name" id="add-office-name" placeholder="e.g. Calasiao Municipal Social Welfare and Development Office" required>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-office-type">Office Type *</label>
+                    <select name="office_type" id="add-office-type" required>
+                        <option value="cswdo">CSWDO / MSWDO</option>
+                        <option value="pswdo">PSWDO / Warehouse</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="add-area-covered">Area Covered *</label>
+                    <input type="text" name="area_covered" id="add-area-covered" placeholder="e.g. Calasiao" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="add-capacity">Food Pack Capacity</label>
+                <input type="number" name="capacity_food_pack" id="add-capacity" min="0" value="20000">
+            </div>
+            <div class="form-row">
+                <label for="add-full-address">Full Address</label>
+                <input type="text" name="full_address" id="add-full-address">
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-manager">Head of Office</label>
+                    <input type="text" name="manager_name" id="add-manager">
+                </div>
+                <div>
+                    <label for="add-contact">Contact Number</label>
+                    <input type="text" name="contact_number" id="add-contact">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="add-office-email">Email</label>
+                <input type="email" name="email" id="add-office-email">
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Add Office</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Office modals (one per row) -->
+{% for row in rows %}
+{% set office = row.office %}
+<div class="rd-modal-overlay" id="edit-office-modal-{{ office.office_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Edit: {{ office.office_name }}</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.edit_office', office_id=office.office_id) }}" class="settings-form">
+            <div class="form-row">
+                <label for="edit-office-name-{{ office.office_id }}">Office Name *</label>
+                <input type="text" name="office_name" id="edit-office-name-{{ office.office_id }}" value="{{ office.office_name }}" required>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-office-type-{{ office.office_id }}">Office Type *</label>
+                    <select name="office_type" id="edit-office-type-{{ office.office_id }}" required>
+                        <option value="cswdo" {{ 'selected' if office.office_type == 'cswdo' }}>CSWDO / MSWDO</option>
+                        <option value="pswdo" {{ 'selected' if office.office_type == 'pswdo' }}>PSWDO / Warehouse</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-area-covered-{{ office.office_id }}">Area Covered *</label>
+                    <input type="text" name="area_covered" id="edit-area-covered-{{ office.office_id }}" value="{{ office.area_covered }}" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="edit-capacity-{{ office.office_id }}">Food Pack Capacity</label>
+                <input type="number" name="capacity_food_pack" id="edit-capacity-{{ office.office_id }}" min="0" value="{{ office.capacity_food_pack }}">
+            </div>
+            <div class="form-row">
+                <label for="edit-full-address-{{ office.office_id }}">Full Address</label>
+                <input type="text" name="full_address" id="edit-full-address-{{ office.office_id }}" value="{{ office.full_address or '' }}">
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-manager-{{ office.office_id }}">Head of Office</label>
+                    <input type="text" name="manager_name" id="edit-manager-{{ office.office_id }}" value="{{ office.manager_name or '' }}">
+                </div>
+                <div>
+                    <label for="edit-contact-{{ office.office_id }}">Contact Number</label>
+                    <input type="text" name="contact_number" id="edit-contact-{{ office.office_id }}" value="{{ office.contact_number or '' }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="edit-office-email-{{ office.office_id }}">Email</label>
+                <input type="email" name="email" id="edit-office-email-{{ office.office_id }}" value="{{ office.email or '' }}">
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Save Changes</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+{% endblock %}

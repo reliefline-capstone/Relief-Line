@@ -1,4 +1,5 @@
 import hashlib
+from datetime import datetime
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_user, logout_user, login_required
@@ -7,6 +8,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from app.extensions import db
 from app.models.user import User
 from app.utils.mail import send_email
+from app.utils.activity import log_admin_activity
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -52,9 +54,18 @@ def login():
         password = request.form.get("password")
         user = User.query.filter_by(email=email).first()
 
+        if user and not user.is_active:
+            flash("This account has been deactivated. Contact a System Administrator.", "error")
+            return render_template("login.html")
+
         if user and user.check_password(password):
             login_user(user)
-            if user.role == "pswdo_admin":
+            user.last_login = datetime.utcnow()
+            log_admin_activity(user.user_id, "login", f"{user.name} logged in")
+            db.session.commit()
+            if user.role == "system_admin":
+                return redirect(url_for("admin.dashboard"))
+            elif user.role == "pswdo_admin":
                 return redirect(url_for("pswdo.dashboard"))
             elif user.role == "cswdo_admin":
                 return redirect(url_for("cswdo.dashboard"))

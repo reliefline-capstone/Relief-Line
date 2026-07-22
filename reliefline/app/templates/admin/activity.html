@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}System Activity - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'activity' %}
+    {% include "admin/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "admin/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>System Activity</h2>
+                <p>Recent user actions and platform interactions{% if rows %} — showing latest {{ rows|length }}{% endif %}</p>
+            </div>
+            <a href="{{ url_for('admin.export_activity') }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+        </section>
+
+        <section class="page-header" style="margin-bottom: 12px;">
+            <form method="GET" class="wh-search-form">
+                <div class="wh-search-wrapper">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search activity...">
+                </div>
+            </form>
+        </section>
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table">
+                <thead>
+                    <tr>
+                        <th>USER</th>
+                        <th>ACTION</th>
+                        <th>MODULE</th>
+                        <th>TIMESTAMP</th>
+                        <th>IP ADDRESS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    {% set log = row.log %}
+                    <tr>
+                        <td><strong>{{ log.actor.name if log.actor else 'System' }}</strong></td>
+                        <td>{{ log.description }}</td>
+                        <td><span class="badge-module {{ row.badge_class }}">{{ row.module }}</span></td>
+                        <td>{{ log.created_at.strftime('%b %d, %Y %I:%M %p') if log.created_at else '—' }}</td>
+                        <td><code>{{ log.ip_address or '—' }}</code></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="empty-note" style="text-align:center; padding:30px;">No activity recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

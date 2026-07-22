@@ -1,0 +1,201 @@
+/* System Administration module — layered on top of dashboard.css (layout,
+   stat cards, panels, page-header), warehouse_inventory.css (.wh-table,
+   .wh-search-wrapper, .wh-icon-btn), relief_request_detail.css (.rd-modal,
+   .form rows) and profile_settings.css (.form-row). Only net-new admin-only
+   styles live here. */
+
+/* Dashboard — Recent Users list */
+.admin-user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f2f6;
+}
+
+.admin-user-row:last-child { border-bottom: none; }
+
+.admin-user-row-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.admin-user-row-name { display: flex; flex-direction: column; min-width: 0; }
+.admin-user-row-name strong { font-size: 13px; }
+.admin-user-row-name span { font-size: 11px; color: #8a94a6; }
+
+.admin-user-row-time { font-size: 11px; color: #8a94a6; flex-shrink: 0; margin-right: 4px; }
+
+/* Dashboard — Quick Actions */
+.admin-quick-actions { display: flex; flex-direction: column; gap: 6px; }
+
+.admin-quick-action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.admin-quick-action:hover { background: #f4f6fa; }
+.admin-quick-action svg:first-child { color: #0f2547; flex-shrink: 0; }
+.admin-quick-action-arrow { margin-left: auto; color: #8a94a6; flex-shrink: 0; }
+
+/* Status badges (accounts / offices) */
+.badge-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+}
+
+.badge-status-pill::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.badge-status-pill.is-active { background: #e8faf0; color: #1e8449; }
+.badge-status-pill.is-inactive { background: #fdecea; color: #c0392b; }
+
+/* Risk level badges (Barangay Management) */
+.badge-risk {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.badge-risk.risk-high { background: #fdecea; color: #c0392b; }
+.badge-risk.risk-moderate { background: #fef5e3; color: #d68910; }
+.badge-risk.risk-low { background: #e8faf0; color: #1e8449; }
+
+/* Module badges (System Activity / Audit Logs) */
+.badge-module {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.badge-module.mod-blue { background: #eaf0fd; color: #2c5aa0; }
+.badge-module.mod-purple { background: #f1edfe; color: #6c5ce7; }
+.badge-module.mod-amber { background: #fef5e3; color: #d68910; }
+.badge-module.mod-green { background: #e8faf0; color: #1e8449; }
+.badge-module.mod-red { background: #fdecea; color: #c0392b; }
+.badge-module.mod-gray { background: #f0f2f6; color: #555; }
+
+.user-avatar-sm { width: 28px; height: 28px; font-size: 11px; }
+
+/* Text-link row actions (User/Office/Barangay Management tables) */
+.admin-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-link-btn {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #2c5aa0;
+}
+
+.admin-link-btn:hover { text-decoration: underline; }
+.admin-link-btn-success { color: #1e8449; }
+.admin-link-btn-danger { color: #c0392b; }
+
+/* Roles & Permissions matrix */
+.perm-table-panel { padding: 0; overflow-x: auto; }
+
+.perm-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+
+.perm-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 11px;
+    color: #8a94a6;
+    letter-spacing: 0.4px;
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fc;
+}
+
+.perm-table th:not(:first-child), .perm-table td:not(:first-child) { text-align: center; }
+
+.perm-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f2f6;
+    font-size: 13px;
+}
+
+.perm-table tr:last-child td { border-bottom: none; }
+
+.perm-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+}
+
+.perm-mark.perm-yes { background: #e8faf0; color: #1e8449; }
+.perm-mark.perm-no { background: #f0f2f6; color: #c3cad6; }
+
+/* System Settings */
+.settings-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 18px 0 10px;
+}
+
+.settings-section-title:first-child { margin-top: 0; }
+
+.form-row select, .form-row textarea {
+    padding: 10px 12px;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: #1a1a1a;
+}
+
+.form-row select:focus, .form-row textarea:focus { outline: none; border-color: #2c5aa0; }
+
+.form-row-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-row-inline label { font-size: 13px; font-weight: 600; color: #333; }
+.form-row-inline input[type="checkbox"] { width: 16px; height: 16px; }
+
+.settings-hint-box {
+    background: #eaf0fd;
+    color: #2c5aa0;
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+
+/* Conditional Add/Edit User assignment field (.form-row is display:flex —
+   matched here so toggling visibility doesn't also change its layout) */
+[data-role-field] { display: none; }
+[data-role-field].is-visible { display: flex; }

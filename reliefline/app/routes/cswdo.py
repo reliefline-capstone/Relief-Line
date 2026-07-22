@@ -28,7 +28,7 @@ from app.ml import predict as ml_predict
 # never drift apart on stock thresholds, priority labels, or status wording —
 # see app/routes/pswdo.py for the source of truth.
 from app.routes.pswdo import (
-    WAREHOUSE_HEALTHY, WAREHOUSE_MODERATE, DISPATCH_STATUS_LABELS,
+    _healthy_threshold, _moderate_threshold, DISPATCH_STATUS_LABELS,
     ROUTE_PROGRESS_BY_STATUS, PRIORITY_BY_STATUS, DEFAULT_PRIORITY,
     NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
     _item_status, _priority_info, _lgu_burn_rate, _recent_stock_movements,
@@ -213,9 +213,9 @@ def dashboard():
     food_pack_qty = food_pack_item.quantity_available if food_pack_item else 0
     capacity = (office.capacity_food_pack or 20000) if office else 20000
     stock_pct = round((food_pack_qty / capacity) * 100, 0) if capacity > 0 else 0
-    if stock_pct >= WAREHOUSE_HEALTHY * 100:
+    if stock_pct >= _healthy_threshold() * 100:
         stock_health = "Healthy"
-    elif stock_pct >= WAREHOUSE_MODERATE * 100:
+    elif stock_pct >= _moderate_threshold() * 100:
         stock_health = "Moderate"
     else:
         stock_health = "Low"
@@ -1406,9 +1406,9 @@ def municipal_inventory():
     capacity = office.capacity_food_pack or 20000
     pct = round((food_pack_qty / capacity) * 100, 0) if capacity > 0 else 0
 
-    if pct >= WAREHOUSE_HEALTHY * 100:
+    if pct >= _healthy_threshold() * 100:
         health = "Healthy"
-    elif pct >= WAREHOUSE_MODERATE * 100:
+    elif pct >= _moderate_threshold() * 100:
         health = "Moderate"
     else:
         health = "Low"

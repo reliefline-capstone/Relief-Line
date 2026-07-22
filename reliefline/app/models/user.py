@@ -15,6 +15,8 @@ class User(UserMixin, db.Model):
     )
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))
+    last_login = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
     office = db.relationship("Office")
@@ -22,6 +24,10 @@ class User(UserMixin, db.Model):
 
     def get_id(self):
         return str(self.user_id)
+
+    # flask_login.UserMixin.is_active is a settable property by default, but
+    # our own `is_active` DB column shadows it automatically as an instance
+    # attribute — no override needed, this comment just documents why.
 
     def set_password(self, raw_password):
         self.password = generate_password_hash(raw_password)

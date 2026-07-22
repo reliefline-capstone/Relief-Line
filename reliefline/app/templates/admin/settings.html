@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}System Settings - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'settings' %}
+    {% include "admin/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "admin/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>System Settings</h2>
+                <p>Deployment information and operational thresholds</p>
+            </div>
+        </section>
+
+        <div class="settings-grid">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>{{ icon('info', 18, '#0f2547') }} About ReliefLine</h3>
+                </div>
+                <div class="wh-info-rows">
+                    <div class="wh-info-row"><span>System</span><strong>ReliefLine v1.0</strong></div>
+                    <div class="wh-info-row"><span>Province</span><strong>Pangasinan</strong></div>
+                    <div class="wh-info-row"><span>Target LGUs</span><strong>{{ target_lgus|join(', ') }}</strong></div>
+                    <div class="wh-info-row"><span>Disaster Scope</span><strong>Typhoon-related disaster response</strong></div>
+                    <div class="wh-info-row"><span>Primary Relief Item</span><strong>Food Packs</strong></div>
+                    <div class="wh-info-row"><span>Predictive Model</span><strong>Linear Regression (OSEMN)</strong></div>
+                </div>
+            </section>
+
+            <div class="settings-forms">
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3>{{ icon('sliders', 18, '#0f2547') }} Warehouse Stock Thresholds</h3>
+                    </div>
+                    <div class="settings-hint-box">
+                        {{ icon('info', 14, '#2c5aa0') }}
+                        Controls the Healthy / Moderate / Low stock badges shown across Warehouse Inventory and the PSWDO dashboard.
+                    </div>
+                    <form method="POST" action="{{ url_for('admin.settings_page') }}" class="settings-form">
+                        <div class="rd-form-row">
+                            <div class="form-row">
+                                <label for="healthy-threshold">Healthy threshold ({{ (values.warehouse_healthy_threshold * 100)|round(0)|int }}% of capacity)</label>
+                                <input type="number" name="warehouse_healthy_threshold" id="healthy-threshold" min="0" max="1" step="0.01" value="{{ values.warehouse_healthy_threshold }}" required>
+                            </div>
+                            <div class="form-row">
+                                <label for="moderate-threshold">Moderate threshold ({{ (values.warehouse_moderate_threshold * 100)|round(0)|int }}% of capacity)</label>
+                                <input type="number" name="warehouse_moderate_threshold" id="moderate-threshold" min="0" max="1" step="0.01" value="{{ values.warehouse_moderate_threshold }}" required>
+                            </div>
+                        </div>
+                        <span class="form-hint">Stock at or above Healthy is "Healthy"; at or above Moderate but below Healthy is "Moderate"; below Moderate is "Low". Enter as a fraction of capacity (0.70 = 70%).</span>
+
+                        <div class="form-row-inline" style="margin-top: 8px;">
+                            <input type="checkbox" name="low_stock_alert_enabled" id="low-stock-alerts" {{ 'checked' if values.low_stock_alert_enabled }}>
+                            <label for="low-stock-alerts">Send low-stock alerts</label>
+                        </div>
+
+                        <button type="submit" class="btn-primary">{{ icon('check-circle', 14, 'white') }} Save Settings</button>
+                    </form>
+                </section>
+            </div>
+
+        </div>
+
+    </main>
+</div>
+{% endblock %}

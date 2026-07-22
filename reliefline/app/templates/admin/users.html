@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}User Management - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'users' %}
+    {% include "admin/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "admin/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>User Management</h2>
+                <p>{{ users|length }} account{{ 's' if users|length != 1 }} · system accounts and role assignments</p>
+            </div>
+            <button type="button" class="btn-add-warehouse" data-open-modal="add-user-modal">{{ icon('plus', 14, 'white') }} Add User</button>
+        </section>
+
+        <section class="page-header" style="margin-bottom: 12px;">
+            <form method="GET" class="wh-search-form">
+                <div class="wh-search-wrapper">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search name or email...">
+                </div>
+            </form>
+        </section>
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table">
+                <thead>
+                    <tr>
+                        <th>NAME</th>
+                        <th>ROLE</th>
+                        <th>OFFICE / BARANGAY</th>
+                        <th>EMAIL</th>
+                        <th>LAST LOGIN</th>
+                        <th>STATUS</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    {% set name_parts = user.name.split() %}
+                    <tr>
+                        <td>
+                            <div class="wh-item-name-cell">
+                                <span class="user-avatar user-avatar-sm">{{ (name_parts[0][0] + name_parts[-1][0])|upper if name_parts|length > 1 else user.name[:2]|upper }}</span>
+                                <strong>{{ user.name }}</strong>
+                            </div>
+                        </td>
+                        <td>{{ ROLE_LABELS.get(user.role, user.role) }}</td>
+                        <td>
+                            {% if user.office %}{{ user.office.office_name }}
+                            {% elif user.barangay %}{{ user.barangay.barangay_name }}, {{ user.barangay.city_municipality }}
+                            {% else %}<span class="wh-sub">Province-wide</span>{% endif %}
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.last_login.strftime('%b %d, %Y %I:%M %p') if user.last_login else 'Never' }}</td>
+                        <td><span class="badge-status-pill {{ 'is-active' if user.is_active else 'is-inactive' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span></td>
+                        <td>
+                            <div class="admin-row-actions">
+                                <button type="button" class="admin-link-btn" data-open-modal="edit-user-modal-{{ user.user_id }}">Edit</button>
+                                <form method="POST" action="{{ url_for('admin.reset_user_password', user_id=user.user_id) }}" onsubmit="return confirm('Reset the password for {{ user.name }}? A new temporary password will be generated.');">
+                                    <button type="submit" class="admin-link-btn">Reset PW</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin.toggle_user_active', user_id=user.user_id) }}" onsubmit="return confirm('{{ 'Deactivate' if user.is_active else 'Activate' }} {{ user.name }}\'s account?');">
+                                    <button type="submit" class="admin-link-btn {{ 'admin-link-btn-danger' if user.is_active else 'admin-link-btn-success' }}">{{ 'Deactivate' if user.is_active else 'Activate' }}</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="empty-note" style="text-align:center; padding:30px;">No users match your search.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+
+<!-- Add User modal -->
+<div class="rd-modal-overlay" id="add-user-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('plus', 18, '#0f2547') }} Add User</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.add_user') }}" class="settings-form">
+            <div class="form-row">
+                <label for="add-name">Full Name *</label>
+                <input type="text" name="name" id="add-name" required>
+            </div>
+            <div class="form-row">
+                <label for="add-email">Email Address *</label>
+                <input type="email" name="email" id="add-email" required>
+            </div>
+            <div class="form-row">
+                <label for="add-role">Role *</label>
+                <select name="role" id="add-role" data-role-select required>
+                    {% for role in role_choices %}
+                    <option value="{{ role }}">{{ ROLE_LABELS.get(role, role) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row" data-role-field="pswdo_admin,cswdo_admin">
+                <label for="add-office">Office</label>
+                <select name="office_id" id="add-office">
+                    {% for office in offices %}
+                    <option value="{{ office.office_id }}">{{ office.office_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row" data-role-field="barangay_user">
+                <label for="add-barangay">Barangay</label>
+                <select name="barangay_id" id="add-barangay">
+                    {% for barangay in barangays %}
+                    <option value="{{ barangay.barangay_id }}">{{ barangay.barangay_name }}, {{ barangay.city_municipality }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <span class="form-hint">A temporary password will be generated and emailed (or shown here if email isn't configured yet).</span>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Create Account</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User modals (one per row) -->
+{% for user in users %}
+<div class="rd-modal-overlay" id="edit-user-modal-{{ user.user_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Edit: {{ user.name }}</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.edit_user', user_id=user.user_id) }}" class="settings-form">
+            <div class="form-row">
+                <label for="edit-name-{{ user.user_id }}">Full Name *</label>
+                <input type="text" name="name" id="edit-name-{{ user.user_id }}" value="{{ user.name }}" required>
+            </div>
+            <div class="form-row">
+                <label for="edit-email-{{ user.user_id }}">Email Address *</label>
+                <input type="email" name="email" id="edit-email-{{ user.user_id }}" value="{{ user.email }}" required>
+            </div>
+            <div class="form-row">
+                <label for="edit-role-{{ user.user_id }}">Role *</label>
+                <select name="role" id="edit-role-{{ user.user_id }}" data-role-select required>
+                    {% for role in role_choices %}
+                    <option value="{{ role }}" {{ 'selected' if role == user.role }}>{{ ROLE_LABELS.get(role, role) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row" data-role-field="pswdo_admin,cswdo_admin">
+                <label for="edit-office-{{ user.user_id }}">Office</label>
+                <select name="office_id" id="edit-office-{{ user.user_id }}">
+                    {% for office in offices %}
+                    <option value="{{ office.office_id }}" {{ 'selected' if user.office_id == office.office_id }}>{{ office.office_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row" data-role-field="barangay_user">
+                <label for="edit-barangay-{{ user.user_id }}">Barangay</label>
+                <select name="barangay_id" id="edit-barangay-{{ user.user_id }}">
+                    {% for barangay in barangays %}
+                    <option value="{{ barangay.barangay_id }}" {{ 'selected' if user.barangay_id == barangay.barangay_id }}>{{ barangay.barangay_name }}, {{ barangay.city_municipality }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Save Changes</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Barangay Management - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'barangays' %}
+    {% include "admin/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "admin/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Barangay Data Management</h2>
+                <p>Barangay profiles and socioeconomic indicators</p>
+            </div>
+            <div class="wh-header-actions">
+                <a href="{{ url_for('admin.export_barangays') }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+                <button type="button" class="btn-add-warehouse" data-open-modal="add-barangay-modal">{{ icon('plus', 14, 'white') }} Add Barangay</button>
+            </div>
+        </section>
+
+        <section class="stat-cards" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 16px;">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('map-pin', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ total_barangays }}</span>
+                <span class="stat-label">Total Barangays</span>
+                <span class="stat-sub">registered in system</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
+                <span class="stat-value">{{ high_risk_count }}</span>
+                <span class="stat-label">High Risk</span>
+                <span class="stat-sub">disaster risk classification</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('trending-up', 18, '#f39c12') }}</div>
+                <span class="stat-value">{{ "%.1f"|format(avg_poverty) }}%</span>
+                <span class="stat-label">Average Poverty Incidence</span>
+                <span class="stat-sub">across all barangays</span>
+            </div>
+        </section>
+
+        <section class="page-header" style="margin-bottom: 12px;">
+            <form method="GET" class="wh-search-form">
+                <div class="wh-search-wrapper">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search barangay...">
+                </div>
+            </form>
+        </section>
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table">
+                <thead>
+                    <tr>
+                        <th>BARANGAY</th>
+                        <th>MUNICIPALITY</th>
+                        <th>POPULATION</th>
+                        <th>HOUSEHOLDS</th>
+                        <th>RISK LEVEL</th>
+                        <th>POVERTY INCIDENCE</th>
+                        <th>RISK INDEX</th>
+                        <th>HISTORICAL ALLOC.</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    {% set barangay = row.barangay %}
+                    <tr>
+                        <td><strong>{{ barangay.barangay_name }}</strong></td>
+                        <td>{{ barangay.city_municipality }}</td>
+                        <td>{{ "{:,}".format(barangay.population) }}</td>
+                        <td>{{ "{:,}".format(barangay.num_households) }}</td>
+                        <td><span class="badge-risk risk-{{ row.risk_level|lower }}">{{ row.risk_level }}</span></td>
+                        <td>{{ "%.1f"|format(barangay.poverty_incidence|float) }}%</td>
+                        <td>{{ "%.2f"|format(barangay.disaster_risk_index|float) }}</td>
+                        <td>{{ "{:,}".format(row.historical_allocation) }}</td>
+                        <td><button type="button" class="admin-link-btn" data-open-modal="edit-barangay-modal-{{ barangay.barangay_id }}">Edit</button></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="9" class="empty-note" style="text-align:center; padding:30px;">No barangays match your search.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+
+<!-- Add Barangay modal -->
+<div class="rd-modal-overlay" id="add-barangay-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('plus', 18, '#0f2547') }} Add Barangay</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.add_barangay') }}" class="settings-form">
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-brgy-name">Barangay Name *</label>
+                    <input type="text" name="barangay_name" id="add-brgy-name" required>
+                </div>
+                <div>
+                    <label for="add-brgy-lgu">Municipality *</label>
+                    <select name="city_municipality" id="add-brgy-lgu" required>
+                        {% for lgu in target_lgus %}
+                        <option value="{{ lgu }}">{{ lgu }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-brgy-population">Population</label>
+                    <input type="number" name="population" id="add-brgy-population" min="0" value="0">
+                </div>
+                <div>
+                    <label for="add-brgy-households">Number of Households</label>
+                    <input type="number" name="num_households" id="add-brgy-households" min="0" value="0">
+                </div>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-brgy-poverty">Poverty Incidence (%)</label>
+                    <input type="number" name="poverty_incidence" id="add-brgy-poverty" min="0" max="100" step="0.01" value="0">
+                </div>
+                <div>
+                    <label for="add-brgy-risk">Disaster Risk Index (0–10)</label>
+                    <input type="number" name="disaster_risk_index" id="add-brgy-risk" min="0" max="10" step="0.01" value="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="add-brgy-calamity">Past Calamity Frequency</label>
+                <input type="number" name="past_calamity_freq" id="add-brgy-calamity" min="0" value="0">
+            </div>
+            <span class="form-hint">Historical Allocation is calculated automatically from past relief allocation records.</span>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Add Barangay</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Barangay modals (one per row) -->
+{% for row in rows %}
+{% set barangay = row.barangay %}
+<div class="rd-modal-overlay" id="edit-barangay-modal-{{ barangay.barangay_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Edit: {{ barangay.barangay_name }}</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.edit_barangay', barangay_id=barangay.barangay_id) }}" class="settings-form">
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-brgy-name-{{ barangay.barangay_id }}">Barangay Name *</label>
+                    <input type="text" name="barangay_name" id="edit-brgy-name-{{ barangay.barangay_id }}" value="{{ barangay.barangay_name }}" required>
+                </div>
+                <div>
+                    <label for="edit-brgy-lgu-{{ barangay.barangay_id }}">Municipality *</label>
+                    <select name="city_municipality" id="edit-brgy-lgu-{{ barangay.barangay_id }}" required>
+                        {% for lgu in target_lgus %}
+                        <option value="{{ lgu }}" {{ 'selected' if barangay.city_municipality == lgu }}>{{ lgu }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-brgy-population-{{ barangay.barangay_id }}">Population</label>
+                    <input type="number" name="population" id="edit-brgy-population-{{ barangay.barangay_id }}" min="0" value="{{ barangay.population }}">
+                </div>
+                <div>
+                    <label for="edit-brgy-households-{{ barangay.barangay_id }}">Number of Households</label>
+                    <input type="number" name="num_households" id="edit-brgy-households-{{ barangay.barangay_id }}" min="0" value="{{ barangay.num_households }}">
+                </div>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-brgy-poverty-{{ barangay.barangay_id }}">Poverty Incidence (%)</label>
+                    <input type="number" name="poverty_incidence" id="edit-brgy-poverty-{{ barangay.barangay_id }}" min="0" max="100" step="0.01" value="{{ barangay.poverty_incidence }}">
+                </div>
+                <div>
+                    <label for="edit-brgy-risk-{{ barangay.barangay_id }}">Disaster Risk Index (0–10)</label>
+                    <input type="number" name="disaster_risk_index" id="edit-brgy-risk-{{ barangay.barangay_id }}" min="0" max="10" step="0.01" value="{{ barangay.disaster_risk_index }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="edit-brgy-calamity-{{ barangay.barangay_id }}">Past Calamity Frequency</label>
+                <input type="number" name="past_calamity_freq" id="edit-brgy-calamity-{{ barangay.barangay_id }}" min="0" value="{{ barangay.past_calamity_freq }}">
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Save Changes</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+{% endblock %}

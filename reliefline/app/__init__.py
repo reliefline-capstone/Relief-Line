@@ -25,6 +25,7 @@ def create_app():
     from app.models.activity_log import ActivityLog, DailyOpsStat
     from app.models.logistics import Vehicle, Driver, WarehouseTransfer
     from app.models.report import ReportLog
+    from app.models.system_setting import SystemSetting
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -73,6 +74,7 @@ def create_app():
     from app.routes.barangay import barangay_bp
     from app.routes.prediction import prediction_bp
     from app.routes.reports import reports_bp
+    from app.routes.admin import admin_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(pswdo_bp, url_prefix="/pswdo")
@@ -80,5 +82,6 @@ def create_app():
     app.register_blueprint(barangay_bp, url_prefix="/barangay")
     app.register_blueprint(prediction_bp, url_prefix="/prediction")
     app.register_blueprint(reports_bp, url_prefix="/pswdo/reports")
+    app.register_blueprint(admin_bp, url_prefix="/admin")
 
     return app

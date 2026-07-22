@@ -18,8 +18,14 @@ class ActivityLog(db.Model):
     allocation_id = db.Column(db.Integer, db.ForeignKey("allocation_records.allocation_id"), nullable=True)
     distribution_id = db.Column(db.Integer, db.ForeignKey("distribution_records.distribution_id"), nullable=True)
     batch_id = db.Column(db.Integer, db.ForeignKey("relief_request_batches.batch_id"), nullable=True)
+    # Populated only for rows written via System Administration actions (see
+    # app.utils.activity) — older/operational rows predate this column and
+    # stay NULL, which the admin System Activity table renders as "—".
+    ip_address = db.Column(db.String(45), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    actor = db.relationship("User", foreign_keys=[actor_id])
+    office = db.relationship("Office")
     barangay = db.relationship("Barangay")
     allocation = db.relationship("AllocationRecord")
     distribution = db.relationship("DistributionRecord")

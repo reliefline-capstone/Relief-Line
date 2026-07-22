@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Roles & Permissions - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'roles_permissions' %}
+    {% include "admin/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "admin/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Roles &amp; Permissions</h2>
+                <p>Access control matrix — read-only overview</p>
+            </div>
+        </section>
+
+        <div class="settings-hint-box">
+            {{ icon('info', 14, '#2c5aa0') }}
+            This matrix mirrors the access rules enforced by the system for each role. It updates automatically as the platform's modules change — permissions aren't edited here.
+        </div>
+
+        <section class="panel perm-table-panel">
+            <table class="perm-table">
+                <thead>
+                    <tr>
+                        <th>Module / Permission</th>
+                        <th>PSWDO</th>
+                        <th>CSWDO/MSWDO</th>
+                        <th>Barangay User</th>
+                        <th>System Admin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in matrix %}
+                    <tr>
+                        <td>{{ row.label }}</td>
+                        <td>
+                            {% if row.pswdo %}<span class="perm-mark perm-yes">{{ icon('check', 13) }}</span>
+                            {% else %}<span class="perm-mark perm-no">{{ icon('x', 13) }}</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if row.cswdo %}<span class="perm-mark perm-yes">{{ icon('check', 13) }}</span>
+                            {% else %}<span class="perm-mark perm-no">{{ icon('x', 13) }}</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if row.barangay %}<span class="perm-mark perm-yes">{{ icon('check', 13) }}</span>
+                            {% else %}<span class="perm-mark perm-no">{{ icon('x', 13) }}</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if row.admin %}<span class="perm-mark perm-yes">{{ icon('check', 13) }}</span>
+                            {% else %}<span class="perm-mark perm-no">{{ icon('x', 13) }}</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

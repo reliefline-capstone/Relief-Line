@@ -15,3 +15,4 @@ class Office(db.Model):
     manager_name = db.Column(db.String(100), nullable=True)
     contact_number = db.Column(db.String(20), nullable=True)
     email = db.Column(db.String(100), nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))

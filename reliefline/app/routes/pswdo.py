@@ -21,13 +21,23 @@ from app.models.barangay_status import BarangayDisasterStatus
 from app.models.activity_log import ActivityLog, DailyOpsStat
 from app.models.logistics import Vehicle, Driver, WarehouseTransfer
 from app.models.user import User
+from app.utils.settings import get_setting
 
 pswdo_bp = Blueprint("pswdo", __name__)
 
 TARGET_LGUS = ["Urdaneta City", "Santa Barbara", "Calasiao"]
 
-WAREHOUSE_HEALTHY = 0.70
-WAREHOUSE_MODERATE = 0.30
+WAREHOUSE_HEALTHY_DEFAULT = 0.70
+WAREHOUSE_MODERATE_DEFAULT = 0.30
+
+
+def _healthy_threshold():
+    # Admin-editable via System Settings — see app.utils.settings.SETTINGS_SCHEMA.
+    return get_setting("warehouse_healthy_threshold", WAREHOUSE_HEALTHY_DEFAULT, cast=float)
+
+
+def _moderate_threshold():
+    return get_setting("warehouse_moderate_threshold", WAREHOUSE_MODERATE_DEFAULT, cast=float)
 
 # Priority is derived from BarangayDisasterStatus for the active event —
 # there is no priority/urgency column in the schema, so this maps the
@@ -312,9 +322,9 @@ def _load_warehouses():
         capacity = office.capacity_food_pack or 20000
         pct = round((qty / capacity) * 100, 0) if capacity > 0 else 0
 
-        if pct >= WAREHOUSE_HEALTHY * 100:
+        if pct >= _healthy_threshold() * 100:
             health = "Healthy"
-        elif pct >= WAREHOUSE_MODERATE * 100:
+        elif pct >= _moderate_threshold() * 100:
             health = "Moderate"
         else:
             health = "Low"
@@ -735,9 +745,9 @@ def warehouse_detail(office_id):
     capacity = office.capacity_food_pack or 20000
     pct = round((food_pack_qty / capacity) * 100, 0) if capacity > 0 else 0
 
-    if pct >= WAREHOUSE_HEALTHY * 100:
+    if pct >= _healthy_threshold() * 100:
         health = "Healthy"
-    elif pct >= WAREHOUSE_MODERATE * 100:
+    elif pct >= _moderate_threshold() * 100:
         health = "Moderate"
     else:
         health = "Low"
