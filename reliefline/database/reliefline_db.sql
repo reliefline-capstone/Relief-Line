@@ -1,7 +1,7 @@
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19-11.8.6-MariaDB, for debian-linux-gnu (x86_64)
 --
--- Host: localhost    Database: reliefline_db
+-- Host: 127.0.0.1    Database: reliefline_db
 -- ------------------------------------------------------
 -- Server version	11.8.6-MariaDB-0+deb13u1 from Debian
 
@@ -49,7 +49,7 @@ CREATE TABLE `activity_logs` (
   CONSTRAINT `fk_activity_allocation` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`),
   CONSTRAINT `fk_activity_batch` FOREIGN KEY (`batch_id`) REFERENCES `relief_request_batches` (`batch_id`),
   CONSTRAINT `fk_activity_distribution` FOREIGN KEY (`distribution_id`) REFERENCES `distribution_records` (`distribution_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=71 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -85,7 +85,32 @@ INSERT INTO `activity_logs` VALUES
 (42,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:42','127.0.0.1'),
 (43,1,'user_password_reset','System Administrator reset the password for Urdaneta CSWDO Admin',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:42','127.0.0.1'),
 (44,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:30:27','127.0.0.1'),
-(45,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:42:44','127.0.0.1');
+(45,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:42:44','127.0.0.1'),
+(46,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:44:11','127.0.0.1'),
+(47,5,'login','Calasiao MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:44:33','127.0.0.1'),
+(48,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:44:47','127.0.0.1'),
+(49,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:25:49','127.0.0.1'),
+(50,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:30:44','127.0.0.1'),
+(51,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:39:00','127.0.0.1'),
+(52,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:39:13','127.0.0.1'),
+(53,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:39:33','127.0.0.1'),
+(54,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:50:18','127.0.0.1'),
+(55,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:50:37','127.0.0.1'),
+(56,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:51:13','127.0.0.1'),
+(57,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:51:26','127.0.0.1'),
+(58,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:34:04','127.0.0.1'),
+(59,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:34:28','127.0.0.1'),
+(60,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:37:00','127.0.0.1'),
+(61,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:37:36','127.0.0.1'),
+(62,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:38:05','127.0.0.1'),
+(63,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:40:38','127.0.0.1'),
+(64,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:41:32','127.0.0.1'),
+(65,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:41:43','127.0.0.1'),
+(66,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:44:26','127.0.0.1'),
+(67,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:45:55','127.0.0.1'),
+(68,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:46:24','127.0.0.1'),
+(69,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:51:49','127.0.0.1'),
+(70,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:53:21','127.0.0.1');
 /*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -667,7 +692,7 @@ CREATE TABLE `prediction_logs` (
   PRIMARY KEY (`log_id`),
   KEY `barangay_id` (`barangay_id`),
   CONSTRAINT `prediction_logs_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1462 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1475 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2138,7 +2163,20 @@ INSERT INTO `prediction_logs` VALUES
 (1458,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-07-21 04:06:49','v4.0-linreg-6f'),
 (1459,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-21 04:06:49','v4.0-linreg-6f'),
 (1460,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-21 04:06:49','v4.0-linreg-6f'),
-(1461,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-21 04:06:49','v4.0-linreg-6f');
+(1461,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-21 04:06:49','v4.0-linreg-6f'),
+(1462,21,1426,'{\"population\": 3800, \"num_households\": 760, \"poverty_incidence\": 26.0, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-07-22 06:40:58','v4.0-linreg-6f'),
+(1463,22,800,'{\"population\": 2300, \"num_households\": 460, \"poverty_incidence\": 34.0, \"disaster_risk_index\": 6.6, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-22 06:40:58','v4.0-linreg-6f'),
+(1464,24,1597,'{\"population\": 4200, \"num_households\": 840, \"poverty_incidence\": 24.5, \"disaster_risk_index\": 4.9, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-07-22 06:40:58','v4.0-linreg-6f'),
+(1465,25,1038,'{\"population\": 2900, \"num_households\": 580, \"poverty_incidence\": 30.5, \"disaster_risk_index\": 5.8, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-22 06:40:58','v4.0-linreg-6f'),
+(1466,27,762,'{\"population\": 2000, \"num_households\": 400, \"poverty_incidence\": 36.5, \"disaster_risk_index\": 6.7, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-22 06:40:58','v4.0-linreg-6f'),
+(1467,29,669,'{\"population\": 2600, \"num_households\": 520, \"poverty_incidence\": 28.5, \"disaster_risk_index\": 5.4, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-22 06:40:58','v4.0-linreg-6f'),
+(1468,13,551,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 36.0, \"disaster_risk_index\": 7.0, \"past_calamity_freq\": 6, \"historical_allocation\": 383}','2026-07-22 06:40:58','v4.0-linreg-6f'),
+(1469,4,644,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 35.0, \"disaster_risk_index\": 6.0, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f'),
+(1470,6,1395,'{\"population\": 3600, \"num_households\": 720, \"poverty_incidence\": 30.0, \"disaster_risk_index\": 5.5, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f'),
+(1471,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f'),
+(1472,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f'),
+(1473,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f'),
+(1474,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f');
 /*!40000 ALTER TABLE `prediction_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2360,6 +2398,7 @@ CREATE TABLE `users` (
   `created_at` datetime DEFAULT current_timestamp(),
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `last_login` datetime DEFAULT NULL,
+  `last_activity` datetime DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`),
   KEY `office_id` (`office_id`),
@@ -2377,11 +2416,11 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:29:42'),
-(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:29:41'),
-(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:30:27'),
-(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:42:44'),
-(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,'2026-06-25 10:39:03',1,NULL);
+(1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 06:53:21','2026-07-22 06:53:32'),
+(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,'2026-06-25 10:39:03',1,'2026-07-22 06:40:38','2026-07-22 06:40:38'),
+(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:30:27',NULL),
+(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,'2026-06-25 10:39:03',1,'2026-07-22 06:41:32','2026-07-22 06:41:32'),
+(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:44:33',NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2557,4 +2596,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-07-22  4:42:44
+-- Dump completed on 2026-07-22  6:53:58
