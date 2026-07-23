@@ -15,6 +15,11 @@ class User(UserMixin, db.Model):
     )
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=True)
+    # Position title, e.g. "Barangay Captain" — same free-text convention as
+    # BarangayReport.submitted_by_designation. Only meaningful for
+    # role="barangay_user"; NULL for PSWDO/CSWDO/admin accounts, which are
+    # identified by office instead.
+    designation = db.Column(db.String(100), nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))
     last_login = db.Column(db.DateTime, nullable=True)
     # Heartbeat updated on every authenticated request (see app.__init__'s

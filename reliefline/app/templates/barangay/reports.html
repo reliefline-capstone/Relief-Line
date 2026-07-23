@@ -5,7 +5,6 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
 {% endblock %}
 
@@ -13,16 +12,16 @@
 <div class="dashboard-layout">
 
     {% set active_page = 'reports' %}
-    {% include "pswdo/_sidebar.html" %}
+    {% include "barangay/_sidebar.html" %}
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_flash.html" %}
+        {% include "barangay/_flash.html" %}
 
         <section class="page-header">
             <div>
                 <h2>Reports</h2>
-                <p>Generate, preview, and export operational reports</p>
+                <p>Generate, preview, and export operational reports · Brgy. {{ barangay.barangay_name }}, {{ barangay.city_municipality }}</p>
             </div>
             <form method="GET" class="gis-filters">
                 <input type="text" id="report-search" placeholder="Search report type..." autocomplete="off">
@@ -30,12 +29,6 @@
                     <option value="">No active event</option>
                     {% for e in active_events %}
                     <option value="{{ e.event_id }}" {{ 'selected' if filters.event_id == e.event_id }}>{{ e.event_name }}</option>
-                    {% endfor %}
-                </select>
-                <select name="municipality" onchange="this.form.submit()">
-                    <option value="all" {{ 'selected' if filters.municipality == 'all' }}>All Municipalities</option>
-                    {% for lgu in target_lgus %}
-                    <option value="{{ lgu }}" {{ 'selected' if filters.municipality == lgu }}>{{ lgu }}</option>
                     {% endfor %}
                 </select>
                 <select name="days" onchange="this.form.submit()">
@@ -57,14 +50,14 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
-                <span class="stat-value">{{ approved_requests }}</span>
-                <span class="stat-label">Approved Requests</span>
+                <span class="stat-value">{{ verified_count }}</span>
+                <span class="stat-label">Verified Reports</span>
                 <span class="stat-sub">Coverage: {{ coverage_range }}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('package', 18, '#d68910') }}</div>
-                <span class="stat-value">{{ "{:,}".format(packs_distributed) }}</span>
-                <span class="stat-label">Packs Distributed</span>
+                <span class="stat-value">{{ "{:,}".format(packs_received) }}</span>
+                <span class="stat-label">Food Packs Received</span>
                 <span class="stat-sub">Coverage: {{ coverage_range }}</span>
             </div>
             <div class="stat-card">
@@ -119,7 +112,7 @@
                         {% for item in recent_reports %}
                         <tr>
                             <td><strong>{{ item.title }}</strong></td>
-                            <td>{{ item.log.generated_at.strftime('%B %d, %Y') }}</td>
+                            <td>{{ item.log.generated_at|ph_time('%B %d, %Y') }}</td>
                             <td>{{ item.log.generated_by_user.name if item.log.generated_by_user else '—' }}</td>
                             <td><span class="format-tag {{ item.log.format }}">{{ item.log.format|upper }}</span></td>
                             <td>{{ item.log.pages }} page{{ 's' if item.log.pages != 1 }}</td>

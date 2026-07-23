@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Profile Settings - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'profile_settings' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "barangay/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Profile Settings</h2>
+                <p>Manage your account information and security</p>
+            </div>
+        </section>
+
+        {% set name_parts = current_user.name.split() %}
+        <div class="settings-grid">
+
+            <section class="panel profile-summary-card">
+                <div class="profile-summary-avatar">{{ (name_parts[0][0] + name_parts[-1][0])|upper if name_parts|length > 1 else current_user.name[:2]|upper }}</div>
+                <h3>{{ current_user.name }}</h3>
+                <span class="profile-role-badge">{{ current_user.designation or ROLE_LABELS.get(current_user.role, current_user.role) }}</span>
+
+                <div class="profile-summary-details">
+                    {% if current_user.barangay %}
+                    <div>
+                        <span>{{ icon('map-pin', 14, '#8a94a6') }} Barangay</span>
+                        <strong>{{ current_user.barangay.barangay_name }}, {{ current_user.barangay.city_municipality }}</strong>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <span>{{ icon('calendar', 14, '#8a94a6') }} Member Since</span>
+                        <strong>{{ current_user.created_at.strftime('%B %Y') if current_user.created_at else '—' }}</strong>
+                    </div>
+                    <div>
+                        <span>{{ icon('info', 14, '#8a94a6') }} System</span>
+                        <strong>ReliefLine v1.0</strong>
+                    </div>
+                </div>
+            </section>
+
+            <div class="settings-forms">
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3>{{ icon('user', 18, '#0f2547') }} Account Information</h3>
+                    </div>
+                    <form method="POST" action="{{ url_for('barangay.update_profile_info') }}" class="settings-form">
+                        <div class="form-row">
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" value="{{ current_user.email }}" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="designation">Designation</label>
+                            <input type="text" id="designation" name="designation" value="{{ current_user.designation or '' }}" placeholder="e.g. Barangay Captain">
+                        </div>
+                        <div class="form-row">
+                            <label for="role">Role</label>
+                            <input type="text" id="role" value="{{ ROLE_LABELS.get(current_user.role, current_user.role) }}" disabled>
+                            <span class="form-hint">Role and barangay assignment are managed by a System Administrator.</span>
+                        </div>
+                        <button type="submit" class="btn-primary">{{ icon('check-circle', 14, 'white') }} Save Changes</button>
+                    </form>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3>{{ icon('lock', 18, '#0f2547') }} Change Password</h3>
+                    </div>
+                    <form method="POST" action="{{ url_for('barangay.change_password') }}" class="settings-form">
+                        <div class="form-row">
+                            <label for="current_password">Current Password</label>
+                            <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="new_password">New Password</label>
+                            <input type="password" id="new_password" name="new_password" autocomplete="new-password" minlength="8" required>
+                            <span class="form-hint">Minimum 8 characters.</span>
+                        </div>
+                        <div class="form-row">
+                            <label for="confirm_password">Confirm New Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" minlength="8" required>
+                        </div>
+                        <button type="submit" class="btn-primary">{{ icon('lock', 14, 'white') }} Update Password</button>
+                    </form>
+                </section>
+            </div>
+
+        </div>
+
+    </main>
+</div>
+{% endblock %}

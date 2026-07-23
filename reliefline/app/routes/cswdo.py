@@ -298,7 +298,15 @@ def dashboard():
     recent_activities = []
     notifications = []
     if activity_filters:
-        scoped_query = ActivityLog.query.filter(db.or_(*activity_filters))
+        # Also restricted to NOTIFICATION_META's known operational action_types
+        # (see app.routes.pswdo.notifications) — the office/barangay OR-scope
+        # above already excludes most System Administration rows since those
+        # carry no office_id/barangay_id, but this makes that exclusion
+        # explicit instead of incidental.
+        known_types = list(NOTIFICATION_META.keys())
+        scoped_query = ActivityLog.query.filter(
+            db.or_(*activity_filters), ActivityLog.action_type.in_(known_types)
+        )
         recent_activities = scoped_query.order_by(ActivityLog.created_at.desc()).limit(4).all()
         notifications = scoped_query.filter(ActivityLog.is_read.is_(False)).order_by(
             ActivityLog.created_at.desc()
@@ -340,6 +348,7 @@ def _damage_assessment_rows(lgu, barangays, primary_event):
         reports = BarangayReport.query.filter(
             BarangayReport.event_id == primary_event.event_id,
             BarangayReport.barangay_id.in_([b.barangay_id for b in barangays]),
+            BarangayReport.status != "draft",  # a barangay's own in-progress draft isn't MSWDO's to see yet
         ).all()
         reports_by_barangay = {r.barangay_id: r for r in reports}
 
@@ -432,6 +441,7 @@ def damage_assessment():
 def verify_damage_report(report_id):
     report = BarangayReport.query.get_or_404(report_id)
     _assert_own_lgu(report)
+    office = current_user.office
 
     report.status = "verified"
     report.review_remarks = request.form.get("review_remarks", "").strip() or None
@@ -455,6 +465,11 @@ def verify_damage_report(report_id):
             updated_by=current_user.user_id,
         ))
 
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="damage_report_verified",
+        description=f"Damage report {report.ref} was verified by {office.office_name}",
+        office_id=office.office_id, barangay_id=report.barangay_id,
+    ))
     db.session.commit()
     flash(f"Report {report.ref} ({report.barangay.barangay_name}) verified successfully.", "success")
     return redirect(request.referrer or url_for("cswdo.damage_assessment"))
@@ -476,6 +491,13 @@ def return_damage_report(report_id):
     report.review_remarks = remarks
     report.reviewed_by = current_user.user_id
     report.reviewed_at = datetime.utcnow()
+
+    office = current_user.office
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="damage_report_returned",
+        description=f"Damage report {report.ref} was returned by {office.office_name if office else 'MSWDO'} — {remarks}",
+        office_id=office.office_id if office else None, barangay_id=report.barangay_id,
+    ))
     db.session.commit()
     flash(f"Report {report.ref} ({report.barangay.barangay_name}) returned for correction.", "success")
     return redirect(request.referrer or url_for("cswdo.damage_assessment"))
@@ -1015,7 +1037,12 @@ def notifications():
             categories=CSWDO_NOTIFICATION_CATEGORIES, page=1, total_pages=1, lgu=lgu,
         )
 
-    scope = db.or_(*filters)
+    # Same NOTIFICATION_META allowlist as pswdo.notifications — the office/
+    # barangay OR-scope alone already excludes most System Administration
+    # rows (no office_id/barangay_id), but this makes it explicit rather
+    # than incidental.
+    known_types = list(NOTIFICATION_META.keys())
+    scope = db.and_(db.or_(*filters), ActivityLog.action_type.in_(known_types))
     query = ActivityLog.query.filter(scope)
     if category_filter != "all":
         action_types = [k for k, v in NOTIFICATION_META.items() if v["category"] == category_filter]
@@ -1063,9 +1090,10 @@ def view_notification(log_id):
 def mark_all_notifications_read():
     filters = _own_activity_filters()
     if filters:
-        ActivityLog.query.filter(db.or_(*filters), ActivityLog.is_read.is_(False)).update(
-            {"is_read": True}, synchronize_session=False
-        )
+        known_types = list(NOTIFICATION_META.keys())
+        ActivityLog.query.filter(
+            db.or_(*filters), ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
+        ).update({"is_read": True}, synchronize_session=False)
         db.session.commit()
     flash("All notifications marked as read.", "success")
     return redirect(request.referrer or url_for("cswdo.notifications"))
@@ -1237,7 +1265,9 @@ def reports():
             "download_url": url_for("cswdo.report_download", report_id=log.report_id),
         })
 
-    coverage_range = f"{filters['start_date'].strftime('%b %d')} - {date.today().strftime('%b %d, %Y')}"
+    coverage_range = "All Time" if filters["days"] == "all" else (
+        f"{filters['start_date'].strftime('%b %d')} - {date.today().strftime('%b %d, %Y')}"
+    )
 
     return render_template(
         "cswdo/reports.html",

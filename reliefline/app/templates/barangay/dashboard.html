@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Dashboard - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'dashboard' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "barangay/_flash.html" %}
+
+        <!-- Greeting banner -->
+        <section class="greeting-banner">
+            <div>
+                <p>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }},</p>
+                <h2>{{ current_user.name }} 👋</h2>
+                <p style="margin-bottom: 12px;">{{ current_user.designation or 'Barangay-Level User' }} · Brgy. {{ barangay.barangay_name }} · {{ barangay.city_municipality }}</p>
+                {% if primary_event %}
+                <div class="active-event-badge">
+                    <div>
+                        <span class="badge-label">ACTIVE TYPHOON EVENT</span>
+                        <strong>{{ icon('cloud-lightning', 14) }} {{ primary_event.event_name }}</strong>
+                    </div>
+                    <span class="badge-active">ACTIVE</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="banner-time">
+                <strong id="live-clock">{{ now.strftime('%I:%M:%S %p') }}</strong>
+                <span id="live-date">{{ now.strftime('%a, %B') }} {{ now.day }}</span>
+                {% if primary_event and primary_event.weather_condition %}
+                <div class="banner-weather-block">
+                    <span class="banner-weather-label">Weather</span>
+                    <span class="banner-weather">{{ icon('cloud-lightning', 12) }} {{ primary_event.weather_condition }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ "{:,}".format(affected_families) }}</span>
+                <span class="stat-label">Affected Families</span>
+                <span class="stat-sub badge-priority tier-{{ priority.tier }}" style="margin-top:4px;">{{ priority.label }}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ pending_reports_count }}</span>
+                <span class="stat-label">Pending Reports</span>
+                <span class="stat-sub">{% if returned_reports_count %}{{ returned_reports_count }} returned — needs correction{% else %}Awaiting MSWDO/CSWDO review{% endif %}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
+                <span class="stat-value">{{ "{:,}".format(food_packs_allocated) }}</span>
+                <span class="stat-label">Food Packs Allocated</span>
+                <span class="stat-sub">This typhoon event</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ in_transit_count }}</span>
+                <span class="stat-label">Relief In Transit</span>
+                <span class="stat-sub">{{ in_transit_count }} delivery{{ 's' if in_transit_count != 1 }} on the way</span>
+            </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('activity', 18, '#0f2547') }} Quick Actions</h3>
+            </div>
+            <div class="qa-grid">
+                <a href="{{ url_for('barangay.new_damage_report') }}" class="qa-card qa-red">
+                    <div class="qa-icon">{{ icon('alert-triangle', 22, '#c0392b') }}</div>
+                    <span>Submit Damage Report</span>
+                </a>
+                <a href="{{ url_for('barangay.affected_families') }}" class="qa-card qa-blue">
+                    <div class="qa-icon">{{ icon('users', 22, '#2c5aa0') }}</div>
+                    <span>Affected Families</span>
+                </a>
+                <a href="{{ url_for('barangay.relief_monitoring') }}" class="qa-card qa-green">
+                    <div class="qa-icon">{{ icon('truck', 22, '#1e8449') }}</div>
+                    <span>Relief Monitoring</span>
+                </a>
+                <a href="{{ url_for('barangay.reports') }}" class="qa-card qa-orange">
+                    <div class="qa-icon">{{ icon('bar-chart', 22, '#b7791f') }}</div>
+                    <span>Generate Report</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Recent Damage Reports + Relief Deliveries -->
+        <div class="main-grid" style="margin-top: 16px;">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Recent Damage Reports</h3>
+                    <a href="{{ url_for('barangay.damage_report') }}" class="link-manage">View All →</a>
+                </div>
+                {% for r in recent_reports %}
+                <div class="barangay-report-row">
+                    <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}">
+                        <strong>{{ r.ref }}</strong>
+                        <span>{{ r.event.event_name if r.event else '—' }} · {{ r.submitted_at.strftime('%B %d, %Y') if r.submitted_at }}</span>
+                    </a>
+                    <span class="badge-status status-{{ r.status }}">{{ report_status_labels.get(r.status, r.status) }}</span>
+                </div>
+                {% else %}
+                <p class="empty-note">No damage reports submitted yet.</p>
+                {% endfor %}
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Relief Deliveries</h3>
+                    <a href="{{ url_for('barangay.relief_monitoring') }}" class="link-manage">View All →</a>
+                </div>
+                {% for d in my_distributions %}
+                <div class="request-card">
+                    <div class="request-top">
+                        <strong>{{ "{:,}".format(d.quantity_released) }} Food Packs</strong>
+                        <span class="badge-status badge-status-{{ d.dispatch_status }}">{{ dispatch_status_labels.get(d.dispatch_status, d.dispatch_status) }}</span>
+                    </div>
+                    <div class="request-detail-grid">
+                        <span>From</span><strong>{{ d.allocation.fulfilling_office.office_name if d.allocation and d.allocation.fulfilling_office else '—' }}</strong>
+                        {% if d.dispatch_status == 'delivered' %}
+                        <span>Received</span><strong>{{ d.distribution_date.strftime('%B %d, %Y') }}</strong>
+                        {% elif d.expected_arrival_time %}
+                        <span>ETA</span><strong>{{ d.expected_arrival_time.strftime('%I:%M %p') }}</strong>
+                        {% endif %}
+                    </div>
+                    {% if d.dispatch_status == 'in_transit' and d.status == 'pending' %}
+                    <a href="{{ url_for('barangay.relief_monitoring') }}" class="btn-approve" style="text-decoration:none; margin-top:10px; display:inline-flex;">{{ icon('check-circle', 14, 'white') }} Confirm Relief Receipt</a>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="empty-note">No relief deliveries recorded yet.</p>
+                {% endfor %}
+            </section>
+
+        </div>
+
+        <!-- Active Alerts -->
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('bell', 18, '#0f2547') }} Active Alerts for Brgy. {{ barangay.barangay_name }}</h3>
+                <a href="{{ url_for('barangay.notifications') }}" class="link-manage">View All →</a>
+            </div>
+            {% for item in recent_alerts %}
+            <div class="alert-row alert-row-{{ item.category }}">
+                {{ icon(item.icon, 16, item.color) }}
+                <div>
+                    <strong>{{ item.log.description }}</strong>
+                    <span>{{ item.log.created_at|ph_time }}</span>
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-note">No active alerts for your barangay right now.</p>
+            {% endfor %}
+        </section>
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var clockEl = document.getElementById('live-clock');
+    var dateEl = document.getElementById('live-date');
+    if (!clockEl || !dateEl) return;
+
+    var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'];
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function tick() {
+        var now = new Date();
+        var hours24 = now.getHours();
+        var period = hours24 >= 12 ? 'PM' : 'AM';
+        var hours12 = hours24 % 12 || 12;
+        clockEl.textContent = pad(hours12) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()) + ' ' + period;
+        dateEl.textContent = weekdays[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+    }
+
+    tick();
+    setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}

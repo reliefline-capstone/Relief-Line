@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Relief Monitoring - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'relief_monitoring' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "barangay/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Relief Monitoring</h2>
+                <p>Brgy. {{ barangay.barangay_name }}, {{ barangay.city_municipality }} — food pack requests and deliveries</p>
+            </div>
+        </section>
+
+        <section class="panel">
+            {% if rows %}
+            {% for row in rows %}
+            <div class="request-card" style="margin-bottom:14px;">
+                <div class="request-top">
+                    <strong>{{ row.ref }}</strong>
+                    <span class="badge-status status-{{ row.status }}">{{ row.status|replace('_', ' ')|title }}</span>
+                </div>
+                <div class="request-detail-grid">
+                    <span>Requested</span><strong>{{ "{:,}".format(row.allocation.predicted_quantity) }} packs</strong>
+                    <span>Allocated</span><strong>{{ "{:,}".format(row.allocation.allocated_quantity) }} packs</strong>
+                    <span>Warehouse</span><strong>{{ row.allocation.fulfilling_office.office_name if row.allocation.fulfilling_office else '—' }}</strong>
+                    <span>Date</span><strong>{{ row.allocation.allocation_date.strftime('%B %d, %Y') }}</strong>
+                </div>
+
+                {% if row.allocation.is_rejected %}
+                <div class="stock-warning">
+                    {{ icon('x-circle', 14, '#c0392b') }}
+                    <span>{{ row.allocation.rejection_reason }}</span>
+                </div>
+                {% endif %}
+
+                {% if row.active_distribution %}
+                <div class="request-progress-note">
+                    {{ icon('truck', 12, '#3867d6') }}
+                    {{ dispatch_status_labels.get(row.active_distribution.dispatch_status, row.active_distribution.dispatch_status) }}
+                    {% if row.active_distribution.expected_arrival_time %} · ETA {{ row.active_distribution.expected_arrival_time.strftime('%I:%M %p') }}{% endif %}
+                </div>
+                <div class="request-progress-track">
+                    <div class="request-progress-fill" style="width: {{ row.progress_pct }}%;"></div>
+                </div>
+                {% endif %}
+
+                {% if row.can_confirm %}
+                <details class="confirm-receipt-box">
+                    <summary>{{ icon('check-circle', 14, '#1e8449') }} Confirm Relief Receipt</summary>
+                    <form method="POST" action="{{ url_for('barangay.confirm_receipt', distribution_id=row.active_distribution.distribution_id) }}" enctype="multipart/form-data" class="settings-form">
+                        <div class="form-row">
+                            <label for="received_by-{{ row.active_distribution.distribution_id }}">Received By</label>
+                            <input type="text" id="received_by-{{ row.active_distribution.distribution_id }}" name="received_by" value="{{ current_user.name }}" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="condition-{{ row.active_distribution.distribution_id }}">Condition on Arrival</label>
+                            <select id="condition-{{ row.active_distribution.distribution_id }}" name="condition" required>
+                                <option value="complete">Complete</option>
+                                <option value="partial">Partial</option>
+                                <option value="damaged">Damaged</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>Confirmation Type</label>
+                            <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px;">
+                                <input type="radio" name="validation_type" value="photo" checked style="width:auto;"> Photo proof
+                            </label>
+                            <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px; margin-left:16px;">
+                                <input type="radio" name="validation_type" value="signature" style="width:auto;"> Signature only
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label for="proof_files-{{ row.active_distribution.distribution_id }}">Photo Proof</label>
+                            <input type="file" id="proof_files-{{ row.active_distribution.distribution_id }}" name="proof_files" accept=".jpg,.jpeg,.png,.pdf" multiple>
+                            <span class="form-hint">Required if confirming with photo proof.</span>
+                        </div>
+                        <button type="submit" class="btn-primary">{{ icon('check-circle', 14, 'white') }} Confirm Receipt</button>
+                    </form>
+                </details>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="empty-note">No relief requests have been recorded for your barangay yet.</p>
+            {% endif %}
+        </section>
+
+    </main>
+</div>
+{% endblock %}

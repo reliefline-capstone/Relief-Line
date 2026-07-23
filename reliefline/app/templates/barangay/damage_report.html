@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Damage Reports - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/damage_assessment.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'damage_report' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "barangay/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Damage Reports</h2>
+                <p>Brgy. {{ barangay.barangay_name }}{% if primary_event %} · {{ primary_event.event_name }}{% endif %}</p>
+            </div>
+            <a href="{{ url_for('barangay.new_damage_report') }}" class="btn-primary" style="text-decoration:none;">{{ icon('plus', 14, 'white') }} New Report</a>
+        </section>
+
+        <div class="notif-filter-tabs">
+            <a href="{{ url_for('barangay.damage_report', tab='dashboard') }}" class="notif-filter-tab {{ 'active' if tab != 'history' }}">{{ icon('grid', 14) }} Dashboard</a>
+            <a href="{{ url_for('barangay.damage_report', tab='history') }}" class="notif-filter-tab {{ 'active' if tab == 'history' }}">{{ icon('file-text', 14) }} History</a>
+        </div>
+
+        <section class="stat-cards" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ total_count }}</span>
+                <span class="stat-label">Total Reports</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ pending_count }}</span>
+                <span class="stat-label">Pending Verification</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('check', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ verified_count }}</span>
+                <span class="stat-label">Verified</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('chevron-left', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ returned_count }}</span>
+                <span class="stat-label">Returned</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#f0f2f6;">{{ icon('file-text', 18, '#8a94a6') }}</div>
+                <span class="stat-value">{{ draft_count }}</span>
+                <span class="stat-label">Drafts</span>
+            </div>
+        </section>
+
+        {% if tab == 'history' %}
+
+        <form method="GET" class="filter-bar">
+            <input type="hidden" name="tab" value="history">
+            <div class="rr-search-wrapper">
+                {{ icon('search', 14, '#8a94a6') }}
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search report ID or barangay...">
+            </div>
+            <a href="{{ url_for('barangay.damage_report_export', q=search_query) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+        </form>
+
+        <section class="panel rr-table-panel">
+            {% if verified_reports %}
+            <table class="rr-table">
+                <thead>
+                    <tr><th>REPORT ID</th><th>TYPHOON EVENT</th><th>DATE SUBMITTED</th><th>STATUS</th><th>VERIFIED BY</th><th>ACTION</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in verified_reports %}
+                    <tr>
+                        <td><strong>{{ r.ref }}</strong><span class="rr-sub">Brgy. {{ r.barangay.barangay_name }}</span></td>
+                        <td>{{ r.event.event_name if r.event else '—' }}</td>
+                        <td>{{ r.submitted_at.strftime('%B %d, %Y') if r.submitted_at else '—' }}</td>
+                        <td><span class="badge-status badge-status-{{ r.status }}"><i class="priority-dot"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
+                        <td>{{ r.reviewed_by_user.name if r.reviewed_by_user else '—' }} {% if r.reviewed_by_user %}(MSWDO){% endif %}</td>
+                        <td><a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="rr-pagination">
+                <span>{{ verified_reports|length }} report{{ 's' if verified_reports|length != 1 }}</span>
+            </div>
+            {% else %}
+            <p class="empty-note" style="padding:20px;">No verified reports in your history yet.</p>
+            {% endif %}
+        </section>
+
+        {% else %}
+
+        {% if returned_reports %}
+        <div class="stock-warning" style="margin-top:16px;">
+            {{ icon('chevron-left', 14, '#c0392b') }}
+            <span>{{ returned_reports|length }} report{{ 's' if returned_reports|length != 1 }} returned by MSWDO. Please review and resubmit with corrections.</span>
+            <a href="{{ url_for('barangay.edit_damage_report', report_id=returned_reports[0].report_id) }}" class="btn-view-sm" style="margin-left:auto; text-decoration:none; background:#c0392b; color:white;">View Returned →</a>
+        </div>
+        {% endif %}
+
+        <form method="GET" class="filter-bar">
+            <div class="rr-search-wrapper">
+                {{ icon('search', 14, '#8a94a6') }}
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search report ID...">
+            </div>
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if status_filter == 'all' }}>All Status</option>
+                {% for key, label in status_labels.items() %}
+                {% if key != 'verified' %}
+                <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+            <a href="{{ url_for('barangay.damage_report_export_open', q=search_query, status=status_filter) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+        </form>
+
+        <section class="panel rr-table-panel">
+            {% if open_rows %}
+            <table class="rr-table">
+                <thead>
+                    <tr><th>REPORT ID</th><th>TYPHOON EVENT</th><th>DATE SUBMITTED</th><th>STATUS</th><th>FLOOD LEVEL</th><th>ACTION</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in open_rows %}
+                    {% set r = row.report %}
+                    <tr>
+                        <td><strong>{{ r.ref }}</strong><span class="rr-sub">Brgy. {{ r.barangay.barangay_name }}</span></td>
+                        <td>{{ r.event.event_name if r.event else '—' }}</td>
+                        <td>{{ r.submitted_at.strftime('%B %d, %Y') if r.submitted_at else '—' }}</td>
+                        <td><span class="badge-status badge-status-{{ r.status }}"><i class="priority-dot"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
+                        <td><span class="badge-priority tier-{{ row.priority.tier }}">{{ row.priority.label }}</span></td>
+                        <td>
+                            {% if r.status != 'draft' %}
+                            <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
+                            {% endif %}
+                            {% if r.status in ('draft', 'returned') %}
+                            <a href="{{ url_for('barangay.edit_damage_report', report_id=r.report_id) }}" class="btn-view-sm" style="text-decoration:none; background:#2c5aa0; color:white;">{{ icon('file-text', 12, 'white') }} {{ 'Resume' if r.status == 'draft' else 'Edit' }}</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="rr-pagination"><span>{{ open_rows|length }} report{{ 's' if open_rows|length != 1 }}</span></div>
+            {% else %}
+            <p class="empty-note" style="padding:20px;">No open reports for the current typhoon event. Everything's been reviewed, or you haven't filed one yet.</p>
+            {% endif %}
+        </section>
+
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}

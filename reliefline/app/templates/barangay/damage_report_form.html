@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}{{ 'Edit ' + report.ref if report else 'New Damage Report' }} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'damage_report' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "barangay/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Cancel</a>
+                <h2>{{ 'Edit ' + report.ref if report else 'New Damage Report' }}</h2>
+                <p>Brgy. {{ barangay.barangay_name }} · {{ (report.event.event_name if report and report.event else (active_events[0].event_name if active_events else 'No active event')) }}</p>
+            </div>
+        </section>
+
+        {% if not active_events %}
+        <section class="panel">
+            <p class="empty-note">There is no active typhoon event right now, so no new damage report can be filed. Check back once PSWDO declares an active event.</p>
+        </section>
+        {% else %}
+
+        {% if report and report.status == 'returned' %}
+        <div class="stock-warning" style="margin-bottom:16px;">
+            {{ icon('x-circle', 14, '#c0392b') }}
+            <span><strong>Returned by {{ barangay.city_municipality }} MSWDO/CSWDO:</strong> {{ report.review_remarks }}</span>
+        </div>
+        {% endif %}
+
+        <div class="panel wizard-stepper-panel">
+            <div class="wizard-stepper" id="wizard-stepper">
+                {% for s in [
+                    ('1','Basic Info'), ('2','Disaster Info'), ('3','Damage Data'),
+                    ('4','Relief Needs'), ('5','Evidence'), ('6','Review & Submit')
+                ] %}
+                <div class="wizard-step-node" data-step-node="{{ s[0] }}">
+                    <div class="step-circle">{{ s[0] }}</div>
+                    <span class="step-label">{{ s[1] }}</span>
+                </div>
+                {% if not loop.last %}<div class="wizard-step-line"></div>{% endif %}
+                {% endfor %}
+            </div>
+            <div class="wizard-progress-row">
+                <span id="wizard-step-count">Step 1 of 6</span>
+                <div class="wizard-progress-track"><div class="wizard-progress-fill" id="wizard-progress-fill" style="width: 0%;"></div></div>
+                <span id="wizard-pct">0% complete</span>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('barangay.submit_damage_report') }}" enctype="multipart/form-data" id="damage-report-form" class="wizard-form">
+            <input type="hidden" name="report_id" value="{{ report.report_id if report else '' }}">
+
+            <!-- Step 1: Basic Info -->
+            <section class="panel wizard-step" data-step="1">
+                <div class="panel-header"><h3>{{ icon('map-pin', 18, '#0f2547') }} Basic Information</h3></div>
+                <p class="form-hint">Confirm the identifying details below, then select which typhoon event this report is for.</p>
+                <div class="autofill-box">
+                    <span class="autofill-box-title">Auto-filled Basic Information</span>
+                    <div class="autofill-grid">
+                        <div class="autofill-field"><span>Barangay</span><strong>{{ barangay.barangay_name }}</strong></div>
+                        <div class="autofill-field"><span>Municipality</span><strong>{{ barangay.city_municipality }}</strong></div>
+                        <div class="autofill-field"><span>Submitted By</span><strong>{{ report.submitted_by_name if report else current_user.name }}</strong></div>
+                        <div class="autofill-field"><span>Date Today</span><strong>{{ today.strftime('%B %d, %Y') }}</strong></div>
+                    </div>
+                </div>
+                <input type="hidden" name="submitted_by_name" value="{{ report.submitted_by_name if report else current_user.name }}">
+                <input type="hidden" name="submitted_by_designation" value="{{ (report.submitted_by_designation if report else current_user.designation) or '' }}">
+                <div class="form-row">
+                    <label for="event_id">Typhoon Event <span class="required-mark">*</span></label>
+                    <select id="event_id" name="event_id" required>
+                        {% for ev in active_events %}
+                        <option value="{{ ev.event_id }}" {{ 'selected' if (report.event_id if report else active_events[0].event_id) == ev.event_id }}>{{ ev.event_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="wizard-nav"><span></span><button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button></div>
+            </section>
+
+            <!-- Step 2: Disaster Info -->
+            <section class="panel wizard-step" data-step="2" hidden>
+                <div class="panel-header"><h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Disaster Information</h3></div>
+                <p class="form-hint">Provide details about the typhoon event and flood conditions.</p>
+                <div class="form-row-2col">
+                    <div class="form-row">
+                        <label for="disaster_type">Disaster Type <span class="required-mark">*</span></label>
+                        <select id="disaster_type" name="disaster_type" required>
+                            {% for opt in disaster_type_options %}
+                            <option value="{{ opt }}" {{ 'selected' if (report.disaster_type if report else disaster_type_options[0]) == opt }}>{{ opt }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="incident_date">Date of Incident <span class="required-mark">*</span></label>
+                        <input type="date" id="incident_date" name="incident_date" max="{{ today.isoformat() }}"
+                               value="{{ report.incident_date.isoformat() if report and report.incident_date else '' }}" required>
+                    </div>
+                </div>
+                <div class="form-row-2col">
+                    <div class="form-row">
+                        <label for="incident_time">Time of Incident</label>
+                        <input type="time" id="incident_time" name="incident_time"
+                               value="{{ report.incident_time.strftime('%H:%M') if report and report.incident_time else '' }}">
+                    </div>
+                    <div class="form-row">
+                        <label for="flood_depth_m">Flood Depth (meters) <span class="required-mark">*</span></label>
+                        <input type="number" id="flood_depth_m" name="flood_depth_m" min="0" step="0.1" placeholder="e.g. 1.2"
+                               value="{{ report.flood_depth_m if report and report.flood_depth_m is not none else '' }}" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Severity Level <span class="required-mark">*</span></label>
+                    <div class="severity-cards">
+                        {% for card in severity_cards %}
+                        <label class="severity-card severity-{{ card.dot }}">
+                            <input type="radio" name="flood_level" value="{{ card.value }}"
+                                   {{ 'checked' if (report.flood_level if report else 'normal') == card.value }} required>
+                            <span class="severity-dot"></span>
+                            <strong>{{ card.label }}</strong>
+                            <small>{{ card.detail }}</small>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="wizard-nav">
+                    <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
+                    <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
+                </div>
+            </section>
+
+            <!-- Step 3: Damage Data -->
+            <section class="panel wizard-step" data-step="3" hidden>
+                <div class="panel-header"><h3>{{ icon('alert-triangle', 18, '#0f2547') }} Damage Assessment</h3></div>
+                <p class="form-hint">Number of affected persons and damaged properties.</p>
+                <div class="form-row-2col">
+                    <div class="form-row">
+                        <label for="affected_families">Affected Families <span class="required-mark">*</span></label>
+                        <input type="number" id="affected_families" name="affected_families" min="0" required
+                               value="{{ report.affected_families if report else 0 }}">
+                        <span class="form-hint">Total households with damage</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="affected_individuals">Affected Individuals <span class="required-mark">*</span></label>
+                        <input type="number" id="affected_individuals" name="affected_individuals" min="0" required
+                               value="{{ report.affected_individuals if report else 0 }}">
+                        <span class="form-hint" id="individuals-hint">Must be &ge; affected families</span>
+                    </div>
+                </div>
+                <div class="form-row-2col">
+                    <div class="form-row">
+                        <label for="totally_damaged_houses">Totally Damaged Houses <span class="required-mark">*</span></label>
+                        <input type="number" id="totally_damaged_houses" name="totally_damaged_houses" min="0" required
+                               value="{{ report.totally_damaged_houses if report else 0 }}">
+                        <span class="form-hint">Enter 0 if none</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="partially_damaged_houses">Partially Damaged Houses</label>
+                        <input type="number" id="partially_damaged_houses" name="partially_damaged_houses" min="0"
+                               value="{{ report.partially_damaged_houses if report else 0 }}">
+                        <span class="form-hint">Enter 0 if none</span>
+                    </div>
+                </div>
+                <div class="form-row-2col">
+                    <div class="form-row">
+                        <label for="missing_persons">Missing Persons</label>
+                        <input type="number" id="missing_persons" name="missing_persons" min="0"
+                               value="{{ report.missing_persons if report else 0 }}">
+                        <span class="form-hint">Enter 0 if none</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="casualties_deaths">Casualties / Deaths</label>
+                        <input type="number" id="casualties_deaths" name="casualties_deaths" min="0"
+                               value="{{ report.casualties_deaths if report else 0 }}">
+                        <span class="form-hint">Enter 0 if none</span>
+                    </div>
+                </div>
+                <div class="wizard-nav">
+                    <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
+                    <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
+                </div>
+            </section>
+
+            <!-- Step 4: Relief Needs (non-food items only — see BarangayReport docstring) -->
+            <section class="panel wizard-step" data-step="4" hidden>
+                <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Needs</h3></div>
+                <p class="form-hint">
+                    Estimated non-food item needs for your barangay. Food pack quantities are not entered here —
+                    they're calculated automatically by ReliefLine's allocation model once MSWDO/CSWDO reviews your report.
+                </p>
+                <div class="form-row-2col">
+                    <div class="form-row">
+                        <label for="drinking_water_cases">Drinking Water (cases)</label>
+                        <input type="number" id="drinking_water_cases" name="drinking_water_cases" min="0"
+                               value="{{ report.drinking_water_cases if report else 0 }}">
+                    </div>
+                    <div class="form-row">
+                        <label for="hygiene_kits_est">Hygiene Kits</label>
+                        <input type="number" id="hygiene_kits_est" name="hygiene_kits_est" min="0"
+                               value="{{ report.hygiene_kits_est if report else 0 }}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label for="blankets_est">Blankets</label>
+                    <input type="number" id="blankets_est" name="blankets_est" min="0" style="max-width: calc(50% - 8px);"
+                           value="{{ report.blankets_est if report else 0 }}">
+                </div>
+                <div class="wizard-nav">
+                    <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
+                    <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
+                </div>
+            </section>
+
+            <!-- Step 5: Evidence -->
+            <section class="panel wizard-step" data-step="5" hidden>
+                <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Supporting Evidence</h3></div>
+                <p class="form-hint">Upload photos of affected areas and damaged houses.</p>
+                <label for="photo_files" class="upload-dropzone">
+                    <div class="qa-icon" style="background:#eaf0fd; width:52px; height:52px; margin:0 auto 10px;">{{ icon('file-text', 22, '#2c5aa0') }}</div>
+                    <strong>Tap to upload photos</strong>
+                    <span>JPG, PNG, or PDF — up to 10MB each · multiple files allowed</span>
+                    <input type="file" id="photo_files" name="photo_files" accept=".jpg,.jpeg,.png,.pdf" multiple style="display:none;">
+                </label>
+                {% if report and report.photo_paths %}
+                <p class="form-hint" style="margin-top:8px;">Already attached: {{ report.photo_paths.split(',')|length }} file(s). Uploading new files will add to these.</p>
+                {% endif %}
+                <div class="form-row" style="margin-top:16px;">
+                    <label for="remarks">Remarks &amp; Observations</label>
+                    <textarea id="remarks" name="remarks" rows="4" placeholder="Describe the current situation in your barangay. Include road access status, ongoing rescue operations, urgent needs, special observations, etc.
+
+Example: Flood water reached approximately 1.5 meters. Several roads are not passable. Immediate food assistance is needed for evacuees.">{{ report.remarks if report else '' }}</textarea>
+                </div>
+                <div class="wizard-nav">
+                    <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
+                    <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
+                </div>
+            </section>
+
+            <!-- Step 6: Review & Submit -->
+            <section class="panel wizard-step" data-step="6" hidden>
+                <div class="panel-header"><h3>{{ icon('check-circle', 18, '#0f2547') }} Review &amp; Submit</h3></div>
+                <p class="form-hint">Review all information before submitting. Once submitted, this report cannot be edited unless returned by MSWDO/CSWDO.</p>
+                <div class="review-grid">
+                    <div class="review-box">
+                        <span class="review-box-title">Disaster Info</span>
+                        <div class="review-row"><span>Typhoon</span><strong id="rv-event"></strong></div>
+                        <div class="review-row"><span>Type</span><strong id="rv-disaster-type"></strong></div>
+                        <div class="review-row"><span>Date</span><strong id="rv-date"></strong></div>
+                        <div class="review-row"><span>Depth</span><strong id="rv-depth"></strong></div>
+                        <div class="review-row"><span>Severity</span><strong id="rv-severity"></strong></div>
+                    </div>
+                    <div class="review-box">
+                        <span class="review-box-title">Damage Numbers</span>
+                        <div class="review-row"><span>Families</span><strong id="rv-families"></strong></div>
+                        <div class="review-row"><span>Individuals</span><strong id="rv-individuals"></strong></div>
+                        <div class="review-row"><span>Totally Damaged</span><strong id="rv-totally"></strong></div>
+                        <div class="review-row"><span>Partially Damaged</span><strong id="rv-partially"></strong></div>
+                        <div class="review-row"><span>Missing</span><strong id="rv-missing"></strong></div>
+                        <div class="review-row"><span>Casualties</span><strong id="rv-casualties"></strong></div>
+                    </div>
+                    <div class="review-box">
+                        <span class="review-box-title">Relief Needs</span>
+                        <div class="review-row"><span>Drinking Water</span><strong id="rv-water"></strong></div>
+                        <div class="review-row"><span>Hygiene Kits</span><strong id="rv-hygiene"></strong></div>
+                        <div class="review-row"><span>Blankets</span><strong id="rv-blankets"></strong></div>
+                    </div>
+                    <div class="review-box">
+                        <span class="review-box-title">Evidence</span>
+                        <div class="review-row"><span>Photos</span><strong id="rv-photo-count"></strong></div>
+                        <div class="review-row" style="display:block;"><span>Remarks</span><p id="rv-remarks" style="margin:4px 0 0; font-size:12px; color:#333;"></p></div>
+                    </div>
+                </div>
+                <div class="wizard-important-note">
+                    {{ icon('alert-triangle', 14, '#b7791f') }}
+                    <span><strong>Important:</strong> Once submitted, this report will be sent to MSWDO/CSWDO for verification. You will only be able to edit it if MSWDO/CSWDO returns it for correction. Make sure all information is accurate.</span>
+                </div>
+                <div class="wizard-nav">
+                    <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
+                    <button type="submit" formaction="{{ url_for('barangay.submit_damage_report') }}" class="btn-submit-final">{{ icon('arrow-right', 14, 'white') }} Submit to MSWDO</button>
+                </div>
+            </section>
+
+            <div class="wizard-save-draft-row">
+                <button type="submit" formaction="{{ url_for('barangay.save_damage_report_draft') }}" formnovalidate class="btn-outline">{{ icon('file-text', 14) }} Save Draft</button>
+            </div>
+        </form>
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var steps = Array.prototype.slice.call(document.querySelectorAll('.wizard-step'));
+    var totalSteps = steps.length;
+    var current = 1;
+
+    function showStep(n) {
+        steps.forEach(function (el) {
+            el.hidden = (parseInt(el.dataset.step, 10) !== n);
+        });
+        document.querySelectorAll('.wizard-step-node').forEach(function (node) {
+            var stepNum = parseInt(node.dataset.stepNode, 10);
+            node.classList.remove('done', 'current');
+            if (stepNum < n) node.classList.add('done');
+            else if (stepNum === n) node.classList.add('current');
+        });
+        var pct = Math.round(((n - 1) / (totalSteps - 1)) * 100);
+        document.getElementById('wizard-step-count').textContent = 'Step ' + n + ' of ' + totalSteps;
+        document.getElementById('wizard-progress-fill').style.width = pct + '%';
+        document.getElementById('wizard-pct').textContent = pct + '% complete';
+        current = n;
+        if (n === totalSteps) populateReview();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function currentStepEl() {
+        return steps.find(function (el) { return parseInt(el.dataset.step, 10) === current; });
+    }
+
+    function validateCurrentStep() {
+        var el = currentStepEl();
+        var invalid = el.querySelector(':invalid');
+        if (invalid) {
+            invalid.reportValidity();
+            return false;
+        }
+        if (current === 3) {
+            var families = parseInt(document.getElementById('affected_families').value || '0', 10);
+            var individuals = parseInt(document.getElementById('affected_individuals').value || '0', 10);
+            if (individuals < families) {
+                document.getElementById('individuals-hint').classList.add('hint-error');
+                document.getElementById('affected_individuals').reportValidity();
+                return false;
+            }
+            document.getElementById('individuals-hint').classList.remove('hint-error');
+        }
+        return true;
+    }
+
+    document.querySelectorAll('.wizard-next').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (!validateCurrentStep()) return;
+            if (current < totalSteps) showStep(current + 1);
+        });
+    });
+    document.querySelectorAll('.wizard-back').forEach(function (btn) {
+        btn.addEventListener('click', function () { if (current > 1) showStep(current - 1); });
+    });
+
+    function textOf(id) {
+        var el = document.getElementById(id);
+        return el ? (el.tagName === 'SELECT' ? el.options[el.selectedIndex].text : el.value) : '';
+    }
+
+    function populateReview() {
+        document.getElementById('rv-event').textContent = textOf('event_id') || '—';
+        document.getElementById('rv-disaster-type').textContent = textOf('disaster_type') || '—';
+        document.getElementById('rv-date').textContent = (textOf('incident_date') || '—') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
+        document.getElementById('rv-depth').textContent = (textOf('flood_depth_m') || '0') + 'm';
+        var checkedSeverity = document.querySelector('input[name="flood_level"]:checked');
+        document.getElementById('rv-severity').textContent = checkedSeverity ? checkedSeverity.closest('.severity-card').querySelector('strong').textContent : '—';
+        document.getElementById('rv-families').textContent = textOf('affected_families') || '0';
+        document.getElementById('rv-individuals').textContent = textOf('affected_individuals') || '0';
+        document.getElementById('rv-totally').textContent = textOf('totally_damaged_houses') || '0';
+        document.getElementById('rv-partially').textContent = textOf('partially_damaged_houses') || '0';
+        document.getElementById('rv-missing').textContent = textOf('missing_persons') || '0';
+        document.getElementById('rv-casualties').textContent = textOf('casualties_deaths') || '0';
+        document.getElementById('rv-water').textContent = textOf('drinking_water_cases') || '0';
+        document.getElementById('rv-hygiene').textContent = textOf('hygiene_kits_est') || '0';
+        document.getElementById('rv-blankets').textContent = textOf('blankets_est') || '0';
+        var fileInput = document.getElementById('photo_files');
+        document.getElementById('rv-photo-count').textContent = (fileInput && fileInput.files ? fileInput.files.length : 0) + ' photo(s) attached';
+        document.getElementById('rv-remarks').textContent = textOf('remarks') || 'None';
+    }
+
+    var photoInput = document.getElementById('photo_files');
+    if (photoInput) {
+        photoInput.addEventListener('change', function () {
+            var label = photoInput.closest('.upload-dropzone').querySelector('strong');
+            label.textContent = photoInput.files.length ? photoInput.files.length + ' file(s) selected' : 'Tap to upload photos';
+        });
+    }
+
+    var familiesInput = document.getElementById('affected_families');
+    var individualsInput = document.getElementById('affected_individuals');
+    if (familiesInput && individualsInput) {
+        individualsInput.addEventListener('input', function () {
+            var hint = document.getElementById('individuals-hint');
+            if (parseInt(individualsInput.value || '0', 10) < parseInt(familiesInput.value || '0', 10)) {
+                hint.classList.add('hint-error');
+                hint.textContent = 'Must be ≥ affected families';
+            } else {
+                hint.classList.remove('hint-error');
+                hint.textContent = 'Must be ≥ affected families';
+            }
+        });
+    }
+
+    showStep(1);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}{{ report.ref }} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'damage_report' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "barangay/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Back</a>
+                <h2>{{ report.ref }} <span class="badge-status status-{{ report.status }}" style="vertical-align:middle;">{{ status_labels.get(report.status, report.status) }}</span></h2>
+            </div>
+            {% if report.status in ('draft', 'pending', 'returned') %}
+            <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-outline" style="text-decoration:none;">{{ icon('file-text', 14) }} Edit Report</a>
+            {% endif %}
+        </section>
+
+        {% if report.status == 'returned' %}
+        <section class="panel" style="border:1px solid #f6cfc9; background:#fdecea; margin-bottom:16px;">
+            <div class="panel-header"><h3 style="color:#c0392b;">{{ icon('chevron-left', 16, '#c0392b') }} Report Returned by MSWDO</h3></div>
+            <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks }}</p>
+            <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-submit-final" style="background:#c0392b; text-decoration:none; margin-top:8px; display:inline-flex;">Correct &amp; Resubmit {{ icon('arrow-right', 14, 'white') }}</a>
+        </section>
+        {% endif %}
+
+        <section class="panel">
+            <div class="panel-header"><h3>{{ icon('map-pin', 18, '#0f2547') }} Report Status Timeline</h3></div>
+            <div class="status-timeline">
+                <div class="timeline-node done">
+                    <div class="timeline-dot">{{ icon('check', 16) }}</div>
+                    <span class="timeline-label">Draft</span>
+                </div>
+                <div class="timeline-line {{ 'done' if report.status != 'draft' }}"></div>
+                <div class="timeline-node {{ 'done' if report.status != 'draft' else '' }} {{ 'current-pending' if report.status == 'draft' }}">
+                    <div class="timeline-dot">{% if report.status != 'draft' %}{{ icon('check', 16) }}{% else %}2{% endif %}</div>
+                    <span class="timeline-label">Submitted</span>
+                </div>
+                <div class="timeline-line {{ 'done' if report.status in ('verified', 'returned') }}"></div>
+                <div class="timeline-node {{ 'current-verified' if report.status == 'verified' else ('current-returned' if report.status == 'returned' else 'current-pending') }}">
+                    <div class="timeline-dot">
+                        {% if report.status == 'verified' %}{{ icon('check', 16) }}
+                        {% elif report.status == 'returned' %}!
+                        {% else %}3{% endif %}
+                    </div>
+                    <span class="timeline-label">
+                        {% if report.status == 'verified' %}Verified
+                        {% elif report.status == 'returned' %}Returned for Revision
+                        {% else %}Under Review{% endif %}
+                    </span>
+                    <span class="timeline-sub">
+                        {% if report.status in ('pending',) %}Current{% elif report.status == 'draft' %}Not yet submitted{% endif %}
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <div class="main-grid" style="margin-top:16px;">
+            <section class="panel">
+                <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Report Information</h3></div>
+                <div class="review-row"><span>Report ID</span><strong>{{ report.ref }}</strong></div>
+                <div class="review-row"><span>Barangay</span><strong>{{ report.barangay.barangay_name }}</strong></div>
+                <div class="review-row"><span>Submitted By</span><strong>{{ report.submitted_by_name }}{% if report.submitted_by_designation %} ({{ report.submitted_by_designation }}){% endif %}</strong></div>
+                <div class="review-row"><span>Date Submitted</span><strong>{{ report.submitted_at.strftime('%B %d, %Y') if report.submitted_at else 'Not yet submitted' }}</strong></div>
+                <div class="review-row"><span>Typhoon Event</span><strong>{{ report.event.event_name if report.event else '—' }}</strong></div>
+                <div class="review-row"><span>Disaster Type</span><strong>{{ report.disaster_type or '—' }}</strong></div>
+                <div class="review-row"><span>Incident Date</span><strong>{{ report.incident_date.strftime('%B %d, %Y') if report.incident_date else '—' }}</strong></div>
+                <div class="review-row"><span>Incident Time</span><strong>{{ report.incident_time.strftime('%I:%M %p') if report.incident_time else '—' }}</strong></div>
+                <div class="review-row"><span>Flood Depth</span><strong>{{ report.flood_depth_m }}m</strong></div>
+                <div class="review-row"><span>Severity</span><strong>{{ priority_by_status.get(report.flood_level, {}).get('label', '—') }}</strong></div>
+            </section>
+
+            <div>
+                <section class="panel">
+                    <div class="panel-header"><h3>{{ icon('users', 18, '#0f2547') }} Damage Summary</h3></div>
+                    <div class="info-grid">
+                        <div class="info-box"><span>Affected Families</span><strong>{{ "{:,}".format(report.affected_families) }}</strong></div>
+                        <div class="info-box"><span>Affected Individuals</span><strong>{{ "{:,}".format(report.affected_individuals) }}</strong></div>
+                        <div class="info-box"><span>Totally Damaged</span><strong>{{ report.totally_damaged_houses }}</strong></div>
+                        <div class="info-box"><span>Partially Damaged</span><strong>{{ report.partially_damaged_houses }}</strong></div>
+                        {% if report.missing_persons %}<div class="info-box"><span>Missing Persons</span><strong>{{ report.missing_persons }}</strong></div>{% endif %}
+                        {% if report.casualties_deaths %}<div class="info-box"><span>Casualties</span><strong>{{ report.casualties_deaths }}</strong></div>{% endif %}
+                    </div>
+                </section>
+
+                <section class="panel" style="margin-top:16px;">
+                    <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Needs</h3></div>
+                    <div class="review-row"><span>Drinking Water (cases)</span><strong>{{ report.drinking_water_cases }}</strong></div>
+                    <div class="review-row"><span>Hygiene Kits</span><strong>{{ report.hygiene_kits_est }}</strong></div>
+                    <div class="review-row"><span>Blankets</span><strong>{{ report.blankets_est }}</strong></div>
+                    <p class="form-hint" style="margin-top:8px;">Food pack allocation for this barangay is computed separately by ReliefLine's predictive model — see Relief Monitoring.</p>
+                </section>
+            </div>
+        </div>
+
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Remarks</h3></div>
+            <p style="font-size:13px;">{{ report.remarks or 'No remarks provided.' }}</p>
+        </section>
+
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Supporting Photos ({{ report.photo_paths.split(',')|length if report.photo_paths else 0 }})</h3></div>
+            {% if report.photo_paths %}
+            <div class="qa-grid">
+                {% for fname in report.photo_paths.split(',') %}
+                <a href="{{ url_for('static', filename='uploads/barangay_reports/' ~ report.report_id ~ '/' ~ fname) }}" target="_blank" class="qa-card qa-blue">
+                    <div class="qa-icon">{{ icon('file-text', 20, '#2c5aa0') }}</div>
+                    <span style="font-size:12px; word-break:break-all;">{{ fname }}</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty-note">No photos attached.</p>
+            {% endif %}
+        </section>
+
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,293 @@
+/* Baseline building blocks every barangay page needs, kept here since
+   barangay.css is the one stylesheet every barangay template reliably
+   imports — other pages define these too (profile_settings.css's
+   .btn-primary, admin.css's .form-row select/textarea) but which specific
+   file a given barangay page happens to also pull in varies, and relying on
+   that was the actual bug: pages that didn't import one of those files got
+   an unstyled native button or dropdown. Values copied verbatim from those
+   sources so nothing diverges visually. */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #0f2547;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-start;
+}
+.btn-primary:hover { background: #1a3a6b; }
+
+.form-row select, .form-row textarea {
+    padding: 10px 12px;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: #1a1a1a;
+}
+.form-row select:focus, .form-row textarea:focus { outline: none; border-color: #2c5aa0; }
+
+/* Barangay portal — Quick Actions grid (Dashboard) */
+.qa-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.qa-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 20px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    color: #1a1a1a;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.qa-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(15, 37, 71, 0.08); }
+
+.qa-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: white;
+    flex-shrink: 0;
+}
+
+.qa-red { background: #fdecea; border-color: #f6cfc9; }
+.qa-blue { background: #eaf0fd; border-color: #cddaf7; }
+.qa-green { background: #e8faf0; border-color: #c3ecd4; }
+.qa-orange { background: #fef5e3; border-color: #fbe3b3; }
+
+@media (max-width: 900px) {
+    .qa-grid { grid-template-columns: 1fr; }
+}
+
+/* Damage-report status badges not otherwise shared by dashboard.css
+   (that file only defines AllocationRecord's status vocabulary) */
+.badge-status.status-verified { background: #e8faf0; color: #1e8449; }
+.badge-status.status-returned { background: #fdecea; color: #c0392b; }
+
+/* Same colors, keyed for the .rr-table / dot-badge convention (relief_requests.css)
+   instead — used wherever a damage report status renders inside an .rr-table row
+   (Reports, Affected Families, Damage Report tables) so those tables can reuse the
+   exact same badge-status-{status} + priority-dot markup as the PSWDO/CSWDO tables. */
+.badge-status-draft { background: #f0f2f6; color: #8a94a6; }
+.badge-status-verified { background: #e8faf0; color: #1e8449; }
+.badge-status-returned { background: #fdecea; color: #c0392b; }
+
+/* Active Alerts panel (Dashboard + Notifications) */
+.alert-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid #eef1f6;
+}
+
+.alert-row:last-child { border-bottom: none; }
+.alert-row strong { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
+.alert-row span { font-size: 11px; color: #8a94a6; }
+
+.alert-row-damage_reports { background: transparent; }
+.alert-row-relief_requests { background: transparent; }
+
+/* Read-only info rows (Affected Families page) */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+}
+
+.info-box {
+    background: #f8f9fb;
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+.info-box span { display: block; font-size: 11px; color: #8a94a6; margin-bottom: 4px; }
+.info-box strong { font-size: 18px; color: #1a1a1a; }
+
+/* Confirm-receipt inline form (Relief Monitoring) */
+.confirm-receipt-box {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: #f8f9fb;
+    border-radius: 8px;
+}
+
+.confirm-receipt-box summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e8449;
+    list-style: none;
+}
+
+.confirm-receipt-box summary::-webkit-details-marker { display: none; }
+.confirm-receipt-box[open] summary { margin-bottom: 12px; }
+
+/* Damage Report wizard */
+.wizard-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    /* Deliberately no max-width — unlike .settings-form (profile_settings.css),
+       this form needs the panel's full width for .form-row-2col to read as
+       two real columns instead of a squeezed single strip. */
+}
+
+.autofill-box {
+    background: #f8f9fb;
+    border: 1px solid #eef1f6;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+}
+
+.autofill-box-title {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #8a94a6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.autofill-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 24px;
+}
+@media (max-width: 600px) { .autofill-grid { grid-template-columns: 1fr; } }
+
+.autofill-field span { display: block; font-size: 11px; color: #8a94a6; margin-bottom: 2px; }
+.autofill-field strong { font-size: 14px; color: #1a1a1a; font-weight: 600; }
+
+.wizard-cancel {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; color: #8a94a6; text-decoration: none; margin-bottom: 6px;
+}
+.wizard-cancel:hover { color: #0f2547; }
+
+.wizard-stepper-panel { margin-bottom: 16px; }
+
+.wizard-stepper {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 18px; overflow-x: auto;
+}
+
+.wizard-step-node {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    flex-shrink: 0; min-width: 84px;
+}
+
+.step-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 2px solid #d8dee8; color: #8a94a6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; background: white;
+}
+
+.step-label { font-size: 11px; color: #8a94a6; font-weight: 600; text-align: center; }
+
+.wizard-step-node.current .step-circle { border-color: #2c5aa0; color: #2c5aa0; }
+.wizard-step-node.current .step-label { color: #2c5aa0; }
+.wizard-step-node.done .step-circle { background: #2c5aa0; border-color: #2c5aa0; color: white; }
+.wizard-step-node.done .step-label { color: #2c5aa0; }
+
+.wizard-step-line { flex: 1; height: 2px; background: #e5e9f0; margin: 15px 4px 0; }
+
+.wizard-progress-row { display: flex; align-items: center; gap: 12px; font-size: 12px; color: #8a94a6; }
+.wizard-progress-track { flex: 1; height: 5px; background: #eef1f6; border-radius: 3px; overflow: hidden; }
+.wizard-progress-fill { height: 100%; background: #2c5aa0; transition: width 0.2s ease; }
+#wizard-pct { font-weight: 700; color: #2c5aa0; white-space: nowrap; }
+
+.form-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+@media (max-width: 700px) { .form-row-2col { grid-template-columns: 1fr; } }
+
+.required-mark { color: #c0392b; }
+.hint-error { color: #c0392b !important; font-weight: 600; }
+
+.severity-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 700px) { .severity-cards { grid-template-columns: repeat(2, 1fr); } }
+
+.severity-card {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 14px 10px; border: 1px solid #d8dee8; border-radius: 10px; cursor: pointer; text-align: center;
+}
+.severity-card input { position: absolute; opacity: 0; }
+.severity-card strong { font-size: 13px; }
+.severity-card small { font-size: 11px; color: #8a94a6; }
+.severity-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.severity-critical .severity-dot { background: #c0392b; }
+.severity-high .severity-dot { background: #e67e22; }
+.severity-medium .severity-dot { background: #d68910; }
+.severity-low .severity-dot { background: #1e8449; }
+
+.severity-card:has(input:checked) { border-color: #2c5aa0; background: #f4f8ff; box-shadow: 0 0 0 1px #2c5aa0 inset; }
+
+.upload-dropzone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    border: 1.5px dashed #d8dee8; border-radius: 10px; padding: 36px 20px; cursor: pointer; text-align: center;
+}
+.upload-dropzone strong { font-size: 13px; }
+.upload-dropzone span { font-size: 11.5px; color: #8a94a6; }
+.upload-dropzone:hover { border-color: #2c5aa0; background: #f8faff; }
+
+.wizard-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+.wizard-save-draft-row { margin-top: 14px; }
+
+.review-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 16px; }
+@media (max-width: 700px) { .review-grid { grid-template-columns: 1fr; } }
+
+.review-box { background: #f8f9fb; border-radius: 10px; padding: 14px 16px; }
+.review-box-title { display: block; font-size: 11px; font-weight: 700; color: #8a94a6; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+.review-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 3px 0; }
+.review-row span { color: #8a94a6; }
+.review-row strong { color: #1a1a1a; }
+
+.wizard-important-note {
+    display: flex; gap: 10px; background: #fef9e8; border: 1px solid #fbe3a3; border-radius: 8px;
+    padding: 12px 14px; font-size: 12.5px; color: #7d5a12; margin-bottom: 8px;
+}
+
+.btn-submit-final {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #1e8449; color: white; padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+}
+.btn-submit-final:hover { background: #197a41; }
+
+/* Report Status Timeline (view page) */
+.status-timeline { display: flex; align-items: flex-start; margin: 8px 0 4px; }
+.timeline-node { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 110px; }
+.timeline-dot {
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid #d8dee8;
+    display: flex; align-items: center; justify-content: center; background: white; color: #8a94a6;
+}
+.timeline-node.done .timeline-dot { background: #2c5aa0; border-color: #2c5aa0; color: white; }
+.timeline-node.current-verified .timeline-dot { background: #1e8449; border-color: #1e8449; color: white; }
+.timeline-node.current-returned .timeline-dot { background: #fdecea; border-color: #c0392b; color: #c0392b; }
+.timeline-node.current-pending .timeline-dot { background: #fef5e3; border-color: #d68910; color: #d68910; }
+.timeline-label { font-size: 12px; font-weight: 600; text-align: center; }
+.timeline-node.current-returned .timeline-label { color: #c0392b; }
+.timeline-node.current-verified .timeline-label { color: #1e8449; }
+.timeline-sub { font-size: 10.5px; color: #8a94a6; }
+.timeline-line { flex: 1; height: 2px; background: #e5e9f0; margin-top: 14px; }
+.timeline-line.done { background: #2c5aa0; }

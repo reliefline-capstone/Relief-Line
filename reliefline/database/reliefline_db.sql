@@ -49,7 +49,7 @@ CREATE TABLE `activity_logs` (
   CONSTRAINT `fk_activity_allocation` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`),
   CONSTRAINT `fk_activity_batch` FOREIGN KEY (`batch_id`) REFERENCES `relief_request_batches` (`batch_id`),
   CONSTRAINT `fk_activity_distribution` FOREIGN KEY (`distribution_id`) REFERENCES `distribution_records` (`distribution_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=71 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=124 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -110,7 +110,57 @@ INSERT INTO `activity_logs` VALUES
 (67,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:45:55','127.0.0.1'),
 (68,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:46:24','127.0.0.1'),
 (69,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:51:49','127.0.0.1'),
-(70,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:53:21','127.0.0.1');
+(70,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:53:21','127.0.0.1'),
+(71,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 03:11:04','127.0.0.1'),
+(72,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 03:11:59','127.0.0.1'),
+(73,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:10:02','127.0.0.1'),
+(75,12,'login','Cecilia Manalo logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:13:36','127.0.0.1'),
+(78,27,'login','Wilfredo Salazar logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:22:11','127.0.0.1'),
+(79,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:23:02','127.0.0.1'),
+(80,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:25:46','127.0.0.1'),
+(81,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:25:58','127.0.0.1'),
+(82,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:05:46','127.0.0.1'),
+(83,33,'damage_report_submitted','DR-2026-028 submitted by Brgy. Banaoang — 30 affected families',1,4,23,NULL,NULL,NULL,'2026-07-23 06:07:34',NULL),
+(84,33,'damage_report_submitted','DR-2026-028 resubmitted by Brgy. Banaoang — 30 affected families',1,4,23,NULL,NULL,NULL,'2026-07-23 06:09:36',NULL),
+(85,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:10:28','127.0.0.1'),
+(86,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:26:29','127.0.0.1'),
+(87,12,'login','Cecilia Manalo logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:27:18','127.0.0.1'),
+(88,16,'login','Rosalinda Aquino logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:27:18','127.0.0.1'),
+(89,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:34:12','127.0.0.1'),
+(90,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:35:12','127.0.0.1'),
+(91,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:35:45','127.0.0.1'),
+(92,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:37:37','127.0.0.1'),
+(93,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:38:30','127.0.0.1'),
+(94,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:39:18','127.0.0.1'),
+(95,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:39:39','127.0.0.1'),
+(96,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:43:41','127.0.0.1'),
+(97,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:44:08','127.0.0.1'),
+(98,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:58:14','127.0.0.1'),
+(99,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:59:16','127.0.0.1'),
+(100,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:59:23','127.0.0.1'),
+(101,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:00:36','127.0.0.1'),
+(102,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:01:23','127.0.0.1'),
+(103,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:01:39','127.0.0.1'),
+(104,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:13:31','127.0.0.1'),
+(105,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:13:50','127.0.0.1'),
+(106,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:18:00','127.0.0.1'),
+(107,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:18:11','127.0.0.1'),
+(108,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:21:07','127.0.0.1'),
+(109,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:22:24','127.0.0.1'),
+(110,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:26:13','127.0.0.1'),
+(111,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:26:27','127.0.0.1'),
+(112,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:26:51','127.0.0.1'),
+(113,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:27:21','127.0.0.1'),
+(114,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:36:36','127.0.0.1'),
+(115,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:39:14','127.0.0.1'),
+(116,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:41:27','127.0.0.1'),
+(117,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:42:32','127.0.0.1'),
+(118,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:45:13','127.0.0.1'),
+(119,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:46:23','127.0.0.1'),
+(120,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:46:34','127.0.0.1'),
+(121,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:03','127.0.0.1'),
+(122,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:09','127.0.0.1'),
+(123,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:21','127.0.0.1');
 /*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -261,18 +311,27 @@ CREATE TABLE `barangay_reports` (
   `report_id` int(11) NOT NULL AUTO_INCREMENT,
   `barangay_id` int(11) NOT NULL,
   `event_id` int(11) NOT NULL,
+  `disaster_type` varchar(50) DEFAULT NULL,
+  `incident_date` date DEFAULT NULL,
+  `incident_time` time DEFAULT NULL,
   `submitted_by_name` varchar(150) NOT NULL,
   `submitted_by_designation` varchar(100) DEFAULT NULL,
-  `submitted_at` datetime DEFAULT current_timestamp(),
+  `created_at` datetime DEFAULT current_timestamp(),
+  `submitted_at` datetime DEFAULT NULL,
   `affected_families` int(11) DEFAULT NULL,
   `affected_individuals` int(11) DEFAULT NULL,
   `totally_damaged_houses` int(11) DEFAULT NULL,
   `partially_damaged_houses` int(11) DEFAULT NULL,
+  `missing_persons` int(11) DEFAULT 0,
+  `casualties_deaths` int(11) DEFAULT 0,
+  `drinking_water_cases` int(11) DEFAULT 0,
+  `hygiene_kits_est` int(11) DEFAULT 0,
+  `blankets_est` int(11) DEFAULT 0,
   `flood_level` enum('normal','monitoring','needs_assistance','high_priority') DEFAULT NULL,
   `flood_depth_m` decimal(4,2) DEFAULT NULL,
   `remarks` text DEFAULT NULL,
   `photo_paths` varchar(500) DEFAULT NULL,
-  `status` enum('pending','verified','returned') DEFAULT NULL,
+  `status` enum('draft','pending','verified','returned') DEFAULT 'draft',
   `review_remarks` text DEFAULT NULL,
   `reviewed_by` int(11) DEFAULT NULL,
   `reviewed_at` datetime DEFAULT NULL,
@@ -283,7 +342,7 @@ CREATE TABLE `barangay_reports` (
   CONSTRAINT `barangay_reports_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`),
   CONSTRAINT `barangay_reports_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `barangay_reports_ibfk_3` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -294,32 +353,35 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `barangay_reports` WRITE;
 /*!40000 ALTER TABLE `barangay_reports` DISABLE KEYS */;
 INSERT INTO `barangay_reports` VALUES
-(1,11,1,'Ricardo Manalo','Barangay Captain','2026-07-20 03:22:18',150,600,2,5,'monitoring',0.30,'Light flooding along the creek. Monitoring water level.','photo_abot_1.jpg','verified','Verified via automated test.',4,'2026-07-20 06:30:25'),
-(2,12,1,'Corazon Dizon','Barangay Secretary','2026-07-20 00:22:18',300,1200,4,9,'monitoring',0.40,'Flooding receding. Residents advised to stay alert.','photo_ban-ao_1.jpg','verified','Consistent with barangay visit.',4,'2026-07-20 01:22:18'),
-(3,13,1,'Ernesto Villar','Barangay Kagawad','2026-07-20 04:22:18',220,880,9,14,'needs_assistance',0.60,'Several households still without power.','photo_batayang_1.jpg','returned','Please double-check the family count.',4,'2026-07-20 06:30:47'),
-(4,15,1,'Marissa Ocampo','Barangay Captain','2026-07-19 22:22:18',900,3600,22,31,'high_priority',1.10,'Critical flooding, main road impassable.','photo_calepaan_1.jpg','verified','Verified on-site. Matches CDRRMO advisory.',4,'2026-07-19 23:22:18'),
-(5,16,1,'Danilo Ferrer','Barangay Secretary','2026-07-20 01:22:18',80,320,0,3,'normal',0.10,'Minor debris on roadside only.','photo_carosucan_norte_1.jpg','verified','Re-verified for relief request test.',4,'2026-07-20 07:02:16'),
-(6,18,1,'Teresita Bautista','Barangay Captain','2026-07-19 23:22:18',600,2400,11,19,'needs_assistance',0.70,'Several families relocated to higher ground.','photo_coliling_1.jpg','verified','Verified. Data consistent with field visit.',4,'2026-07-20 00:22:18'),
-(7,19,1,'Romeo Castillo','Barangay Kagawad','2026-07-20 05:22:18',340,1360,15,20,'high_priority',0.90,'Rising water level near the irrigation canal.','photo_hacienda_1.jpg','verified','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
-(8,20,1,'Luz Aquino','Barangay Secretary','2026-07-19 21:22:18',40,160,0,1,'normal',0.00,'No significant impact observed.','photo_mapolopolo_1.jpg','verified','Verified.',4,'2026-07-19 22:22:18'),
-(9,1,1,'Julieta Reyes','Barangay Captain','2026-07-19 20:22:18',1200,4800,28,40,'high_priority',1.30,'Critical flooding, evacuation ongoing.','photo_anonas_1.jpg','verified','Verified on-site — matches CDRRMO report.',3,'2026-07-19 21:22:18'),
-(10,2,1,'Mario Corpuz','Barangay Secretary','2026-07-19 21:22:18',800,3200,14,22,'needs_assistance',0.80,'Flood waters entering low-lying homes.','photo_bactad_east_1.jpg','verified','Consistent with field visit.',3,'2026-07-19 22:22:18'),
-(11,3,1,'Angelita Ramos','Barangay Kagawad','2026-07-20 04:22:18',180,720,3,6,'monitoring',0.30,'Water level rising slowly, monitoring situation.','photo_bayaoas_1.jpg','pending',NULL,NULL,NULL),
-(12,4,1,'Feliciano Domingo','Barangay Captain','2026-07-20 02:22:18',60,240,0,2,'normal',0.00,'No flooding reported, strong winds only.','photo_bolaoen_1.jpg','pending',NULL,NULL,NULL),
-(13,5,1,'Yolanda Santiago','Barangay Secretary','2026-07-19 19:22:18',600,2400,10,18,'needs_assistance',0.60,'Several roads temporarily flooded.','photo_cabaruan_1.jpg','verified','Verified. Redirect relief coordination noted.',3,'2026-07-19 20:22:18'),
-(14,7,1,'Arnel Pascual','Barangay Kagawad','2026-07-20 03:22:18',95,380,1,3,'monitoring',0.20,'Minor flooding near the barangay hall.','photo_camantiles_1.jpg','returned','Photo evidence unclear — please resubmit with a clearer shot.',3,'2026-07-20 04:22:18'),
-(15,8,1,'Remedios Torres','Barangay Captain','2026-07-20 05:22:18',260,1040,8,13,'needs_assistance',0.70,'Creek overflowed near residential area.','photo_casantaan_1.jpg','pending',NULL,NULL,NULL),
-(16,10,1,'Benjamin Aguilar','Barangay Secretary','2026-07-20 01:22:18',130,520,2,5,'monitoring',0.30,'Light flooding, situation stable.','photo_cayambanan_1.jpg','pending',NULL,NULL,NULL),
-(17,21,1,'Perlita Navarro','Barangay Captain','2026-07-20 04:22:18',140,560,2,4,'monitoring',0.30,'Light flooding along the main road.','photo_ambonao_1.jpg','pending',NULL,NULL,NULL),
-(18,22,1,'Josefina Mendoza','Barangay Secretary','2026-07-20 02:22:18',50,200,0,1,'normal',0.00,'No significant damage observed.','photo_ambuetel_1.jpg','returned','Report is missing barangay captain\'s signature — please resubmit.',5,'2026-07-20 03:22:18'),
-(19,23,1,'Ramon Salvador','Barangay Kagawad','2026-07-19 22:22:18',250,1000,3,7,'monitoring',0.30,'Flooding receding along riverside homes.','photo_banaoang_1.jpg','verified','Verified. Matches previous advisory.',5,'2026-07-19 23:22:18'),
-(20,24,1,'Cristina Lopez','Barangay Captain','2026-07-20 05:22:18',210,840,7,12,'needs_assistance',0.60,'Rising water level near the river bank.','photo_bued_1.jpg','pending',NULL,NULL,NULL),
-(21,25,1,'Fernando Garcia','Barangay Secretary','2026-07-20 00:22:18',70,280,0,2,'normal',0.00,'Strong winds, no flooding reported.','photo_buenlag_1.jpg','pending',NULL,NULL,NULL),
-(22,26,1,'Aurora Ramirez','Barangay Kagawad','2026-07-19 21:22:18',500,2000,9,16,'needs_assistance',0.60,'Several families temporarily relocated.','photo_cabilocaan_1.jpg','verified','Verified on-site.',5,'2026-07-19 22:22:18'),
-(23,28,1,'Salvador Cruz','Barangay Captain','2026-07-19 20:22:18',350,1400,4,8,'monitoring',0.40,'Water receding, roads passable.','photo_doyong_1.jpg','verified','Verified.',5,'2026-07-19 21:22:18'),
-(24,30,1,'Herminia Flores','Barangay Secretary','2026-07-19 18:22:18',700,2800,18,25,'high_priority',1.00,'Critical flooding, several households isolated.','photo_lasip_1.jpg','verified','Verified — matches CDRRMO advisory.',5,'2026-07-19 19:22:18'),
-(25,14,1,'Barangay Office','Barangay Secretary','2026-07-20 06:52:00',210,840,10,17,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_bungallon_1.jpg','verified','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
-(26,17,1,'Barangay Office','Barangay Secretary','2026-07-20 06:52:00',175,700,8,14,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_carosucan_sur_1.jpg','verified','Verified for relief request demo.',4,'2026-07-20 06:52:00');
+(1,11,1,NULL,NULL,NULL,'Ricardo Manalo','Barangay Captain','2026-07-23 05:53:01','2026-07-20 03:22:18',150,600,2,5,0,0,0,0,0,'monitoring',0.30,'Light flooding along the creek. Monitoring water level.','photo_abot_1.jpg','verified','Verified via automated test.',4,'2026-07-20 06:30:25'),
+(2,12,1,NULL,NULL,NULL,'Corazon Dizon','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 00:22:18',300,1200,4,9,0,0,0,0,0,'monitoring',0.40,'Flooding receding. Residents advised to stay alert.','photo_ban-ao_1.jpg','verified','Consistent with barangay visit.',4,'2026-07-20 01:22:18'),
+(3,13,1,NULL,NULL,NULL,'Ernesto Villar','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 04:22:18',220,880,9,14,0,0,0,0,0,'needs_assistance',0.60,'Several households still without power.','photo_batayang_1.jpg','returned','Please double-check the family count.',4,'2026-07-20 06:30:47'),
+(4,15,1,NULL,NULL,NULL,'Marissa Ocampo','Barangay Captain','2026-07-23 05:53:01','2026-07-19 22:22:18',900,3600,22,31,0,0,0,0,0,'high_priority',1.10,'Critical flooding, main road impassable.','photo_calepaan_1.jpg','verified','Verified on-site. Matches CDRRMO advisory.',4,'2026-07-19 23:22:18'),
+(5,16,1,NULL,NULL,NULL,'Danilo Ferrer','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 01:22:18',80,320,0,3,0,0,0,0,0,'normal',0.10,'Minor debris on roadside only.','photo_carosucan_norte_1.jpg','verified','Re-verified for relief request test.',4,'2026-07-20 07:02:16'),
+(6,18,1,NULL,NULL,NULL,'Teresita Bautista','Barangay Captain','2026-07-23 05:53:01','2026-07-19 23:22:18',600,2400,11,19,0,0,0,0,0,'needs_assistance',0.70,'Several families relocated to higher ground.','photo_coliling_1.jpg','verified','Verified. Data consistent with field visit.',4,'2026-07-20 00:22:18'),
+(7,19,1,NULL,NULL,NULL,'Romeo Castillo','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 05:22:18',340,1360,15,20,0,0,0,0,0,'high_priority',0.90,'Rising water level near the irrigation canal.','photo_hacienda_1.jpg','verified','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
+(8,20,1,NULL,NULL,NULL,'Luz Aquino','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 21:22:18',40,160,0,1,0,0,0,0,0,'normal',0.00,'No significant impact observed.','photo_mapolopolo_1.jpg','verified','Verified.',4,'2026-07-19 22:22:18'),
+(9,1,1,NULL,NULL,NULL,'Julieta Reyes','Barangay Captain','2026-07-23 05:53:01','2026-07-19 20:22:18',1200,4800,28,40,0,0,0,0,0,'high_priority',1.30,'Critical flooding, evacuation ongoing.','photo_anonas_1.jpg','verified','Verified on-site — matches CDRRMO report.',3,'2026-07-19 21:22:18'),
+(10,2,1,NULL,NULL,NULL,'Mario Corpuz','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 21:22:18',800,3200,14,22,0,0,0,0,0,'needs_assistance',0.80,'Flood waters entering low-lying homes.','photo_bactad_east_1.jpg','verified','Consistent with field visit.',3,'2026-07-19 22:22:18'),
+(11,3,1,NULL,NULL,NULL,'Angelita Ramos','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 04:22:18',180,720,3,6,0,0,0,0,0,'monitoring',0.30,'Water level rising slowly, monitoring situation.','photo_bayaoas_1.jpg','pending',NULL,NULL,NULL),
+(12,4,1,NULL,NULL,NULL,'Feliciano Domingo','Barangay Captain','2026-07-23 05:53:01','2026-07-20 02:22:18',60,240,0,2,0,0,0,0,0,'normal',0.00,'No flooding reported, strong winds only.','photo_bolaoen_1.jpg','pending',NULL,NULL,NULL),
+(13,5,1,NULL,NULL,NULL,'Yolanda Santiago','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 19:22:18',600,2400,10,18,0,0,0,0,0,'needs_assistance',0.60,'Several roads temporarily flooded.','photo_cabaruan_1.jpg','verified','Verified. Redirect relief coordination noted.',3,'2026-07-19 20:22:18'),
+(14,7,1,NULL,NULL,NULL,'Arnel Pascual','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 03:22:18',95,380,1,3,0,0,0,0,0,'monitoring',0.20,'Minor flooding near the barangay hall.','photo_camantiles_1.jpg','returned','Photo evidence unclear — please resubmit with a clearer shot.',3,'2026-07-20 04:22:18'),
+(15,8,1,NULL,NULL,NULL,'Remedios Torres','Barangay Captain','2026-07-23 05:53:01','2026-07-20 05:22:18',260,1040,8,13,0,0,0,0,0,'needs_assistance',0.70,'Creek overflowed near residential area.','photo_casantaan_1.jpg','pending',NULL,NULL,NULL),
+(16,10,1,NULL,NULL,NULL,'Benjamin Aguilar','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 01:22:18',130,520,2,5,0,0,0,0,0,'monitoring',0.30,'Light flooding, situation stable.','photo_cayambanan_1.jpg','pending',NULL,NULL,NULL),
+(17,21,1,NULL,NULL,NULL,'Perlita Navarro','Barangay Captain','2026-07-23 05:53:01','2026-07-20 04:22:18',140,560,2,4,0,0,0,0,0,'monitoring',0.30,'Light flooding along the main road.','photo_ambonao_1.jpg','pending',NULL,NULL,NULL),
+(18,22,1,NULL,NULL,NULL,'Josefina Mendoza','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 02:22:18',50,200,0,1,0,0,0,0,0,'normal',0.00,'No significant damage observed.','photo_ambuetel_1.jpg','returned','Report is missing barangay captain\'s signature — please resubmit.',5,'2026-07-20 03:22:18'),
+(19,23,1,NULL,NULL,NULL,'Ramon Salvador','Barangay Kagawad','2026-07-23 05:53:01','2026-07-19 22:22:18',250,1000,3,7,0,0,0,0,0,'monitoring',0.30,'Flooding receding along riverside homes.','photo_banaoang_1.jpg','verified','Verified. Matches previous advisory.',5,'2026-07-19 23:22:18'),
+(20,24,1,NULL,NULL,NULL,'Cristina Lopez','Barangay Captain','2026-07-23 05:53:01','2026-07-20 05:22:18',210,840,7,12,0,0,0,0,0,'needs_assistance',0.60,'Rising water level near the river bank.','photo_bued_1.jpg','pending',NULL,NULL,NULL),
+(21,25,1,NULL,NULL,NULL,'Fernando Garcia','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 00:22:18',70,280,0,2,0,0,0,0,0,'normal',0.00,'Strong winds, no flooding reported.','photo_buenlag_1.jpg','pending',NULL,NULL,NULL),
+(22,26,1,NULL,NULL,NULL,'Aurora Ramirez','Barangay Kagawad','2026-07-23 05:53:01','2026-07-19 21:22:18',500,2000,9,16,0,0,0,0,0,'needs_assistance',0.60,'Several families temporarily relocated.','photo_cabilocaan_1.jpg','verified','Verified on-site.',5,'2026-07-19 22:22:18'),
+(23,28,1,NULL,NULL,NULL,'Salvador Cruz','Barangay Captain','2026-07-23 05:53:01','2026-07-19 20:22:18',350,1400,4,8,0,0,0,0,0,'monitoring',0.40,'Water receding, roads passable.','photo_doyong_1.jpg','verified','Verified.',5,'2026-07-19 21:22:18'),
+(24,30,1,NULL,NULL,NULL,'Herminia Flores','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 18:22:18',700,2800,18,25,0,0,0,0,0,'high_priority',1.00,'Critical flooding, several households isolated.','photo_lasip_1.jpg','verified','Verified — matches CDRRMO advisory.',5,'2026-07-19 19:22:18'),
+(25,14,1,NULL,NULL,NULL,'Barangay Office','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 06:52:00',210,840,10,17,0,0,0,0,0,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_bungallon_1.jpg','verified','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
+(26,17,1,NULL,NULL,NULL,'Barangay Office','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 06:52:00',175,700,8,14,0,0,0,0,0,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_carosucan_sur_1.jpg','verified','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
+(29,1,1,'Typhoon/Flood','2026-07-20','06:00:00','Ramon Bautista','Barangay Captain','2026-07-23 06:24:07','2026-07-23 06:24:07',45,180,5,10,0,0,10,15,10,'normal',1.10,'Initial report — data still being collected. Situation rapidly changing.',NULL,'draft','Please update the number of affected families with a more accurate count and attach photos of damaged areas.',NULL,'2026-07-23 06:24:07'),
+(30,2,1,'Flash Flood','2026-07-21','14:30:00','Cecilia Manalo','Barangay Captain','2026-07-23 06:24:07','2026-07-23 06:24:07',28,112,1,6,0,0,6,8,5,'monitoring',0.80,'Water level rising slowly along the creek. Monitoring the situation.',NULL,'pending',NULL,NULL,NULL),
+(31,6,1,'Typhoon/Flood','2026-07-21',NULL,'Rosalinda Aquino','Barangay Captain','2026-07-23 06:25:48',NULL,12,48,0,2,0,0,0,0,0,'normal',0.40,'Still gathering exact numbers from purok leaders.',NULL,'draft',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `barangay_reports` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -547,7 +609,7 @@ LOCK TABLES `distribution_records` WRITE;
 /*!40000 ALTER TABLE `distribution_records` DISABLE KEYS */;
 INSERT INTO `distribution_records` VALUES
 (5,1,8,2300,'2026-07-20',NULL,NULL,2,'confirmed','2026-07-17 13:35:28',4,4,'delivered','08:00:00','10:30:00','Aivan Flores',NULL,'complete','2 hrs 30 mins'),
-(6,2,9,1500,'2026-07-20',NULL,NULL,2,'pending','2026-07-17 13:35:28',5,5,'in_transit','07:30:00','09:45:00',NULL,NULL,NULL,NULL),
+(6,2,9,1500,'2026-07-20',NULL,NULL,NULL,'pending','2026-07-17 13:35:28',5,5,'in_transit','07:30:00','09:45:00',NULL,NULL,NULL,NULL),
 (7,15,10,900,'2026-07-20',NULL,NULL,2,'pending','2026-07-17 13:35:28',6,6,'dispatched','09:00:00','11:15:00',NULL,NULL,NULL,NULL),
 (8,18,11,600,'2026-07-20',NULL,NULL,2,'pending','2026-07-17 13:35:28',5,5,'loaded',NULL,NULL,NULL,NULL,NULL,NULL),
 (9,30,12,1800,'2026-07-20','photo','delivery_receipt_test.pdf',2,'confirmed','2026-07-17 13:35:28',5,5,'delivered','13:45:02',NULL,'Test Recipient','15:15:00','complete','1 hr 45 mins'),
@@ -692,7 +754,7 @@ CREATE TABLE `prediction_logs` (
   PRIMARY KEY (`log_id`),
   KEY `barangay_id` (`barangay_id`),
   CONSTRAINT `prediction_logs_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1475 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1488 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2176,7 +2238,20 @@ INSERT INTO `prediction_logs` VALUES
 (1471,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f'),
 (1472,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f'),
 (1473,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f'),
-(1474,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f');
+(1474,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-22 06:40:59','v4.0-linreg-6f'),
+(1475,21,1426,'{\"population\": 3800, \"num_households\": 760, \"poverty_incidence\": 26.0, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1476,22,800,'{\"population\": 2300, \"num_households\": 460, \"poverty_incidence\": 34.0, \"disaster_risk_index\": 6.6, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1477,24,1597,'{\"population\": 4200, \"num_households\": 840, \"poverty_incidence\": 24.5, \"disaster_risk_index\": 4.9, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1478,25,1038,'{\"population\": 2900, \"num_households\": 580, \"poverty_incidence\": 30.5, \"disaster_risk_index\": 5.8, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1479,27,762,'{\"population\": 2000, \"num_households\": 400, \"poverty_incidence\": 36.5, \"disaster_risk_index\": 6.7, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1480,29,669,'{\"population\": 2600, \"num_households\": 520, \"poverty_incidence\": 28.5, \"disaster_risk_index\": 5.4, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1481,13,551,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 36.0, \"disaster_risk_index\": 7.0, \"past_calamity_freq\": 6, \"historical_allocation\": 383}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1482,4,644,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 35.0, \"disaster_risk_index\": 6.0, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1483,6,1395,'{\"population\": 3600, \"num_households\": 720, \"poverty_incidence\": 30.0, \"disaster_risk_index\": 5.5, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1484,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1485,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1486,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1487,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f');
 /*!40000 ALTER TABLE `prediction_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2298,7 +2373,7 @@ CREATE TABLE `report_logs` (
   PRIMARY KEY (`report_id`),
   KEY `generated_by` (`generated_by`),
   CONSTRAINT `report_logs_ibfk_1` FOREIGN KEY (`generated_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2340,7 +2415,16 @@ INSERT INTO `report_logs` VALUES
 (29,'typhoon_summary','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
 (30,'typhoon_summary','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
 (31,'analytics','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(32,'analytics','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05');
+(32,'analytics','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
+(33,'damage_reports','pdf',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:13'),
+(34,'damage_reports','excel',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:13'),
+(35,'relief_deliveries','pdf',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:13'),
+(36,'relief_deliveries','excel',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:14'),
+(37,'damage_reports','pdf',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:27'),
+(38,'relief_deliveries','excel',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:27'),
+(39,'damage_reports','pdf',1,'{\"event_id\": 1, \"days\": \"all\"}',11,'2026-07-23 07:36:36'),
+(40,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": \"all\"}',2,'2026-07-23 07:37:55'),
+(41,'relief_requests','excel',1,'{\"event_id\": 1, \"days\": \"all\"}',3,'2026-07-23 07:37:56');
 /*!40000 ALTER TABLE `report_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2395,6 +2479,7 @@ CREATE TABLE `users` (
   `role` enum('system_admin','pswdo_admin','cswdo_admin','barangay_user') NOT NULL,
   `office_id` int(11) DEFAULT NULL,
   `barangay_id` int(11) DEFAULT NULL,
+  `designation` varchar(100) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `last_login` datetime DEFAULT NULL,
@@ -2405,7 +2490,7 @@ CREATE TABLE `users` (
   KEY `users_barangay_fk` (`barangay_id`),
   CONSTRAINT `users_barangay_fk` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE SET NULL,
   CONSTRAINT `users_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2416,11 +2501,41 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 06:53:21','2026-07-22 06:53:32'),
-(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,'2026-06-25 10:39:03',1,'2026-07-22 06:40:38','2026-07-22 06:40:38'),
-(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:30:27',NULL),
-(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,'2026-06-25 10:39:03',1,'2026-07-22 06:41:32','2026-07-22 06:41:32'),
-(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:44:33',NULL);
+(1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-23 07:46:34','2026-07-23 07:48:42'),
+(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-23 07:47:21','2026-07-23 07:49:06'),
+(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-23 07:46:23','2026-07-23 07:48:00'),
+(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 06:41:32','2026-07-22 06:41:32'),
+(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:44:33',NULL),
+(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$7mAFGoC9Rv002oFD$21b158fb581a3fb1c1be771529c8396b12c1beff127436286c8f5a6df7b6cc8a284d179a2cbcc806ad637e7a0f66f702acd019be6009ed5ebaaa4647682fe291','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 07:47:09','2026-07-23 07:48:20'),
+(12,'Cecilia Manalo','bactadeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Kfio6bqQW9wDGBco$2acd213abfc0e108d5e4e41fb706cfbd829bd8c8048f622813b72df4795532092147a761a8241354afbd5d7ed364860a92dccd11d14ee13a8481c969b877c246','barangay_user',NULL,2,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 06:27:18','2026-07-23 06:27:18'),
+(13,'Ferdinand Cruz','bayaoas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$QwNXrI3vmjalmxYe$b42811b74e3a36c1ede2b478e54d853b0bc94da0878169a658010c8665fe1a6d82b6b989d026280555cf6928279e5dd4358509399e545cf151595f362c122516','barangay_user',NULL,3,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(14,'Marilou Santos','bolaoen.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$2zsdzaaE93XM5qXZ$c24179079505bfe8221a8ac18a226d76fe59059f3105a3e6690973142c08ed11d854fd67e652a961d62bd1b844ecfcb39a72c35df5ca8efeea342acb7cc02de9','barangay_user',NULL,4,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(15,'Edgardo Villanueva','cabaruan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$YwaBV6BDYb32qki6$a29f379021fb516c58e13dde2902c82278114f0639e2771a10f70514054723fdb167898feada08c334b5cea8aeced4409377041498482eff57f2f72450c8b840','barangay_user',NULL,5,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(16,'Rosalinda Aquino','cabuloan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$mTXXGY5sNNnzZucy$e7511497836ee07d7678d3c41534c73d61a5559385a1ddb6497c287627eeefcd2441e7d7b91a78e3b0d5794402a170b1e88489fbbaede583da6ea66c1f13a631','barangay_user',NULL,6,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 06:27:18','2026-07-23 06:29:51'),
+(17,'Danilo Mendoza','camantiles.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$L81ZWS1ayKE8mIsM$41e21a429254b6b7794f4cfeef5b2db8b68e9c2692462e40b6beb42d32a38e4126879d13dd3782caa65761bc765d31dde5ab6d0aa9e998e43e12b3ccfabe938a','barangay_user',NULL,7,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(18,'Teresita Ramos','casantaan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$amtqwfsek3Jtnjm0$ab33655a6d77b14a0f36c42e52fd35acc925c499e06fe29e68b596851850921cdbcf2867ad01e4f4857128ccc6774c7d22466e74202290022682e714dc0dcb98','barangay_user',NULL,8,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(19,'Rogelio Domingo','catablan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$9w1ttG1Y0HwQgZY7$2bc665900c21f184dc37592c7d145f409824d355a49c84b196a7495e167ed5c5209d3d7444b20ea6ea50f2338a89ac43758caeaa7403a910257932d58a15e30b','barangay_user',NULL,9,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(20,'Corazon Fernandez','cayambanan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$yzkCRZ7HMLoGVQ3t$129c5a4d3eb778e4fee20c93afb6d89ab0c203051e0527d503cc63eb553036c73dedef4c0a70db28b26925cec681bf86ab7420aee6116ec4f56b79316d4534c3','barangay_user',NULL,10,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(21,'Alberto Garcia','abot.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$D1CBugYk6TVGTZlD$a1d7fa065e63c7e8643f717e5aa35ebcb710dcb17082239b89271a608fd48495456d7471d3b25cced7e9ffa4029732792f6fed7ee1980f2a7fcb7ec843793dc6','barangay_user',NULL,11,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(22,'Leonora Torres','banao.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$vtVncBlWCagHfruS$4d62b454f34b68ecaba5b644b55dc0881403edb0b742b5e10cc96cabcf5685dc9b19e4adcf160ed8dab2995abafb05b5c031512ef37be5c10e4f81f5f79bec23','barangay_user',NULL,12,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(23,'Rodrigo Castillo','batayang.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bz0M9xcEE6nPgAKG$ca5df47b9449687103a689cc26de6ce2ce60369d2ea5784984c2390ade872e10a3f3b79eb5f864ea69dd34b2da69f6a50d1c1683778fae031b2ea16ae16a92d2','barangay_user',NULL,13,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(24,'Imelda Navarro','bungallon.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$SqMHJswOxfoLl3h1$120b9159d7947f71a4b57195c17df496b4cc01d80f536668711bb276cbb69c525e0c7f40dc44e8b5700e9634308604ad79fcb249234ead6d55b98dd7939dada8','barangay_user',NULL,14,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(25,'Bienvenido Pascual','calepaan.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bQ75NS3Lme7vxjWN$c03248699c538c950f3deaeed737366098c2383c6ce9648b740a85c22b599eda76de6f3b64d4f3367e7e72f5aa0b572398ace7baa1bd146fb48a6074a2696593','barangay_user',NULL,15,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(26,'Nenita Ocampo','carosucannorte.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$awpylHt4QUkieEUX$de0bb1be5427e9807f0d5e39e2990406d8ef47ca1b12c8ab99f9f496c9a386556b4b3949e49b55ef49ccccdb7092f725bdfef60995148bbc9dfd2117b84015bb','barangay_user',NULL,16,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(27,'Wilfredo Salazar','carosucansur.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$PbINXkDwpM4o1ofa$50007d9b23e65a428cc96183ecf6c6d2bb0f9233e08722c71c709fe6bb93734401d580d6eb37b353b80a0c7a6bf9b92d07d8e0a26f080489a33c901699849424','barangay_user',NULL,17,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 05:22:11','2026-07-23 05:22:11'),
+(28,'Adelaida Gonzales','coliling.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$2jcwsFCZpplpF91I$8c9052e1ffe2cfc022aa03deb46d80a4748371a80c10dcebccbde1f1f544a33a00341adfedd8bfb11776b7d31e8c8e6b11e84849a3079a8284008db5287b3f62','barangay_user',NULL,18,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(29,'Rustico Del Rosario','hacienda.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$OcnNyuwuWadZfTkJ$fde2dca3935704f0d712f78eb1ba23c584f7d4f68e6e1fb3f2701a9577f6e955a16f97019e81bd33d6b53b64923ff5f472ee482044d06f8d252d976e3e72273d','barangay_user',NULL,19,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(30,'Herminia Flores','mapolopolo.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$ZWdNC65VnilRbPfm$1fdc51b74b82d70f607992e22fd010fa8f73b5df035cc7c9efe090997ab4518fd3ea9bcf914e1bc55f7684a46e2ca0efa3150b0989686c40aba64a59970f3be5','barangay_user',NULL,20,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(31,'Renato Marquez','ambonao.calasiao@reliefline.gov.ph','scrypt:32768:8:1$jE7FaRabd0KYYvFR$90384bf78927019175780537b8497b0ee7f96083413df22a33121c21067d78e259d7749c5f4344494f4ce9b41836fc195f45bae7652c64ebff59e21ce836b833','barangay_user',NULL,21,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(32,'Purificacion Ignacio','ambuetel.calasiao@reliefline.gov.ph','scrypt:32768:8:1$EHE90htnCSoHZ4Qm$983234cd7f30bd38ad8516c31c53c7b0d2cedb448a107206f5357fcd41714d257f6283b640ca81a6baf38a7336661ddafa79c220a2c47c1d1ffa0ddaecb97abd','barangay_user',NULL,22,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(33,'Jose Reyes','banaoang.calasiao@reliefline.gov.ph','scrypt:32768:8:1$av0BXelksBW841He$9f0dfe5394bc8ef8501a616cf22802839b0424c558113209c7acba5a49d36b18db256147e169016d54b3bf03872110aac161d08334ce6508019dd84640d37692','barangay_user',NULL,23,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 06:10:28','2026-07-23 06:10:28'),
+(34,'Esperanza Rivera','bued.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mnBTOaysNoBYqvXI$b557ef44e439d96b4fab661e5cd26f72c96964051c6eb74948643a2c79617e33dec22d185bba3b9b77663beda676f3d4f82bee4464d39038b0c16fe97040711c','barangay_user',NULL,24,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(35,'Nestor Agustin','buenlag.calasiao@reliefline.gov.ph','scrypt:32768:8:1$MNxFcFoKNyhpyIqs$175622ecd2f60f45bdbca2c968a7319548b3b1b1fca9a856d481ddc51f54c3a459766e72606617d3e5ab087e104238709eb53933c8edda177736074b960ebf7b','barangay_user',NULL,25,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(36,'Lourdes Panganiban','cabilocaan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$cZGGpe2sMbFrmDib$220cfc0f2fc2964b2c217ab96dfbcbd186b33e8667e2af8a8cff3ddd4a99067ae32e01645e6b3eb9c49627ee173f06197b0fd6f20ee1e57dc245c2fe1ee000c9','barangay_user',NULL,26,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(37,'Cirilo Bernardo','dinalaoan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mc85Dtx7ldVdBQ1X$8a3337491083a92084a8c787891d481c2a79715e2c464282a4b9a2fbceb8912dfba7c01a2fe4b13416c3edb71484edb5927b34917122d0813d6b8e142eaeb4d8','barangay_user',NULL,27,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(38,'Julieta Enriquez','doyong.calasiao@reliefline.gov.ph','scrypt:32768:8:1$SKO0jXiQWnPrLBQ9$e5c4c76eb200b963dde29a21a0edf863f1b3a5750a6122239b1a3f01d3222d1ca247af9d835e613c7d861b40ecc0fa344868c9032d70d6aee264971d279b9524','barangay_user',NULL,28,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(39,'Bonifacio Lazaro','gabon.calasiao@reliefline.gov.ph','scrypt:32768:8:1$NQCEw9ZVNjHrqYdJ$fc0eb088aaddd126c055ce620770f4996fb56fdb552cb8fa964584cb3eabdea4124f929500626051c06bc4e2a6146934ea47a956bed2c52a12a14153c496538d','barangay_user',NULL,29,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
+(40,'Remedios Corpuz','lasip.calasiao@reliefline.gov.ph','scrypt:32768:8:1$hyCPITc545JSxO1x$719cb05c28fedbedbde1880e2d0e984444b07779f72127c4d5ffb0de5c52c0014de6424444b0e474cb73e54d0a332e99e6a73cb7b99070af399f8b70adb5733f','barangay_user',NULL,30,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2596,4 +2711,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-07-22  6:54:30
+-- Dump completed on 2026-07-23  7:49:45

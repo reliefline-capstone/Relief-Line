@@ -13,6 +13,7 @@ from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
+from app.models.barangay_report import BarangayReport
 
 from app.routes.pswdo import (
     TARGET_LGUS, DISPATCH_STATUS_LABELS, PRIORITY_BY_STATUS,
@@ -73,6 +74,22 @@ def _fmt_date(d):
     return d.strftime("%b %d, %Y") if d else "—"
 
 
+def _parse_days(raw):
+    """Value 'all' means no time frame (every record on file); anything else
+    must be one of the 3 supported windows or it falls back to 30. Kept as a
+    plain string/int union (not always int) so 'all' survives a ReportLog's
+    stored filters_json round-trip on re-download."""
+    if raw is None:
+        return 30
+    if raw == "all":
+        return "all"
+    try:
+        days = int(raw)
+    except (TypeError, ValueError):
+        return 30
+    return days if days in (7, 30, 90) else 30
+
+
 def resolve_filters(args):
     """Shared filter parsing for the Reports listing page and every report type."""
     event_id = args.get("event_id", type=int)
@@ -86,9 +103,7 @@ def resolve_filters(args):
     if municipality not in TARGET_LGUS:
         municipality = "all"
 
-    days = args.get("days", 30, type=int)
-    if days not in (7, 30, 90):
-        days = 30
+    days = _parse_days(args.get("days"))
 
     lgus = [municipality] if municipality != "all" else list(TARGET_LGUS)
 
@@ -98,7 +113,9 @@ def resolve_filters(args):
         "municipality": municipality,
         "lgus": lgus,
         "days": days,
-        "start_date": date.today() - timedelta(days=days),
+        # date.min acts as "no lower bound" everywhere start_date is used in
+        # a >= comparison, so "All Time" needs no special-casing in builders.
+        "start_date": date.today() - timedelta(days=days) if days != "all" else date.min,
     }
 
 
@@ -342,7 +359,12 @@ def build_report(report_type, filters, user=None):
         return None
     info = REPORT_TYPES[report_type]
     data = BUILDERS[report_type](filters)
-    coverage = "Current Snapshot" if report_type == "warehouse_inventory" else f"Last {filters['days']} Days"
+    if report_type == "warehouse_inventory":
+        coverage = "Current Snapshot"
+    elif filters["days"] == "all":
+        coverage = "All Time"
+    else:
+        coverage = f"Last {filters['days']} Days"
 
     return {
         "report_type": report_type,
@@ -358,4 +380,134 @@ def build_report(report_type, filters, user=None):
         "date_generated": datetime.now(),
         "prepared_by": user.name if user else "PSWDO Officer",
         "prepared_by_role": ROLE_LABELS.get(user.role, user.role) if user else "PSWDO Officer",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Barangay-scoped reports — same generic {columns, rows, ...} contract as
+# build_report() above, so report_files.generate_file() and a report_view.html
+# need no changes, but scoped to a single barangay_id instead of a list of
+# municipalities. Kept as a separate dict/builder set (rather than folding
+# into REPORT_TYPES/BUILDERS) because a barangay has no warehouse of its own,
+# so the warehouse-centric report types above (inventory, stock movement,
+# analytics) don't have a meaningful barangay-scoped equivalent.
+# ---------------------------------------------------------------------------
+
+BARANGAY_REPORT_TYPES = {
+    "damage_reports": {
+        "title": "Damage Report History",
+        "description": "All damage reports this barangay has submitted, with review status.",
+        "icon": "clipboard",
+    },
+    "relief_deliveries": {
+        "title": "Relief Delivery Report",
+        "description": "Complete history of food pack deliveries received by this barangay.",
+        "icon": "truck",
+    },
+}
+
+BARANGAY_REPORT_STATUS_LABELS = {
+    "draft": "Draft",
+    "pending": "Submitted",
+    "verified": "Verified",
+    "returned": "Returned",
+}
+
+
+def resolve_barangay_filters(args):
+    """Same shape as resolve_filters(), minus the municipality/lgus concept —
+    a barangay is always scoped to itself, never to a query-param choice."""
+    event_id = args.get("event_id", type=int)
+    event = DisasterEvent.query.get(event_id) if event_id else None
+    if not event:
+        event = DisasterEvent.query.filter_by(status="active").order_by(
+            DisasterEvent.start_date.desc()
+        ).first()
+
+    days = _parse_days(args.get("days"))
+
+    return {
+        "event": event,
+        "event_id": event.event_id if event else None,
+        "days": days,
+        "start_date": date.today() - timedelta(days=days) if days != "all" else date.min,
+    }
+
+
+def _build_barangay_damage_reports(barangay, filters):
+    q = BarangayReport.query.filter(
+        BarangayReport.barangay_id == barangay.barangay_id,
+        BarangayReport.status != "draft",
+        BarangayReport.created_at >= filters["start_date"],
+    )
+    if filters["event_id"]:
+        q = q.filter(BarangayReport.event_id == filters["event_id"])
+    records = q.order_by(BarangayReport.created_at.desc()).all()
+
+    rows = []
+    for i, r in enumerate(records, start=1):
+        rows.append([
+            i, r.ref, r.event.event_name if r.event else "—", _fmt_date(r.submitted_at),
+            f"{r.affected_families:,}", f"{r.affected_individuals:,}",
+            BARANGAY_REPORT_STATUS_LABELS.get(r.status, r.status.title()),
+        ])
+    return {
+        "columns": ["#", "Report ID", "Typhoon Event", "Date Submitted", "Affected Families", "Affected Individuals", "Status"],
+        "rows": rows,
+    }
+
+
+def _build_barangay_relief_deliveries(barangay, filters):
+    q = DistributionRecord.query.filter(
+        DistributionRecord.barangay_id == barangay.barangay_id,
+        DistributionRecord.distribution_date >= filters["start_date"],
+    )
+    if filters["event_id"]:
+        q = q.join(AllocationRecord, DistributionRecord.allocation_id == AllocationRecord.allocation_id).filter(
+            AllocationRecord.event_id == filters["event_id"]
+        )
+    records = q.order_by(DistributionRecord.distribution_date.desc()).all()
+
+    rows = []
+    for i, d in enumerate(records, start=1):
+        fulfilling = d.allocation.fulfilling_office or d.allocation.office
+        rows.append([
+            i, f"D-{d.distribution_date.year}-{d.distribution_id:03d}",
+            fulfilling.office_name if fulfilling else "—", f"{d.quantity_released:,}",
+            _fmt_date(d.distribution_date), DISPATCH_STATUS_LABELS.get(d.dispatch_status, d.dispatch_status),
+            d.received_by or "—",
+        ])
+    return {
+        "columns": ["#", "Distribution ID", "Warehouse", "Food Packs", "Date", "Status", "Received By"],
+        "rows": rows,
+    }
+
+
+BARANGAY_BUILDERS = {
+    "damage_reports": _build_barangay_damage_reports,
+    "relief_deliveries": _build_barangay_relief_deliveries,
+}
+
+
+def build_barangay_report(report_type, barangay, filters, user=None):
+    if report_type not in BARANGAY_REPORT_TYPES:
+        return None
+    info = BARANGAY_REPORT_TYPES[report_type]
+    data = BARANGAY_BUILDERS[report_type](barangay, filters)
+    coverage = "All Time" if filters["days"] == "all" else f"Last {filters['days']} Days"
+
+    return {
+        "report_type": report_type,
+        "title": info["title"],
+        "description": info["description"],
+        "columns": data["columns"],
+        "rows": data["rows"],
+        "record_count": len(data["rows"]),
+        "notes": data.get("notes"),
+        "coverage": coverage,
+        "event_name": filters["event"].event_name if filters["event"] else "No active event",
+        "municipality_label": f"Brgy. {barangay.barangay_name}, {barangay.city_municipality}",
+        "date_generated": datetime.now(),
+        "prepared_by": user.name if user else "Barangay User",
+        "prepared_by_role": ROLE_LABELS.get(user.role, user.role) if user else "Barangay User",
     }

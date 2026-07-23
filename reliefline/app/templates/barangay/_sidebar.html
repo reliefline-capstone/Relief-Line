@@ -1,0 +1,29 @@
+{% from "_macros.html" import icon with context %}
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="ReliefLine" class="brand-icon">
+        <div>
+            <strong>ReliefLine</strong>
+            <span class="brand-sub">Pangasinan</span>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('barangay.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} Dashboard</a>
+        <a href="{{ url_for('barangay.damage_report') }}" class="{{ 'active' if active_page == 'damage_report' }}">{{ icon('alert-triangle', 18) }} Damage Report</a>
+        <a href="{{ url_for('barangay.affected_families') }}" class="{{ 'active' if active_page == 'affected_families' }}">{{ icon('users', 18) }} Affected Families</a>
+        <a href="{{ url_for('barangay.relief_monitoring') }}" class="{{ 'active' if active_page == 'relief_monitoring' }}">{{ icon('truck', 18) }} Relief Monitoring</a>
+        <a href="{{ url_for('barangay.reports') }}" class="{{ 'active' if active_page == 'reports' }}">{{ icon('bar-chart', 18) }} Reports</a>
+        <a href="{{ url_for('barangay.notifications') }}" class="{{ 'active' if active_page == 'notifications' }}">{{ icon('bell', 18) }} Notifications {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}</a>
+    </nav>
+    <div class="sidebar-footer">
+        {% set name_parts = current_user.name.split() %}
+        <a href="{{ url_for('barangay.profile_settings') }}" class="sidebar-user {{ 'active' if active_page == 'profile_settings' }}">
+            <div class="user-avatar">{{ (name_parts[0][0] + name_parts[-1][0])|upper if name_parts|length > 1 else current_user.name[:2]|upper }}</div>
+            <div class="sidebar-user-info">
+                <span class="user-name">{{ current_user.name }}</span>
+                <span class="user-role">{{ current_user.designation or ROLE_LABELS.get(current_user.role, current_user.role) }}</span>
+            </div>
+        </a>
+        <a href="{{ url_for('auth.logout') }}">{{ icon('log-out', 18) }} Logout</a>
+    </div>
+</aside>

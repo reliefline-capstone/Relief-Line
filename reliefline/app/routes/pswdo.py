@@ -82,6 +82,10 @@ NOTIFICATION_META = {
     "distribution_status": {"icon": "truck", "color": "#2c5aa0", "category": "distribution", "category_label": "Distribution"},
     "distribution_delivered": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Distribution"},
     "warehouse_transfer_completed": {"icon": "rotate-ccw", "color": "#6c5ce7", "category": "warehouse", "category_label": "Warehouse"},
+    "damage_report_submitted": {"icon": "clipboard", "color": "#3867d6", "category": "damage_reports", "category_label": "Damage Reports"},
+    "damage_report_verified": {"icon": "check-circle", "color": "#1e8449", "category": "damage_reports", "category_label": "Damage Reports"},
+    "damage_report_returned": {"icon": "x-circle", "color": "#c0392b", "category": "damage_reports", "category_label": "Damage Reports"},
+    "distribution_receipt_confirmed": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Distribution"},
 }
 DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
 
@@ -606,10 +610,16 @@ def dashboard():
 
     # Recent activity feed — "Recent Activities" is the general audit trail,
     # "Notifications" below it is only the unread subset needing attention.
-    recent_activities = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(4).all()
-    notifications = ActivityLog.query.filter(ActivityLog.is_read.is_(False)).order_by(
+    # Both restricted to NOTIFICATION_META's known operational action_types —
+    # System Administration rows (logins, user/office/barangay management)
+    # belong on the System Admin's own System Activity page, not here.
+    known_types = list(NOTIFICATION_META.keys())
+    recent_activities = ActivityLog.query.filter(ActivityLog.action_type.in_(known_types)).order_by(
         ActivityLog.created_at.desc()
-    ).limit(3).all()
+    ).limit(4).all()
+    notifications = ActivityLog.query.filter(
+        ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
+    ).order_by(ActivityLog.created_at.desc()).limit(3).all()
 
     return render_template(
         "pswdo/dashboard.html",
@@ -1112,7 +1122,9 @@ def warehouse_reports():
             "download_url": url_for("reports.download", report_id=log.report_id),
         })
 
-    coverage_range = f"{filters['start_date'].strftime('%b %d')} - {date.today().strftime('%b %d, %Y')}"
+    coverage_range = "All Time" if filters["days"] == "all" else (
+        f"{filters['start_date'].strftime('%b %d')} - {date.today().strftime('%b %d, %Y')}"
+    )
 
     return render_template(
         "pswdo/warehouse_reports.html",
@@ -2179,15 +2191,26 @@ def notifications():
     category_filter = request.args.get("category", "all")
     status_filter = request.args.get("status", "all")
 
-    query = ActivityLog.query
+    # Restricted to the action_types this page actually knows how to present
+    # (NOTIFICATION_META) — otherwise System Administration rows (logins,
+    # user/office/barangay management — see app.utils.log_admin_activity)
+    # leak into this feed too. Those are is_read=True by design specifically
+    # so they wouldn't inflate the unread badge, but with no action_type
+    # filter here they still showed up in the list itself, uncategorized as
+    # "Other". That admin audit trail belongs on the System Admin's own
+    # System Activity page, not here.
+    known_types = list(NOTIFICATION_META.keys())
+    base_scope = ActivityLog.action_type.in_(known_types)
+
+    query = ActivityLog.query.filter(base_scope)
     if category_filter != "all":
         action_types = [k for k, v in NOTIFICATION_META.items() if v["category"] == category_filter]
         query = query.filter(ActivityLog.action_type.in_(action_types))
     if status_filter == "unread":
         query = query.filter(ActivityLog.is_read.is_(False))
 
-    unread_count = ActivityLog.query.filter(ActivityLog.is_read.is_(False)).count()
-    total_count = ActivityLog.query.count()
+    unread_count = ActivityLog.query.filter(base_scope, ActivityLog.is_read.is_(False)).count()
+    total_count = ActivityLog.query.filter(base_scope).count()
 
     per_page = 15
     all_matching = query.order_by(ActivityLog.created_at.desc()).all()
@@ -2236,7 +2259,10 @@ def view_notification(log_id):
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def mark_all_notifications_read():
-    ActivityLog.query.filter(ActivityLog.is_read.is_(False)).update({"is_read": True})
+    known_types = list(NOTIFICATION_META.keys())
+    ActivityLog.query.filter(
+        ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
+    ).update({"is_read": True}, synchronize_session=False)
     db.session.commit()
     flash("All notifications marked as read.", "success")
     return redirect(request.referrer or url_for("pswdo.notifications"))

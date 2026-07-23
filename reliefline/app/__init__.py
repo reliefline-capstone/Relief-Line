@@ -83,12 +83,39 @@ def create_app():
                     filters.append(ActivityLog.barangay_id.in_(barangay_ids))
             if not filters:
                 return dict(unread_notification_count=0)
-            count = ActivityLog.query.filter(db.or_(*filters), ActivityLog.is_read.is_(False)).count()
+            from app.routes.pswdo import NOTIFICATION_META
+            known_types = list(NOTIFICATION_META.keys())
+            count = ActivityLog.query.filter(
+                db.or_(*filters), ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
+            ).count()
+            return dict(unread_notification_count=count)
+
+        if current_user.role == "barangay_user":
+            # Scoped to this barangay_id alone — must match the count shown on
+            # the Barangay Notifications page and dashboard widget (see
+            # app.routes.barangay._own_activity_filter).
+            if not current_user.barangay_id:
+                return dict(unread_notification_count=0)
+            from app.routes.pswdo import NOTIFICATION_META
+            known_types = list(NOTIFICATION_META.keys())
+            count = ActivityLog.query.filter(
+                ActivityLog.barangay_id == current_user.barangay_id,
+                ActivityLog.action_type.in_(known_types),
+                ActivityLog.is_read.is_(False),
+            ).count()
             return dict(unread_notification_count=count)
 
         # pswdo_admin / system_admin see the province-wide count, matching the
-        # unscoped PSWDO Notifications page (app.routes.pswdo.notifications).
-        return dict(unread_notification_count=ActivityLog.query.filter(ActivityLog.is_read.is_(False)).count())
+        # PSWDO Notifications page (app.routes.pswdo.notifications) — same
+        # NOTIFICATION_META action_type allowlist, so System Administration
+        # rows (logins, user/office/barangay management) never count here
+        # either, even though they're already is_read=True by design.
+        from app.routes.pswdo import NOTIFICATION_META
+        known_types = list(NOTIFICATION_META.keys())
+        count = ActivityLog.query.filter(
+            ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
+        ).count()
+        return dict(unread_notification_count=count)
 
     from app.routes.auth import auth_bp
     from app.routes.pswdo import pswdo_bp
