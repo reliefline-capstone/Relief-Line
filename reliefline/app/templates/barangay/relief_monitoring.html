@@ -6,8 +6,9 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}">
 {% endblock %}
 
@@ -24,84 +25,216 @@
         <section class="page-header">
             <div>
                 <h2>Relief Monitoring</h2>
-                <p>Brgy. {{ barangay.barangay_name }}, {{ barangay.city_municipality }} — food pack requests and deliveries</p>
+                <p>Brgy. {{ barangay.barangay_name }} · Read-only — PSWDO/CSWDO manages distribution</p>
             </div>
         </section>
 
-        <section class="panel">
-            {% if rows %}
-            {% for row in rows %}
-            <div class="request-card" style="margin-bottom:14px;">
+        <div class="wizard-important-note">
+            {{ icon('info', 16, '#7d5a12') }}
+            <span>This module is <strong>read-only</strong>. You can view incoming relief and confirm receipt when goods arrive. You cannot request or edit distribution details.</span>
+        </div>
+
+        <section class="stat-cards" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ total_deliveries }}</span>
+                <span class="stat-label">Total Deliveries</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ in_transit_count }}</span>
+                <span class="stat-label">In Transit</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ received_count }}</span>
+                <span class="stat-label">Received</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('package', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_packs) }}</span>
+                <span class="stat-label">Total Packs</span>
+            </div>
+        </section>
+
+        {% if delivery_rows %}
+        {% for row in delivery_rows %}
+        {% set d = row.distribution %}
+        {% set confirmed = d.status == 'confirmed' %}
+        <div class="dm-delivery-card {{ 'dm-card-pending' if row.can_confirm else ('dm-card-done' if confirmed else '') }}">
+            <div class="dm-delivery-header">
+                <div class="dm-delivery-title">
+                    <div class="dm-delivery-icon {{ 'dm-icon-done' if confirmed else 'dm-icon-transit' }}">
+                        {{ icon('check-circle', 20, 'white') if confirmed else icon('truck', 20, 'white') }}
+                    </div>
+                    <div>
+                        <strong>{{ row.label }}</strong>
+                        <span class="dm-delivery-sub">{{ row.ref|upper }} · From: {{ row.fulfilling_office.office_name if row.fulfilling_office else '—' }}</span>
+                    </div>
+                </div>
+                <div class="dm-delivery-status">
+                    <span class="badge-status badge-status-{{ d.dispatch_status }}"><i class="priority-dot"></i> {{ 'Received' if confirmed else dispatch_status_labels.get(d.dispatch_status, d.dispatch_status) }}</span>
+                    {% if not confirmed and d.expected_arrival_time %}<span class="dm-eta">ETA: {{ d.expected_arrival_time.strftime('%I:%M %p') }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="dd-stepper">
+                {% for step in delivery_steps %}
+                {% set is_terminal = loop.index0 == (delivery_steps|length - 1) %}
+                {% set is_done = loop.index0 < row.step_index or (loop.index0 == row.step_index and is_terminal) %}
+                {% set is_current = loop.index0 == row.step_index and not is_terminal %}
+                <div class="dd-step {{ 'dd-step-done' if is_done else ('dd-step-current' if is_current else '') }}">
+                    <div class="dd-step-circle">
+                        {% if is_done %}{{ icon('check', 16) }}{% else %}{{ loop.index }}{% endif %}
+                    </div>
+                    <span>{{ step_labels[step] }}</span>
+                </div>
+                {% if not loop.last %}<div class="dd-step-line {{ 'dd-step-line-done' if loop.index0 < row.step_index }}"></div>{% endif %}
+                {% endfor %}
+            </div>
+
+            {% if row.is_delayed %}
+            <div class="stock-warning">
+                {{ icon('alert-triangle', 14, '#c0392b') }}
+                <span>This delivery is delayed. Contact {{ row.fulfilling_office.office_name if row.fulfilling_office else 'the dispatching office' }} for an updated ETA.</span>
+            </div>
+            {% endif %}
+
+            <div class="dm-delivery-info-grid">
+                <div><span>Food Packs</span><strong>{{ "{:,}".format(d.quantity_released) }}</strong></div>
+                {% if confirmed %}
+                <div><span>Date Received</span><strong>{{ d.distribution_date.strftime('%B %d, %Y') }}{% if d.time_received %} at {{ d.time_received.strftime('%I:%M %p') }}{% endif %}</strong></div>
+                <div><span>Received By</span><strong>{{ d.received_by or '—' }}</strong></div>
+                {% else %}
+                <div><span>ETA</span><strong>{{ d.expected_arrival_time.strftime('%I:%M %p') if d.expected_arrival_time else 'Not yet available' }}</strong></div>
+                <div><span>Notes</span><strong>{{ d.vehicle.vehicle_name if d.vehicle else 'Vehicle unassigned' }}{% if d.driver %} · Driver: {{ d.driver.name }}{% endif %}</strong></div>
+                {% endif %}
+            </div>
+
+            {% if row.can_confirm %}
+            <button type="button" class="dm-confirm-btn" data-open-modal="confirm-modal-{{ d.distribution_id }}">
+                {{ icon('check-circle', 18, 'white') }} Confirm Relief Receipt — {{ "{:,}".format(d.quantity_released) }} Food Packs
+            </button>
+            {% elif confirmed %}
+            <div class="dm-confirmed-banner">
+                {{ icon('check-circle', 16, '#1e8449') }}
+                <div>
+                    <strong>Confirmed received by {{ d.received_by }}</strong>
+                    <span>{{ d.distribution_date.strftime('%B %d, %Y') }}{% if d.time_received %} at {{ d.time_received.strftime('%I:%M %p') }}{% endif %}</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <section class="panel"><p class="empty-note">No relief deliveries have been recorded for your barangay yet.</p></section>
+        {% endif %}
+
+        {% if other_rows %}
+        <section class="panel" style="margin-top:8px;">
+            <div class="panel-header"><h3>Other Requests</h3></div>
+            {% for row in other_rows %}
+            <div class="request-card" style="margin-bottom:10px;">
                 <div class="request-top">
                     <strong>{{ row.ref }}</strong>
                     <span class="badge-status status-{{ row.status }}">{{ row.status|replace('_', ' ')|title }}</span>
                 </div>
                 <div class="request-detail-grid">
                     <span>Requested</span><strong>{{ "{:,}".format(row.allocation.predicted_quantity) }} packs</strong>
-                    <span>Allocated</span><strong>{{ "{:,}".format(row.allocation.allocated_quantity) }} packs</strong>
-                    <span>Warehouse</span><strong>{{ row.allocation.fulfilling_office.office_name if row.allocation.fulfilling_office else '—' }}</strong>
                     <span>Date</span><strong>{{ row.allocation.allocation_date.strftime('%B %d, %Y') }}</strong>
                 </div>
-
                 {% if row.allocation.is_rejected %}
                 <div class="stock-warning">
                     {{ icon('x-circle', 14, '#c0392b') }}
                     <span>{{ row.allocation.rejection_reason }}</span>
                 </div>
                 {% endif %}
-
-                {% if row.active_distribution %}
-                <div class="request-progress-note">
-                    {{ icon('truck', 12, '#3867d6') }}
-                    {{ dispatch_status_labels.get(row.active_distribution.dispatch_status, row.active_distribution.dispatch_status) }}
-                    {% if row.active_distribution.expected_arrival_time %} · ETA {{ row.active_distribution.expected_arrival_time.strftime('%I:%M %p') }}{% endif %}
-                </div>
-                <div class="request-progress-track">
-                    <div class="request-progress-fill" style="width: {{ row.progress_pct }}%;"></div>
-                </div>
-                {% endif %}
-
-                {% if row.can_confirm %}
-                <details class="confirm-receipt-box">
-                    <summary>{{ icon('check-circle', 14, '#1e8449') }} Confirm Relief Receipt</summary>
-                    <form method="POST" action="{{ url_for('barangay.confirm_receipt', distribution_id=row.active_distribution.distribution_id) }}" enctype="multipart/form-data" class="settings-form">
-                        <div class="form-row">
-                            <label for="received_by-{{ row.active_distribution.distribution_id }}">Received By</label>
-                            <input type="text" id="received_by-{{ row.active_distribution.distribution_id }}" name="received_by" value="{{ current_user.name }}" required>
-                        </div>
-                        <div class="form-row">
-                            <label for="condition-{{ row.active_distribution.distribution_id }}">Condition on Arrival</label>
-                            <select id="condition-{{ row.active_distribution.distribution_id }}" name="condition" required>
-                                <option value="complete">Complete</option>
-                                <option value="partial">Partial</option>
-                                <option value="damaged">Damaged</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <label>Confirmation Type</label>
-                            <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px;">
-                                <input type="radio" name="validation_type" value="photo" checked style="width:auto;"> Photo proof
-                            </label>
-                            <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px; margin-left:16px;">
-                                <input type="radio" name="validation_type" value="signature" style="width:auto;"> Signature only
-                            </label>
-                        </div>
-                        <div class="form-row">
-                            <label for="proof_files-{{ row.active_distribution.distribution_id }}">Photo Proof</label>
-                            <input type="file" id="proof_files-{{ row.active_distribution.distribution_id }}" name="proof_files" accept=".jpg,.jpeg,.png,.pdf" multiple>
-                            <span class="form-hint">Required if confirming with photo proof.</span>
-                        </div>
-                        <button type="submit" class="btn-primary">{{ icon('check-circle', 14, 'white') }} Confirm Receipt</button>
-                    </form>
-                </details>
-                {% endif %}
             </div>
             {% endfor %}
-            {% else %}
-            <p class="empty-note">No relief requests have been recorded for your barangay yet.</p>
-            {% endif %}
         </section>
+        {% endif %}
 
     </main>
 </div>
+
+{% for row in delivery_rows %}
+{% if row.can_confirm %}
+{% set d = row.distribution %}
+<div class="rd-modal-overlay" id="confirm-modal-{{ d.distribution_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('package', 18, '#0f2547') }} Confirm Receipt</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <p style="font-size:13.5px; color:#555; margin-bottom:14px;">
+            Confirm that Brgy. {{ barangay.barangay_name }} received {{ "{:,}".format(d.quantity_released) }} food packs
+            from {{ row.fulfilling_office.office_name if row.fulfilling_office else 'the dispatching office' }}.
+        </p>
+        <form method="POST" action="{{ url_for('barangay.confirm_receipt', distribution_id=d.distribution_id) }}" enctype="multipart/form-data">
+            <label for="received_by-{{ d.distribution_id }}">Received By</label>
+            <input type="text" id="received_by-{{ d.distribution_id }}" name="received_by" value="{{ current_user.name }}" required>
+
+            <label for="condition-{{ d.distribution_id }}">Condition on Arrival</label>
+            <select id="condition-{{ d.distribution_id }}" name="condition" required>
+                <option value="complete">Complete — all packs received in good condition</option>
+                <option value="partial">Partial — fewer packs than expected</option>
+                <option value="damaged">Damaged — some packs damaged</option>
+            </select>
+
+            <label>Confirmation Type</label>
+            <div style="display:flex; gap:16px; margin-bottom:14px;">
+                <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px;">
+                    <input type="radio" name="validation_type" value="photo" class="validation-type-radio" data-target="photo-proof-{{ d.distribution_id }}" checked style="width:auto;"> Photo proof
+                </label>
+                <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px;">
+                    <input type="radio" name="validation_type" value="signature" class="validation-type-radio" data-target="photo-proof-{{ d.distribution_id }}" style="width:auto;"> Signature only
+                </label>
+            </div>
+
+            <div id="photo-proof-{{ d.distribution_id }}">
+                <label for="proof-{{ d.distribution_id }}" class="upload-dropzone">
+                    <div class="qa-icon" style="background:#eaf0fd; width:52px; height:52px; margin:0 auto 10px;">{{ icon('file-text', 22, '#2c5aa0') }}</div>
+                    <strong>Tap to upload photo proof</strong>
+                    <span>JPG, PNG, or PDF — up to 10MB each · multiple files allowed</span>
+                    <input type="file" id="proof-{{ d.distribution_id }}" name="proof_files" accept=".jpg,.jpeg,.png,.pdf" multiple style="display:none;">
+                </label>
+                <span class="form-hint">Required if confirming with photo proof.</span>
+            </div>
+
+            <div class="rd-modal-actions">
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+                <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Yes, Confirm</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+<script>
+(function () {
+    // Confirmation Type radios show/hide the matching Photo Proof dropzone —
+    // same field, scoped per-modal via data-target since a barangay can have
+    // several deliveries (and therefore several confirm modals) on this page.
+    document.querySelectorAll('.validation-type-radio').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            var target = document.getElementById(radio.dataset.target);
+            if (target) target.style.display = radio.value === 'photo' ? '' : 'none';
+        });
+    });
+
+    // Same "Tap to upload" -> "N file(s) selected" label swap as the Damage
+    // Report wizard's upload-dropzone (barangay/damage_report_form.html).
+    document.querySelectorAll('.upload-dropzone input[type="file"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            var label = input.closest('.upload-dropzone').querySelector('strong');
+            if (label) label.textContent = input.files.length ? input.files.length + ' file(s) selected' : 'Tap to upload photo proof';
+        });
+    });
+})();
+</script>
 {% endblock %}

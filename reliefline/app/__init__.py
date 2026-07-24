@@ -107,13 +107,14 @@ def create_app():
 
         # pswdo_admin / system_admin see the province-wide count, matching the
         # PSWDO Notifications page (app.routes.pswdo.notifications) — same
-        # NOTIFICATION_META action_type allowlist, so System Administration
-        # rows (logins, user/office/barangay management) never count here
-        # either, even though they're already is_read=True by design.
-        from app.routes.pswdo import NOTIFICATION_META
-        known_types = list(NOTIFICATION_META.keys())
+        # PSWDO_NOTIFICATION_TYPES allowlist, so System Administration rows
+        # (logins, user/office/barangay management) never count here either
+        # (even though they're already is_read=True by design), and neither
+        # do damage_report_* rows — reviewing those is entirely CSWDO/MSWDO's
+        # job, and PSWDO has no page to click through to for them.
+        from app.routes.pswdo import PSWDO_NOTIFICATION_TYPES
         count = ActivityLog.query.filter(
-            ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
+            ActivityLog.action_type.in_(PSWDO_NOTIFICATION_TYPES), ActivityLog.is_read.is_(False)
         ).count()
         return dict(unread_notification_count=count)
 

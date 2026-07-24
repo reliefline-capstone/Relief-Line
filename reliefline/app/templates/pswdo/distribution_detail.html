@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, validation_attachments with context %}
 
 {% block title %}D-{{ rec.distribution_date.year }}-{{ '%03d'|format(rec.distribution_id) }} - ReliefLine{% endblock %}
 
@@ -201,13 +201,7 @@
                         <div><span>Condition</span><strong>{{ rec.condition|title if rec.condition else '—' }}</strong></div>
                         <div><span>Travel Time</span><strong>{{ rec.travel_time or '—' }}</strong></div>
                     </div>
-                    {% if attachments %}
-                    <div class="dd-attachments">
-                        {% for name in attachments %}
-                        <a href="{{ url_for('static', filename='uploads/distributions/' ~ rec.distribution_id ~ '/' ~ name) }}" class="dd-attachment-chip">{{ icon('file-text', 14) }} {{ name }} {{ icon('download', 12) }}</a>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
+                    {{ validation_attachments(rec.distribution_id, attachments) }}
                 </section>
                 {% endif %}
 

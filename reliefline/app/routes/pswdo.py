@@ -89,6 +89,16 @@ NOTIFICATION_META = {
 }
 DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
 
+# Damage report review is entirely a CSWDO/MSWDO responsibility per the
+# manuscript — PSWDO has no damage-report page of its own to click through
+# to (see BarangayReport's own docstring: "reviewed/verified by the CSWDO/
+# MSWDO office"). Rather than show these as dead-end, non-clickable entries,
+# PSWDO's own notification feed excludes them outright; NOTIFICATION_META
+# itself stays the shared source of truth since CSWDO's and Barangay's own
+# notification feeds still need these 3 action_types.
+PSWDO_EXCLUDED_NOTIFICATION_TYPES = {"damage_report_submitted", "damage_report_verified", "damage_report_returned"}
+PSWDO_NOTIFICATION_TYPES = [k for k in NOTIFICATION_META if k not in PSWDO_EXCLUDED_NOTIFICATION_TYPES]
+
 def _relief_request_submitted_link(log):
     """PSWDO reviews relief requests per barangay (AllocationRecord), not per
     batch, so the "exact" screen for a submission notification is the first
@@ -613,7 +623,7 @@ def dashboard():
     # Both restricted to NOTIFICATION_META's known operational action_types —
     # System Administration rows (logins, user/office/barangay management)
     # belong on the System Admin's own System Activity page, not here.
-    known_types = list(NOTIFICATION_META.keys())
+    known_types = PSWDO_NOTIFICATION_TYPES
     recent_activities = ActivityLog.query.filter(ActivityLog.action_type.in_(known_types)).order_by(
         ActivityLog.created_at.desc()
     ).limit(4).all()
@@ -2191,15 +2201,16 @@ def notifications():
     category_filter = request.args.get("category", "all")
     status_filter = request.args.get("status", "all")
 
-    # Restricted to the action_types this page actually knows how to present
-    # (NOTIFICATION_META) — otherwise System Administration rows (logins,
-    # user/office/barangay management — see app.utils.log_admin_activity)
-    # leak into this feed too. Those are is_read=True by design specifically
-    # so they wouldn't inflate the unread badge, but with no action_type
-    # filter here they still showed up in the list itself, uncategorized as
-    # "Other". That admin audit trail belongs on the System Admin's own
-    # System Activity page, not here.
-    known_types = list(NOTIFICATION_META.keys())
+    # Restricted to PSWDO_NOTIFICATION_TYPES (NOTIFICATION_META minus damage
+    # reports) — otherwise two kinds of rows leak into this feed: System
+    # Administration rows (logins, user/office/barangay management — see
+    # app.utils.log_admin_activity), which are is_read=True by design so they
+    # wouldn't inflate the unread badge but still showed up in the list
+    # itself as uncategorized "Other" entries; and damage_report_* rows,
+    # which showed up correctly categorized but as dead-end, non-clickable
+    # entries since PSWDO has no damage-report page — that review is
+    # entirely CSWDO/MSWDO's job. Both belong elsewhere, not here.
+    known_types = PSWDO_NOTIFICATION_TYPES
     base_scope = ActivityLog.action_type.in_(known_types)
 
     query = ActivityLog.query.filter(base_scope)
@@ -2259,7 +2270,7 @@ def view_notification(log_id):
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def mark_all_notifications_read():
-    known_types = list(NOTIFICATION_META.keys())
+    known_types = PSWDO_NOTIFICATION_TYPES
     ActivityLog.query.filter(
         ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
     ).update({"is_read": True}, synchronize_session=False)

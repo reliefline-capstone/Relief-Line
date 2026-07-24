@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon, prediction_disclaimer with context %}
+{% from "_macros.html" import icon, prediction_disclaimer, validation_attachments with context %}
 
 {% block title %}Relief Requests - ReliefLine{% endblock %}
 
@@ -19,6 +19,7 @@
             <div class="rr-step-dot">
                 {% if step.state == 'done' %}{{ icon('check-circle', 12, 'white') }}
                 {% elif step.state == 'rejected' %}{{ icon('x', 12, 'white') }}
+                {% else %}{{ loop.index }}
                 {% endif %}
             </div>
             {% if not loop.last %}<div class="rr-step-line"></div>{% endif %}
@@ -119,6 +120,27 @@
 
             <div class="da-modal-pane" data-pane="timeline">
                 {{ rr_stepper(view.stepper) }}
+
+                {% set delivered_distributions = view.distributions|selectattr('dispatch_status', 'equalto', 'delivered')|list %}
+                {% if delivered_distributions %}
+                <span class="da-evidence-label" style="margin-top:18px; display:block;">DELIVERY CONFIRMATION</span>
+                {% for d in delivered_distributions %}
+                <div class="da-data-grid" style="margin-bottom:10px;">
+                    <div class="da-data-field"><span>Barangay</span><strong>{{ d.barangay.barangay_name }}</strong></div>
+                    <div class="da-data-field"><span>Received By</span><strong>{{ d.received_by or '—' }}</strong></div>
+                    <div class="da-data-field"><span>Date/Time Received</span><strong>{{ d.distribution_date.strftime('%B %d, %Y') }}{% if d.time_received %} · {{ d.time_received.strftime('%I:%M %p') }}{% endif %}</strong></div>
+                    <div class="da-data-field"><span>Condition</span><strong>{{ d.condition|title if d.condition else '—' }}</strong></div>
+                </div>
+                {% set attachments = d.validation_file.split(',') if d.validation_file else [] %}
+                {% if attachments %}
+                {{ validation_attachments(d.distribution_id, attachments) }}
+                {% elif d.validation_type == 'signature' %}
+                <p class="empty-note">Confirmed via signature — no photo attached.</p>
+                {% else %}
+                <p class="empty-note">Awaiting the barangay's receipt confirmation.</p>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
             </div>
         </div>
 
@@ -430,6 +452,29 @@
                     <div class="rr-reject-note" style="margin:0 22px 22px;">{{ selected.rejection_reasons[0] }}</div>
                     {% endif %}
                 </div>
+
+                {% set delivered_distributions = selected.distributions|selectattr('dispatch_status', 'equalto', 'delivered')|list %}
+                {% if delivered_distributions %}
+                <div class="rr-track-card" style="padding:20px 22px;">
+                    <h3 style="margin-bottom:12px;">Delivery Confirmation</h3>
+                    {% for d in delivered_distributions %}
+                    <div class="da-data-grid" style="margin-bottom:10px;">
+                        <div class="da-data-field"><span>Barangay</span><strong>{{ d.barangay.barangay_name }}</strong></div>
+                        <div class="da-data-field"><span>Received By</span><strong>{{ d.received_by or '—' }}</strong></div>
+                        <div class="da-data-field"><span>Date/Time Received</span><strong>{{ d.distribution_date.strftime('%B %d, %Y') }}{% if d.time_received %} · {{ d.time_received.strftime('%I:%M %p') }}{% endif %}</strong></div>
+                        <div class="da-data-field"><span>Condition</span><strong>{{ d.condition|title if d.condition else '—' }}</strong></div>
+                    </div>
+                    {% set attachments = d.validation_file.split(',') if d.validation_file else [] %}
+                    {% if attachments %}
+                    {{ validation_attachments(d.distribution_id, attachments) }}
+                    {% elif d.validation_type == 'signature' %}
+                    <p class="empty-note">Confirmed via signature — no photo attached.</p>
+                    {% else %}
+                    <p class="empty-note">Awaiting the barangay's receipt confirmation.</p>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
 
             <div>

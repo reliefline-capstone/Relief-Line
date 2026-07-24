@@ -49,7 +49,7 @@ CREATE TABLE `activity_logs` (
   CONSTRAINT `fk_activity_allocation` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`),
   CONSTRAINT `fk_activity_batch` FOREIGN KEY (`batch_id`) REFERENCES `relief_request_batches` (`batch_id`),
   CONSTRAINT `fk_activity_distribution` FOREIGN KEY (`distribution_id`) REFERENCES `distribution_records` (`distribution_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=124 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=157 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -160,7 +160,40 @@ INSERT INTO `activity_logs` VALUES
 (120,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:46:34','127.0.0.1'),
 (121,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:03','127.0.0.1'),
 (122,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:09','127.0.0.1'),
-(123,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:21','127.0.0.1');
+(123,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:21','127.0.0.1'),
+(124,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 12:59:35','127.0.0.1'),
+(125,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:06:18','127.0.0.1'),
+(126,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:45:56','127.0.0.1'),
+(127,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:46:56','127.0.0.1'),
+(128,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:47:33','127.0.0.1'),
+(129,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-020 (880 food packs), received by Jose Reyes',1,NULL,1,NULL,20,NULL,'2026-07-24 13:47:33',NULL),
+(130,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:48:24','127.0.0.1'),
+(131,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:56:00','127.0.0.1'),
+(132,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:56:24','127.0.0.1'),
+(133,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:59:55','127.0.0.1'),
+(134,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:06:10','127.0.0.1'),
+(135,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:07:07','127.0.0.1'),
+(136,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:10:56','127.0.0.1'),
+(137,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:13:02','127.0.0.1'),
+(138,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:13:55','127.0.0.1'),
+(139,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:14:48','127.0.0.1'),
+(140,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-022 (650 food packs), received by Ramon Bautista',1,NULL,1,NULL,22,NULL,'2026-07-24 14:15:06',NULL),
+(141,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:15:19','127.0.0.1'),
+(142,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:15:47','127.0.0.1'),
+(143,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:16:41','127.0.0.1'),
+(144,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:16:52','127.0.0.1'),
+(145,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:16:58','127.0.0.1'),
+(146,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:17:14','127.0.0.1'),
+(147,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:18:46','127.0.0.1'),
+(148,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:19:12','127.0.0.1'),
+(149,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:19:37','127.0.0.1'),
+(150,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:20:15','127.0.0.1'),
+(151,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:20:48','127.0.0.1'),
+(152,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:21:12','127.0.0.1'),
+(153,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:23:03','127.0.0.1'),
+(154,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:26:03','127.0.0.1'),
+(155,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:26:59','127.0.0.1'),
+(156,NULL,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-005 (2,300 food packs), received by Aivan Flores',1,NULL,1,NULL,5,NULL,'2026-07-24 14:30:00',NULL);
 /*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -207,7 +240,7 @@ CREATE TABLE `allocation_records` (
   CONSTRAINT `fk_alloc_decided_by` FOREIGN KEY (`decided_by`) REFERENCES `users` (`user_id`),
   CONSTRAINT `fk_alloc_event` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `fk_alloc_fulfilling_office` FOREIGN KEY (`fulfilling_office_id`) REFERENCES `offices` (`office_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -239,7 +272,13 @@ INSERT INTO `allocation_records` VALUES
 (26,12,3,360,360,0,'2025-05-16',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2025-05-18',NULL,2,6),
 (27,18,3,377,377,0,'2025-05-16',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2025-05-18',NULL,2,6),
 (28,15,3,463,463,0,'2025-05-16',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2025-05-18',NULL,2,6),
-(29,16,3,400,400,0,'2026-07-20',NULL,1,'approved',4,'2026-07-20 07:02:35',NULL,5,NULL,'Approved via test',2,8);
+(29,16,3,400,400,0,'2026-07-20',NULL,1,'approved',4,'2026-07-20 07:02:35',NULL,5,NULL,'Approved via test',2,8),
+(30,1,2,880,880,800,'2026-07-21',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,NULL),
+(31,1,2,300,300,250,'2026-07-20',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,NULL),
+(32,1,2,150,0,140,'2026-07-23',NULL,1,'pending',NULL,'2026-07-24 13:45:43',NULL,NULL,NULL,NULL,NULL,NULL),
+(33,1,2,90,0,85,'2026-07-18',NULL,1,'pending',NULL,'2026-07-24 13:45:43','Duplicate request — already covered under RR-2026-008.',NULL,NULL,NULL,NULL,NULL),
+(34,1,2,650,650,600,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 13:59:40',NULL,5,NULL,NULL,NULL,NULL),
+(35,1,2,420,420,400,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 14:18:13',NULL,5,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `allocation_records` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -597,7 +636,7 @@ CREATE TABLE `distribution_records` (
   CONSTRAINT `distribution_records_ibfk_3` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
   CONSTRAINT `fk_dist_driver` FOREIGN KEY (`driver_id`) REFERENCES `drivers` (`driver_id`),
   CONSTRAINT `fk_dist_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`vehicle_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -608,7 +647,7 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `distribution_records` WRITE;
 /*!40000 ALTER TABLE `distribution_records` DISABLE KEYS */;
 INSERT INTO `distribution_records` VALUES
-(5,1,8,2300,'2026-07-20',NULL,NULL,2,'confirmed','2026-07-17 13:35:28',4,4,'delivered','08:00:00','10:30:00','Aivan Flores',NULL,'complete','2 hrs 30 mins'),
+(5,1,8,2300,'2026-07-20','photo','proof_photo_1.jpg',2,'confirmed','2026-07-17 13:35:28',4,4,'delivered','08:00:00','10:30:00','Aivan Flores',NULL,'complete','2 hrs 30 mins'),
 (6,2,9,1500,'2026-07-20',NULL,NULL,NULL,'pending','2026-07-17 13:35:28',5,5,'in_transit','07:30:00','09:45:00',NULL,NULL,NULL,NULL),
 (7,15,10,900,'2026-07-20',NULL,NULL,2,'pending','2026-07-17 13:35:28',6,6,'dispatched','09:00:00','11:15:00',NULL,NULL,NULL,NULL),
 (8,18,11,600,'2026-07-20',NULL,NULL,2,'pending','2026-07-17 13:35:28',5,5,'loaded',NULL,NULL,NULL,NULL,NULL,NULL),
@@ -622,7 +661,11 @@ INSERT INTO `distribution_records` VALUES
 (16,12,26,360,'2026-07-20',NULL,NULL,2,'confirmed','2026-07-20 06:52:00',NULL,NULL,'delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
 (17,18,27,377,'2026-07-20',NULL,NULL,2,'confirmed','2026-07-20 06:52:00',NULL,NULL,'delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
 (18,15,28,463,'2026-07-20',NULL,NULL,2,'confirmed','2026-07-20 06:52:00',NULL,NULL,'delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
-(19,3,15,1000,'2026-07-21',NULL,NULL,2,'pending','2026-07-21 04:51:01',NULL,NULL,'loaded',NULL,NULL,NULL,NULL,NULL,NULL);
+(19,3,15,1000,'2026-07-21',NULL,NULL,2,'pending','2026-07-21 04:51:01',NULL,NULL,'loaded',NULL,NULL,NULL,NULL,NULL,NULL),
+(20,1,30,880,'2026-07-23','signature',NULL,11,'confirmed','2026-07-24 13:45:43',4,4,'delivered',NULL,'15:30:00','Jose Reyes','13:47:33','complete',NULL),
+(21,1,31,300,'2026-07-22',NULL,NULL,NULL,'pending','2026-07-24 13:45:43',5,5,'delayed',NULL,'11:00:00',NULL,NULL,NULL,NULL),
+(22,1,34,650,'2026-07-24','photo','image_1.png',11,'confirmed','2026-07-24 13:59:40',6,6,'delivered',NULL,'16:00:00','Ramon Bautista','14:15:06','complete',NULL),
+(23,1,35,420,'2026-07-24',NULL,NULL,NULL,'pending','2026-07-24 14:18:13',4,4,'in_transit',NULL,'17:00:00',NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `distribution_records` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -754,7 +797,7 @@ CREATE TABLE `prediction_logs` (
   PRIMARY KEY (`log_id`),
   KEY `barangay_id` (`barangay_id`),
   CONSTRAINT `prediction_logs_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1488 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1501 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2251,7 +2294,20 @@ INSERT INTO `prediction_logs` VALUES
 (1484,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
 (1485,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
 (1486,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
-(1487,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f');
+(1487,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-23 03:11:23','v4.0-linreg-6f'),
+(1488,21,1426,'{\"population\": 3800, \"num_households\": 760, \"poverty_incidence\": 26.0, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1489,22,800,'{\"population\": 2300, \"num_households\": 460, \"poverty_incidence\": 34.0, \"disaster_risk_index\": 6.6, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1490,24,1597,'{\"population\": 4200, \"num_households\": 840, \"poverty_incidence\": 24.5, \"disaster_risk_index\": 4.9, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1491,25,1038,'{\"population\": 2900, \"num_households\": 580, \"poverty_incidence\": 30.5, \"disaster_risk_index\": 5.8, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1492,27,762,'{\"population\": 2000, \"num_households\": 400, \"poverty_incidence\": 36.5, \"disaster_risk_index\": 6.7, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1493,29,669,'{\"population\": 2600, \"num_households\": 520, \"poverty_incidence\": 28.5, \"disaster_risk_index\": 5.4, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1494,13,551,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 36.0, \"disaster_risk_index\": 7.0, \"past_calamity_freq\": 6, \"historical_allocation\": 383}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1495,4,644,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 35.0, \"disaster_risk_index\": 6.0, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1496,6,1395,'{\"population\": 3600, \"num_households\": 720, \"poverty_incidence\": 30.0, \"disaster_risk_index\": 5.5, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1497,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1498,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1499,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1500,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f');
 /*!40000 ALTER TABLE `prediction_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2502,11 +2558,11 @@ LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
 (1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-23 07:46:34','2026-07-23 07:48:42'),
-(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-23 07:47:21','2026-07-23 07:49:06'),
-(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-23 07:46:23','2026-07-23 07:48:00'),
-(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 06:41:32','2026-07-22 06:41:32'),
-(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:44:33',NULL),
-(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$7mAFGoC9Rv002oFD$21b158fb581a3fb1c1be771529c8396b12c1beff127436286c8f5a6df7b6cc8a284d179a2cbcc806ad637e7a0f66f702acd019be6009ed5ebaaa4647682fe291','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 07:47:09','2026-07-23 07:48:20'),
+(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-24 14:15:19','2026-07-24 14:32:13'),
+(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-24 14:26:59','2026-07-24 14:31:43'),
+(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-24 14:16:41','2026-07-24 14:16:41'),
+(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:44:33','2026-07-24 13:17:30'),
+(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$7mAFGoC9Rv002oFD$21b158fb581a3fb1c1be771529c8396b12c1beff127436286c8f5a6df7b6cc8a284d179a2cbcc806ad637e7a0f66f702acd019be6009ed5ebaaa4647682fe291','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-24 14:26:03','2026-07-24 14:32:13'),
 (12,'Cecilia Manalo','bactadeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Kfio6bqQW9wDGBco$2acd213abfc0e108d5e4e41fb706cfbd829bd8c8048f622813b72df4795532092147a761a8241354afbd5d7ed364860a92dccd11d14ee13a8481c969b877c246','barangay_user',NULL,2,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 06:27:18','2026-07-23 06:27:18'),
 (13,'Ferdinand Cruz','bayaoas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$QwNXrI3vmjalmxYe$b42811b74e3a36c1ede2b478e54d853b0bc94da0878169a658010c8665fe1a6d82b6b989d026280555cf6928279e5dd4358509399e545cf151595f362c122516','barangay_user',NULL,3,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
 (14,'Marilou Santos','bolaoen.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$2zsdzaaE93XM5qXZ$c24179079505bfe8221a8ac18a226d76fe59059f3105a3e6690973142c08ed11d854fd67e652a961d62bd1b844ecfcb39a72c35df5ca8efeea342acb7cc02de9','barangay_user',NULL,4,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
@@ -2711,4 +2767,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-07-23  7:49:45
+-- Dump completed on 2026-07-24 14:34:10

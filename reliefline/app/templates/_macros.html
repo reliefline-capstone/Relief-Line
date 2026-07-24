@@ -8,3 +8,20 @@
     <span>Predictions and recommendations are system-generated estimates, not guaranteed outcomes. Use them to support — not replace — your own judgment when making decisions.</span>
 </div>
 {% endmacro %}
+
+{% macro validation_attachments(distribution_id, filenames) %}
+{% set image_exts = ('.jpg', '.jpeg', '.png', '.gif', '.webp') %}
+{% if filenames %}
+<div class="dd-attachments">
+    {% for name in filenames %}
+    {% set clean_name = name.strip() %}
+    {% set file_url = url_for('static', filename='uploads/distributions/' ~ distribution_id ~ '/' ~ clean_name) %}
+    {% if (clean_name|lower).endswith(image_exts) %}
+    <a href="{{ file_url }}" target="_blank" class="dd-attachment-photo"><img src="{{ file_url }}" alt="Validation photo" loading="lazy"></a>
+    {% else %}
+    <a href="{{ file_url }}" target="_blank" class="dd-attachment-chip">{{ icon('file-text', 14) }} {{ clean_name }} {{ icon('download', 12) }}</a>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}

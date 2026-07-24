@@ -6,6 +6,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -127,6 +128,57 @@
             </div>
             {% else %}
             <p class="empty-note">No reports generated yet — click Generate on any report type above, then Export PDF or Export Excel.</p>
+            {% endif %}
+        </section>
+
+        <section class="page-header" style="margin-top:16px;">
+            <div><h3 style="margin:0;">Report History</h3></div>
+            <a href="{{ url_for('barangay.new_damage_report') }}" class="link-manage">Submit New →</a>
+        </section>
+        <form method="GET" class="filter-bar">
+            <div class="rr-search-wrapper">
+                {{ icon('search', 14, '#8a94a6') }}
+                <input type="text" name="report_q" value="{{ report_q }}" placeholder="Search report ref...">
+            </div>
+            <select name="report_status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if report_status == 'all' }}>All Status</option>
+                {% for key, label in status_labels.items() %}
+                {% if key != 'draft' %}
+                <option value="{{ key }}" {{ 'selected' if report_status == key }}>{{ label }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+            <a href="{{ url_for('barangay.reports_export', report_q=report_q, report_status=report_status) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+        </form>
+        <section class="panel rr-table-panel">
+            {% if history %}
+            <table class="rr-table">
+                <thead>
+                    <tr>
+                        <th>EVENT</th>
+                        <th>STATUS</th>
+                        <th>AFFECTED FAMILIES</th>
+                        <th>AFFECTED INDIVIDUALS</th>
+                        <th>SUBMITTED</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in history %}
+                    <tr>
+                        <td>{{ r.event.event_name if r.event else '—' }}</td>
+                        <td><span class="badge-status badge-status-{{ r.status }}"><i class="priority-dot"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
+                        <td>{{ "{:,}".format(r.affected_families) }}</td>
+                        <td>{{ "{:,}".format(r.affected_individuals) }}</td>
+                        <td>{{ r.submitted_at|ph_time if r.submitted_at else '—' }}</td>
+                        <td><a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="rr-pagination"><span>{{ history|length }} report{{ 's' if history|length != 1 }}</span></div>
+            {% else %}
+            <p class="empty-note" style="padding:20px;">No report history matches your filter.</p>
             {% endif %}
         </section>
 

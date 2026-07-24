@@ -24,7 +24,7 @@ from app.models.user import User
 # notification icon never drifts between the PSWDO/CSWDO screens and this
 # barangay-facing one — see app/routes/pswdo.py for the source of truth.
 from app.routes.pswdo import (
-    DISPATCH_STATUS_LABELS, ROUTE_PROGRESS_BY_STATUS, PRIORITY_BY_STATUS,
+    DISPATCH_STATUS_LABELS, PRIORITY_BY_STATUS,
     DEFAULT_PRIORITY, NOTIFICATION_META, DEFAULT_NOTIFICATION_META, _priority_info,
 )
 
@@ -183,12 +183,21 @@ def dashboard():
     ).all()
     primary_event = active_events[0] if active_events else None
 
-    # Affected families — this barangay's own current status for the active event
+    # Affected families — this barangay's own current status for the active
+    # event, plus the latest verified report's damaged-houses breakdown
+    # (Current Standing panel — folded into the dashboard now that the
+    # standalone Affected Families page is gone).
     status_row = None
+    latest_report = None
     if primary_event:
         status_row = BarangayDisasterStatus.query.filter_by(
             barangay_id=barangay.barangay_id, event_id=primary_event.event_id
         ).first()
+        latest_report = BarangayReport.query.filter(
+            BarangayReport.barangay_id == barangay.barangay_id,
+            BarangayReport.event_id == primary_event.event_id,
+            BarangayReport.status != "draft",
+        ).order_by(BarangayReport.created_at.desc()).first()
     affected_families = status_row.affected_families if status_row else 0
     priority = _priority_info(status_row.status if status_row else "normal")
 
@@ -230,6 +239,8 @@ def dashboard():
         barangay=barangay,
         primary_event=primary_event,
         affected_families=affected_families,
+        status_row=status_row,
+        latest_report=latest_report,
         priority=priority,
         pending_reports_count=len(pending_reports),
         returned_reports_count=len(returned_reports),
@@ -563,60 +574,40 @@ def submit_damage_report():
 
 
 # ---------------------------------------------------------------------------
-# Affected Families
+# Relief Monitoring — read-only for the barangay: PSWDO/CSWDO own allocation
+# and dispatch, this page only tracks incoming deliveries and lets the
+# barangay confirm receipt (the manuscript's photo/signature validation
+# record requirement). One card per DistributionRecord ("delivery"), not per
+# AllocationRecord, since a single request can eventually produce a
+# tracked physical delivery — the ID and progress the barangay actually
+# cares about is the delivery's, not the original request's.
 # ---------------------------------------------------------------------------
 
-@barangay_bp.route("/affected-families")
-@login_required
-@role_required("barangay_user")
-def affected_families():
-    barangay = _own_barangay_or_404()
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
-    primary_event = active_events[0] if active_events else None
-
-    status_row = None
-    latest_report = None
-    if primary_event:
-        status_row = BarangayDisasterStatus.query.filter_by(
-            barangay_id=barangay.barangay_id, event_id=primary_event.event_id
-        ).first()
-        latest_report = BarangayReport.query.filter(
-            BarangayReport.barangay_id == barangay.barangay_id,
-            BarangayReport.event_id == primary_event.event_id,
-            BarangayReport.status != "draft",
-        ).order_by(BarangayReport.created_at.desc()).first()
-
-    priority = _priority_info(status_row.status if status_row else "normal")
-
-    # History across past (ended) events, most recent first — same toolbar
-    # (search + status + export) as the Damage Reports table on Reports.
-    report_q = request.args.get("report_q", "").strip().lower()
-    report_status = request.args.get("report_status", "all")
-    history = _own_submitted_reports(barangay.barangay_id)
-    if report_status != "all":
-        history = [r for r in history if r.status == report_status]
-    if report_q:
-        history = [r for r in history if report_q in r.ref.lower()]
-    history = history[:10]
-
-    return render_template(
-        "barangay/affected_families.html",
-        barangay=barangay,
-        primary_event=primary_event,
-        status_row=status_row,
-        latest_report=latest_report,
-        priority=priority,
-        history=history,
-        status_labels=REPORT_STATUS_LABELS,
-        report_q=report_q, report_status=report_status,
-    )
+# Simplified 6-step barangay-facing view of a delivery's lifecycle. Coarser
+# than pswdo.DISPATCH_STEPS (which also distinguishes Loaded/Dispatched) —
+# those sub-stages are PSWDO/CSWDO's own logistics concern, not something a
+# receiving barangay needs a separate step for. Ends in "Received" (this
+# barangay's own confirmation), which pswdo.DISPATCH_STEPS has no equivalent
+# of since that stepper is written from the dispatching side.
+BARANGAY_DELIVERY_STEPS = ["requested", "approved", "preparing", "in_transit", "delivered", "received"]
+BARANGAY_STEP_LABELS = {
+    "requested": "Requested", "approved": "Approved", "preparing": "Preparing",
+    "in_transit": "In Transit", "delivered": "Delivered", "received": "Received",
+}
 
 
-# ---------------------------------------------------------------------------
-# Relief Monitoring
-# ---------------------------------------------------------------------------
+def _delivery_step_index(dist):
+    if dist.status == "confirmed":
+        return 5
+    if dist.dispatch_status == "delivered":
+        return 4
+    if dist.dispatch_status == "in_transit":
+        return 3
+    # preparing / loaded / dispatched all read as one "Preparing" stage here;
+    # "delayed" is a side-branch flag (see pswdo.py's own DISPATCH_STEPS
+    # comment), not a step of its own, so it falls back to the same stage.
+    return 2
+
 
 @barangay_bp.route("/relief-monitoring")
 @login_required
@@ -624,31 +615,55 @@ def affected_families():
 def relief_monitoring():
     barangay = _own_barangay_or_404()
 
-    allocations = AllocationRecord.query.filter_by(barangay_id=barangay.barangay_id).order_by(
-        AllocationRecord.allocation_date.desc()
+    distributions = DistributionRecord.query.filter_by(barangay_id=barangay.barangay_id).order_by(
+        DistributionRecord.distribution_date.desc()
     ).all()
 
-    rows = []
-    for a in allocations:
-        distributions = sorted(a.distribution_records, key=lambda d: d.distribution_date, reverse=True)
-        active_distribution = next((d for d in distributions if d.dispatch_status != "delivered"), None) \
-            or (distributions[0] if distributions else None)
-        rows.append({
-            "allocation": a,
-            "ref": f"RR-{a.allocation_date.year}-{a.allocation_id:03d}",
-            "status": a.display_status,
-            "distributions": distributions,
-            "active_distribution": active_distribution,
-            "progress_pct": ROUTE_PROGRESS_BY_STATUS.get(active_distribution.dispatch_status, 0) if active_distribution else None,
-            "can_confirm": bool(active_distribution and active_distribution.dispatch_status == "in_transit"
-                                 and active_distribution.status == "pending"),
+    total_packs = sum(d.quantity_released for d in distributions)
+    in_transit_count = len([d for d in distributions if d.dispatch_status == "in_transit" and d.status == "pending"])
+    received_count = len([d for d in distributions if d.status == "confirmed"])
+
+    delivery_rows = []
+    for i, d in enumerate(distributions, start=1):
+        fulfilling = d.allocation.fulfilling_office or d.allocation.office
+        delivery_rows.append({
+            "distribution": d,
+            "label": f"DEL-{i:03d}",
+            "ref": f"D-{d.distribution_date.year}-{d.distribution_id:03d}",
+            "request_ref": f"RR-{d.allocation.allocation_date.year}-{d.allocation.allocation_id:03d}",
+            "fulfilling_office": fulfilling,
+            "step_index": _delivery_step_index(d),
+            "can_confirm": d.dispatch_status == "in_transit" and d.status == "pending",
+            "is_delayed": d.dispatch_status == "delayed",
         })
+
+    # Requests still awaiting PSWDO/CSWDO approval or dispatch scheduling, or
+    # rejected outright — no DistributionRecord exists yet for these, so they
+    # never get a delivery card above; surfaced separately so a rejection or
+    # a still-pending request doesn't just silently disappear from this page.
+    dispatched_allocation_ids = {d.allocation_id for d in distributions}
+    other_allocations = AllocationRecord.query.filter(
+        AllocationRecord.barangay_id == barangay.barangay_id,
+        ~AllocationRecord.allocation_id.in_(dispatched_allocation_ids),
+    ).order_by(AllocationRecord.allocation_date.desc()).all()
+    other_rows = [{
+        "allocation": a,
+        "ref": f"RR-{a.allocation_date.year}-{a.allocation_id:03d}",
+        "status": a.display_status,
+    } for a in other_allocations]
 
     return render_template(
         "barangay/relief_monitoring.html",
         barangay=barangay,
-        rows=rows,
+        delivery_rows=delivery_rows,
+        other_rows=other_rows,
+        total_deliveries=len(distributions),
+        in_transit_count=in_transit_count,
+        received_count=received_count,
+        total_packs=total_packs,
         dispatch_status_labels=DISPATCH_STATUS_LABELS,
+        delivery_steps=BARANGAY_DELIVERY_STEPS,
+        step_labels=BARANGAY_STEP_LABELS,
     )
 
 
@@ -808,6 +823,17 @@ def reports():
         f"{filters['start_date'].strftime('%b %d')} - {date.today().strftime('%b %d, %Y')}"
     )
 
+    # Report History table — moved here from the now-removed standalone
+    # Affected Families page, same search + status + export toolbar.
+    report_q = request.args.get("report_q", "").strip().lower()
+    report_status = request.args.get("report_status", "all")
+    history = my_reports
+    if report_status != "all":
+        history = [r for r in history if r.status == report_status]
+    if report_q:
+        history = [r for r in history if report_q in r.ref.lower()]
+    history = history[:10]
+
     return render_template(
         "barangay/reports.html",
         barangay=barangay,
@@ -821,6 +847,9 @@ def reports():
         report_cards=report_cards,
         recent_reports=recent_reports,
         download_all_url=url_for("barangay.report_download_all"),
+        history=history,
+        status_labels=REPORT_STATUS_LABELS,
+        report_q=report_q, report_status=report_status,
     )
 
 

@@ -71,6 +71,7 @@ CSWDO_NOTIFICATION_LINK_BUILDERS = {
     "relief_request_submitted": lambda log: _cswdo_batch_tracking_link(log.batch_id) or url_for("cswdo.relief_requests"),
     "distribution_status": _cswdo_distribution_link,
     "distribution_delivered": _cswdo_distribution_link,
+    "distribution_receipt_confirmed": _cswdo_distribution_link,
 }
 
 CSWDO_NOTIFICATION_CATEGORIES = [

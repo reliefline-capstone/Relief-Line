@@ -258,13 +258,16 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: #8a94a6;
 }
 
 .rr-step-line { width: 2px; flex: 1; min-height: 26px; background: #e5e9f0; }
 
 .rr-step.done .rr-step-dot { background: #0f2547; border-color: #0f2547; }
 .rr-step.done .rr-step-line { background: #0f2547; }
-.rr-step.current .rr-step-dot { border-color: #0f2547; }
+.rr-step.current .rr-step-dot { border-color: #0f2547; color: #0f2547; }
 .rr-step.rejected .rr-step-dot { background: #c0392b; border-color: #c0392b; }
 
 .rr-step-body { padding-bottom: 22px; flex: 1; }

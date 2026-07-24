@@ -250,6 +250,15 @@
 .upload-dropzone span { font-size: 11.5px; color: #8a94a6; }
 .upload-dropzone:hover { border-color: #2c5aa0; background: #f8faff; }
 
+/* Override .rd-modal form label's block/bold/margin defaults when the
+   label itself IS the upload dropzone (Relief Monitoring's Confirm Receipt
+   modal reuses this same component) — otherwise the modal's generic label
+   styling wins on specificity and collapses it back into a plain bold line. */
+.rd-modal .upload-dropzone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    font-size: 13px; font-weight: 400; color: #1a1a1a; margin: 0 0 10px;
+}
+
 .wizard-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
 .wizard-save-draft-row { margin-top: 14px; }
 
@@ -291,3 +300,71 @@
 .timeline-sub { font-size: 10.5px; color: #8a94a6; }
 .timeline-line { flex: 1; height: 2px; background: #e5e9f0; margin-top: 14px; }
 .timeline-line.done { background: #2c5aa0; }
+
+/* Relief Monitoring — delivery cards (barangay's read-only incoming-relief
+   view). Reuses .dd-stepper/.dd-step from distribution_detail.css for the
+   step circles so it's the same component PSWDO's own distribution detail
+   page uses, just re-labeled for the barangay's 6-step view. */
+.dm-delivery-card {
+    background: white;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    border: 1px solid #eef1f6;
+}
+
+.dm-card-pending { background: #fef9f0; border-color: #f6dcae; }
+.dm-card-done { background: #f2fbf6; border-color: #bfe8d2; }
+
+.dm-delivery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.dm-delivery-title { display: flex; align-items: center; gap: 12px; }
+
+.dm-delivery-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.dm-icon-transit { background: #d68910; }
+.dm-icon-done { background: #1e8449; }
+
+.dm-delivery-title strong { display: block; font-size: 15px; color: #1a1a1a; }
+.dm-delivery-sub { display: block; font-size: 12px; color: #8a94a6; margin-top: 2px; }
+
+.dm-delivery-status { text-align: right; }
+.dm-eta { display: block; font-size: 11.5px; color: #d68910; font-weight: 600; margin-top: 6px; }
+
+.dm-delivery-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 16px 0;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+}
+.dm-delivery-info-grid span { display: block; font-size: 10.5px; color: #8a94a6; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 3px; }
+.dm-delivery-info-grid strong { font-size: 15px; color: #1a1a1a; }
+@media (max-width: 700px) { .dm-delivery-info-grid { grid-template-columns: 1fr; } }
+
+.dm-confirm-btn {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: #1e8449; color: white; border: none; border-radius: 8px;
+    padding: 14px; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.dm-confirm-btn:hover { background: #196f3d; }
+
+.dm-confirmed-banner {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: white; border: 1px solid #bfe8d2; border-radius: 8px;
+    padding: 12px 14px;
+}
+.dm-confirmed-banner strong { display: block; font-size: 13px; color: #1e8449; }
+.dm-confirmed-banner span { font-size: 11.5px; color: #8a94a6; }
