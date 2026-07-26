@@ -32,6 +32,7 @@ from app.routes.pswdo import (
     ROUTE_PROGRESS_BY_STATUS, PRIORITY_BY_STATUS, DEFAULT_PRIORITY,
     NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
     _item_status, _priority_info, _lgu_burn_rate, _recent_stock_movements,
+    _gis_scope_lgus, _gis_config,
 )
 
 # CSWDO's own link targets for notification "View" buttons — deliberately NOT
@@ -337,6 +338,27 @@ def dashboard():
         recent_activities=recent_activities,
         notifications=notifications,
         dispatch_status_labels=DISPATCH_STATUS_LABELS,
+    )
+
+
+@cswdo_bp.route("/gis-map")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def gis_map():
+    """Own-page shell so a CSWDO/MSWDO admin gets the CSWDO sidebar/nav (not
+    PSWDO's) — same convention as every other page this office has its own
+    template for. The actual map data comes from app.routes.pswdo's gis-map
+    endpoints, which is fine to share: those are now scoped per-user via
+    _gis_scope_lgus(), so a CSWDO admin hitting them only ever gets their own
+    municipality back, same as if the logic were duplicated here."""
+    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).all()
+    return render_template(
+        "cswdo/gis_map.html",
+        active_events=active_events,
+        target_lgus=_gis_scope_lgus(),
+        gis_config=_gis_config(),
     )
 
 

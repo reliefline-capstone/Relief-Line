@@ -233,6 +233,9 @@
 
 .rd-modal form textarea { resize: vertical; }
 
+[data-toggle-field] { display: none; }
+[data-toggle-field].is-visible { display: block; }
+
 .rd-form-row {
     display: flex;
     gap: 12px;

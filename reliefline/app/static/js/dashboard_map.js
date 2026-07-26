@@ -31,17 +31,23 @@ document.addEventListener('DOMContentLoaded', function () {
         if (municipality) params.set('municipality', municipality);
         if (barangayId) params.set('barangay_id', barangayId);
         var qs = params.toString();
-        window.location.href = '/pswdo/gis-map' + (qs ? '?' + qs : '');
+        // Set per-template (pswdo/dashboard.html vs cswdo/dashboard.html) so
+        // each role lands on its own GIS Map page/sidebar, not the other's.
+        var base = window.RELIEFLINE_GIS_MAP_URL || '/pswdo/gis-map';
+        window.location.href = base + (qs ? '?' + qs : '');
     }
 
     var provinceLayer = L.geoJSON(null, {
         style: function (feature) {
+            // Matches gis_map.js's full-map styling — is_target is already
+            // scoped server-side (app.routes.pswdo._gis_scope_lgus), so this
+            // bold border marks exactly what this account can see.
             var isTarget = feature.properties.is_target;
             return {
-                color: isTarget ? '#8a94a6' : '#c3cad6',
-                weight: isTarget ? 1.5 : 1,
-                fillColor: '#f4f6fa',
-                fillOpacity: isTarget ? 0 : 0.3,
+                color: isTarget ? '#2c5aa0' : '#c3cad6',
+                weight: isTarget ? 3 : 1,
+                fillColor: isTarget ? '#2c5aa0' : '#f4f6fa',
+                fillOpacity: isTarget ? 0.04 : 0.3,
                 dashArray: isTarget ? null : '3,3',
             };
         },
@@ -63,7 +69,12 @@ document.addEventListener('DOMContentLoaded', function () {
         onEachFeature: function (feature, layer) {
             var p = feature.properties;
             if (p.has_data) {
-                layer.bindTooltip('<strong>' + p.name + '</strong><br>' + p.priority_label, { sticky: true });
+                var sourceLabel = p.food_packs_source === 'request' ? 'requested' : 'estimated';
+                layer.bindTooltip(
+                    '<strong>' + p.name + '</strong><br>' + p.priority_label +
+                    '<br>' + (p.food_packs_current || 0).toLocaleString() + ' food packs ' + sourceLabel,
+                    { sticky: true }
+                );
                 layer.on('click', function () { goToFullMap(p.lgu, p.barangay_id); });
             }
         },

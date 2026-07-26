@@ -94,7 +94,7 @@
 
             <section class="panel map-panel">
                 <div class="panel-header">
-                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map — Province of Pangasinan</h3>
+                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map — {{ lgu or 'Your Municipality' }}</h3>
                     <div class="map-legend">
                         <span><i class="legend-dot normal"></i> Normal</span>
                         <span><i class="legend-dot monitoring"></i> Monitoring</span>
@@ -104,8 +104,8 @@
                 </div>
                 <div class="map-placeholder-box">
                     <div id="dashboard-mini-map"></div>
-                    <span class="map-toggle">Province</span>
-                    <a href="{{ url_for('pswdo.gis_map', municipality=lgu) }}" class="map-fullscreen-btn" title="Open full GIS Map">{{ icon('maximize', 16, '#444') }}</a>
+                    <span class="map-toggle">{{ lgu or 'Municipality' }}</span>
+                    <a href="{{ url_for('cswdo.gis_map', municipality=lgu) }}" class="map-fullscreen-btn" title="Open full GIS Map">{{ icon('maximize', 16, '#444') }}</a>
 
                     <div class="map-legend-box">
                         <span class="map-legend-title">Legend</span>
@@ -272,6 +272,7 @@
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>window.RELIEFLINE_GIS_MAP_URL = "{{ url_for('cswdo.gis_map') }}";</script>
 <script src="{{ url_for('static', filename='js/dashboard_map.js') }}"></script>
 <script>
 (function () {

@@ -20,7 +20,16 @@ class WarehouseInventory(db.Model):
 
 class WarehouseStockLog(db.Model):
     """Manual stock adjustments (Add Stock / Update Stock) — feeds the 'Received'
-    entries in the Stock Movement history, distinct from releases and transfers."""
+    entries in the Stock Movement history, distinct from releases and transfers.
+
+    source_type/donor_name give the manuscript's "tracks incoming relief supplies
+    including special donations from external agencies" (Chapter 1 — Purpose and
+    Description) a structured field instead of leaving it to the free-text reason
+    alone. Per the Scope and Limitations section, this is stock-visibility
+    metadata only — donation supplies are still counted as ordinary warehouse
+    stock for allocation/pre-positioning math; only their provenance is tagged,
+    and distribution routing stays outside the system's control either way.
+    """
     __tablename__ = "warehouse_stock_logs"
 
     log_id = db.Column(db.Integer, primary_key=True)
@@ -29,8 +38,19 @@ class WarehouseStockLog(db.Model):
     item_name = db.Column(db.String(100), nullable=False)
     delta = db.Column(db.Integer, nullable=False)
     reason = db.Column(db.String(255), nullable=True)
+    # "standard" covers provincial supply, transfers-in, and any other routine
+    # restock; "donation" is a special relief supply from an external agency
+    # (NGO, LGU partner, private donor). donor_name is only meaningful when
+    # source_type="donation" — NULL otherwise.
+    source_type = db.Column(db.Enum("standard", "donation"), nullable=False, default="standard",
+                             server_default="standard")
+    donor_name = db.Column(db.String(150), nullable=True)
     updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
     office = db.relationship("Office", backref="stock_logs")
     updated_by_user = db.relationship("User", foreign_keys=[updated_by])
+
+    @property
+    def is_donation(self):
+        return self.source_type == "donation"

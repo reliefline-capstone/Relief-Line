@@ -49,7 +49,7 @@ CREATE TABLE `activity_logs` (
   CONSTRAINT `fk_activity_allocation` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`),
   CONSTRAINT `fk_activity_batch` FOREIGN KEY (`batch_id`) REFERENCES `relief_request_batches` (`batch_id`),
   CONSTRAINT `fk_activity_distribution` FOREIGN KEY (`distribution_id`) REFERENCES `distribution_records` (`distribution_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=157 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -193,7 +193,15 @@ INSERT INTO `activity_logs` VALUES
 (153,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:23:03','127.0.0.1'),
 (154,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:26:03','127.0.0.1'),
 (155,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:26:59','127.0.0.1'),
-(156,NULL,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-005 (2,300 food packs), received by Aivan Flores',1,NULL,1,NULL,5,NULL,'2026-07-24 14:30:00',NULL);
+(156,NULL,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-005 (2,300 food packs), received by Aivan Flores',1,NULL,1,NULL,5,NULL,'2026-07-24 14:30:00',NULL),
+(157,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:38:45','127.0.0.1'),
+(158,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:40:11','127.0.0.1'),
+(159,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:43:09','127.0.0.1'),
+(160,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:53:42','127.0.0.1'),
+(161,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:54:54','127.0.0.1'),
+(162,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 05:48:00','127.0.0.1'),
+(163,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 06:09:00','127.0.0.1'),
+(164,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 06:15:36','127.0.0.1');
 /*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -273,12 +281,12 @@ INSERT INTO `allocation_records` VALUES
 (27,18,3,377,377,0,'2025-05-16',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2025-05-18',NULL,2,6),
 (28,15,3,463,463,0,'2025-05-16',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2025-05-18',NULL,2,6),
 (29,16,3,400,400,0,'2026-07-20',NULL,1,'approved',4,'2026-07-20 07:02:35',NULL,5,NULL,'Approved via test',2,8),
-(30,1,2,880,880,800,'2026-07-21',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,NULL),
-(31,1,2,300,300,250,'2026-07-20',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,NULL),
+(30,1,2,880,880,800,'2026-07-21',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,12),
+(31,1,2,300,300,250,'2026-07-20',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,12),
 (32,1,2,150,0,140,'2026-07-23',NULL,1,'pending',NULL,'2026-07-24 13:45:43',NULL,NULL,NULL,NULL,NULL,NULL),
 (33,1,2,90,0,85,'2026-07-18',NULL,1,'pending',NULL,'2026-07-24 13:45:43','Duplicate request — already covered under RR-2026-008.',NULL,NULL,NULL,NULL,NULL),
-(34,1,2,650,650,600,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 13:59:40',NULL,5,NULL,NULL,NULL,NULL),
-(35,1,2,420,420,400,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 14:18:13',NULL,5,NULL,NULL,NULL,NULL);
+(34,1,2,650,650,600,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 13:59:40',NULL,5,NULL,NULL,NULL,12),
+(35,1,2,420,420,400,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 14:18:13',NULL,5,NULL,NULL,NULL,12);
 /*!40000 ALTER TABLE `allocation_records` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -485,39 +493,6 @@ INSERT INTO `barangays` VALUES
 (29,'Gabon','Calasiao',2600,520,28.50,5.40,4),
 (30,'Lasip','Calasiao',1200,240,48.00,8.50,8);
 /*!40000 ALTER TABLE `barangays` ENABLE KEYS */;
-UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
-
---
--- Table structure for table `city_demand_summary`
---
-
-DROP TABLE IF EXISTS `city_demand_summary`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `city_demand_summary` (
-  `summary_id` int(11) NOT NULL AUTO_INCREMENT,
-  `city_municipality` varchar(100) NOT NULL,
-  `total_barangays` int(11) NOT NULL DEFAULT 0,
-  `total_projected_demand` int(11) NOT NULL DEFAULT 0,
-  `total_historical_allocation` int(11) NOT NULL DEFAULT 0,
-  `total_available_stock` int(11) NOT NULL DEFAULT 0,
-  `demand_level` enum('low','moderate','high','critical') NOT NULL DEFAULT 'low',
-  `generated_at` datetime DEFAULT current_timestamp(),
-  PRIMARY KEY (`summary_id`),
-  KEY `city_municipality` (`city_municipality`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `city_demand_summary`
---
-
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
-LOCK TABLES `city_demand_summary` WRITE;
-/*!40000 ALTER TABLE `city_demand_summary` DISABLE KEYS */;
-/*!40000 ALTER TABLE `city_demand_summary` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
@@ -749,7 +724,7 @@ DROP TABLE IF EXISTS `offices`;
 CREATE TABLE `offices` (
   `office_id` int(11) NOT NULL AUTO_INCREMENT,
   `office_name` varchar(100) NOT NULL,
-  `office_type` enum('pswdo','cswdo','barangay') NOT NULL,
+  `office_type` enum('pswdo','cswdo') NOT NULL,
   `area_covered` varchar(100) NOT NULL,
   `capacity_food_pack` int(11) NOT NULL DEFAULT 20000,
   `full_address` varchar(255) DEFAULT NULL,
@@ -2384,7 +2359,7 @@ CREATE TABLE `relief_request_batches` (
   CONSTRAINT `relief_request_batches_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`),
   CONSTRAINT `relief_request_batches_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `relief_request_batches_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2405,7 +2380,8 @@ INSERT INTO `relief_request_batches` VALUES
 (8,3,1,400,'medium','Carosucan Norte flooding requires food pack support.','Test submission with file upload.','damage_report.pdf','photo1.jpg',NULL,4,'2026-07-20 07:02:35','2026-07-20 07:02:35'),
 (9,2,1,5600,'medium','Verified barangay reports show typhoon-related flooding requiring food pack support.',NULL,NULL,NULL,NULL,3,'2026-07-19 09:00:00','2026-07-19 09:00:00'),
 (10,3,1,2200,'medium','Verified barangay reports show typhoon-related flooding requiring food pack support.',NULL,NULL,NULL,NULL,4,'2026-07-19 09:00:00','2026-07-19 09:00:00'),
-(11,4,1,4600,'medium','Verified barangay reports show typhoon-related flooding requiring food pack support.',NULL,NULL,NULL,NULL,5,'2026-07-19 09:00:00','2026-07-19 09:00:00');
+(11,4,1,4600,'medium','Verified barangay reports show typhoon-related flooding requiring food pack support.',NULL,NULL,NULL,NULL,5,'2026-07-19 09:00:00','2026-07-19 09:00:00'),
+(12,2,1,2250,'high','Continued relief distribution for Brgy. Anonas under Typhoon Crising.',NULL,NULL,NULL,NULL,NULL,'2026-07-24 08:00:00','2026-07-24 08:30:00');
 /*!40000 ALTER TABLE `relief_request_batches` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2558,11 +2534,11 @@ LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
 (1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-23 07:46:34','2026-07-23 07:48:42'),
-(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-24 14:15:19','2026-07-24 14:32:13'),
-(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-24 14:26:59','2026-07-24 14:31:43'),
-(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-24 14:16:41','2026-07-24 14:16:41'),
+(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-26 05:48:00','2026-07-26 06:14:07'),
+(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-26 06:09:00','2026-07-26 06:15:25'),
+(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-26 06:15:36','2026-07-26 06:15:36'),
 (5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:44:33','2026-07-24 13:17:30'),
-(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$7mAFGoC9Rv002oFD$21b158fb581a3fb1c1be771529c8396b12c1beff127436286c8f5a6df7b6cc8a284d179a2cbcc806ad637e7a0f66f702acd019be6009ed5ebaaa4647682fe291','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-24 14:26:03','2026-07-24 14:32:13'),
+(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$7mAFGoC9Rv002oFD$21b158fb581a3fb1c1be771529c8396b12c1beff127436286c8f5a6df7b6cc8a284d179a2cbcc806ad637e7a0f66f702acd019be6009ed5ebaaa4647682fe291','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-26 04:53:42','2026-07-26 06:08:56'),
 (12,'Cecilia Manalo','bactadeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Kfio6bqQW9wDGBco$2acd213abfc0e108d5e4e41fb706cfbd829bd8c8048f622813b72df4795532092147a761a8241354afbd5d7ed364860a92dccd11d14ee13a8481c969b877c246','barangay_user',NULL,2,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 06:27:18','2026-07-23 06:27:18'),
 (13,'Ferdinand Cruz','bayaoas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$QwNXrI3vmjalmxYe$b42811b74e3a36c1ede2b478e54d853b0bc94da0878169a658010c8665fe1a6d82b6b989d026280555cf6928279e5dd4358509399e545cf151595f362c122516','barangay_user',NULL,3,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
 (14,'Marilou Santos','bolaoen.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$2zsdzaaE93XM5qXZ$c24179079505bfe8221a8ac18a226d76fe59059f3105a3e6690973142c08ed11d854fd67e652a961d62bd1b844ecfcb39a72c35df5ca8efeea342acb7cc02de9','barangay_user',NULL,4,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
@@ -2697,6 +2673,8 @@ CREATE TABLE `warehouse_stock_logs` (
   `item_name` varchar(100) NOT NULL,
   `delta` int(11) NOT NULL,
   `reason` varchar(255) DEFAULT NULL,
+  `source_type` enum('standard','donation') NOT NULL DEFAULT 'standard',
+  `donor_name` varchar(150) DEFAULT NULL,
   `updated_by` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`log_id`),
@@ -2767,4 +2745,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-07-24 14:34:10
+-- Dump completed on 2026-07-26  6:16:14

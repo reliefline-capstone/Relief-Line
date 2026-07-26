@@ -48,6 +48,7 @@
 .dd-step-done .dd-step-circle {
     background: #27ae60;
     border-color: #27ae60;
+    color: white;
 }
 
 /* Current (in-progress, not yet reached) step — keeps showing its number

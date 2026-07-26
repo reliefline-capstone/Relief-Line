@@ -26,14 +26,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     function fmt(n) { return (n || 0).toLocaleString(); }
 
+    // Config rendered server-side by app.routes.pswdo._gis_config() (shared by
+    // both the PSWDO and CSWDO page templates) — role-specific destinations
+    // and, for a single-LGU scope (CSWDO/MSWDO), the municipality to land on
+    // by default instead of an overview that only ever has one entry.
+    var GIS_CONFIG = window.RELIEFLINE_GIS_CONFIG || { role: null, reliefRequestsUrl: null, distributionUrl: null, defaultLgu: null };
+
     var provinceLayer = L.geoJSON(null, {
         style: function (feature) {
+            // is_target is already restricted server-side to this user's own
+            // scope (app.routes.pswdo._gis_scope_lgus) — a bold solid border
+            // marks exactly the municipality/ies this account is allowed to
+            // see data for; everything else stays the plain dashed background.
             var isTarget = feature.properties.is_target;
             return {
-                color: isTarget ? '#8a94a6' : '#c3cad6',
-                weight: isTarget ? 1.5 : 1,
-                fillColor: '#f4f6fa',
-                fillOpacity: isTarget ? 0 : 0.3,
+                color: isTarget ? '#2c5aa0' : '#c3cad6',
+                weight: isTarget ? 3 : 1,
+                fillColor: isTarget ? '#2c5aa0' : '#f4f6fa',
+                fillOpacity: isTarget ? 0.04 : 0.3,
                 dashArray: isTarget ? null : '3,3',
             };
         },
@@ -65,7 +75,12 @@ document.addEventListener('DOMContentLoaded', function () {
         onEachFeature: function (feature, layer) {
             var p = feature.properties;
             if (p.has_data) {
-                layer.bindTooltip('<strong>' + escapeHtml(p.name) + '</strong><br>' + escapeHtml(p.priority_label), { sticky: true });
+                var sourceLabel = p.food_packs_source === 'request' ? 'requested' : 'estimated';
+                layer.bindTooltip(
+                    '<strong>' + escapeHtml(p.name) + '</strong><br>' + escapeHtml(p.priority_label) +
+                    '<br>' + fmt(p.food_packs_current) + ' food packs ' + sourceLabel,
+                    { sticky: true }
+                );
                 layer.on('click', function () { setLevel('barangay-detail', p.lgu, p.barangay_id, p.name); });
             } else {
                 layer.bindTooltip(escapeHtml(p.name) + ' — no data on record', { sticky: true });
@@ -148,6 +163,18 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<span class="badge-priority badge-priority-' + tier + '"><i class="priority-dot"></i> ' + escapeHtml(label) + '</span>';
     }
 
+    // Shared by renderMunicipalityPanel and renderBarangayDetail. Distribution
+    // stays a PSWDO-only responsibility (see app.routes.pswdo._gis_config) —
+    // CSWDO/MSWDO has no dispatch page of its own, so the button is simply
+    // omitted rather than linking somewhere it would 403.
+    function distributionButtonHtml(lgu) {
+        if (!GIS_CONFIG.distributionUrl) return '';
+        return '<button type="button" class="btn-decision btn-partial dd-full-width" data-external="distribution" data-lgu="' + escapeHtml(lgu) + '">' + ICON.arrow + ' View Distribution</button>';
+    }
+    function reliefButtonHtml(lgu) {
+        return '<button type="button" class="btn-outline dd-full-width" data-external="relief" data-lgu="' + escapeHtml(lgu) + '" style="justify-content:center; margin-top:10px;">' + ICON.clipboard + ' View Relief Request</button>';
+    }
+
     function renderOverviewPanel() {
         var html = renderStats(currentData.stats);
 
@@ -226,8 +253,8 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '</section>';
 
         html += '<section class="panel">';
-        html += '<button type="button" class="btn-decision btn-partial dd-full-width" data-external="distribution" data-lgu="' + escapeHtml(m.lgu) + '">' + ICON.arrow + ' View Distribution</button>';
-        html += '<button type="button" class="btn-outline dd-full-width" data-external="relief" data-lgu="' + escapeHtml(m.lgu) + '" style="justify-content:center; margin-top:10px;">' + ICON.clipboard + ' View Relief Request</button>';
+        html += distributionButtonHtml(m.lgu);
+        html += reliefButtonHtml(m.lgu);
         html += '<button type="button" class="btn-decision dd-full-width gis-btn-dark" data-nav="barangay-list" data-lgu="' + escapeHtml(m.lgu) + '" style="margin-top:10px;">' + ICON.mapPin + ' View Barangays</button>';
         html += '<button type="button" class="btn-outline dd-full-width" data-external="report" data-lgu="' + escapeHtml(m.lgu) + '" style="justify-content:center; margin-top:10px;">' + ICON.download + ' Generate Report</button>';
         html += '</section>';
@@ -303,8 +330,8 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '</section>';
 
         html += '<section class="panel">';
-        html += '<button type="button" class="btn-decision btn-partial dd-full-width" data-external="distribution" data-lgu="' + escapeHtml(b.lgu) + '">' + ICON.arrow + ' View Distribution</button>';
-        html += '<button type="button" class="btn-outline dd-full-width" data-external="relief" data-lgu="' + escapeHtml(b.lgu) + '" style="justify-content:center; margin-top:10px;">' + ICON.clipboard + ' View Relief Request</button>';
+        html += distributionButtonHtml(b.lgu);
+        html += reliefButtonHtml(b.lgu);
         html += '</section>';
         return html;
     }
@@ -426,9 +453,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Deep-link support so links from other pages (e.g. the Dashboard's mini
     // map) can land directly on a municipality or barangay instead of overview.
+    // Falls back to GIS_CONFIG.defaultLgu when there's no explicit query param
+    // — a CSWDO/MSWDO admin's scope is a single municipality, so there's no
+    // real "overview" for them to land on; they go straight to their town.
     var pendingNav = (function () {
         var params = new URLSearchParams(window.location.search);
-        var municipality = params.get('municipality');
+        var municipality = params.get('municipality') || GIS_CONFIG.defaultLgu;
         var barangayId = params.get('barangay_id');
         if (!municipality && !barangayId) return null;
         return { municipality: municipality, barangayId: barangayId ? parseInt(barangayId, 10) : null };
@@ -483,10 +513,10 @@ document.addEventListener('DOMContentLoaded', function () {
             var lguVal = extEl.getAttribute('data-lgu');
             var kind = extEl.getAttribute('data-external');
             var eventId = document.getElementById('filter-event').value;
-            if (kind === 'distribution') {
-                window.location.href = '/pswdo/distribution?q=' + encodeURIComponent(lguVal);
-            } else if (kind === 'relief') {
-                window.location.href = '/pswdo/relief-requests?municipality=' + encodeURIComponent(lguVal);
+            if (kind === 'distribution' && GIS_CONFIG.distributionUrl) {
+                window.location.href = GIS_CONFIG.distributionUrl + '?q=' + encodeURIComponent(lguVal);
+            } else if (kind === 'relief' && GIS_CONFIG.reliefRequestsUrl) {
+                window.location.href = GIS_CONFIG.reliefRequestsUrl + '?municipality=' + encodeURIComponent(lguVal);
             } else if (kind === 'report') {
                 window.location.href = '/pswdo/gis-map/municipality/' + encodeURIComponent(lguVal) + '/report.csv' + (eventId ? '?event_id=' + eventId : '');
             }
