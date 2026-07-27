@@ -772,7 +772,7 @@ CREATE TABLE `prediction_logs` (
   PRIMARY KEY (`log_id`),
   KEY `barangay_id` (`barangay_id`),
   CONSTRAINT `prediction_logs_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1501 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1514 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2282,7 +2282,20 @@ INSERT INTO `prediction_logs` VALUES
 (1497,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
 (1498,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
 (1499,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
-(1500,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f');
+(1500,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-24 13:06:02','v4.0-linreg-6f'),
+(1501,21,1426,'{\"population\": 3800, \"num_households\": 760, \"poverty_incidence\": 26.0, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1502,22,800,'{\"population\": 2300, \"num_households\": 460, \"poverty_incidence\": 34.0, \"disaster_risk_index\": 6.6, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1503,24,1597,'{\"population\": 4200, \"num_households\": 840, \"poverty_incidence\": 24.5, \"disaster_risk_index\": 4.9, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1504,25,1038,'{\"population\": 2900, \"num_households\": 580, \"poverty_incidence\": 30.5, \"disaster_risk_index\": 5.8, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1505,27,762,'{\"population\": 2000, \"num_households\": 400, \"poverty_incidence\": 36.5, \"disaster_risk_index\": 6.7, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1506,29,669,'{\"population\": 2600, \"num_households\": 520, \"poverty_incidence\": 28.5, \"disaster_risk_index\": 5.4, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1507,13,551,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 36.0, \"disaster_risk_index\": 7.0, \"past_calamity_freq\": 6, \"historical_allocation\": 383}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1508,4,644,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 35.0, \"disaster_risk_index\": 6.0, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1509,6,1395,'{\"population\": 3600, \"num_households\": 720, \"poverty_incidence\": 30.0, \"disaster_risk_index\": 5.5, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1510,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1511,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1512,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f'),
+(1513,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-27 02:14:57','v4.0-linreg-6f');
 /*!40000 ALTER TABLE `prediction_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2534,7 +2547,7 @@ LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
 (1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-23 07:46:34','2026-07-23 07:48:42'),
-(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-26 05:48:00','2026-07-26 06:14:07'),
+(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-26 05:48:00','2026-07-27 02:14:47'),
 (3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-26 06:09:00','2026-07-26 06:15:25'),
 (4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-26 06:15:36','2026-07-26 06:15:36'),
 (5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:44:33','2026-07-24 13:17:30'),
@@ -2641,19 +2654,19 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `warehouse_inventory` WRITE;
 /*!40000 ALTER TABLE `warehouse_inventory` DISABLE KEYS */;
 INSERT INTO `warehouse_inventory` VALUES
-(1,1,'food_pack','Food Packs','packs',5000,0,'2026-07-17 12:23:28',2),
-(2,1,'hygiene_kit','Hygiene Kits','kits',1200,0,'2026-07-20 02:49:52',2),
+(1,1,'food_pack','Food Packs','packs',6500,0,'2026-07-27 02:01:14',2),
+(2,1,'hygiene_kit','Hygiene Kits','kits',1500,0,'2026-07-27 02:01:14',2),
 (3,1,'kitchen_kit','Kitchen Kits','kits',800,0,'2026-07-20 02:49:52',2),
-(4,2,'food_pack','Food Packs','packs',500,0,'2026-07-20 02:52:05',3),
-(5,2,'hygiene_kit','Hygiene Kits','kits',400,0,'2026-07-20 02:49:52',3),
+(4,2,'food_pack','Food Packs','packs',800,0,'2026-07-27 02:01:14',3),
+(5,2,'hygiene_kit','Hygiene Kits','kits',550,0,'2026-07-27 02:01:14',3),
 (6,2,'kitchen_kit','Kitchen Kits','kits',200,0,'2026-07-20 02:49:52',3),
 (7,3,'food_pack','Food Packs','packs',1200,0,'2026-06-25 10:39:04',4),
 (8,3,'hygiene_kit','Hygiene Kits','kits',300,0,'2026-07-20 02:49:52',4),
-(9,3,'kitchen_kit','Kitchen Kits','kits',150,0,'2026-07-20 02:49:52',4),
-(10,4,'food_pack','Food Packs','packs',1800,0,'2026-06-25 10:39:04',5),
+(9,3,'kitchen_kit','Kitchen Kits','kits',200,0,'2026-07-27 02:01:14',4),
+(10,4,'food_pack','Food Packs','packs',2200,0,'2026-07-27 02:01:14',5),
 (11,4,'hygiene_kit','Hygiene Kits','kits',500,0,'2026-07-20 02:49:52',5),
 (12,4,'kitchen_kit','Kitchen Kits','kits',250,0,'2026-07-20 02:49:52',5),
-(13,5,'food_pack','Food Packs','packs',12200,3000,'2026-07-20 07:03:37',NULL);
+(13,5,'food_pack','Food Packs','packs',17200,3000,'2026-07-27 02:01:14',NULL);
 /*!40000 ALTER TABLE `warehouse_inventory` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2682,7 +2695,7 @@ CREATE TABLE `warehouse_stock_logs` (
   KEY `updated_by` (`updated_by`),
   CONSTRAINT `warehouse_stock_logs_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   CONSTRAINT `warehouse_stock_logs_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2692,6 +2705,15 @@ CREATE TABLE `warehouse_stock_logs` (
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `warehouse_stock_logs` WRITE;
 /*!40000 ALTER TABLE `warehouse_stock_logs` DISABLE KEYS */;
+INSERT INTO `warehouse_stock_logs` VALUES
+(1,1,'food_pack','Food Packs',1500,'Typhoon relief donation drive','donation','Philippine Red Cross',2,'2026-07-18 02:01:14'),
+(2,1,'hygiene_kit','Hygiene Kits',300,'National office augmentation for hygiene kit stock','donation','DSWD Central Office',2,'2026-07-20 02:01:14'),
+(3,5,'food_pack','Food Packs',2000,'Corporate relief drive donation','donation','Jollibee Group Foundation, Inc.',2,'2026-07-21 02:01:14'),
+(4,2,'food_pack','Food Packs',300,'Typhoon relief donation drive','donation','SM Foundation',2,'2026-07-22 02:01:14'),
+(5,3,'kitchen_kit','Kitchen Kits',50,'Local civic group donation','donation','Rotary Club of Pangasinan',2,'2026-07-23 02:01:14'),
+(6,4,'food_pack','Food Packs',400,'Typhoon relief donation drive','donation','Ayala Foundation',2,'2026-07-24 02:01:14'),
+(7,5,'food_pack','Food Packs',3000,'Provincial budget replenishment','standard',NULL,2,'2026-07-19 02:01:14'),
+(8,2,'hygiene_kit','Hygiene Kits',150,'Routine restock from provincial supply','standard',NULL,2,'2026-07-25 02:01:14');
 /*!40000 ALTER TABLE `warehouse_stock_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2745,4 +2767,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-07-26  6:16:14
+-- Dump completed on 2026-07-27  3:45:47

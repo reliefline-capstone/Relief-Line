@@ -171,7 +171,11 @@
 }
 
 /* Warehouse Overview table */
-.wh-table-panel { padding: 0; overflow: hidden; }
+/* overflow-x (not overflow: hidden) so a table wider than its panel — e.g. long
+   office names alongside DATE/TIME/ACTIVITY/QUANTITY columns — scrolls into
+   view instead of being silently clipped with no way to reach it. Still clips
+   the table's square corners to the panel's border-radius either way. */
+.wh-table-panel { padding: 0; overflow-x: auto; }
 
 .wh-table {
     width: 100%;
@@ -502,28 +506,6 @@
     border: none;
     outline: none;
     font-size: 13px;
-}
-
-.wh-timeline-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 0;
-    border-bottom: 1px solid #f0f2f6;
-}
-
-.wh-timeline-row:last-child { border-bottom: none; }
-
-.wh-timeline-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.wh-timeline-time { font-size: 11px; color: #8a94a6; }
-.wh-timeline-body strong:first-of-type { font-size: 13px; }
-.wh-timeline-body > strong:last-child { font-size: 13px; margin-top: 2px; }
-
-.wh-timeline-office {
-    flex-shrink: 0;
-    font-size: 12px;
-    font-weight: 700;
-    color: #2c5aa0;
 }
 
 /* Warehouses list — card grid */

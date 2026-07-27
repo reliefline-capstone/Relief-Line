@@ -50,54 +50,30 @@
             </div>
         </section>
 
-        <div class="main-grid">
-
-            <section class="panel">
-                <div class="panel-header"><h3>Timeline</h3></div>
-                {% for m in movements %}
-                <div class="wh-timeline-row">
-                    <div class="wh-movement-icon {{ 'wh-move-out' if m.qty < 0 else 'wh-move-in' }}">
-                        <span class="{{ 'wh-arrow-up' if m.qty < 0 else 'wh-arrow-down' }}">{{ icon('arrow-right', 14) }}</span>
-                    </div>
-                    <div class="wh-timeline-body">
-                        <span class="wh-timeline-time">{{ m.sort_at.strftime('%I:%M %p') }} · {{ m.when.strftime('%b') }} {{ m.when.day }}</span>
-                        <strong>{{ m.direction }}</strong>
-                        <span class="wh-sub">{{ m.context }}</span>
-                        <strong class="{{ 'text-red' if m.qty < 0 else 'text-green' }}">{{ '+' if m.qty > 0 }}{{ "{:,}".format(m.qty) }} packs</strong>
-                    </div>
-                    <span class="wh-timeline-office">{{ m.office_name }}</span>
-                </div>
-                {% else %}
-                <p class="empty-note">Walang stock movement na tumutugma sa filter mo.</p>
-                {% endfor %}
-            </section>
-
-            <section class="panel wh-table-panel">
-                <div class="panel-header"><h3>Movements Table</h3></div>
-                <table class="wh-table">
-                    <thead>
-                        <tr><th>DATE</th><th>TIME</th><th>WAREHOUSE</th><th>ACTIVITY</th><th>QUANTITY</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for m in movements %}
-                        <tr>
-                            <td>{{ m.when.strftime('%b') }} {{ m.when.day }}</td>
-                            <td>{{ m.sort_at.strftime('%I:%M %p') }}</td>
-                            <td>{{ m.office_name }}</td>
-                            <td>
-                                <span class="badge-health badge-{{ 'low' if m.qty < 0 else 'healthy' }}">{{ m.direction }}</span>
-                                <span class="wh-sub">{{ m.context }}</span>
-                            </td>
-                            <td><strong class="{{ 'text-red' if m.qty < 0 else 'text-green' }}">{{ '+' if m.qty > 0 }}{{ "{:,}".format(m.qty) }}</strong></td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Walang record.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </section>
-
-        </div>
+        <section class="panel wh-table-panel">
+            <div class="panel-header"><h3>Movements Table</h3></div>
+            <table class="wh-table">
+                <thead>
+                    <tr><th>DATE</th><th>TIME</th><th>WAREHOUSE</th><th>ACTIVITY</th><th>QUANTITY</th></tr>
+                </thead>
+                <tbody>
+                    {% for m in movements %}
+                    <tr>
+                        <td>{{ m.when.strftime('%b') }} {{ m.when.day }}</td>
+                        <td>{{ m.sort_at.strftime('%I:%M %p') }}</td>
+                        <td>{{ m.office_name }}</td>
+                        <td>
+                            <span class="badge-health badge-{{ 'low' if m.qty < 0 else 'healthy' }}">{{ m.direction }}</span>
+                            <span class="wh-sub">{{ m.context }}</span>
+                        </td>
+                        <td><strong class="{{ 'text-red' if m.qty < 0 else 'text-green' }}">{{ '+' if m.qty > 0 }}{{ "{:,}".format(m.qty) }}</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Walang record.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
 
     </main>
 </div>
