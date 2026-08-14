@@ -28,6 +28,7 @@ def create_app():
     from app.models.logistics import WarehouseTransfer
     from app.models.report import ReportLog
     from app.models.system_setting import SystemSetting
+    from app.models.password_reset_request import PasswordResetRequest
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -52,6 +53,22 @@ def create_app():
         if not current_user.last_activity or now - current_user.last_activity > timedelta(seconds=60):
             current_user.last_activity = now
             db.session.commit()
+
+    @app.before_request
+    def _enforce_forced_password_change():
+        # Set on User.must_change_password when a System Administrator
+        # grants a PasswordResetRequest (see app.routes.admin) — the account
+        # now holds the shared default password, so every page but the
+        # change-password screen itself (and logout) redirects here until
+        # the user replaces it with one of their own.
+        from flask import request, redirect, url_for
+        from flask_login import current_user
+
+        allowed_endpoints = {"auth.force_change_password", "auth.logout", "static"}
+        if not current_user.is_authenticated or request.endpoint in allowed_endpoints:
+            return
+        if current_user.must_change_password:
+            return redirect(url_for("auth.force_change_password"))
 
     @app.context_processor
     def inject_icons():
@@ -117,6 +134,22 @@ def create_app():
             ActivityLog.action_type.in_(PSWDO_NOTIFICATION_TYPES), ActivityLog.is_read.is_(False)
         ).count()
         return dict(unread_notification_count=count)
+
+    @app.context_processor
+    def inject_pending_password_resets():
+        # Powers the badge on admin/_sidebar.html's "Password Reset
+        # Requests" link, which is included on every admin/*.html page —
+        # a context processor means each admin route doesn't need to
+        # compute and pass this count itself. Scoped to is_seen=False (not
+        # just status="pending") so opening the Password Reset Requests page
+        # — which marks pending rows seen, see app.routes.admin — clears the
+        # badge even though those requests are still awaiting a decision.
+        from flask_login import current_user
+        from app.models.password_reset_request import PasswordResetRequest
+        if not current_user.is_authenticated or current_user.role != "system_admin":
+            return dict(pending_password_resets=0)
+        count = PasswordResetRequest.query.filter_by(status="pending", is_seen=False).count()
+        return dict(pending_password_resets=count)
 
     from app.routes.auth import auth_bp
     from app.routes.pswdo import pswdo_bp

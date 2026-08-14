@@ -109,6 +109,7 @@
 
 .badge-status-pill.is-active { background: #e8faf0; color: #1e8449; }
 .badge-status-pill.is-inactive { background: #fdecea; color: #c0392b; }
+.badge-status-pill.is-pending { background: #fef5e7; color: #b7791f; }
 
 /* Risk level badges (Barangay Management) */
 .badge-risk {

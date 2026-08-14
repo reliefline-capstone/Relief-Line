@@ -49,7 +49,7 @@ CREATE TABLE `activity_logs` (
   CONSTRAINT `fk_activity_allocation` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`),
   CONSTRAINT `fk_activity_batch` FOREIGN KEY (`batch_id`) REFERENCES `relief_request_batches` (`batch_id`),
   CONSTRAINT `fk_activity_distribution` FOREIGN KEY (`distribution_id`) REFERENCES `distribution_records` (`distribution_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=176 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=200 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -212,7 +212,31 @@ INSERT INTO `activity_logs` VALUES
 (172,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:39:39','127.0.0.1'),
 (173,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:41:30','127.0.0.1'),
 (174,3,'damage_report_verified','Damage report DR-2026-029 was verified by Urdaneta City Social Welfare and Development Office',0,2,1,NULL,NULL,NULL,'2026-07-29 02:42:14',NULL),
-(175,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:45:31','127.0.0.1');
+(175,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:45:31','127.0.0.1'),
+(176,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:34:56','127.0.0.1'),
+(177,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:35:46','127.0.0.1'),
+(178,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:36:16','127.0.0.1'),
+(179,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:38:51','127.0.0.1'),
+(180,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:40:27','127.0.0.1'),
+(181,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:41:19','127.0.0.1'),
+(182,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:57:31','127.0.0.1'),
+(183,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:57:58','127.0.0.1'),
+(184,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:58:48','127.0.0.1'),
+(185,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:59:36','127.0.0.1'),
+(186,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:01:38','127.0.0.1'),
+(187,1,'password_reset_request_approved','System Administrator approved a password reset for Ramon Bautista',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:01:39','127.0.0.1'),
+(188,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:01:57','127.0.0.1'),
+(189,1,'password_reset_request_denied','System Administrator denied a password reset request for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:02:08','127.0.0.1'),
+(190,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:04:36','127.0.0.1'),
+(191,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:04:57','127.0.0.1'),
+(192,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:05:29','127.0.0.1'),
+(193,1,'password_reset_request_approved','System Administrator approved a password reset for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:05:38','127.0.0.1'),
+(194,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:05:51','127.0.0.1'),
+(195,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:08:01','127.0.0.1'),
+(196,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:08:10','127.0.0.1'),
+(197,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:14:48','127.0.0.1'),
+(198,1,'password_reset_request_denied','System Administrator denied a password reset request for Ramon Bautista',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:23:06','127.0.0.1'),
+(199,1,'password_reset_request_approved','System Administrator approved a password reset for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:23:12','127.0.0.1');
 /*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -723,6 +747,47 @@ INSERT INTO `offices` VALUES
 (5,'Warehouse A','pswdo','Lingayen',22000,NULL,NULL,NULL,NULL,1),
 (6,'Warehouse C','pswdo','Alaminos',18000,NULL,NULL,NULL,NULL,1);
 /*!40000 ALTER TABLE `offices` ENABLE KEYS */;
+UNLOCK TABLES;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
+
+--
+-- Table structure for table `password_reset_requests`
+--
+
+DROP TABLE IF EXISTS `password_reset_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `password_reset_requests` (
+  `request_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `status` enum('pending','approved','denied') NOT NULL,
+  `requested_at` datetime DEFAULT current_timestamp(),
+  `reviewed_by` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `is_seen` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`request_id`),
+  KEY `user_id` (`user_id`),
+  KEY `reviewed_by` (`reviewed_by`),
+  CONSTRAINT `password_reset_requests_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
+  CONSTRAINT `password_reset_requests_ibfk_2` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `password_reset_requests`
+--
+
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
+LOCK TABLES `password_reset_requests` WRITE;
+/*!40000 ALTER TABLE `password_reset_requests` DISABLE KEYS */;
+INSERT INTO `password_reset_requests` VALUES
+(1,28,'denied','2026-08-14 05:59:13',1,'2026-08-14 06:02:08',0),
+(2,11,'approved','2026-08-14 06:00:07',1,'2026-08-14 06:01:39',0),
+(3,28,'approved','2026-08-14 06:05:15',1,'2026-08-14 06:05:38',0),
+(4,11,'denied','2026-08-14 06:11:37',1,'2026-08-14 06:23:06',1),
+(5,28,'approved','2026-08-14 06:14:35',1,'2026-08-14 06:23:12',1);
+/*!40000 ALTER TABLE `password_reset_requests` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
@@ -2512,6 +2577,7 @@ CREATE TABLE `users` (
   `designation` varchar(100) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `must_change_password` tinyint(1) NOT NULL DEFAULT 0,
   `last_login` datetime DEFAULT NULL,
   `last_activity` datetime DEFAULT NULL,
   PRIMARY KEY (`user_id`),
@@ -2531,41 +2597,41 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-29 02:39:39','2026-07-29 02:40:40'),
-(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-29 02:45:31','2026-08-14 03:48:28'),
-(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-29 02:41:30','2026-08-14 03:45:42'),
-(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-26 06:15:36','2026-07-26 06:15:36'),
-(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,'2026-07-22 04:44:33','2026-07-24 13:17:30'),
-(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$7mAFGoC9Rv002oFD$21b158fb581a3fb1c1be771529c8396b12c1beff127436286c8f5a6df7b6cc8a284d179a2cbcc806ad637e7a0f66f702acd019be6009ed5ebaaa4647682fe291','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-29 02:35:25','2026-08-14 03:45:42'),
-(12,'Cecilia Manalo','bactadeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Kfio6bqQW9wDGBco$2acd213abfc0e108d5e4e41fb706cfbd829bd8c8048f622813b72df4795532092147a761a8241354afbd5d7ed364860a92dccd11d14ee13a8481c969b877c246','barangay_user',NULL,2,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 06:27:18','2026-07-23 06:27:18'),
-(13,'Ferdinand Cruz','bayaoas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$QwNXrI3vmjalmxYe$b42811b74e3a36c1ede2b478e54d853b0bc94da0878169a658010c8665fe1a6d82b6b989d026280555cf6928279e5dd4358509399e545cf151595f362c122516','barangay_user',NULL,3,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(14,'Marilou Santos','bolaoen.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$2zsdzaaE93XM5qXZ$c24179079505bfe8221a8ac18a226d76fe59059f3105a3e6690973142c08ed11d854fd67e652a961d62bd1b844ecfcb39a72c35df5ca8efeea342acb7cc02de9','barangay_user',NULL,4,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(15,'Edgardo Villanueva','cabaruan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$YwaBV6BDYb32qki6$a29f379021fb516c58e13dde2902c82278114f0639e2771a10f70514054723fdb167898feada08c334b5cea8aeced4409377041498482eff57f2f72450c8b840','barangay_user',NULL,5,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(16,'Rosalinda Aquino','cabuloan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$mTXXGY5sNNnzZucy$e7511497836ee07d7678d3c41534c73d61a5559385a1ddb6497c287627eeefcd2441e7d7b91a78e3b0d5794402a170b1e88489fbbaede583da6ea66c1f13a631','barangay_user',NULL,6,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 06:27:18','2026-07-23 06:29:51'),
-(17,'Danilo Mendoza','camantiles.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$L81ZWS1ayKE8mIsM$41e21a429254b6b7794f4cfeef5b2db8b68e9c2692462e40b6beb42d32a38e4126879d13dd3782caa65761bc765d31dde5ab6d0aa9e998e43e12b3ccfabe938a','barangay_user',NULL,7,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(18,'Teresita Ramos','casantaan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$amtqwfsek3Jtnjm0$ab33655a6d77b14a0f36c42e52fd35acc925c499e06fe29e68b596851850921cdbcf2867ad01e4f4857128ccc6774c7d22466e74202290022682e714dc0dcb98','barangay_user',NULL,8,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(19,'Rogelio Domingo','catablan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$9w1ttG1Y0HwQgZY7$2bc665900c21f184dc37592c7d145f409824d355a49c84b196a7495e167ed5c5209d3d7444b20ea6ea50f2338a89ac43758caeaa7403a910257932d58a15e30b','barangay_user',NULL,9,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(20,'Corazon Fernandez','cayambanan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$yzkCRZ7HMLoGVQ3t$129c5a4d3eb778e4fee20c93afb6d89ab0c203051e0527d503cc63eb553036c73dedef4c0a70db28b26925cec681bf86ab7420aee6116ec4f56b79316d4534c3','barangay_user',NULL,10,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(21,'Alberto Garcia','abot.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$D1CBugYk6TVGTZlD$a1d7fa065e63c7e8643f717e5aa35ebcb710dcb17082239b89271a608fd48495456d7471d3b25cced7e9ffa4029732792f6fed7ee1980f2a7fcb7ec843793dc6','barangay_user',NULL,11,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(22,'Leonora Torres','banao.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$vtVncBlWCagHfruS$4d62b454f34b68ecaba5b644b55dc0881403edb0b742b5e10cc96cabcf5685dc9b19e4adcf160ed8dab2995abafb05b5c031512ef37be5c10e4f81f5f79bec23','barangay_user',NULL,12,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(23,'Rodrigo Castillo','batayang.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bz0M9xcEE6nPgAKG$ca5df47b9449687103a689cc26de6ce2ce60369d2ea5784984c2390ade872e10a3f3b79eb5f864ea69dd34b2da69f6a50d1c1683778fae031b2ea16ae16a92d2','barangay_user',NULL,13,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(24,'Imelda Navarro','bungallon.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$SqMHJswOxfoLl3h1$120b9159d7947f71a4b57195c17df496b4cc01d80f536668711bb276cbb69c525e0c7f40dc44e8b5700e9634308604ad79fcb249234ead6d55b98dd7939dada8','barangay_user',NULL,14,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(25,'Bienvenido Pascual','calepaan.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bQ75NS3Lme7vxjWN$c03248699c538c950f3deaeed737366098c2383c6ce9648b740a85c22b599eda76de6f3b64d4f3367e7e72f5aa0b572398ace7baa1bd146fb48a6074a2696593','barangay_user',NULL,15,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(26,'Nenita Ocampo','carosucannorte.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$awpylHt4QUkieEUX$de0bb1be5427e9807f0d5e39e2990406d8ef47ca1b12c8ab99f9f496c9a386556b4b3949e49b55ef49ccccdb7092f725bdfef60995148bbc9dfd2117b84015bb','barangay_user',NULL,16,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(27,'Wilfredo Salazar','carosucansur.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$PbINXkDwpM4o1ofa$50007d9b23e65a428cc96183ecf6c6d2bb0f9233e08722c71c709fe6bb93734401d580d6eb37b353b80a0c7a6bf9b92d07d8e0a26f080489a33c901699849424','barangay_user',NULL,17,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 05:22:11','2026-07-23 05:22:11'),
-(28,'Adelaida Gonzales','coliling.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$2jcwsFCZpplpF91I$8c9052e1ffe2cfc022aa03deb46d80a4748371a80c10dcebccbde1f1f544a33a00341adfedd8bfb11776b7d31e8c8e6b11e84849a3079a8284008db5287b3f62','barangay_user',NULL,18,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(29,'Rustico Del Rosario','hacienda.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$OcnNyuwuWadZfTkJ$fde2dca3935704f0d712f78eb1ba23c584f7d4f68e6e1fb3f2701a9577f6e955a16f97019e81bd33d6b53b64923ff5f472ee482044d06f8d252d976e3e72273d','barangay_user',NULL,19,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(30,'Herminia Flores','mapolopolo.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$ZWdNC65VnilRbPfm$1fdc51b74b82d70f607992e22fd010fa8f73b5df035cc7c9efe090997ab4518fd3ea9bcf914e1bc55f7684a46e2ca0efa3150b0989686c40aba64a59970f3be5','barangay_user',NULL,20,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(31,'Renato Marquez','ambonao.calasiao@reliefline.gov.ph','scrypt:32768:8:1$jE7FaRabd0KYYvFR$90384bf78927019175780537b8497b0ee7f96083413df22a33121c21067d78e259d7749c5f4344494f4ce9b41836fc195f45bae7652c64ebff59e21ce836b833','barangay_user',NULL,21,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(32,'Purificacion Ignacio','ambuetel.calasiao@reliefline.gov.ph','scrypt:32768:8:1$EHE90htnCSoHZ4Qm$983234cd7f30bd38ad8516c31c53c7b0d2cedb448a107206f5357fcd41714d257f6283b640ca81a6baf38a7336661ddafa79c220a2c47c1d1ffa0ddaecb97abd','barangay_user',NULL,22,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(33,'Jose Reyes','banaoang.calasiao@reliefline.gov.ph','scrypt:32768:8:1$av0BXelksBW841He$9f0dfe5394bc8ef8501a616cf22802839b0424c558113209c7acba5a49d36b18db256147e169016d54b3bf03872110aac161d08334ce6508019dd84640d37692','barangay_user',NULL,23,'Barangay Captain','2026-07-23 04:36:56',1,'2026-07-23 06:10:28','2026-07-23 06:10:28'),
-(34,'Esperanza Rivera','bued.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mnBTOaysNoBYqvXI$b557ef44e439d96b4fab661e5cd26f72c96964051c6eb74948643a2c79617e33dec22d185bba3b9b77663beda676f3d4f82bee4464d39038b0c16fe97040711c','barangay_user',NULL,24,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(35,'Nestor Agustin','buenlag.calasiao@reliefline.gov.ph','scrypt:32768:8:1$MNxFcFoKNyhpyIqs$175622ecd2f60f45bdbca2c968a7319548b3b1b1fca9a856d481ddc51f54c3a459766e72606617d3e5ab087e104238709eb53933c8edda177736074b960ebf7b','barangay_user',NULL,25,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(36,'Lourdes Panganiban','cabilocaan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$cZGGpe2sMbFrmDib$220cfc0f2fc2964b2c217ab96dfbcbd186b33e8667e2af8a8cff3ddd4a99067ae32e01645e6b3eb9c49627ee173f06197b0fd6f20ee1e57dc245c2fe1ee000c9','barangay_user',NULL,26,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(37,'Cirilo Bernardo','dinalaoan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mc85Dtx7ldVdBQ1X$8a3337491083a92084a8c787891d481c2a79715e2c464282a4b9a2fbceb8912dfba7c01a2fe4b13416c3edb71484edb5927b34917122d0813d6b8e142eaeb4d8','barangay_user',NULL,27,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(38,'Julieta Enriquez','doyong.calasiao@reliefline.gov.ph','scrypt:32768:8:1$SKO0jXiQWnPrLBQ9$e5c4c76eb200b963dde29a21a0edf863f1b3a5750a6122239b1a3f01d3222d1ca247af9d835e613c7d861b40ecc0fa344868c9032d70d6aee264971d279b9524','barangay_user',NULL,28,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(39,'Bonifacio Lazaro','gabon.calasiao@reliefline.gov.ph','scrypt:32768:8:1$NQCEw9ZVNjHrqYdJ$fc0eb088aaddd126c055ce620770f4996fb56fdb552cb8fa964584cb3eabdea4124f929500626051c06bc4e2a6146934ea47a956bed2c52a12a14153c496538d','barangay_user',NULL,29,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL),
-(40,'Remedios Corpuz','lasip.calasiao@reliefline.gov.ph','scrypt:32768:8:1$hyCPITc545JSxO1x$719cb05c28fedbedbde1880e2d0e984444b07779f72127c4d5ffb0de5c52c0014de6424444b0e474cb73e54d0a332e99e6a73cb7b99070af399f8b70adb5733f','barangay_user',NULL,30,'Barangay Captain','2026-07-23 04:36:56',1,NULL,NULL);
+(1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-14 06:14:48','2026-08-14 06:24:44'),
+(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-14 05:57:31','2026-08-14 05:57:31'),
+(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-07-29 02:41:30','2026-08-14 03:45:42'),
+(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-07-26 06:15:36','2026-07-26 06:15:36'),
+(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-07-22 04:44:33','2026-07-24 13:17:30'),
+(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$hCcKMg13rKLOH9xY$f2105adfe2ca9210b04ea778dfffc96f177066a49a54ab8bb330e87c1649bed47608adfc91eda0880b050776ee56e1d2113c160e0e79a505597b8906bbb9868d','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-08-14 06:08:01','2026-08-14 06:08:01'),
+(12,'Cecilia Manalo','bactadeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Kfio6bqQW9wDGBco$2acd213abfc0e108d5e4e41fb706cfbd829bd8c8048f622813b72df4795532092147a761a8241354afbd5d7ed364860a92dccd11d14ee13a8481c969b877c246','barangay_user',NULL,2,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:27:18','2026-07-23 06:27:18'),
+(13,'Ferdinand Cruz','bayaoas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$QwNXrI3vmjalmxYe$b42811b74e3a36c1ede2b478e54d853b0bc94da0878169a658010c8665fe1a6d82b6b989d026280555cf6928279e5dd4358509399e545cf151595f362c122516','barangay_user',NULL,3,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(14,'Marilou Santos','bolaoen.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$2zsdzaaE93XM5qXZ$c24179079505bfe8221a8ac18a226d76fe59059f3105a3e6690973142c08ed11d854fd67e652a961d62bd1b844ecfcb39a72c35df5ca8efeea342acb7cc02de9','barangay_user',NULL,4,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(15,'Edgardo Villanueva','cabaruan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$YwaBV6BDYb32qki6$a29f379021fb516c58e13dde2902c82278114f0639e2771a10f70514054723fdb167898feada08c334b5cea8aeced4409377041498482eff57f2f72450c8b840','barangay_user',NULL,5,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(16,'Rosalinda Aquino','cabuloan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$mTXXGY5sNNnzZucy$e7511497836ee07d7678d3c41534c73d61a5559385a1ddb6497c287627eeefcd2441e7d7b91a78e3b0d5794402a170b1e88489fbbaede583da6ea66c1f13a631','barangay_user',NULL,6,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:27:18','2026-07-23 06:29:51'),
+(17,'Danilo Mendoza','camantiles.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$L81ZWS1ayKE8mIsM$41e21a429254b6b7794f4cfeef5b2db8b68e9c2692462e40b6beb42d32a38e4126879d13dd3782caa65761bc765d31dde5ab6d0aa9e998e43e12b3ccfabe938a','barangay_user',NULL,7,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(18,'Teresita Ramos','casantaan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$amtqwfsek3Jtnjm0$ab33655a6d77b14a0f36c42e52fd35acc925c499e06fe29e68b596851850921cdbcf2867ad01e4f4857128ccc6774c7d22466e74202290022682e714dc0dcb98','barangay_user',NULL,8,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(19,'Rogelio Domingo','catablan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$9w1ttG1Y0HwQgZY7$2bc665900c21f184dc37592c7d145f409824d355a49c84b196a7495e167ed5c5209d3d7444b20ea6ea50f2338a89ac43758caeaa7403a910257932d58a15e30b','barangay_user',NULL,9,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(20,'Corazon Fernandez','cayambanan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$yzkCRZ7HMLoGVQ3t$129c5a4d3eb778e4fee20c93afb6d89ab0c203051e0527d503cc63eb553036c73dedef4c0a70db28b26925cec681bf86ab7420aee6116ec4f56b79316d4534c3','barangay_user',NULL,10,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(21,'Alberto Garcia','abot.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$D1CBugYk6TVGTZlD$a1d7fa065e63c7e8643f717e5aa35ebcb710dcb17082239b89271a608fd48495456d7471d3b25cced7e9ffa4029732792f6fed7ee1980f2a7fcb7ec843793dc6','barangay_user',NULL,11,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(22,'Leonora Torres','banao.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$vtVncBlWCagHfruS$4d62b454f34b68ecaba5b644b55dc0881403edb0b742b5e10cc96cabcf5685dc9b19e4adcf160ed8dab2995abafb05b5c031512ef37be5c10e4f81f5f79bec23','barangay_user',NULL,12,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(23,'Rodrigo Castillo','batayang.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bz0M9xcEE6nPgAKG$ca5df47b9449687103a689cc26de6ce2ce60369d2ea5784984c2390ade872e10a3f3b79eb5f864ea69dd34b2da69f6a50d1c1683778fae031b2ea16ae16a92d2','barangay_user',NULL,13,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(24,'Imelda Navarro','bungallon.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$SqMHJswOxfoLl3h1$120b9159d7947f71a4b57195c17df496b4cc01d80f536668711bb276cbb69c525e0c7f40dc44e8b5700e9634308604ad79fcb249234ead6d55b98dd7939dada8','barangay_user',NULL,14,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(25,'Bienvenido Pascual','calepaan.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bQ75NS3Lme7vxjWN$c03248699c538c950f3deaeed737366098c2383c6ce9648b740a85c22b599eda76de6f3b64d4f3367e7e72f5aa0b572398ace7baa1bd146fb48a6074a2696593','barangay_user',NULL,15,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(26,'Nenita Ocampo','carosucannorte.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$awpylHt4QUkieEUX$de0bb1be5427e9807f0d5e39e2990406d8ef47ca1b12c8ab99f9f496c9a386556b4b3949e49b55ef49ccccdb7092f725bdfef60995148bbc9dfd2117b84015bb','barangay_user',NULL,16,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(27,'Wilfredo Salazar','carosucansur.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$PbINXkDwpM4o1ofa$50007d9b23e65a428cc96183ecf6c6d2bb0f9233e08722c71c709fe6bb93734401d580d6eb37b353b80a0c7a6bf9b92d07d8e0a26f080489a33c901699849424','barangay_user',NULL,17,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 05:22:11','2026-07-23 05:22:11'),
+(28,'Adelaida Gonzales','coliling.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$dO4z4oDWBW9ovcyt$acfbad4f823b866d848cba2959476b50789a9d394444f5682fc896de987dde118094c89e4a8bf9ac51544a3b8cb87950bac933589aa2c82ef741031be0de6c87','barangay_user',NULL,18,'Barangay Captain','2026-07-23 04:36:56',1,1,'2026-08-14 06:08:10','2026-08-14 06:07:55'),
+(29,'Rustico Del Rosario','hacienda.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$OcnNyuwuWadZfTkJ$fde2dca3935704f0d712f78eb1ba23c584f7d4f68e6e1fb3f2701a9577f6e955a16f97019e81bd33d6b53b64923ff5f472ee482044d06f8d252d976e3e72273d','barangay_user',NULL,19,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(30,'Herminia Flores','mapolopolo.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$ZWdNC65VnilRbPfm$1fdc51b74b82d70f607992e22fd010fa8f73b5df035cc7c9efe090997ab4518fd3ea9bcf914e1bc55f7684a46e2ca0efa3150b0989686c40aba64a59970f3be5','barangay_user',NULL,20,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(31,'Renato Marquez','ambonao.calasiao@reliefline.gov.ph','scrypt:32768:8:1$jE7FaRabd0KYYvFR$90384bf78927019175780537b8497b0ee7f96083413df22a33121c21067d78e259d7749c5f4344494f4ce9b41836fc195f45bae7652c64ebff59e21ce836b833','barangay_user',NULL,21,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(32,'Purificacion Ignacio','ambuetel.calasiao@reliefline.gov.ph','scrypt:32768:8:1$EHE90htnCSoHZ4Qm$983234cd7f30bd38ad8516c31c53c7b0d2cedb448a107206f5357fcd41714d257f6283b640ca81a6baf38a7336661ddafa79c220a2c47c1d1ffa0ddaecb97abd','barangay_user',NULL,22,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(33,'Jose Reyes','banaoang.calasiao@reliefline.gov.ph','scrypt:32768:8:1$av0BXelksBW841He$9f0dfe5394bc8ef8501a616cf22802839b0424c558113209c7acba5a49d36b18db256147e169016d54b3bf03872110aac161d08334ce6508019dd84640d37692','barangay_user',NULL,23,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:10:28','2026-07-23 06:10:28'),
+(34,'Esperanza Rivera','bued.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mnBTOaysNoBYqvXI$b557ef44e439d96b4fab661e5cd26f72c96964051c6eb74948643a2c79617e33dec22d185bba3b9b77663beda676f3d4f82bee4464d39038b0c16fe97040711c','barangay_user',NULL,24,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(35,'Nestor Agustin','buenlag.calasiao@reliefline.gov.ph','scrypt:32768:8:1$MNxFcFoKNyhpyIqs$175622ecd2f60f45bdbca2c968a7319548b3b1b1fca9a856d481ddc51f54c3a459766e72606617d3e5ab087e104238709eb53933c8edda177736074b960ebf7b','barangay_user',NULL,25,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(36,'Lourdes Panganiban','cabilocaan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$cZGGpe2sMbFrmDib$220cfc0f2fc2964b2c217ab96dfbcbd186b33e8667e2af8a8cff3ddd4a99067ae32e01645e6b3eb9c49627ee173f06197b0fd6f20ee1e57dc245c2fe1ee000c9','barangay_user',NULL,26,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(37,'Cirilo Bernardo','dinalaoan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mc85Dtx7ldVdBQ1X$8a3337491083a92084a8c787891d481c2a79715e2c464282a4b9a2fbceb8912dfba7c01a2fe4b13416c3edb71484edb5927b34917122d0813d6b8e142eaeb4d8','barangay_user',NULL,27,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(38,'Julieta Enriquez','doyong.calasiao@reliefline.gov.ph','scrypt:32768:8:1$SKO0jXiQWnPrLBQ9$e5c4c76eb200b963dde29a21a0edf863f1b3a5750a6122239b1a3f01d3222d1ca247af9d835e613c7d861b40ecc0fa344868c9032d70d6aee264971d279b9524','barangay_user',NULL,28,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(39,'Bonifacio Lazaro','gabon.calasiao@reliefline.gov.ph','scrypt:32768:8:1$NQCEw9ZVNjHrqYdJ$fc0eb088aaddd126c055ce620770f4996fb56fdb552cb8fa964584cb3eabdea4124f929500626051c06bc4e2a6146934ea47a956bed2c52a12a14153c496538d','barangay_user',NULL,29,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
+(40,'Remedios Corpuz','lasip.calasiao@reliefline.gov.ph','scrypt:32768:8:1$hyCPITc545JSxO1x$719cb05c28fedbedbde1880e2d0e984444b07779f72127c4d5ffb0de5c52c0014de6424444b0e474cb73e54d0a332e99e6a73cb7b99070af399f8b70adb5733f','barangay_user',NULL,30,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2720,4 +2786,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-08-14  3:48:54
+-- Dump completed on 2026-08-14  6:25:09

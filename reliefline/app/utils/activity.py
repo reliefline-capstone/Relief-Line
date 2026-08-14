@@ -23,6 +23,8 @@ MODULE_LABELS = {
     "user_activated": "User Management",
     "user_deactivated": "User Management",
     "user_password_reset": "User Management",
+    "password_reset_request_approved": "User Management",
+    "password_reset_request_denied": "User Management",
     "office_created": "Office Management",
     "office_updated": "Office Management",
     "office_activated": "Office Management",

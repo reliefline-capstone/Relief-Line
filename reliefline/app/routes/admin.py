@@ -18,6 +18,7 @@ from app.models.user import User
 from app.models.office import Office
 from app.models.barangay import Barangay
 from app.models.activity_log import ActivityLog
+from app.models.password_reset_request import PasswordResetRequest, DEFAULT_RESET_PASSWORD
 from app.routes.pswdo import TARGET_LGUS
 from app.ml.train import historical_allocation_for
 
@@ -299,6 +300,94 @@ def export_user_activity(user_id):
     user = User.query.get_or_404(user_id)
     filename = f"{user.name.replace(' ', '_')}_activity.csv"
     return _export_activity(ActivityLog.query.filter_by(actor_id=user_id), filename)
+
+
+# ---------------------------------------------------------------------------
+# Password Reset Requests — a user's self-service "Forgot Password" click
+# (app.routes.auth.forgot_password) lands here as a pending row instead of
+# resetting anything automatically. Granting resets the account's password
+# to DEFAULT_RESET_PASSWORD and flags must_change_password so the user is
+# forced onto auth.force_change_password the moment they next log in.
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/password-reset-requests")
+@login_required
+@role_required("system_admin")
+def password_reset_requests():
+    status_filter = request.args.get("status", "pending")
+
+    base_q = PasswordResetRequest.query
+    pending_count = base_q.filter_by(status="pending").count()
+    approved_count = base_q.filter_by(status="approved").count()
+    denied_count = base_q.filter_by(status="denied").count()
+
+    requests_q = base_q
+    if status_filter in ("pending", "approved", "denied"):
+        requests_q = requests_q.filter_by(status=status_filter)
+
+    request_list = requests_q.order_by(PasswordResetRequest.requested_at.desc()).all()
+
+    # Opening this page is what clears the sidebar's red badge — marks every
+    # currently-pending request seen without touching `status`, so a request
+    # still shows under the Pending tab (and still needs a decision) even
+    # after the badge itself has cleared.
+    PasswordResetRequest.query.filter_by(status="pending", is_seen=False).update(
+        {"is_seen": True}, synchronize_session=False
+    )
+    db.session.commit()
+
+    return render_template(
+        "admin/password_reset_requests.html", requests=request_list, status_filter=status_filter,
+        pending_count=pending_count, approved_count=approved_count, denied_count=denied_count,
+        total_count=pending_count + approved_count + denied_count,
+    )
+
+
+@admin_bp.route("/password-reset-requests/<int:request_id>/approve", methods=["POST"])
+@login_required
+@role_required("system_admin")
+def approve_password_reset_request(request_id):
+    reset_request = PasswordResetRequest.query.get_or_404(request_id)
+    if reset_request.status != "pending":
+        flash("That request has already been reviewed.", "error")
+        return redirect(url_for("admin.password_reset_requests"))
+
+    user = reset_request.user
+    user.set_password(DEFAULT_RESET_PASSWORD)
+    user.must_change_password = True
+    reset_request.status = "approved"
+    reset_request.reviewed_by = current_user.user_id
+    reset_request.reviewed_at = datetime.utcnow()
+
+    log_admin_activity(
+        current_user.user_id, "password_reset_request_approved",
+        f"{current_user.name} approved a password reset for {user.name}",
+    )
+    db.session.commit()
+    flash(f"{user.name}'s password was reset to the default. They'll be asked to set a new one at their next login.", "success")
+    return redirect(url_for("admin.password_reset_requests"))
+
+
+@admin_bp.route("/password-reset-requests/<int:request_id>/deny", methods=["POST"])
+@login_required
+@role_required("system_admin")
+def deny_password_reset_request(request_id):
+    reset_request = PasswordResetRequest.query.get_or_404(request_id)
+    if reset_request.status != "pending":
+        flash("That request has already been reviewed.", "error")
+        return redirect(url_for("admin.password_reset_requests"))
+
+    reset_request.status = "denied"
+    reset_request.reviewed_by = current_user.user_id
+    reset_request.reviewed_at = datetime.utcnow()
+
+    log_admin_activity(
+        current_user.user_id, "password_reset_request_denied",
+        f"{current_user.name} denied a password reset request for {reset_request.user.name}",
+    )
+    db.session.commit()
+    flash(f"Denied the password reset request for {reset_request.user.name}.", "success")
+    return redirect(url_for("admin.password_reset_requests"))
 
 
 # ---------------------------------------------------------------------------

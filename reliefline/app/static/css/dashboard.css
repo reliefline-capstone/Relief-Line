@@ -95,6 +95,22 @@
     text-overflow: ellipsis;
 }
 
+/* Flex items shrink to fit by default — without this, a long label (e.g.
+   "Password Reset Requests") squeezes the icon down to nothing before the
+   text itself starts truncating, since the icon has a smaller min-content
+   size than the text run. Keeping the icon fixed-size means the text is
+   what truncates/ellipsizes instead, which is the intended behavior. */
+.sidebar-nav a svg {
+    flex-shrink: 0;
+}
+
+/* "Password Reset Requests" is the longest label in the sidebar — a
+   touch smaller than the other links so it comfortably fits one line
+   alongside its icon and badge without crowding them. */
+.sidebar-nav a.sidebar-nav-compact {
+    font-size: 12.5px;
+}
+
 .sidebar-nav a.active {
     background: #0f2547;
     color: white;
