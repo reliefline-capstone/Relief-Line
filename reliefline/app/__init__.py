@@ -25,7 +25,7 @@ def create_app():
     from app.models.barangay_report import BarangayReport
     from app.models.relief_request_batch import ReliefRequestBatch
     from app.models.activity_log import ActivityLog, DailyOpsStat
-    from app.models.logistics import Vehicle, Driver, WarehouseTransfer
+    from app.models.logistics import WarehouseTransfer
     from app.models.report import ReportLog
     from app.models.system_setting import SystemSetting
 

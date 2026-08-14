@@ -17,8 +17,6 @@ class DistributionRecord(db.Model):
     submitted_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
     # Dispatch/logistics lifecycle — tracks the trip itself, separate from proof-of-delivery above
-    vehicle_id = db.Column(db.Integer, db.ForeignKey("vehicles.vehicle_id"), nullable=True)
-    driver_id = db.Column(db.Integer, db.ForeignKey("drivers.driver_id"), nullable=True)
     dispatch_status = db.Column(
         db.Enum("preparing", "loaded", "dispatched", "in_transit", "delivered", "delayed"),
         default="preparing"
@@ -34,5 +32,3 @@ class DistributionRecord(db.Model):
 
     barangay = db.relationship("Barangay", backref="distribution_records")
     allocation = db.relationship("AllocationRecord", backref="distribution_records")
-    vehicle = db.relationship("Vehicle", backref="distribution_records")
-    driver = db.relationship("Driver", backref="distribution_records")

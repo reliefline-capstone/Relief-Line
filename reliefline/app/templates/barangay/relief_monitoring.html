@@ -107,7 +107,6 @@
                 <div><span>Received By</span><strong>{{ d.received_by or '—' }}</strong></div>
                 {% else %}
                 <div><span>ETA</span><strong>{{ d.expected_arrival_time.strftime('%I:%M %p') if d.expected_arrival_time else 'Not yet available' }}</strong></div>
-                <div><span>Notes</span><strong>{{ d.vehicle.vehicle_name if d.vehicle else 'Vehicle unassigned' }}{% if d.driver %} · Driver: {{ d.driver.name }}{% endif %}</strong></div>
                 {% endif %}
             </div>
 

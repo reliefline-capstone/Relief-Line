@@ -157,7 +157,6 @@ def run():
                         barangay_id=b.barangay_id, allocation_id=alloc.allocation_id,
                         quantity_released=alloc.allocated_quantity, distribution_date=today,
                         dispatch_status=distribution_stage,
-                        vehicle_id=None, driver_id=None,
                         departure_time=dtime(8, 0), expected_arrival_time=dtime(11, 0),
                         status="confirmed" if distribution_stage == "delivered" else "pending",
                         submitted_by=pswdo_admin.user_id if pswdo_admin else None,

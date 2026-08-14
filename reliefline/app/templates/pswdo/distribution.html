@@ -90,8 +90,6 @@
                         <th>MUNICIPALITY</th>
                         <th>WAREHOUSE</th>
                         <th>PACKS</th>
-                        <th>VEHICLE</th>
-                        <th>DRIVER</th>
                         <th>STATUS</th>
                         <th>ACTION</th>
                     </tr>
@@ -114,10 +112,6 @@
                             <span class="rr-sub">food packs</span>
                         </td>
                         <td>
-                            {% if rec.vehicle %}{{ rec.vehicle.vehicle_name }}{% else %}<span class="dist-unassigned">Unassigned</span>{% endif %}
-                        </td>
-                        <td>{{ rec.driver.name if rec.driver else '—' }}</td>
-                        <td>
                             <span class="badge-status badge-status-{{ rec.dispatch_status }}">
                                 <i class="priority-dot"></i> {{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}
                             </span>
@@ -128,7 +122,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="8" class="empty-note" style="text-align:center; padding: 30px;">Walang distribution na tumutugma sa filter mo.</td>
+                        <td colspan="6" class="empty-note" style="text-align:center; padding: 30px;">Walang distribution na tumutugma sa filter mo.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -162,7 +156,6 @@
                 </option>
                 {% endfor %}
             </select>
-            <span class="form-hint">Vehicle and driver are assigned afterward from the distribution's detail page.</span>
 
             <label for="distribution_date">Distribution Date</label>
             <input type="date" name="distribution_date" id="distribution_date" value="{{ today_str }}">

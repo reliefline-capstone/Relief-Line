@@ -165,13 +165,11 @@ def _build_distribution(filters):
             d.barangay.city_municipality,
             fulfilling.office_name if fulfilling else "—",
             f"{d.quantity_released:,}",
-            d.vehicle.vehicle_name if d.vehicle else "Unassigned",
-            d.driver.name if d.driver else "—",
             _fmt_date(d.distribution_date),
             DISPATCH_STATUS_LABELS.get(d.dispatch_status, d.dispatch_status),
         ])
     return {
-        "columns": ["#", "Distribution ID", "Municipality", "Warehouse", "Packs", "Vehicle", "Driver", "Date", "Status"],
+        "columns": ["#", "Distribution ID", "Municipality", "Warehouse", "Packs", "Date", "Status"],
         "rows": rows,
     }
 

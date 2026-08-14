@@ -19,7 +19,7 @@ from app.models.validation import DistributionRecord
 from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.activity_log import ActivityLog, DailyOpsStat
-from app.models.logistics import Vehicle, Driver, WarehouseTransfer
+from app.models.logistics import WarehouseTransfer
 from app.models.user import User
 from app.utils.settings import get_setting
 from app.ml import predict as ml_predict
@@ -1389,8 +1389,6 @@ def gis_map_data():
             "from_office": office.office_name if office else "—",
             "to_barangay": d.barangay.barangay_name,
             "to_municipality": d.barangay.city_municipality,
-            "vehicle": d.vehicle.vehicle_name if d.vehicle else "—",
-            "driver": d.driver.name if d.driver else "—",
             "packs": d.quantity_released,
             "status": d.dispatch_status,
             "status_label": DISPATCH_STATUS_LABELS.get(d.dispatch_status, d.dispatch_status),
@@ -1416,8 +1414,6 @@ def gis_map_data():
         if current_route:
             current_distribution = {
                 "distribution_id": current_route.distribution_id,
-                "vehicle": current_route.vehicle.vehicle_name if current_route.vehicle else "—",
-                "driver": current_route.driver.name if current_route.driver else "—",
                 "eta": current_route.expected_arrival_time.strftime("%I:%M %p") if current_route.expected_arrival_time else "—",
                 "status": current_route.dispatch_status,
                 "status_label": DISPATCH_STATUS_LABELS.get(current_route.dispatch_status, current_route.dispatch_status),
@@ -1981,9 +1977,9 @@ def _filtered_distributions():
 def _eligible_for_distribution():
     """Approved relief requests with no DistributionRecord yet — the pool
     "New Distribution" can schedule from. Once scheduled, an allocation drops
-    out of this list (see create_distribution) since vehicle assignment and
-    dispatch-status changes happen afterward via the existing distribution
-    detail actions, not by creating a second DistributionRecord."""
+    out of this list (see create_distribution) since dispatch-status changes
+    happen afterward via the existing distribution detail actions, not by
+    creating a second DistributionRecord."""
     return AllocationRecord.query.join(Barangay).filter(
         Barangay.city_municipality.in_(TARGET_LGUS),
         AllocationRecord.status == "approved",
@@ -2068,7 +2064,7 @@ def export_distribution():
     writer = csv.writer(buffer)
     writer.writerow([
         "Distribution ID", "Request ID", "Municipality", "Warehouse",
-        "Packs", "Vehicle", "Driver", "Date", "Status"
+        "Packs", "Date", "Status"
     ])
     for rec in ctx["records"]:
         fulfilling = rec.allocation.fulfilling_office or rec.allocation.office
@@ -2078,8 +2074,6 @@ def export_distribution():
             rec.barangay.city_municipality,
             fulfilling.office_name if fulfilling else "",
             rec.quantity_released,
-            rec.vehicle.vehicle_name if rec.vehicle else "Unassigned",
-            rec.driver.name if rec.driver else "",
             rec.distribution_date.isoformat(),
             DISPATCH_STATUS_LABELS.get(rec.dispatch_status, rec.dispatch_status),
         ])
@@ -2133,9 +2127,6 @@ def distribution_detail(distribution_id):
     available_stock = inventory.quantity_available if inventory else 0
     stock_after_release = max(available_stock - rec.quantity_released, 0) if rec.dispatch_status not in ("delivered",) else available_stock
 
-    vehicles = Vehicle.query.order_by(Vehicle.vehicle_name).all()
-    drivers = Driver.query.order_by(Driver.name).all()
-
     current_index = DISPATCH_STEPS.index(rec.dispatch_status) if rec.dispatch_status in DISPATCH_STEPS else 1
     route_progress = ROUTE_PROGRESS_BY_STATUS.get(rec.dispatch_status, 0)
 
@@ -2149,8 +2140,6 @@ def distribution_detail(distribution_id):
         fulfilling_office=fulfilling_office,
         available_stock=available_stock,
         stock_after_release=stock_after_release,
-        vehicles=vehicles,
-        drivers=drivers,
         dispatch_steps=DISPATCH_STEPS,
         step_labels=STEP_LABELS,
         current_index=current_index,
@@ -2160,35 +2149,6 @@ def distribution_detail(distribution_id):
         approved_by_label=_person_label(alloc.decided_by_user, alloc.fulfilling_office or alloc.office),
         attachments=attachments,
     )
-
-
-@pswdo_bp.route("/distribution/<int:distribution_id>/assign-vehicle", methods=["POST"])
-@login_required
-@role_required("pswdo_admin", "system_admin")
-def assign_distribution_vehicle(distribution_id):
-    rec = _get_target_scoped_distribution(distribution_id)
-
-    vehicle_id = request.form.get("vehicle_id", type=int)
-    driver_id = request.form.get("driver_id", type=int)
-    plate_number = request.form.get("plate_number", "").strip()
-    capacity = request.form.get("capacity_packs", type=int)
-
-    vehicle = Vehicle.query.get(vehicle_id) if vehicle_id else None
-    driver = Driver.query.get(driver_id) if driver_id else None
-    if not vehicle or not driver:
-        flash("Select a vehicle and a driver.", "error")
-        return redirect(url_for("pswdo.distribution_detail", distribution_id=distribution_id))
-
-    if plate_number:
-        vehicle.plate_number = plate_number
-    if capacity:
-        vehicle.capacity_packs = capacity
-
-    rec.vehicle_id = vehicle.vehicle_id
-    rec.driver_id = driver.driver_id
-    db.session.commit()
-    flash(f"Assigned {vehicle.vehicle_name} with driver {driver.name}.", "success")
-    return redirect(url_for("pswdo.distribution_detail", distribution_id=distribution_id))
 
 
 @pswdo_bp.route("/distribution/<int:distribution_id>/advance", methods=["POST"])
@@ -2207,10 +2167,6 @@ def advance_distribution(distribution_id):
     expected_next = valid_transitions.get(rec.dispatch_status)
     if target != expected_next:
         flash("That status change is no longer valid.", "error")
-        return redirect(url_for("pswdo.distribution_detail", distribution_id=distribution_id))
-
-    if target == "dispatched" and not (rec.vehicle_id and rec.driver_id):
-        flash("Assign a vehicle and driver before dispatching.", "error")
         return redirect(url_for("pswdo.distribution_detail", distribution_id=distribution_id))
 
     rec.dispatch_status = target

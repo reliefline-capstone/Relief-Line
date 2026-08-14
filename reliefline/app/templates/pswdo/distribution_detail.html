@@ -111,28 +111,6 @@
                     </div>
                 </section>
 
-                <!-- Vehicle Assignment -->
-                <section class="panel">
-                    <div class="panel-header">
-                        <h3 class="rd-panel-title" style="margin-bottom:0;">Vehicle Assignment</h3>
-                        <button type="button" class="btn-outline" data-open-modal="assign-vehicle-modal">{{ icon('truck', 14) }} {{ 'Reassign' if rec.vehicle else 'Assign Vehicle' }}</button>
-                    </div>
-                    {% if rec.vehicle %}
-                    <div class="dd-kv-list">
-                        <div><span>Vehicle</span><strong>{{ rec.vehicle.vehicle_name }}</strong></div>
-                        <div><span>Driver</span><strong>{{ rec.driver.name if rec.driver else '—' }}</strong></div>
-                        <div><span>Plate Number</span><strong>{{ rec.vehicle.plate_number or '—' }}</strong></div>
-                        <div><span>Capacity</span><strong>{{ "{:,}".format(rec.vehicle.capacity_packs) if rec.vehicle.capacity_packs else '—' }} packs</strong></div>
-                    </div>
-                    {% else %}
-                    <div class="dd-empty-block">
-                        {{ icon('truck', 32, '#c3cad6') }}
-                        <span>No vehicle assigned yet.</span>
-                        <button type="button" class="dd-link-btn" data-open-modal="assign-vehicle-modal">Assign Vehicle →</button>
-                    </div>
-                    {% endif %}
-                </section>
-
                 <!-- Dispatch Schedule -->
                 <section class="panel">
                     <h3 class="rd-panel-title">Dispatch Schedule</h3>
@@ -216,7 +194,6 @@
 
                     <div class="dd-summary-row"><span>Municipality</span><strong>{{ rec.barangay.city_municipality }}</strong></div>
                     <div class="dd-summary-row"><span>Warehouse</span><strong>{{ fulfilling_office.office_name if fulfilling_office else '—' }}</strong></div>
-                    <div class="dd-summary-row"><span>Vehicle</span><strong>{{ rec.vehicle.vehicle_name if rec.vehicle else 'Unassigned' }}</strong></div>
                     <div class="dd-summary-row"><span>ETA</span><strong>{{ rec.expected_arrival_time.strftime('%I:%M %p') if rec.expected_arrival_time else '—' }}</strong></div>
 
                     {% if rec.dispatch_status == 'preparing' %}
@@ -224,7 +201,6 @@
                         <input type="hidden" name="target" value="loaded">
                         <button type="submit" class="btn-decision btn-partial dd-full-width">{{ icon('arrow-right', 16, 'white') }} Mark as Loaded</button>
                     </form>
-                    <button type="button" class="dd-link-btn" data-open-modal="assign-vehicle-modal">{{ icon('truck', 14) }} Assign Vehicle</button>
                     {% elif rec.dispatch_status == 'loaded' %}
                     <form method="POST" action="{{ url_for('pswdo.advance_distribution', distribution_id=rec.distribution_id) }}">
                         <input type="hidden" name="target" value="dispatched">
@@ -250,49 +226,6 @@
         </div>
 
     </main>
-</div>
-
-<!-- Assign / Reassign Vehicle modal -->
-<div class="rd-modal-overlay" id="assign-vehicle-modal" hidden>
-    <div class="rd-modal">
-        <div class="rd-modal-header">
-            <h3>Assign Vehicle & Driver</h3>
-            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
-        </div>
-        <form method="POST" action="{{ url_for('pswdo.assign_distribution_vehicle', distribution_id=rec.distribution_id) }}">
-            <label>Vehicle *</label>
-            <select name="vehicle_id" id="dd-vehicle-select" required onchange="dd_fillVehicle(this)">
-                <option value="">Select vehicle...</option>
-                {% for v in vehicles %}
-                <option value="{{ v.vehicle_id }}" data-plate="{{ v.plate_number or '' }}" data-capacity="{{ v.capacity_packs or '' }}" {{ 'selected' if rec.vehicle_id == v.vehicle_id }}>{{ v.vehicle_name }}{% if v.capacity_packs %} - {{ "{:,}".format(v.capacity_packs) }} packs capacity{% endif %}</option>
-                {% endfor %}
-            </select>
-
-            <label>Driver *</label>
-            <select name="driver_id" required>
-                <option value="">Select driver...</option>
-                {% for d in drivers %}
-                <option value="{{ d.driver_id }}" {{ 'selected' if rec.driver_id == d.driver_id }}>{{ d.name }}</option>
-                {% endfor %}
-            </select>
-
-            <div class="rd-form-row">
-                <div>
-                    <label>Plate Number *</label>
-                    <input type="text" name="plate_number" id="dd-plate-input" required value="{{ rec.vehicle.plate_number if rec.vehicle else '' }}">
-                </div>
-                <div>
-                    <label>Capacity (packs)</label>
-                    <input type="number" name="capacity_packs" id="dd-capacity-input" value="{{ rec.vehicle.capacity_packs if rec.vehicle else '' }}">
-                </div>
-            </div>
-
-            <div class="rd-modal-actions">
-                <button type="submit" class="btn-decision btn-partial">{{ icon('truck', 16, 'white') }} Confirm Assignment</button>
-                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
-            </div>
-        </form>
-    </div>
 </div>
 
 <!-- Confirm Delivery modal -->
@@ -348,11 +281,4 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}" defer></script>
-<script>
-function dd_fillVehicle(select) {
-    var opt = select.options[select.selectedIndex];
-    document.getElementById('dd-plate-input').value = opt.dataset.plate || '';
-    document.getElementById('dd-capacity-input').value = opt.dataset.capacity || '';
-}
-</script>
 {% endblock %}

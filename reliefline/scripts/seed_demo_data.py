@@ -2,13 +2,13 @@
 Populates ReliefLine's dev database with realistic demo data spanning the
 dashboard, relief requests, and distribution operations pages: barangay
 disaster statuses (drives Priority/Affected Families), allocation requests in
-every status (pending/approved/partially approved/rejected), a vehicle/driver
-fleet, and distribution records covering every dispatch stage (preparing,
-loaded, dispatched, in transit, delivered, delayed).
+every status (pending/approved/partially approved/rejected), and distribution
+records covering every dispatch stage (preparing, loaded, dispatched, in
+transit, delivered, delayed).
 
 Safe to re-run: exits early if demo data already appears to be present
-(checks for a "Truck 001" vehicle). To reset, delete the seeded rows first
-(see the bottom of this file for the exact tables touched).
+(checks for any existing DistributionRecord). To reset, delete the seeded
+rows first (see the bottom of this file for the exact tables touched).
 
 Usage:
     .venv/Scripts/python.exe scripts/seed_demo_data.py
@@ -27,7 +27,6 @@ from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
-from app.models.logistics import Vehicle, Driver
 from app.models.warehouse import WarehouseInventory
 from app.models.activity_log import ActivityLog, DailyOpsStat
 from app.models.relief_request_batch import ReliefRequestBatch
@@ -40,8 +39,8 @@ TARGET_LGUS = ["Urdaneta City", "Santa Barbara", "Calasiao"]
 
 def run():
     with app.app_context():
-        if Vehicle.query.filter_by(vehicle_name="Truck 001").first():
-            print("Demo data already present (found 'Truck 001') — skipping. "
+        if DistributionRecord.query.first():
+            print("Demo data already present (found a DistributionRecord) — skipping. "
                   "Delete existing rows first if you want to reseed.")
             return
 
@@ -124,23 +123,6 @@ def run():
         db.session.flush()
         print(f"Seeded {len(status_plan)} BarangayDisasterStatus rows")
 
-        # --- Vehicles & drivers (Warehouse A's fleet) ---
-        vehicles = {
-            "Truck 001": Vehicle(vehicle_name="Truck 001", plate_number="ABC-1234", capacity_packs=2000, office_id=warehouse_a.office_id),
-            "Truck 002": Vehicle(vehicle_name="Truck 002", plate_number="DEF-5678", capacity_packs=1500, office_id=warehouse_a.office_id),
-            "Truck 003": Vehicle(vehicle_name="Truck 003", plate_number="GHI-9012", capacity_packs=1800, office_id=warehouse_a.office_id),
-        }
-        db.session.add_all(vehicles.values())
-
-        drivers = {
-            "Juan Dela Cruz": Driver(name="Juan Dela Cruz", office_id=warehouse_a.office_id),
-            "Pedro Santos": Driver(name="Pedro Santos", office_id=warehouse_a.office_id),
-            "Mark Reyes": Driver(name="Mark Reyes", office_id=warehouse_a.office_id),
-        }
-        db.session.add_all(drivers.values())
-        db.session.flush()
-        print("Seeded 3 vehicles and 3 drivers")
-
         # One ReliefRequestBatch per office, created lazily on first use — every
         # AllocationRecord below now goes through the same submission wrapper the
         # real CSWDO "Relief Requests" flow uses (app.routes.cswdo.relief_request_submit),
@@ -191,15 +173,13 @@ def run():
             db.session.flush()
             return alloc
 
-        def make_distribution(alloc, dispatch_status, vehicle=None, driver=None,
+        def make_distribution(alloc, dispatch_status,
                                departure=None, arrival=None, received_by=None,
                                condition=None, travel_time=None):
             rec = DistributionRecord(
                 barangay_id=alloc.barangay_id, allocation_id=alloc.allocation_id,
                 quantity_released=alloc.allocated_quantity,
                 distribution_date=today, dispatch_status=dispatch_status,
-                vehicle_id=vehicle.vehicle_id if vehicle else None,
-                driver_id=driver.driver_id if driver else None,
                 departure_time=departure, expected_arrival_time=arrival,
                 received_by=received_by, condition=condition, travel_time=travel_time,
                 status="confirmed" if dispatch_status == "delivered" else "pending",
@@ -212,19 +192,19 @@ def run():
 
         # --- Allocations + distributions (covers every status combo) ---
         a1 = make_allocation("Anonas", "Urdaneta City", 2300, "approved", 2300)
-        d1 = make_distribution(a1, "delivered", vehicles["Truck 001"], drivers["Juan Dela Cruz"],
+        d1 = make_distribution(a1, "delivered",
                            dtime(8, 0), dtime(10, 30), "Aivan Flores", "complete", "2 hrs 30 mins")
 
         a2 = make_allocation("Bactad East", "Urdaneta City", 1500, "approved", 1500)
-        d2 = make_distribution(a2, "in_transit", vehicles["Truck 002"], drivers["Pedro Santos"],
+        d2 = make_distribution(a2, "in_transit",
                            dtime(7, 30), dtime(9, 45))
 
         a3 = make_allocation("Calepaan", "Santa Barbara", 900, "approved", 900)
-        make_distribution(a3, "dispatched", vehicles["Truck 003"], drivers["Mark Reyes"],
+        make_distribution(a3, "dispatched",
                            dtime(9, 0), dtime(11, 15))
 
         a4 = make_allocation("Coliling", "Santa Barbara", 600, "approved", 600)
-        make_distribution(a4, "loaded", vehicles["Truck 002"], drivers["Pedro Santos"])
+        make_distribution(a4, "loaded")
 
         a5 = make_allocation("Lasip", "Calasiao", 1800, "approved", 1800)
         make_distribution(a5, "preparing")
@@ -233,7 +213,7 @@ def run():
         make_distribution(a6, "delayed")
 
         a7 = make_allocation("Doyong", "Calasiao", 1100, "approved", 1100)
-        make_distribution(a7, "delivered", vehicles["Truck 001"], drivers["Juan Dela Cruz"],
+        make_distribution(a7, "delivered",
                            dtime(6, 45), dtime(9, 0), "Maria Santos", "complete", "2 hrs 15 mins")
 
         make_allocation("Bayaoas", "Urdaneta City", 1000, "pending")

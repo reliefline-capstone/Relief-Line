@@ -243,8 +243,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (m.current_distribution) {
             var d = m.current_distribution;
             html += '<div class="dd-summary-row"><span>Current Distribution</span><strong>D-' + d.distribution_id + '</strong></div>';
-            html += '<div class="dd-summary-row"><span>Truck</span><strong>' + escapeHtml(d.vehicle) + '</strong></div>';
-            html += '<div class="dd-summary-row"><span>Driver</span><strong>' + escapeHtml(d.driver) + '</strong></div>';
             html += '<div class="dd-summary-row"><span>ETA</span><strong>' + escapeHtml(d.eta) + '</strong></div>';
             html += '<div class="dd-summary-row"><span>Status</span><span class="badge-status badge-status-' + d.status + '">' + escapeHtml(d.status_label) + '</span></div>';
         } else {
@@ -408,15 +406,13 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('routes-count').textContent = routes.length;
         var body = document.getElementById('routes-table-body');
         if (!routes.length) {
-            body.innerHTML = '<tr><td colspan="7" class="empty-note" style="text-align:center; padding:24px;">No active distribution routes right now.</td></tr>';
+            body.innerHTML = '<tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">No active distribution routes right now.</td></tr>';
             return;
         }
         body.innerHTML = routes.map(function (r) {
             return '<tr>' +
                 '<td>D-' + r.distribution_id + '</td>' +
                 '<td>' + escapeHtml(r.from_office) + ' &rarr; ' + escapeHtml(r.to_barangay) + ' / ' + escapeHtml(r.to_municipality) + '</td>' +
-                '<td>' + escapeHtml(r.vehicle) + '</td>' +
-                '<td>' + escapeHtml(r.driver) + '</td>' +
                 '<td>' + fmt(r.packs) + '</td>' +
                 '<td><span class="badge-status badge-status-' + r.status + '">' + escapeHtml(r.status_label) + '</span></td>' +
                 '<td>' + escapeHtml(r.eta) + '</td>' +
