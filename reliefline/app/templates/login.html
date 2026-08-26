@@ -18,10 +18,8 @@
         <div class="hero-overlay"></div>
 
         <div class="hero-inner">
-
-            <!-- Top bar -->
             <header class="top-bar">
-                <div class="office-id">
+                <div class="office-header">
                     <img src="{{ url_for('static', filename='img/province-seal.png') }}" alt="Province of Pangasinan Seal" class="seal">
                     <div class="office-text">
                         <span class="republic">Republic of the Philippines</span>
@@ -36,70 +34,69 @@
                 </nav>
             </header>
 
-            <!-- Left brand content -->
-            <div class="brand-content">
-                <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="ReliefLine" class="brand-logo">
-                <h1>ReliefLine</h1>
-                <div class="brand-rule"></div>
-                <p class="brand-tagline">Data-Driven Relief Supplies<br>Pipeline System</p>
-                <div class="brand-location">
-                    {{ icon('map-pin', 14) }} Province of Pangasinan
+            <div class="login-center">
+
+                <!-- Brand header -->
+                <div class="brand-header">
+                    <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="ReliefLine" class="brand-logo-sm">
+                    <h1>ReliefLine</h1>
+                    <p class="brand-subtitle">Disaster Relief Management System</p>
+                    <p class="brand-location-sm">Province of Pangasinan</p>
                 </div>
+
+                <!-- Login card -->
+                <div class="login-card">
+                    <div class="lock-badge">
+                        {{ icon('lock', 28, '#0f2547') }}
+                    </div>
+                    <h2>Welcome Back!</h2>
+                    <p class="subtext">Sign in to continue to ReliefLine.</p>
+                    <p class="subtext-small">Enter your credentials to access the system.</p>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="flash-message {{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('auth.login') }}">
+                        <label for="email">Username</label>
+                        <div class="input-wrapper">
+                            {{ icon('user', 18, '#8a94a6') }}
+                            <input type="text" id="email" name="email" placeholder="Enter username" required>
+                        </div>
+
+                        <label for="password">Password</label>
+                        <div class="input-wrapper">
+                            {{ icon('lock', 18, '#8a94a6') }}
+                            <input type="password" id="password" name="password" placeholder="Enter password" required>
+                            <button type="button" class="toggle-password" data-target="password" aria-label="Show password">
+                                <span class="icon-eye">{{ icon('eye', 18, '#8a94a6') }}</span>
+                                <span class="icon-eye-off">{{ icon('eye-off', 18, '#8a94a6') }}</span>
+                            </button>
+                        </div>
+
+                        <div class="form-row">
+                            <label class="remember-me">
+                                <input type="checkbox" name="remember">
+                                Remember me
+                            </label>
+                            <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">Forgot Password?</a>
+                        </div>
+
+                        <button type="submit" class="login-btn">Sign in</button>
+                    </form>
+
+                    <div class="secured-divider"><span>Secured System</span></div>
+                    <div class="secured-note">
+                        {{ icon('shield', 16, '#8a94a6') }}
+                        <span>Authorized government system. Unauthorized access is prohibited.</span>
+                    </div>
+                </div>
+
             </div>
-
-            <!-- Login card -->
-            <div class="login-card">
-                <div class="lock-badge">
-                    {{ icon('lock', 28, '#0f2547') }}
-                </div>
-                <h2>Welcome Back!</h2>
-                <p class="subtext">Sign in to continue to ReliefLine.</p>
-
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="flash-message {{ category }}">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-
-                <form method="POST" action="{{ url_for('auth.login') }}">
-                    <label for="email">Username/Email</label>
-                    <div class="input-wrapper">
-                        {{ icon('user', 18, '#8a94a6') }}
-                        <input type="text" id="email" name="email" placeholder="Enter your username or email" required>
-                    </div>
-
-                    <label for="password">Password</label>
-                    <div class="input-wrapper">
-                        {{ icon('lock', 18, '#8a94a6') }}
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                        <button type="button" class="toggle-password" data-target="password" aria-label="Show password">
-                            <span class="icon-eye">{{ icon('eye', 18, '#8a94a6') }}</span>
-                            <span class="icon-eye-off">{{ icon('eye-off', 18, '#8a94a6') }}</span>
-                        </button>
-                    </div>
-
-                    <div class="form-row">
-                        <label class="remember-me">
-                            <input type="checkbox" name="remember">
-                            Remember me
-                        </label>
-                        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">Forgot Password?</a>
-                    </div>
-
-                    <button type="submit" class="login-btn">
-                        {{ icon('lock', 16, 'white') }} LOG IN
-                    </button>
-                </form>
-
-                <div class="secured-divider"><span>Secured System</span></div>
-                <div class="secured-note">
-                    {{ icon('shield', 16, '#8a94a6') }}
-                    <span>Authorized government system. Unauthorized access is prohibited.</span>
-                </div>
-            </div>
-
         </div>
     </div>
 

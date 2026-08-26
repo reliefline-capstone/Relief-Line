@@ -32,7 +32,6 @@
             <div class="wh-header-actions">
                 <a href="{{ url_for('pswdo.warehouse_stock_movements') }}" class="wh-text-link">{{ icon('list', 14) }} Movements</a>
                 <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-text-link">{{ icon('rotate-ccw', 14) }} Transfer</a>
-                <a href="{{ url_for('pswdo.warehouse_reports') }}" class="wh-text-link">{{ icon('bar-chart', 14) }} Reports</a>
                 <a href="{{ url_for('pswdo.warehouse_list') }}" class="btn-outline">{{ icon('building', 14) }} Warehouses</a>
                 <button type="button" class="btn-add-warehouse" data-open-modal="add-warehouse-modal">{{ icon('plus', 14, 'white') }} Add Warehouse</button>
             </div>
@@ -72,18 +71,28 @@
                 <h3>{{ icon('trending-up', 18, '#d68910') }} System Recommendations</h3>
                 <span class="wh-reco-meta">Data-driven · Updated just now</span>
             </div>
-            {% for rec in recommendations %}
-            <div class="wh-reco-item">
-                <span class="wh-reco-num">{{ loop.index }}</span>
-                <div class="wh-reco-text">
-                    <strong>{{ rec.title }}</strong>
-                    <span>{{ rec.detail }}</span>
+            <div class="wh-reco-list" id="wh-reco-list">
+                {% for rec in recommendations %}
+                <div class="wh-reco-item{% if loop.index > 3 %} wh-reco-extra{% endif %}">
+                    <span class="wh-reco-num">{{ loop.index }}</span>
+                    <div class="wh-reco-text">
+                        <strong>{{ rec.title }}</strong>
+                        <span>{{ rec.detail }}</span>
+                    </div>
+                    <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-reco-action">Act Now {{ icon('arrow-right', 14) }}</a>
                 </div>
-                <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-reco-action">Act Now {{ icon('arrow-right', 14) }}</a>
+                {% else %}
+                <p class="empty-note">Walang stock recommendations ngayon — malusog ang lahat ng warehouse.</p>
+                {% endfor %}
             </div>
-            {% else %}
-            <p class="empty-note">Walang stock recommendations ngayon — malusog ang lahat ng warehouse.</p>
-            {% endfor %}
+            {% if recommendations|length > 3 %}
+            <button type="button" class="wh-reco-view-all" id="wh-reco-toggle" onclick="
+                var extras = document.querySelectorAll('#wh-reco-list .wh-reco-extra');
+                var expanded = extras[0] && extras[0].style.display === 'flex';
+                extras.forEach(function(el) { el.style.display = expanded ? 'none' : 'flex'; });
+                this.textContent = expanded ? 'View All ({{ recommendations|length }})' : 'Show Less';
+            ">View All ({{ recommendations|length }})</button>
+            {% endif %}
             {{ prediction_disclaimer() }}
         </section>
 
@@ -103,7 +112,7 @@
                             <th>CURRENT STOCK</th>
                             <th>CAPACITY</th>
                             <th>FILL LEVEL</th>
-                            <th>STATUS</th>
+                            <th class="wh-status-col">STATUS</th>
                             <th>ACTION</th>
                         </tr>
                     </thead>
@@ -126,7 +135,7 @@
                                     <span>{{ w.pct|int }}%</span>
                                 </div>
                             </td>
-                            <td><span class="badge-health badge-{{ w.health|lower }}">{{ 'Low Stock' if w.health == 'Low' else w.health }}</span></td>
+                            <td class="wh-status-col"><span class="badge-health badge-{{ w.health|lower }}">{{ 'Low Stock' if w.health == 'Low' else w.health }}</span></td>
                             <td>
                                 <a href="{{ url_for('pswdo.warehouse_detail', office_id=w.office.office_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
                             </td>

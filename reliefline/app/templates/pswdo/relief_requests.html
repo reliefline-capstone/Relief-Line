@@ -69,9 +69,17 @@
                 <option value="low" {{ 'selected' if priority_filter == 'low' }}>Low</option>
             </select>
 
+            <input type="hidden" name="date" id="date-filter-iso" value="{{ date_filter }}">
             <div class="date-input-wrapper">
                 {{ icon('calendar', 14, '#8a94a6') }}
-                <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
+                <input type="text"
+                       id="date-filter-display"
+                       inputmode="numeric"
+                       autocomplete="off"
+                       placeholder="MM/DD/YYYY"
+                       maxlength="10"
+                       pattern="(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/[0-9]{4}"
+                       value="{{ date_filter_display }}">
             </div>
         </form>
 
@@ -159,4 +167,55 @@
 
     </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var display = document.getElementById('date-filter-display');
+    var iso = document.getElementById('date-filter-iso');
+    if (!display || !iso) return;
+
+    var DATE_RE = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/(\d{4})$/;
+
+    function toIso(mmddyyyy) {
+        var m = DATE_RE.exec(mmddyyyy);
+        if (!m) return '';
+        var month = m[1], day = m[2], year = m[3];
+        // Guard against real-but-invalid dates like 02/31/2026.
+        var d = new Date(Number(year), Number(month) - 1, Number(day));
+        if (d.getFullYear() != year || (d.getMonth() + 1) != month || d.getDate() != day) return '';
+        return year + '-' + month + '-' + day;
+    }
+
+    // Auto-insert slashes as the user types digits.
+    display.addEventListener('input', function () {
+        var digits = display.value.replace(/\D/g, '').slice(0, 8);
+        var formatted = digits;
+        if (digits.length > 2) formatted = digits.slice(0, 2) + '/' + digits.slice(2);
+        if (digits.length > 4) formatted = formatted.slice(0, 5) + '/' + digits.slice(4);
+        display.value = formatted;
+        display.setCustomValidity('');
+    });
+
+    display.addEventListener('change', function () {
+        var value = display.value.trim();
+        if (!value) {
+            iso.value = '';
+            display.setCustomValidity('');
+            display.form.submit();
+            return;
+        }
+        var isoValue = toIso(value);
+        if (!isoValue) {
+            display.setCustomValidity('Enter a valid date as MM/DD/YYYY');
+            display.reportValidity();
+            return;
+        }
+        display.setCustomValidity('');
+        iso.value = isoValue;
+        display.form.submit();
+    });
+})();
+</script>
 {% endblock %}

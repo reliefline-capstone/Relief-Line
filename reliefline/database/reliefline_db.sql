@@ -49,7 +49,7 @@ CREATE TABLE `activity_logs` (
   CONSTRAINT `fk_activity_allocation` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`),
   CONSTRAINT `fk_activity_batch` FOREIGN KEY (`batch_id`) REFERENCES `relief_request_batches` (`batch_id`),
   CONSTRAINT `fk_activity_distribution` FOREIGN KEY (`distribution_id`) REFERENCES `distribution_records` (`distribution_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=200 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=304 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -204,7 +204,7 @@ INSERT INTO `activity_logs` VALUES
 (164,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 06:15:36','127.0.0.1'),
 (165,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:27:48','127.0.0.1'),
 (166,2,'warehouse_transfer_completed','Transferred 500 food packs from Warehouse A to Warehouse C',0,6,NULL,NULL,NULL,NULL,'2026-07-29 02:31:11',NULL),
-(167,2,'distribution_status','D-2026-008 marked Dispatched',0,5,18,NULL,8,NULL,'2026-07-29 02:32:03',NULL),
+(167,2,'distribution_status','D-2026-008 marked Dispatched',1,5,18,NULL,8,NULL,'2026-07-29 02:32:03',NULL),
 (168,2,'distribution_status','D-2026-008 marked In Transit',1,5,18,NULL,8,NULL,'2026-07-29 02:32:06',NULL),
 (169,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:35:25','127.0.0.1'),
 (170,11,'damage_report_submitted','DR-2026-029 submitted by Brgy. Anonas — 45 affected families',0,2,1,NULL,NULL,NULL,'2026-07-29 02:36:54',NULL),
@@ -236,7 +236,110 @@ INSERT INTO `activity_logs` VALUES
 (196,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:08:10','127.0.0.1'),
 (197,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:14:48','127.0.0.1'),
 (198,1,'password_reset_request_denied','System Administrator denied a password reset request for Ramon Bautista',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:23:06','127.0.0.1'),
-(199,1,'password_reset_request_approved','System Administrator approved a password reset for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:23:12','127.0.0.1');
+(199,1,'password_reset_request_approved','System Administrator approved a password reset for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:23:12','127.0.0.1'),
+(200,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 12:16:57','127.0.0.1'),
+(201,2,'distribution_status','New distribution scheduled for Carosucan Norte, Santa Barbara — 400 food packs',0,5,16,NULL,24,NULL,'2026-08-14 12:26:34',NULL),
+(202,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 12:56:20','127.0.0.1'),
+(203,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 13:43:40','127.0.0.1'),
+(204,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 13:45:02','127.0.0.1'),
+(205,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:01:23','127.0.0.1'),
+(206,2,'warehouse_transfer_completed','Transferred 2,000 food packs from Provincial Social Welfare and Development Office to Urdaneta City Social Welfare and Development Office',0,2,NULL,NULL,NULL,NULL,'2026-08-14 14:10:57',NULL),
+(207,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:16:56','127.0.0.1'),
+(208,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:23:04','127.0.0.1'),
+(209,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-023 (420 food packs), received by Ramon Bautista',1,NULL,1,NULL,23,NULL,'2026-08-14 14:34:38',NULL),
+(210,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:34:53','127.0.0.1'),
+(211,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:36:03','127.0.0.1'),
+(212,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 07:27:46','127.0.0.1'),
+(213,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 07:41:08','127.0.0.1'),
+(214,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 07:47:11','127.0.0.1'),
+(215,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 08:34:04','127.0.0.1'),
+(216,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-16 15:47:40','127.0.0.1'),
+(217,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-17 04:26:34','127.0.0.1'),
+(218,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-17 04:33:51','127.0.0.1'),
+(219,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-17 04:50:34','127.0.0.1'),
+(220,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-18 01:42:12','127.0.0.1'),
+(221,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-18 01:44:17','127.0.0.1'),
+(222,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 01:26:24','127.0.0.1'),
+(223,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:14:27','127.0.0.1'),
+(224,2,'allocation_rejected','Rejected relief request from Santa Barbara: fsdads',0,3,19,19,NULL,NULL,'2026-08-20 03:28:42',NULL),
+(225,2,'allocation_approved','Approved 700 food packs for Santa Barbara from Santa Barbara Municipal Social Welfare and Development Office',0,3,12,16,NULL,NULL,'2026-08-20 03:31:49',NULL),
+(226,2,'distribution_status','D-2026-019 marked Dispatched',0,2,3,NULL,19,NULL,'2026-08-20 03:33:14',NULL),
+(227,2,'distribution_status','New distribution scheduled for Ban-ao, Santa Barbara — 700 food packs',0,3,12,NULL,25,NULL,'2026-08-20 03:36:04',NULL),
+(228,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:45:07','127.0.0.1'),
+(229,3,'damage_report_verified','Damage report DR-2026-030 was verified by Urdaneta City Social Welfare and Development Office',0,2,2,NULL,NULL,NULL,'2026-08-20 03:49:13',NULL),
+(230,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:54:13','127.0.0.1'),
+(231,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',0,2,1,NULL,NULL,NULL,'2026-08-20 04:00:03',NULL),
+(232,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',0,2,1,NULL,NULL,NULL,'2026-08-20 04:00:47',NULL),
+(233,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:02:13','127.0.0.1'),
+(234,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:07:14','127.0.0.1'),
+(235,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:09:14','127.0.0.1'),
+(236,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:19:23','127.0.0.1'),
+(237,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:20:17','127.0.0.1'),
+(238,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:24:39','127.0.0.1'),
+(239,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:24:48','127.0.0.1'),
+(240,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:29:58','127.0.0.1'),
+(241,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:34:19','127.0.0.1'),
+(242,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:44:14','127.0.0.1'),
+(243,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:48:26','127.0.0.1'),
+(244,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:53:45','127.0.0.1'),
+(245,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:54:35','127.0.0.1'),
+(246,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:55:23','127.0.0.1'),
+(247,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:00:39','127.0.0.1'),
+(248,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:11:34','127.0.0.1'),
+(249,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:15:34','127.0.0.1'),
+(250,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:18:15','127.0.0.1'),
+(251,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:21:27','127.0.0.1'),
+(252,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:25:10','127.0.0.1'),
+(253,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:26:18','127.0.0.1'),
+(254,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:28:14','127.0.0.1'),
+(255,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:37:01','127.0.0.1'),
+(256,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:41:19','127.0.0.1'),
+(257,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:57:13','127.0.0.1'),
+(258,2,'distribution_status','New distribution scheduled for Banaoang, Calasiao — 300 food packs',0,5,23,NULL,26,NULL,'2026-08-23 07:57:55',NULL),
+(259,2,'distribution_status','D-2026-026 marked Loaded',0,5,23,NULL,26,NULL,'2026-08-23 07:58:02',NULL),
+(260,2,'distribution_status','D-2026-026 marked Dispatched',0,5,23,NULL,26,NULL,'2026-08-23 07:58:04',NULL),
+(261,2,'distribution_status','D-2026-026 marked In Transit',0,5,23,NULL,26,NULL,'2026-08-23 07:58:09',NULL),
+(262,2,'allocation_approved','Approved 150 food packs for Urdaneta City from Urdaneta City Social Welfare and Development Office',1,2,1,32,NULL,NULL,'2026-08-23 07:58:51',NULL),
+(263,2,'distribution_status','New distribution scheduled for Anonas, Urdaneta City — 150 food packs',0,2,1,NULL,27,NULL,'2026-08-23 07:59:03',NULL),
+(265,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 08:42:49','127.0.0.1'),
+(266,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 09:16:23','127.0.0.1'),
+(267,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 09:17:23','127.0.0.1'),
+(268,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:08:33','127.0.0.1'),
+(269,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:09:43','127.0.0.1'),
+(270,3,'damage_report_verified','Damage report DR-2026-032 was verified by Urdaneta City Social Welfare and Development Office',0,2,1,NULL,NULL,NULL,'2026-08-23 14:12:05',NULL),
+(271,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:13:05','127.0.0.1'),
+(272,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:13:30','127.0.0.1'),
+(273,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:15:37','127.0.0.1'),
+(274,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:04:36','127.0.0.1'),
+(275,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:13:26','127.0.0.1'),
+(276,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:23:09','127.0.0.1'),
+(277,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:41:37','127.0.0.1'),
+(278,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:44:01','127.0.0.1'),
+(279,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:47:20','127.0.0.1'),
+(280,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:02:32','127.0.0.1'),
+(281,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:24:06','127.0.0.1'),
+(282,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:31:09','127.0.0.1'),
+(283,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:37:47','127.0.0.1'),
+(284,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:42:00','127.0.0.1'),
+(285,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:48:18','127.0.0.1'),
+(286,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:09:39','127.0.0.1'),
+(287,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:14:31','127.0.0.1'),
+(288,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:19:09','127.0.0.1'),
+(289,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:23:11','127.0.0.1'),
+(290,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:23:45','127.0.0.1'),
+(291,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:32:03','127.0.0.1'),
+(292,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:32:44','127.0.0.1'),
+(293,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:46:14','127.0.0.1'),
+(294,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:55:48','127.0.0.1'),
+(295,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:02:28','127.0.0.1'),
+(296,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:05:54','127.0.0.1'),
+(297,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:07:40','127.0.0.1'),
+(298,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:11:41','127.0.0.1'),
+(299,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:17:30','127.0.0.1'),
+(300,2,'warehouse_transfer_completed','Transferred 2,000 food packs from Provincial Social Welfare and Development Office to Urdaneta City Social Welfare and Development Office',0,2,NULL,NULL,NULL,NULL,'2026-08-24 15:34:43',NULL),
+(301,2,'distribution_status','D-2026-027 marked Loaded',0,2,1,NULL,27,NULL,'2026-08-24 15:35:53',NULL),
+(302,2,'distribution_status','D-2026-027 marked Dispatched',0,2,1,NULL,27,NULL,'2026-08-24 15:35:56',NULL),
+(303,2,'distribution_status','D-2026-027 marked In Transit',0,2,1,NULL,27,NULL,'2026-08-24 15:36:02',NULL);
 /*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -283,7 +386,7 @@ CREATE TABLE `allocation_records` (
   CONSTRAINT `fk_alloc_decided_by` FOREIGN KEY (`decided_by`) REFERENCES `users` (`user_id`),
   CONSTRAINT `fk_alloc_event` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `fk_alloc_fulfilling_office` FOREIGN KEY (`fulfilling_office_id`) REFERENCES `offices` (`office_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -302,10 +405,10 @@ INSERT INTO `allocation_records` VALUES
 (13,26,4,1200,1200,0,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,11),
 (14,28,4,1100,1100,0,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,11),
 (15,3,2,1000,1000,0,'2026-07-19',NULL,1,'approved',NULL,'2026-07-17 13:35:28',NULL,2,NULL,NULL,2,9),
-(16,12,3,700,0,0,'2026-07-19',NULL,1,'pending',NULL,'2026-07-17 13:35:28',NULL,NULL,NULL,NULL,NULL,10),
+(16,12,3,700,700,0,'2026-07-19',NULL,1,'approved',NULL,'2026-07-17 13:35:28',NULL,3,'2026-08-27',NULL,2,10),
 (17,23,4,500,300,0,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-21',NULL,2,11),
 (18,5,2,800,0,0,'2026-07-19',NULL,1,'pending',NULL,'2026-07-17 13:35:28','Municipal warehouse already has adequate stock for this barangay; redirected to Bayaoas instead.',NULL,NULL,NULL,2,9),
-(19,19,3,1500,0,0,'2026-07-19',NULL,1,'pending',4,'2026-07-20 06:52:00',NULL,NULL,NULL,NULL,NULL,2),
+(19,19,3,1500,0,0,'2026-07-19',NULL,1,'pending',4,'2026-07-20 06:52:00','fsdads',NULL,NULL,NULL,2,2),
 (20,20,3,450,450,0,'2026-07-17',NULL,1,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-07-19',NULL,2,3),
 (21,11,3,450,450,0,'2026-07-17',NULL,1,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-07-19',NULL,2,3),
 (22,14,3,361,0,0,'2026-07-16',NULL,1,'pending',4,'2026-07-20 06:52:00','Insufficient damage report documentation. Please resubmit with complete barangay verification.',NULL,NULL,NULL,2,4),
@@ -318,7 +421,7 @@ INSERT INTO `allocation_records` VALUES
 (29,16,3,400,400,0,'2026-07-20',NULL,1,'approved',4,'2026-07-20 07:02:35',NULL,5,NULL,'Approved via test',2,8),
 (30,1,2,880,880,800,'2026-07-21',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,12),
 (31,1,2,300,300,250,'2026-07-20',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,12),
-(32,1,2,150,0,140,'2026-07-23',NULL,1,'pending',NULL,'2026-07-24 13:45:43',NULL,NULL,NULL,NULL,NULL,NULL),
+(32,1,2,150,150,140,'2026-07-23',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,2,NULL,NULL,2,NULL),
 (33,1,2,90,0,85,'2026-07-18',NULL,1,'pending',NULL,'2026-07-24 13:45:43','Duplicate request — already covered under RR-2026-008.',NULL,NULL,NULL,NULL,NULL),
 (34,1,2,650,650,600,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 13:59:40',NULL,5,NULL,NULL,NULL,12),
 (35,1,2,420,420,400,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 14:18:13',NULL,5,NULL,NULL,NULL,12);
@@ -360,8 +463,8 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `barangay_disaster_status` WRITE;
 /*!40000 ALTER TABLE `barangay_disaster_status` DISABLE KEYS */;
 INSERT INTO `barangay_disaster_status` VALUES
-(1,1,1,'normal',45,3,'2026-07-29 02:42:14'),
-(2,1,2,'needs_assistance',800,2,'2026-07-17 05:35:28'),
+(1,1,1,'normal',0,3,'2026-08-23 14:12:05'),
+(2,1,2,'monitoring',28,3,'2026-08-20 03:49:13'),
 (3,1,3,'monitoring',400,2,'2026-07-17 05:35:28'),
 (4,1,5,'needs_assistance',600,2,'2026-07-17 05:35:28'),
 (5,1,15,'high_priority',900,2,'2026-07-17 05:35:28'),
@@ -424,7 +527,7 @@ CREATE TABLE `barangay_reports` (
   CONSTRAINT `barangay_reports_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`),
   CONSTRAINT `barangay_reports_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `barangay_reports_ibfk_3` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -462,8 +565,9 @@ INSERT INTO `barangay_reports` VALUES
 (25,14,1,NULL,NULL,NULL,'Barangay Office','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 06:52:00',210,840,10,17,0,0,0,0,0,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_bungallon_1.jpg','verified','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
 (26,17,1,NULL,NULL,NULL,'Barangay Office','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 06:52:00',175,700,8,14,0,0,0,0,0,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_carosucan_sur_1.jpg','verified','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
 (29,1,1,'Typhoon/Flood','2026-07-20','06:00:00','Ramon Bautista','Barangay Captain','2026-07-23 06:24:07','2026-07-29 02:36:54',45,180,5,10,0,0,10,15,10,'normal',1.10,'Initial report — data still being collected. Situation rapidly changing.',NULL,'verified',NULL,3,'2026-07-29 02:42:14'),
-(30,2,1,'Flash Flood','2026-07-21','14:30:00','Cecilia Manalo','Barangay Captain','2026-07-23 06:24:07','2026-07-23 06:24:07',28,112,1,6,0,0,6,8,5,'monitoring',0.80,'Water level rising slowly along the creek. Monitoring the situation.',NULL,'pending',NULL,NULL,NULL),
-(31,6,1,'Typhoon/Flood','2026-07-21',NULL,'Rosalinda Aquino','Barangay Captain','2026-07-23 06:25:48',NULL,12,48,0,2,0,0,0,0,0,'normal',0.40,'Still gathering exact numbers from purok leaders.',NULL,'draft',NULL,NULL,NULL);
+(30,2,1,'Flash Flood','2026-07-21','14:30:00','Cecilia Manalo','Barangay Captain','2026-07-23 06:24:07','2026-07-23 06:24:07',28,112,1,6,0,0,6,8,5,'monitoring',0.80,'Water level rising slowly along the creek. Monitoring the situation.',NULL,'verified',NULL,3,'2026-08-20 03:49:13'),
+(31,6,1,'Typhoon/Flood','2026-07-21',NULL,'Rosalinda Aquino','Barangay Captain','2026-07-23 06:25:48',NULL,12,48,0,2,0,0,0,0,0,'normal',0.40,'Still gathering exact numbers from purok leaders.',NULL,'draft',NULL,NULL,NULL),
+(32,1,1,'Typhoon/Flood','2026-02-27',NULL,'Ramon Bautista','Barangay Captain','2026-08-20 04:00:03','2026-08-20 04:00:47',0,0,0,0,0,0,0,0,0,'normal',2.00,'None',NULL,'verified',NULL,3,'2026-08-23 14:12:05');
 /*!40000 ALTER TABLE `barangay_reports` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -640,7 +744,7 @@ CREATE TABLE `distribution_records` (
   CONSTRAINT `distribution_records_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE,
   CONSTRAINT `distribution_records_ibfk_2` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`) ON DELETE CASCADE,
   CONSTRAINT `distribution_records_ibfk_3` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -665,11 +769,15 @@ INSERT INTO `distribution_records` VALUES
 (16,12,26,360,'2026-07-20',NULL,NULL,2,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
 (17,18,27,377,'2026-07-20',NULL,NULL,2,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
 (18,15,28,463,'2026-07-20',NULL,NULL,2,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
-(19,3,15,1000,'2026-07-21',NULL,NULL,2,'pending','2026-07-21 04:51:01','loaded',NULL,NULL,NULL,NULL,NULL,NULL),
+(19,3,15,1000,'2026-07-21',NULL,NULL,2,'pending','2026-07-21 04:51:01','dispatched','03:33:14',NULL,NULL,NULL,NULL,NULL),
 (20,1,30,880,'2026-07-23','signature',NULL,11,'confirmed','2026-07-24 13:45:43','delivered',NULL,'15:30:00','Jose Reyes','13:47:33','complete',NULL),
 (21,1,31,300,'2026-07-22',NULL,NULL,NULL,'pending','2026-07-24 13:45:43','delayed',NULL,'11:00:00',NULL,NULL,NULL,NULL),
 (22,1,34,650,'2026-07-24','photo','image_1.png',11,'confirmed','2026-07-24 13:59:40','delivered',NULL,'16:00:00','Ramon Bautista','14:15:06','complete',NULL),
-(23,1,35,420,'2026-07-24',NULL,NULL,NULL,'pending','2026-07-24 14:18:13','in_transit',NULL,'17:00:00',NULL,NULL,NULL,NULL);
+(23,1,35,420,'2026-07-24','photo','frieren-8k-wallpaper-uhdpaper.com-2655k.jpg',11,'confirmed','2026-07-24 14:18:13','delivered',NULL,'17:00:00','Ramon Bautista','14:34:38','complete',NULL),
+(24,16,29,400,'2026-02-27',NULL,NULL,2,'pending','2026-08-14 12:26:34','preparing',NULL,NULL,NULL,NULL,NULL,NULL),
+(25,12,16,700,'2026-08-20',NULL,NULL,2,'pending','2026-08-20 03:36:04','preparing',NULL,NULL,NULL,NULL,NULL,NULL),
+(26,23,17,300,'2026-08-23',NULL,NULL,2,'pending','2026-08-23 07:57:55','in_transit','07:58:04',NULL,NULL,NULL,NULL,NULL),
+(27,1,32,150,'2026-08-23',NULL,NULL,2,'pending','2026-08-23 07:59:03','in_transit','15:35:56',NULL,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `distribution_records` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -809,7 +917,7 @@ CREATE TABLE `prediction_logs` (
   PRIMARY KEY (`log_id`),
   KEY `barangay_id` (`barangay_id`),
   CONSTRAINT `prediction_logs_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1527 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1579 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2345,7 +2453,59 @@ INSERT INTO `prediction_logs` VALUES
 (1523,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-07-29 02:32:25','v4.0-linreg-6f'),
 (1524,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-07-29 02:32:25','v4.0-linreg-6f'),
 (1525,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-07-29 02:32:25','v4.0-linreg-6f'),
-(1526,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-29 02:32:25','v4.0-linreg-6f');
+(1526,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-07-29 02:32:25','v4.0-linreg-6f'),
+(1527,21,1426,'{\"population\": 3800, \"num_households\": 760, \"poverty_incidence\": 26.0, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-08-14 12:47:17','v4.0-linreg-6f'),
+(1528,22,800,'{\"population\": 2300, \"num_households\": 460, \"poverty_incidence\": 34.0, \"disaster_risk_index\": 6.6, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-14 12:47:17','v4.0-linreg-6f'),
+(1529,24,1597,'{\"population\": 4200, \"num_households\": 840, \"poverty_incidence\": 24.5, \"disaster_risk_index\": 4.9, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-08-14 12:47:17','v4.0-linreg-6f'),
+(1530,25,1038,'{\"population\": 2900, \"num_households\": 580, \"poverty_incidence\": 30.5, \"disaster_risk_index\": 5.8, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-14 12:47:17','v4.0-linreg-6f'),
+(1531,27,762,'{\"population\": 2000, \"num_households\": 400, \"poverty_incidence\": 36.5, \"disaster_risk_index\": 6.7, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-14 12:47:17','v4.0-linreg-6f'),
+(1532,29,669,'{\"population\": 2600, \"num_households\": 520, \"poverty_incidence\": 28.5, \"disaster_risk_index\": 5.4, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-14 12:47:18','v4.0-linreg-6f'),
+(1533,13,551,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 36.0, \"disaster_risk_index\": 7.0, \"past_calamity_freq\": 6, \"historical_allocation\": 383}','2026-08-14 12:47:18','v4.0-linreg-6f'),
+(1534,4,644,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 35.0, \"disaster_risk_index\": 6.0, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-14 12:47:18','v4.0-linreg-6f'),
+(1535,6,1395,'{\"population\": 3600, \"num_households\": 720, \"poverty_incidence\": 30.0, \"disaster_risk_index\": 5.5, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-14 12:47:18','v4.0-linreg-6f'),
+(1536,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-08-14 12:47:18','v4.0-linreg-6f'),
+(1537,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-14 12:47:18','v4.0-linreg-6f'),
+(1538,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-14 12:47:18','v4.0-linreg-6f'),
+(1539,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-08-14 12:47:18','v4.0-linreg-6f'),
+(1540,21,1426,'{\"population\": 3800, \"num_households\": 760, \"poverty_incidence\": 26.0, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1541,22,800,'{\"population\": 2300, \"num_households\": 460, \"poverty_incidence\": 34.0, \"disaster_risk_index\": 6.6, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1542,24,1597,'{\"population\": 4200, \"num_households\": 840, \"poverty_incidence\": 24.5, \"disaster_risk_index\": 4.9, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1543,25,1038,'{\"population\": 2900, \"num_households\": 580, \"poverty_incidence\": 30.5, \"disaster_risk_index\": 5.8, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1544,27,762,'{\"population\": 2000, \"num_households\": 400, \"poverty_incidence\": 36.5, \"disaster_risk_index\": 6.7, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1545,29,669,'{\"population\": 2600, \"num_households\": 520, \"poverty_incidence\": 28.5, \"disaster_risk_index\": 5.4, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1546,13,551,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 36.0, \"disaster_risk_index\": 7.0, \"past_calamity_freq\": 6, \"historical_allocation\": 383}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1547,4,644,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 35.0, \"disaster_risk_index\": 6.0, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1548,6,1395,'{\"population\": 3600, \"num_households\": 720, \"poverty_incidence\": 30.0, \"disaster_risk_index\": 5.5, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1549,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1550,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1551,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1552,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-08-20 01:43:07','v4.0-linreg-6f'),
+(1553,21,1426,'{\"population\": 3800, \"num_households\": 760, \"poverty_incidence\": 26.0, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1554,22,800,'{\"population\": 2300, \"num_households\": 460, \"poverty_incidence\": 34.0, \"disaster_risk_index\": 6.6, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1555,24,1597,'{\"population\": 4200, \"num_households\": 840, \"poverty_incidence\": 24.5, \"disaster_risk_index\": 4.9, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1556,25,1038,'{\"population\": 2900, \"num_households\": 580, \"poverty_incidence\": 30.5, \"disaster_risk_index\": 5.8, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1557,27,762,'{\"population\": 2000, \"num_households\": 400, \"poverty_incidence\": 36.5, \"disaster_risk_index\": 6.7, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1558,29,669,'{\"population\": 2600, \"num_households\": 520, \"poverty_incidence\": 28.5, \"disaster_risk_index\": 5.4, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1559,13,551,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 36.0, \"disaster_risk_index\": 7.0, \"past_calamity_freq\": 6, \"historical_allocation\": 383}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1560,4,644,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 35.0, \"disaster_risk_index\": 6.0, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1561,6,1395,'{\"population\": 3600, \"num_households\": 720, \"poverty_incidence\": 30.0, \"disaster_risk_index\": 5.5, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1562,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1563,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1564,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1565,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-08-23 07:24:51','v4.0-linreg-6f'),
+(1566,21,1426,'{\"population\": 3800, \"num_households\": 760, \"poverty_incidence\": 26.0, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1567,22,800,'{\"population\": 2300, \"num_households\": 460, \"poverty_incidence\": 34.0, \"disaster_risk_index\": 6.6, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1568,24,1597,'{\"population\": 4200, \"num_households\": 840, \"poverty_incidence\": 24.5, \"disaster_risk_index\": 4.9, \"past_calamity_freq\": 3, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1569,25,1038,'{\"population\": 2900, \"num_households\": 580, \"poverty_incidence\": 30.5, \"disaster_risk_index\": 5.8, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1570,27,762,'{\"population\": 2000, \"num_households\": 400, \"poverty_incidence\": 36.5, \"disaster_risk_index\": 6.7, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1571,29,669,'{\"population\": 2600, \"num_households\": 520, \"poverty_incidence\": 28.5, \"disaster_risk_index\": 5.4, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1572,13,551,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 36.0, \"disaster_risk_index\": 7.0, \"past_calamity_freq\": 6, \"historical_allocation\": 383}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1573,4,644,'{\"population\": 1900, \"num_households\": 380, \"poverty_incidence\": 35.0, \"disaster_risk_index\": 6.0, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1574,6,1395,'{\"population\": 3600, \"num_households\": 720, \"poverty_incidence\": 30.0, \"disaster_risk_index\": 5.5, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1575,7,779,'{\"population\": 1500, \"num_households\": 300, \"poverty_incidence\": 45.0, \"disaster_risk_index\": 8.0, \"past_calamity_freq\": 8, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1576,8,576,'{\"population\": 2100, \"num_households\": 420, \"poverty_incidence\": 33.0, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 5, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1577,9,834,'{\"population\": 2700, \"num_households\": 540, \"poverty_incidence\": 29.5, \"disaster_risk_index\": 5.9, \"past_calamity_freq\": 4, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f'),
+(1578,10,943,'{\"population\": 1800, \"num_households\": 360, \"poverty_incidence\": 42.0, \"disaster_risk_index\": 7.5, \"past_calamity_freq\": 6, \"historical_allocation\": 0}','2026-08-24 12:13:31','v4.0-linreg-6f');
 /*!40000 ALTER TABLE `prediction_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2422,7 +2582,7 @@ CREATE TABLE `relief_request_batches` (
   CONSTRAINT `relief_request_batches_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`),
   CONSTRAINT `relief_request_batches_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `relief_request_batches_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2597,12 +2757,12 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-14 06:14:48','2026-08-14 06:24:44'),
-(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-14 05:57:31','2026-08-14 05:57:31'),
-(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-07-29 02:41:30','2026-08-14 03:45:42'),
+(1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-20 04:07:14','2026-08-24 15:16:17'),
+(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-24 15:17:30','2026-08-24 15:36:27'),
+(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-23 14:13:05','2026-08-24 15:16:19'),
 (4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-07-26 06:15:36','2026-07-26 06:15:36'),
 (5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-07-22 04:44:33','2026-07-24 13:17:30'),
-(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$hCcKMg13rKLOH9xY$f2105adfe2ca9210b04ea778dfffc96f177066a49a54ab8bb330e87c1649bed47608adfc91eda0880b050776ee56e1d2113c160e0e79a505597b8906bbb9868d','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-08-14 06:08:01','2026-08-14 06:08:01'),
+(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$hCcKMg13rKLOH9xY$f2105adfe2ca9210b04ea778dfffc96f177066a49a54ab8bb330e87c1649bed47608adfc91eda0880b050776ee56e1d2113c160e0e79a505597b8906bbb9868d','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-08-23 06:54:35','2026-08-23 06:54:35'),
 (12,'Cecilia Manalo','bactadeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Kfio6bqQW9wDGBco$2acd213abfc0e108d5e4e41fb706cfbd829bd8c8048f622813b72df4795532092147a761a8241354afbd5d7ed364860a92dccd11d14ee13a8481c969b877c246','barangay_user',NULL,2,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:27:18','2026-07-23 06:27:18'),
 (13,'Ferdinand Cruz','bayaoas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$QwNXrI3vmjalmxYe$b42811b74e3a36c1ede2b478e54d853b0bc94da0878169a658010c8665fe1a6d82b6b989d026280555cf6928279e5dd4358509399e545cf151595f362c122516','barangay_user',NULL,3,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
 (14,'Marilou Santos','bolaoen.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$2zsdzaaE93XM5qXZ$c24179079505bfe8221a8ac18a226d76fe59059f3105a3e6690973142c08ed11d854fd67e652a961d62bd1b844ecfcb39a72c35df5ca8efeea342acb7cc02de9','barangay_user',NULL,4,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
@@ -2670,13 +2830,13 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `warehouse_inventory` WRITE;
 /*!40000 ALTER TABLE `warehouse_inventory` DISABLE KEYS */;
 INSERT INTO `warehouse_inventory` VALUES
-(1,1,'food_pack','Food Packs','packs',6500,0,'2026-07-27 02:01:14',2),
+(1,1,'food_pack','Food Packs','packs',2500,0,'2026-08-24 15:34:43',2),
 (2,1,'hygiene_kit','Hygiene Kits','kits',1500,0,'2026-07-27 02:01:14',2),
 (3,1,'kitchen_kit','Kitchen Kits','kits',800,0,'2026-07-20 02:49:52',2),
-(4,2,'food_pack','Food Packs','packs',800,0,'2026-07-27 02:01:14',3),
+(4,2,'food_pack','Food Packs','packs',4650,0,'2026-08-24 15:34:43',3),
 (5,2,'hygiene_kit','Hygiene Kits','kits',550,0,'2026-07-27 02:01:14',3),
 (6,2,'kitchen_kit','Kitchen Kits','kits',200,0,'2026-07-20 02:49:52',3),
-(7,3,'food_pack','Food Packs','packs',1200,0,'2026-06-25 10:39:04',4),
+(7,3,'food_pack','Food Packs','packs',500,0,'2026-08-20 03:31:49',4),
 (8,3,'hygiene_kit','Hygiene Kits','kits',300,0,'2026-07-20 02:49:52',4),
 (9,3,'kitchen_kit','Kitchen Kits','kits',200,0,'2026-07-27 02:01:14',4),
 (10,4,'food_pack','Food Packs','packs',2200,0,'2026-07-27 02:01:14',5),
@@ -2760,7 +2920,7 @@ CREATE TABLE `warehouse_transfers` (
   CONSTRAINT `warehouse_transfers_ibfk_1` FOREIGN KEY (`from_office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   CONSTRAINT `warehouse_transfers_ibfk_2` FOREIGN KEY (`to_office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   CONSTRAINT `warehouse_transfers_ibfk_3` FOREIGN KEY (`requested_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2771,7 +2931,9 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `warehouse_transfers` WRITE;
 /*!40000 ALTER TABLE `warehouse_transfers` DISABLE KEYS */;
 INSERT INTO `warehouse_transfers` VALUES
-(1,5,6,'food_pack',500,'completed',2,'2026-07-29 02:31:11','2026-07-29 02:31:11');
+(1,5,6,'food_pack',500,'completed',2,'2026-07-29 02:31:11','2026-07-29 02:31:11'),
+(2,1,2,'food_pack',2000,'completed',2,'2026-08-14 14:10:57','2026-08-14 14:10:57'),
+(3,1,2,'food_pack',2000,'completed',2,'2026-08-24 15:34:43','2026-08-24 15:34:43');
 /*!40000 ALTER TABLE `warehouse_transfers` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2786,4 +2948,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-08-14  6:25:09
+-- Dump completed on 2026-08-26  9:12:59

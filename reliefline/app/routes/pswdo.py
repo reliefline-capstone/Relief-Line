@@ -1598,6 +1598,7 @@ def _filtered_relief_requests():
     municipality_filter = request.args.get("municipality", "all")
     priority_filter = request.args.get("priority", "all")
     date_filter = request.args.get("date", "")
+    date_filter_display = ""
     search_query = request.args.get("q", "").strip()
 
     active_event = DisasterEvent.query.filter_by(status="active").order_by(
@@ -1625,6 +1626,7 @@ def _filtered_relief_requests():
         try:
             parsed_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
             query = query.filter(AllocationRecord.allocation_date == parsed_date)
+            date_filter_display = parsed_date.strftime("%m/%d/%Y")
         except ValueError:
             pass
     if search_query:
@@ -1665,6 +1667,7 @@ def _filtered_relief_requests():
         "municipality_filter": municipality_filter,
         "priority_filter": priority_filter,
         "date_filter": date_filter,
+        "date_filter_display": date_filter_display,
         "search_query": search_query,
     }
 
@@ -1696,6 +1699,7 @@ def relief_requests():
         municipality_filter=ctx["municipality_filter"],
         priority_filter=ctx["priority_filter"],
         date_filter=ctx["date_filter"],
+        date_filter_display=ctx["date_filter_display"],
         search_query=ctx["search_query"],
         target_lgus=TARGET_LGUS,
         requests=page_items,

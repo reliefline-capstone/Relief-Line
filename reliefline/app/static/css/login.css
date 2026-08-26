@@ -2,78 +2,53 @@
     --navy: #0f2547;
     --navy-light: #1a3a6b;
     --text-muted: #8a94a6;
+    --accent-blue: #2f54eb;
+    --accent-blue-light: #4468f0;
 }
 
 .login-page {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
 }
 
 .hero {
     position: relative;
     flex: 1;
-    min-height: 90vh;
     background: url('/static/img/capitol-bg.jpg') center/cover no-repeat;
 }
 
 .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg,
-        rgba(15,37,71,0.15) 0%,
-        rgba(15,37,71,0.35) 50%,
-        rgba(15,37,71,0.65) 100%);
+    background: linear-gradient(180deg,
+        rgba(15,37,71,0.55) 0%,
+        rgba(15,37,71,0.35) 40%,
+        rgba(15,37,71,0.6) 100%);
     z-index: 0;
 }
 
 .hero-inner {
     position: relative;
-    max-width: 1600px;
     height: 100%;
-    min-height: 90vh;
-    margin: 0 auto;
-    padding: 0 60px;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(12px, calc(4.2vh - 20px), 30px) clamp(20px, 5vw, 60px);
 }
 
 .top-bar {
-    position: absolute;
-    top: 30px;
-    left: 60px;
-    right: 60px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     z-index: 2;
 }
 
-.office-id {
+.office-header {
     display: flex;
     align-items: center;
     gap: 14px;
     color: white;
-}
-
-.seal {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-}
-
-.office-text .republic {
-    font-size: 13px;
-    opacity: 0.85;
-}
-
-.office-text h2 {
-    font-size: 22px;
-    font-weight: 700;
-    margin: 2px 0;
-}
-
-.office-text .office-name {
-    font-size: 13px;
-    opacity: 0.85;
 }
 
 .top-links {
@@ -82,6 +57,7 @@
     gap: 16px;
     color: white;
     font-size: 14px;
+    flex-shrink: 0;
 }
 
 .top-links a {
@@ -94,85 +70,106 @@
     opacity: 0.5;
 }
 
-.brand-content {
-    position: absolute;
-    left: 60px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
-    color: white;
-    max-width: 500px;
+.office-header .seal {
+    width: clamp(46px, calc(5.45vh + 5px), 64px);
+    height: clamp(46px, calc(5.45vh + 5px), 64px);
+    border-radius: 50%;
 }
 
-.brand-logo {
-    width: 70px;
-    margin-bottom: 20px;
+.office-header .office-text .republic {
+    font-size: clamp(11px, calc(0.6vh + 6.5px), 13px);
+    opacity: 0.85;
 }
 
-.brand-content h1 {
-    font-size: 56px;
+.office-header .office-text h2 {
+    font-size: clamp(17px, calc(1.5vh + 5.6px), 22px);
     font-weight: 700;
-    margin-bottom: 12px;
+    margin: 2px 0;
 }
 
-.brand-rule {
-    width: 220px;
-    height: 3px;
-    background: white;
-    opacity: 0.6;
-    margin-bottom: 20px;
+.office-header .office-text .office-name {
+    font-size: clamp(11px, calc(0.6vh + 6.5px), 13px);
+    opacity: 0.85;
 }
 
-.brand-tagline {
-    font-size: 20px;
-    font-weight: 300;
-    margin-bottom: 20px;
-}
-
-.brand-location {
+.login-center {
+    flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
+    justify-content: center;
+    gap: clamp(10px, calc(5.45vh - 31px), 28px);
+    padding: clamp(10px, calc(9.1vh - 58px), 32px) 20px;
+    z-index: 2;
+}
+
+.brand-header {
+    text-align: center;
+    color: white;
+}
+
+.brand-logo-sm {
+    width: clamp(36px, calc(6.06vh - 9.5px), 56px);
+    margin-bottom: clamp(2px, calc(2.42vh - 16px), 10px);
+}
+
+.brand-header h1 {
+    font-size: clamp(22px, calc(3vh - 0.7px), 32px);
+    font-weight: 700;
+    margin-bottom: clamp(2px, calc(1.2vh - 7px), 6px);
+}
+
+.brand-subtitle {
+    font-size: clamp(13px, calc(0.6vh + 8.5px), 15px);
     opacity: 0.9;
+    margin-bottom: clamp(2px, calc(0.6vh - 2.5px), 4px);
+}
+
+.brand-location-sm {
+    font-size: clamp(11px, calc(0.6vh + 6.5px), 13px);
+    opacity: 0.75;
 }
 
 .login-card {
-    position: absolute;
-    right: 60px;
-    top: 50%;
-    transform: translateY(-50%);
     z-index: 2;
     background: white;
     border-radius: 12px;
-    padding: 40px;
+    padding: clamp(20px, calc(6.06vh - 25px), 40px) clamp(28px, 4vw, 40px);
     width: 400px;
+    max-width: calc(100vw - 40px);
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 
 .lock-badge {
-    width: 64px;
-    height: 64px;
+    width: clamp(40px, calc(7.27vh - 14.5px), 64px);
+    height: clamp(40px, calc(7.27vh - 14.5px), 64px);
     background: #eef2f9;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 16px;
+    margin: 0 auto clamp(8px, calc(2.42vh - 10px), 16px);
 }
 
 .login-card h2 {
     text-align: center;
     color: var(--navy);
-    font-size: 22px;
+    font-size: clamp(18px, calc(1.2vh + 8.9px), 22px);
     margin-bottom: 4px;
 }
 
 .login-card .subtext {
     text-align: center;
     color: var(--text-muted);
-    font-size: 14px;
-    margin-bottom: 24px;
+    font-size: clamp(13px, calc(0.3vh + 10.7px), 14px);
+    margin-bottom: clamp(2px, calc(0.6vh - 2.5px), 4px);
+}
+
+.login-card .subtext-small {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-bottom: clamp(8px, calc(3.64vh - 19px), 20px);
 }
 
 .login-card label {
@@ -180,8 +177,8 @@
     font-size: 13px;
     font-weight: 600;
     color: #333;
-    margin-bottom: 6px;
-    margin-top: 16px;
+    margin-bottom: clamp(4px, calc(0.6vh - 0.5px), 6px);
+    margin-top: clamp(8px, calc(2.42vh - 10px), 16px);
 }
 
 .input-wrapper {
@@ -190,7 +187,7 @@
     gap: 10px;
     border: 1px solid #d8dee8;
     border-radius: 8px;
-    padding: 10px 14px;
+    padding: clamp(6px, calc(1.2vh - 3px), 10px) 14px;
 }
 
 .input-wrapper input {
@@ -217,7 +214,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 14px;
+    margin-top: clamp(8px, calc(1.8vh - 5.6px), 14px);
     font-size: 13px;
 }
 
@@ -237,28 +234,27 @@
 
 .login-btn {
     width: 100%;
-    background: var(--navy);
+    background: var(--accent-blue);
     color: white;
-    padding: 14px;
+    padding: clamp(9px, calc(1.5vh - 2.4px), 14px);
     border-radius: 8px;
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 0.5px;
+    font-weight: 600;
+    font-size: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-top: 20px;
+    margin-top: clamp(10px, calc(3vh - 12.7px), 20px);
 }
 
 .login-btn:hover {
-    background: var(--navy-light);
+    background: var(--accent-blue-light);
 }
 
 .secured-divider {
     text-align: center;
     border-top: 1px solid #eee;
-    margin-top: 24px;
+    margin-top: clamp(8px, calc(4.24vh - 23.8px), 18px);
     position: relative;
 }
 
@@ -294,11 +290,11 @@
 .page-footer {
     background: var(--navy);
     color: white;
-    padding: 16px 60px;
+    padding: clamp(6px, calc(2.42vh - 12px), 12px) clamp(20px, 6vw, 60px);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 13px;
+    font-size: clamp(12px, calc(0.3vh + 9.7px), 13px);
 }
 
 .page-footer nav {
@@ -307,6 +303,7 @@
 }
 
 .page-footer a {
+    color: white;
     opacity: 0.85;
 }
 
@@ -314,65 +311,41 @@
     opacity: 1;
 }
 
-@media (max-width: 900px) {
-    .hero-inner {
-        padding: 0 20px;
-    }
-    .login-card {
-        position: static;
-        transform: none;
-        width: 100%;
-        margin-top: 40px;
-        right: auto;
-    }
+@media (max-width: 700px) {
     .top-bar {
-        position: static;
-        left: auto;
-        right: auto;
         flex-direction: column;
-        gap: 16px;
-        margin-bottom: 20px;
+        align-items: center;
+        gap: 8px;
     }
-    .brand-content {
-        position: static;
-        transform: none;
-        left: auto;
-        max-width: 100%;
+    .top-links {
+        font-size: 13px;
     }
 }
 
-.top-links a {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+@media (max-width: 600px) {
+    .page-footer {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+        padding: 16px 20px;
+    }
 }
 
-.brand-location {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+@media (max-width: 480px) {
+    .login-card {
+        width: 100%;
+        padding: 28px;
+    }
+    .brand-header h1 {
+        font-size: 26px;
+    }
 }
 
-.secured-note {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-}
-
-.login-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-/* Privacy/Terms/Help/Contact — reuse .login-card's positioning but widen it
-   and allow it to scroll, since article-style content is usually taller than
-   a login form and this card is vertically centered + absolutely positioned. */
+/* Privacy/Terms/Help/Contact — reuse .login-card's sizing but widen it and
+   allow it to scroll, since article-style content is usually taller than a
+   login form. */
 .static-page-card {
     width: 480px;
-    max-height: 80vh;
-    overflow-y: auto;
 }
 
 .static-page-header {

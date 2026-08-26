@@ -143,6 +143,23 @@
 
 .wh-reco-item + .wh-reco-item { margin-top: 10px; }
 
+.wh-reco-extra { display: none; }
+
+.wh-reco-view-all {
+    display: block;
+    margin: 12px auto 0;
+    padding: 8px 18px;
+    background: white;
+    border: 1px solid #f5d999;
+    border-radius: 8px;
+    color: #d68910;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.wh-reco-view-all:hover { background: #fef5e3; }
+
 .wh-reco-num {
     flex-shrink: 0;
     width: 26px; height: 26px;
@@ -177,6 +194,15 @@
    the table's square corners to the panel's border-radius either way. */
 .wh-table-panel { padding: 0; overflow-x: auto; }
 
+.wh-table-panel .panel-header {
+    padding: 16px 20px;
+    margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+    .wh-table-panel .panel-header { padding: 14px 16px; }
+}
+
 .wh-table {
     width: 100%;
     border-collapse: collapse;
@@ -202,6 +228,22 @@
 }
 
 .wh-table tr:last-child td { border-bottom: none; }
+
+.wh-table th.wh-status-col,
+.wh-table td.wh-status-col {
+    text-align: center;
+    vertical-align: middle;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+.wh-table td.wh-status-col .badge-health {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    word-spacing: 3px;
+}
 
 .wh-sub {
     display: block;

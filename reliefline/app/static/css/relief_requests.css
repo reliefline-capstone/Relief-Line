@@ -27,7 +27,7 @@
 .filter-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     background: white;
     padding: 14px 18px;
     border-radius: 10px;
@@ -43,27 +43,47 @@
 }
 
 .filter-bar select {
-    padding: 8px 12px;
+    height: 38px;
+    padding: 8px 34px 8px 12px;
     border: 1px solid #d8dee8;
     border-radius: 6px;
     font-size: 13px;
     color: #333;
-    background: white;
+    background-color: white;
+    box-sizing: border-box;
+    width: 160px;
+    flex-shrink: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3e%3cpath d='M1 1L5 5L9 1' stroke='%238a94a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 10px 6px;
 }
+
+.filter-bar select[name="municipality"] { width: 190px; }
 
 .date-input-wrapper {
     display: flex;
     align-items: center;
     gap: 8px;
+    height: 38px;
     padding: 8px 12px;
     border: 1px solid #d8dee8;
     border-radius: 6px;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .date-input-wrapper input {
     border: none;
     outline: none;
     font-size: 13px;
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    color: #333;
 }
 
 .summary-pills {
@@ -204,4 +224,24 @@
     background: #0f2547;
     color: white;
     border-color: #0f2547;
+}
+
+@media (max-width: 768px) {
+    .filter-bar { gap: 10px; }
+
+    .filter-bar select,
+    .filter-bar select[name="municipality"],
+    .date-input-wrapper {
+        width: auto;
+        flex: 1 1 calc(50% - 10px);
+        min-width: 140px;
+    }
+}
+
+@media (max-width: 480px) {
+    .filter-bar select,
+    .filter-bar select[name="municipality"],
+    .date-input-wrapper {
+        flex: 1 1 100%;
+    }
 }
