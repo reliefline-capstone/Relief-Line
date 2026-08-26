@@ -52,6 +52,7 @@
                 <option value="pending" {{ 'selected' if status_filter == 'pending' }}>Pending</option>
                 <option value="approved" {{ 'selected' if status_filter == 'approved' }}>Approved</option>
                 <option value="released" {{ 'selected' if status_filter == 'released' }}>Released</option>
+                <option value="rejected" {{ 'selected' if status_filter == 'rejected' }}>Rejected</option>
             </select>
 
             <select name="municipality" onchange="this.form.submit()">
@@ -85,14 +86,17 @@
 
         <!-- Summary pills -->
         <div class="summary-pills">
-            <a href="{{ url_for('pswdo.relief_requests', status='pending') }}" class="pill pill-pending">
+            <a href="{{ url_for('pswdo.relief_requests', status='pending', municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="pill pill-pending">
                 <strong>{{ pending_count }}</strong> Pending
             </a>
-            <a href="{{ url_for('pswdo.relief_requests', status='approved') }}" class="pill pill-approved">
+            <a href="{{ url_for('pswdo.relief_requests', status='approved', municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="pill pill-approved">
                 <strong>{{ approved_count }}</strong> Approved
             </a>
-            <a href="{{ url_for('pswdo.relief_requests', status='released') }}" class="pill pill-released">
+            <a href="{{ url_for('pswdo.relief_requests', status='released', municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="pill pill-released">
                 <strong>{{ released_count }}</strong> Released
+            </a>
+            <a href="{{ url_for('pswdo.relief_requests', status='rejected', municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="pill pill-rejected">
+                <strong>{{ rejected_count }}</strong> Rejected
             </a>
             <span class="summary-note">{{ total_filtered }} of {{ total_count }} shown · Sorted by priority (highest first)</span>
         </div>

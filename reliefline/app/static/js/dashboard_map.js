@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', function () {
     };
     var MIN_ZOOM = 9, MAX_ZOOM = 14;
 
+    // Same PSWDO-vs-CSWDO/MSWDO split as gis_map.js: PSWDO's dashboard
+    // preview sees municipality-level demand only, no barangay boundaries.
+    var IS_MUNI_ONLY = window.RELIEFLINE_DASHBOARD_ROLE !== 'cswdo_admin';
+    var currentMuniData = null;
+
     var map = L.map(mapEl, {
         zoomControl: false,
         attributionControl: true,
@@ -43,18 +48,32 @@ document.addEventListener('DOMContentLoaded', function () {
             // scoped server-side (app.routes.pswdo._gis_scope_lgus), so this
             // bold border marks exactly what this account can see.
             var isTarget = feature.properties.is_target;
+            if (isTarget && IS_MUNI_ONLY) {
+                // PSWDO preview: color each target LGU by its own real
+                // demand tier, same as the full GIS Map page, so this
+                // preview answers "which municipality needs attention"
+                // without waiting for the full page to load.
+                var muni = currentMuniData ? currentMuniData.find(function (m) { return m.lgu === feature.properties.lgu; }) : null;
+                return {
+                    color: '#55606b',
+                    weight: 1.5,
+                    fillColor: TIER_COLORS[muni ? muni.status_tier : 'unrated'],
+                    fillOpacity: 0.55,
+                };
+            }
             return {
-                color: isTarget ? '#2c5aa0' : '#c3cad6',
+                color: isTarget ? '#0f2547' : '#5b86b8',
                 weight: isTarget ? 3 : 1,
-                fillColor: isTarget ? '#2c5aa0' : '#f4f6fa',
-                fillOpacity: isTarget ? 0.04 : 0.3,
-                dashArray: isTarget ? null : '3,3',
+                fillColor: isTarget ? '#2c5aa0' : '#bcd4f0',
+                fillOpacity: isTarget ? 0.12 : 0.45,
             };
         },
         onEachFeature: function (feature, layer) {
             var p = feature.properties;
             if (p.is_target) {
-                layer.bindTooltip('Click to view ' + p.lgu);
+                var muni = currentMuniData ? currentMuniData.find(function (m) { return m.lgu === p.lgu; }) : null;
+                var demandLine = muni ? ('<br>Predicted Demand: ' + (muni.predicted_demand || 0).toLocaleString() + ' packs<br>Demand Level: ' + muni.status_label) : '';
+                layer.bindTooltip('<strong>' + p.lgu + '</strong>' + demandLine + '<br><em>Click to view</em>');
                 layer.on('click', function () { goToFullMap(p.lgu); });
             }
         },
@@ -114,9 +133,16 @@ document.addEventListener('DOMContentLoaded', function () {
     if (zoomInBtn) zoomInBtn.addEventListener('click', function () { map.zoomIn(); });
     if (zoomOutBtn) zoomOutBtn.addEventListener('click', function () { map.zoomOut(); });
 
-    fetch('/pswdo/gis-map/data').then(function (r) { return r.json(); }).then(function (data) {
+    // When the dashboard's month/year filter resolves to a historical event,
+    // the template sets this so the mini-map reflects that period's status
+    // instead of whatever's active right now.
+    var eventId = window.RELIEFLINE_DASHBOARD_EVENT_ID;
+    var dataUrl = '/pswdo/gis-map/data' + (eventId ? '?event_id=' + eventId : '');
+
+    fetch(dataUrl).then(function (r) { return r.json(); }).then(function (data) {
+        currentMuniData = data.municipalities;
         provinceLayer.addData(data.province_context);
-        barangayLayer.addData(data.target_barangays);
+        if (!IS_MUNI_ONLY) barangayLayer.addData(data.target_barangays);
         renderWarehouses(data.warehouses);
         renderRoutes(data.in_transit_lines);
 

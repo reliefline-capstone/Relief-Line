@@ -264,11 +264,17 @@
     padding: 3px 10px;
     border-radius: 12px;
 }
+/* Relief request statuses — same mapping as badge-status-* in relief_requests.css:
+   pending=yellow, approved/released=green, rejected=red, partially-approved=blue. */
 .rpt-status-approved, .rpt-status-released, .rpt-status-delivered { background: #e8faf0; color: #1e8449; }
-.rpt-status-pending, .rpt-status-preparing, .rpt-status-loaded, .rpt-status-dispatched { background: #eaf0fd; color: #2c5aa0; }
-.rpt-status-in-transit { background: #fef5e3; color: #d68910; }
+.rpt-status-pending, .rpt-status-preparing { background: #fef5e3; color: #d68910; }
 .rpt-status-rejected, .rpt-status-delayed { background: #fdecea; color: #c0392b; }
-.rpt-status-partially-approved { background: #fef5e3; color: #d68910; }
+.rpt-status-partially-approved { background: #eaf0fd; color: #2c5aa0; }
+
+/* Distribution/logistics sub-statuses — same mapping as badge-status-* in distribution.css. */
+.rpt-status-loaded { background: #eaf0fd; color: #2c5aa0; }
+.rpt-status-dispatched { background: #f1edfe; color: #6c5ce7; }
+.rpt-status-in-transit { background: #fdf0e4; color: #a5713a; }
 
 .rpt-notes {
     margin-top: 18px;

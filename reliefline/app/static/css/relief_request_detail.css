@@ -114,12 +114,12 @@
     font-size: 14px;
 }
 
-.btn-approve-full { background: #1e8449; }
-.btn-approve-full:hover { background: #196f3d; }
-.btn-partial { background: #0f2547; }
-.btn-partial:hover { background: #1a3a6b; }
-.btn-reject { background: #c0392b; }
-.btn-reject:hover { background: #a93226; }
+.btn-approve-full { background: #3d7a63; }
+.btn-approve-full:hover { background: #326651; }
+.btn-partial { background: #24456b; }
+.btn-partial:hover { background: #1c3656; }
+.btn-reject { background: #a85450; }
+.btn-reject:hover { background: #8f4744; }
 
 .btn-cancel {
     background: #f0f2f6;

@@ -4,6 +4,7 @@
 {% block title %}Warehouse Inventory - ReliefLine{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
@@ -63,6 +64,19 @@
                 <span class="stat-label">Transfers Today</span>
                 <span class="stat-sub">Completed redistributions</span>
             </div>
+        </section>
+
+        <!-- Warehouse Map -->
+        <section class="panel wh-map-panel">
+            <div class="panel-header">
+                <h3>{{ icon('map', 18, '#0f2547') }} Warehouse Map</h3>
+                <div class="map-legend wh-map-legend">
+                    <span><i class="legend-dot wh-dot-healthy"></i> Healthy</span>
+                    <span><i class="legend-dot wh-dot-moderate"></i> Moderate</span>
+                    <span><i class="legend-dot wh-dot-low"></i> Low Stock</span>
+                </div>
+            </div>
+            <div id="warehouse-map" class="wh-map"></div>
         </section>
 
         <!-- System Recommendations -->
@@ -254,4 +268,7 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>window.RELIEFLINE_WAREHOUSE_POINTS = {{ warehouse_map_points|tojson }};</script>
+<script src="{{ url_for('static', filename='js/warehouse_map.js') }}"></script>
 {% endblock %}

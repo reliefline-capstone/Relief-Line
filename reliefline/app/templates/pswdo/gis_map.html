@@ -27,7 +27,7 @@
         <section class="page-header">
             <div>
                 <h2>GIS Map</h2>
-                <p>Barangay-level food pack demand — {{ target_lgus|join(', ') }}</p>
+                <p>Municipality-level food pack demand — {{ target_lgus|join(', ') }}</p>
             </div>
             <div class="gis-filters">
                 <select id="filter-event">
@@ -42,33 +42,51 @@
                     <option value="{{ lgu }}">{{ lgu }}</option>
                     {% endfor %}
                 </select>
-                <select id="filter-status">
-                    <option value="">All Status</option>
-                    <option value="high_priority">Critical</option>
-                    <option value="needs_assistance">High</option>
-                    <option value="monitoring">Monitoring</option>
-                    <option value="normal">Normal</option>
-                </select>
+                <select id="filter-status" hidden></select>
+                <button type="button" class="btn-outline" id="btn-reset-map" title="Reset Map">{{ icon('home', 14) }} Reset Map</button>
                 <button type="button" class="btn-icon" id="btn-refresh" title="Refresh">{{ icon('rotate-ccw', 16, '#555') }}</button>
             </div>
         </section>
 
         <div class="main-grid">
 
-            <section class="panel gis-map-panel">
-                <div id="gis-map"></div>
-                <div class="map-legend-box">
-                    <span class="map-legend-title">Legend</span>
-                    <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
-                    <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
-                    <div class="map-legend-row"><i class="legend-square monitoring"></i> Monitoring</div>
-                    <div class="map-legend-row"><i class="legend-square normal"></i> Normal</div>
-                    <div class="map-legend-row"><i class="legend-square no-data"></i> No Data</div>
-                    <div class="map-legend-divider"></div>
-                    <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
-                    <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit (schematic)</div>
-                </div>
-            </section>
+            <div class="gis-map-col">
+                <section class="panel gis-map-panel">
+                    <div id="gis-map"></div>
+                    <div class="map-legend-box">
+                        <span class="map-legend-title">Municipality Status</span>
+                        <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
+                        <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
+                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
+                        <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
+                        <div class="map-legend-row"><i class="legend-square no-data"></i> Unrated</div>
+                        <div class="map-legend-divider"></div>
+                        <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
+                        <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit (schematic)</div>
+                    </div>
+                </section>
+
+                <section class="panel wh-table-panel" style="margin-top:16px;">
+                    <div class="panel-header">
+                        <h3>Active Distribution Routes</h3>
+                        <span class="badge-count" id="routes-count">0</span>
+                    </div>
+                    <table class="wh-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ROUTE</th>
+                                <th>PACKS</th>
+                                <th>STATUS</th>
+                                <th>ETA</th>
+                            </tr>
+                        </thead>
+                        <tbody id="routes-table-body">
+                            <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+            </div>
 
             <aside class="wh-side-col">
                 <nav class="gis-breadcrumb" id="gis-breadcrumb"></nav>
@@ -77,27 +95,6 @@
 
         </div>
 
-        <section class="panel wh-table-panel" style="margin-top:16px;">
-            <div class="panel-header">
-                <h3>Active Distribution Routes</h3>
-                <span class="badge-count" id="routes-count">0</span>
-            </div>
-            <table class="wh-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>ROUTE</th>
-                        <th>PACKS</th>
-                        <th>STATUS</th>
-                        <th>ETA</th>
-                    </tr>
-                </thead>
-                <tbody id="routes-table-body">
-                    <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Loading…</td></tr>
-                </tbody>
-            </table>
-        </section>
-
     </main>
 </div>
 {% endblock %}
@@ -105,5 +102,5 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>window.RELIEFLINE_GIS_CONFIG = {{ gis_config|tojson }};</script>
-<script src="{{ url_for('static', filename='js/gis_map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/gis_map.js') }}?v={{ asset_version('js/gis_map.js') }}"></script>
 {% endblock %}

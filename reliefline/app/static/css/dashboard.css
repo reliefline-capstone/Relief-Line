@@ -246,6 +246,10 @@
     font-weight: 700;
 }
 
+.badge-active.badge-status-active { background: #e74c3c; }
+.badge-active.badge-status-monitoring { background: #d68910; }
+.badge-active.badge-status-ended { background: rgba(255,255,255,0.18); }
+
 .banner-time { text-align: right; }
 .banner-time strong { font-size: 20px; display: block; }
 .banner-time span { font-size: 12px; opacity: 0.75; display: block; margin-top: 2px; }
@@ -268,6 +272,111 @@
     font-weight: 600;
 }
 
+/* Period filter */
+.dash-period-bar {
+    background: white;
+    border: 1px solid #e6e9f0;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+}
+
+.dash-period-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.dash-period-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #6b7686;
+    flex-shrink: 0;
+}
+
+.dash-period-toggle {
+    display: flex;
+    background: #f4f6fa;
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.dash-period-tab {
+    background: none;
+    padding: 7px 18px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #6b7686;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.dash-period-tab:hover { color: var(--navy, #0f2547); }
+
+.dash-period-tab.is-active {
+    background: white;
+    color: var(--navy, #0f2547);
+    border-color: #2f54eb;
+}
+
+.dash-period-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    padding: 7px 12px;
+    color: #0f2547;
+}
+
+.dash-period-date select {
+    border: none;
+    background: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0f2547;
+    padding: 0;
+    cursor: pointer;
+}
+
+.dash-period-date select[name="month"] { min-width: 92px; }
+.dash-period-date select[name="year"] { min-width: 60px; }
+
+.dash-period-live {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--navy, #0f2547);
+    padding: 7px 4px;
+    border-radius: 6px;
+}
+
+.dash-period-live::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #27ae60;
+}
+
+.dash-period-live:hover { color: #2f54eb; }
+
+.dash-period-caption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #8a94a6;
+}
+
 /* Stat cards */
 .stat-cards {
     display: grid;
@@ -277,12 +386,26 @@
 }
 
 .stat-card {
+    position: relative;
     background: white;
     border-radius: 12px;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
+
+.stat-live-tag {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: #e8faf0;
+    color: #1e8449;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
 .stat-icon {
@@ -410,7 +533,13 @@
     box-shadow: 0 1px 6px rgba(0,0,0,0.12);
     text-align: left;
     min-width: 140px;
-    z-index: 2;
+    /* Leaflet's own internal panes (markerPane 600, tooltipPane 650,
+       popupPane 700) sit in the same ambient stacking context as this box
+       whenever the map container itself has no explicit z-index of its own
+       — so a low value here (e.g. 2) can end up visually buried under the
+       map despite being later in the DOM. 1000 matches Leaflet's own
+       convention for its control layer, guaranteeing this stays on top. */
+    z-index: 1000;
 }
 
 .map-legend-title {

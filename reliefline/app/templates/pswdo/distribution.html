@@ -138,31 +138,69 @@
 
 <!-- New Distribution modal -->
 <div class="rd-modal-overlay" id="new-distribution-modal" hidden>
-    <div class="rd-modal">
+    <div class="rd-modal nd-modal">
         <div class="rd-modal-header">
             <h3>{{ icon('plus', 18, '#0f2547') }} New Distribution</h3>
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
         </div>
         {% if eligible_allocations %}
-        <form method="POST" action="{{ url_for('pswdo.create_distribution') }}">
-            <label for="allocation_id">Approved Relief Request *</label>
-            <select name="allocation_id" id="allocation_id" required>
-                <option value="">Select a barangay...</option>
-                {% for a in eligible_allocations %}
-                <option value="{{ a.allocation_id }}">
-                    {{ a.barangay.barangay_name }}, {{ a.barangay.city_municipality }} —
-                    {{ "{:,}".format(a.allocated_quantity) }} packs
-                    {% if a.fulfilling_office %}(from {{ a.fulfilling_office.office_name }}){% endif %}
-                </option>
-                {% endfor %}
-            </select>
+        <div class="nd-steps">
+            <span class="nd-step is-active" data-step-dot="1"><span class="nd-step-num">1</span> Municipality</span>
+            <span class="nd-step-line"></span>
+            <span class="nd-step" data-step-dot="2"><span class="nd-step-num">2</span> Request &amp; Stock Check</span>
+        </div>
 
-            <label for="distribution_date">Distribution Date</label>
-            <input type="date" name="distribution_date" id="distribution_date" value="{{ today_str }}">
+        <form method="POST" action="{{ url_for('pswdo.create_distribution') }}" id="new-distribution-form">
+            <input type="hidden" name="allocation_id" id="nd-allocation-id">
 
-            <div class="rd-modal-actions">
-                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Schedule Distribution</button>
-                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            <!-- Step 1: municipality first, so the request list below is never
+                 a mixed-municipality wall of options to scroll through. -->
+            <div class="nd-step-panel" data-step-panel="1">
+                <label>Select City/Municipality *</label>
+                <div class="nd-muni-grid">
+                    {% for muni, count in municipality_counts.items() %}
+                    <button type="button" class="nd-muni-tile" data-municipality="{{ muni }}">
+                        <strong>{{ muni }}</strong>
+                        <span>{{ count }} request{{ 's' if count != 1 }} ready</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Step 2: only reachable after a municipality is picked, and the
+                 stock check runs here — before submission, not after. -->
+            <div class="nd-step-panel" data-step-panel="2" hidden>
+                <button type="button" class="nd-back-link" data-step-back>{{ icon('arrow-left', 14) }} Back to municipality</button>
+
+                <label>Approved Relief Request in <span id="nd-selected-muni"></span> *</label>
+                <div class="nd-request-list" id="nd-request-list">
+                    {% for row in eligible_allocations %}
+                    <label class="nd-request-option" data-municipality="{{ row.municipality }}" data-stock-ok="{{ 'true' if row.stock_ok else 'false' }}">
+                        <input type="radio" name="allocation_id_radio" value="{{ row.allocation.allocation_id }}">
+                        <div class="nd-request-body">
+                            <strong>{{ row.allocation.barangay.barangay_name }}</strong>
+                            <span>{{ "{:,}".format(row.allocation.allocated_quantity) }} packs{% if row.allocation.fulfilling_office %} · from {{ row.allocation.fulfilling_office.office_name }}{% endif %}</span>
+                        </div>
+                        <span class="nd-stock-badge {{ 'is-ok' if row.stock_ok else 'is-low' }}">
+                            {{ icon('check-circle', 12) if row.stock_ok else icon('alert-triangle', 12) }}
+                            {{ "{:,}".format(row.available_stock) }} in stock
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <label for="distribution_date">Distribution Date</label>
+                <input type="date" name="distribution_date" id="distribution_date" value="{{ today_str }}">
+
+                <div class="nd-stock-warning" id="nd-stock-warning" hidden>
+                    {{ icon('alert-triangle', 14) }}
+                    <span>The fulfilling warehouse doesn't currently have enough stock for this request. Scheduling is blocked until stock is available — transfer more in first.</span>
+                </div>
+
+                <div class="rd-modal-actions">
+                    <button type="submit" class="btn-decision btn-partial" id="nd-submit-btn" disabled>{{ icon('check-circle', 16, 'white') }} Schedule Distribution</button>
+                    <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+                </div>
             </div>
         </form>
         {% else %}
@@ -179,4 +217,5 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+<script src="{{ url_for('static', filename='js/new_distribution_wizard.js') }}"></script>
 {% endblock %}

@@ -96,10 +96,10 @@
                 <div class="panel-header">
                     <h3>{{ icon('map', 18, '#0f2547') }} GIS Map — {{ lgu or 'Your Municipality' }}</h3>
                     <div class="map-legend">
-                        <span><i class="legend-dot normal"></i> Normal</span>
-                        <span><i class="legend-dot monitoring"></i> Monitoring</span>
-                        <span><i class="legend-dot needs-assistance"></i> Needs Assistance</span>
-                        <span><i class="legend-dot high-priority"></i> High Priority</span>
+                        <span><i class="legend-dot normal"></i> Low</span>
+                        <span><i class="legend-dot monitoring"></i> Medium</span>
+                        <span><i class="legend-dot needs-assistance"></i> High</span>
+                        <span><i class="legend-dot high-priority"></i> Critical</span>
                     </div>
                 </div>
                 <div class="map-placeholder-box">
@@ -108,11 +108,11 @@
                     <a href="{{ url_for('cswdo.gis_map', municipality=lgu) }}" class="map-fullscreen-btn" title="Open full GIS Map">{{ icon('maximize', 16, '#444') }}</a>
 
                     <div class="map-legend-box">
-                        <span class="map-legend-title">Legend</span>
+                        <span class="map-legend-title">Barangay Status</span>
                         <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
                         <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
-                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Monitoring</div>
-                        <div class="map-legend-row"><i class="legend-square normal"></i> Normal</div>
+                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
+                        <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
                         <div class="map-legend-divider"></div>
                         <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
                         <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit Route</div>
@@ -272,8 +272,11 @@
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script>window.RELIEFLINE_GIS_MAP_URL = "{{ url_for('cswdo.gis_map') }}";</script>
-<script src="{{ url_for('static', filename='js/dashboard_map.js') }}"></script>
+<script>
+window.RELIEFLINE_GIS_MAP_URL = "{{ url_for('cswdo.gis_map') }}";
+window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
+</script>
+<script src="{{ url_for('static', filename='js/dashboard_map.js') }}?v={{ asset_version('js/dashboard_map.js') }}"></script>
 <script>
 (function () {
     var clockEl = document.getElementById('live-clock');

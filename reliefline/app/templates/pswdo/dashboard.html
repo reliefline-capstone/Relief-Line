@@ -27,10 +27,18 @@
                 {% if primary_event %}
                 <div class="active-event-badge">
                     <div>
-                        <span class="badge-label">ACTIVE TYPHOON EVENT</span>
+                        <span class="badge-label">
+                            {%- if period == 'monthly' -%}
+                            TYPHOON EVENT — {{ selected_month_name|upper }} {{ selected_year }}
+                            {%- elif period == 'yearly' -%}
+                            TYPHOON EVENT — {{ selected_year }}
+                            {%- else -%}
+                            ACTIVE TYPHOON EVENT
+                            {%- endif -%}
+                        </span>
                         <strong>{{ icon('cloud-lightning', 14) }} {{ primary_event.event_name }}</strong>
                     </div>
-                    <span class="badge-active">ACTIVE</span>
+                    <span class="badge-active badge-status-{{ primary_event.status }}">{{ primary_event.status|upper }}</span>
                 </div>
                 {% endif %}
             </div>
@@ -46,12 +54,49 @@
             </div>
         </section>
 
+        <!-- Period filter -->
+        <form method="GET" class="dash-period-bar">
+            <div class="dash-period-row">
+                <span class="dash-period-title">{{ icon('sliders', 14) }} FILTER BY PERIOD</span>
+
+                <div class="dash-period-toggle">
+                    <a href="{{ url_for('pswdo.dashboard', period='monthly', month=selected_month or now.month, year=selected_year or now.year) }}" class="dash-period-tab {{ 'is-active' if period == 'monthly' }}">Monthly</a>
+                    <a href="{{ url_for('pswdo.dashboard', period='yearly', year=selected_year or now.year) }}" class="dash-period-tab {{ 'is-active' if period == 'yearly' }}">Yearly</a>
+                </div>
+
+                {% if is_filtered %}
+                <div class="dash-period-date">
+                    {{ icon('calendar', 14) }}
+                    <input type="hidden" name="period" value="{{ period }}">
+                    {% if period == 'monthly' %}
+                    <select name="month" onchange="this.form.submit()">
+                        {% for m in range(1, 13) %}
+                        <option value="{{ m }}" {{ 'selected' if selected_month == m }}>{{ month_names[m - 1] }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    <select name="year" onchange="this.form.submit()">
+                        {% for y in available_years %}
+                        <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <a href="{{ url_for('pswdo.dashboard') }}" class="dash-period-live">Live</a>
+                {% endif %}
+            </div>
+
+            {% if is_filtered %}
+            <p class="dash-period-caption">All data below is based on {% if period == 'monthly' %}{{ selected_month_name }} {% endif %}{{ selected_year }}. Stock figures always stay live.</p>
+            {% endif %}
+        </form>
+
         <!-- Stat cards -->
         <section class="stat-cards">
             <div class="stat-card">
                 <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
                 <span class="stat-value">{{ active_events|length }}</span>
-                <span class="stat-label">Active Typhoon</span>
+                <span class="stat-label">{{ 'Typhoon Events' if is_filtered else 'Active Typhoon' }}</span>
                 <span class="stat-sub">{{ active_events|map(attribute='event_name')|join(' · ') if active_events else 'None' }}</span>
             </div>
             <div class="stat-card">
@@ -67,6 +112,7 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
+                {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot — this is always today's actual figure.">LIVE</span>{% endif %}
                 <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span>
                 <span class="stat-label">Food Packs Available</span>
                 <span class="stat-sub">Across {{ warehouses|length }} warehouses</span>
@@ -75,10 +121,11 @@
                 <div class="stat-icon amber">{{ icon('clipboard', 18, '#f39c12') }}</div>
                 <span class="stat-value">{{ pending_requests_count }}</span>
                 <span class="stat-label">Pending Requests</span>
-                <span class="stat-sub">Awaiting approval</span>
+                <span class="stat-sub">{{ 'Submitted this period, still awaiting approval' if is_filtered else 'Awaiting approval' }}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
+                {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot — this is always today's actual figure.">LIVE</span>{% endif %}
                 <span class="stat-value">{{ low_stock_items|length }}</span>
                 <span class="stat-label">Low Stock Items</span>
                 <span class="stat-sub">
@@ -94,10 +141,10 @@
                 <div class="panel-header">
                     <h3>{{ icon('map', 18, '#0f2547') }} GIS Map — Province of Pangasinan</h3>
                     <div class="map-legend">
-                        <span><i class="legend-dot normal"></i> Normal</span>
-                        <span><i class="legend-dot monitoring"></i> Monitoring</span>
-                        <span><i class="legend-dot needs-assistance"></i> Needs Assistance</span>
-                        <span><i class="legend-dot high-priority"></i> High Priority</span>
+                        <span><i class="legend-dot normal"></i> Low</span>
+                        <span><i class="legend-dot monitoring"></i> Medium</span>
+                        <span><i class="legend-dot needs-assistance"></i> High</span>
+                        <span><i class="legend-dot high-priority"></i> Critical</span>
                     </div>
                 </div>
                 <div class="map-placeholder-box">
@@ -106,11 +153,11 @@
                     <a href="{{ url_for('pswdo.gis_map') }}" class="map-fullscreen-btn" title="Open full GIS Map">{{ icon('maximize', 16, '#444') }}</a>
 
                     <div class="map-legend-box">
-                        <span class="map-legend-title">Legend</span>
+                        <span class="map-legend-title">Municipality Status</span>
                         <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
                         <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
-                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Monitoring</div>
-                        <div class="map-legend-row"><i class="legend-square normal"></i> Normal</div>
+                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
+                        <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
                         <div class="map-legend-divider"></div>
                         <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
                         <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit Route</div>
@@ -228,6 +275,7 @@
                 {% else %}
                 <p class="empty-note">Walang recommendations ngayon — malusog ang stock levels.</p>
                 {% endfor %}
+
                 {{ prediction_disclaimer() }}
             </section>
 
@@ -318,8 +366,12 @@
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script>window.RELIEFLINE_GIS_MAP_URL = "{{ url_for('pswdo.gis_map') }}";</script>
-<script src="{{ url_for('static', filename='js/dashboard_map.js') }}"></script>
+<script>
+window.RELIEFLINE_GIS_MAP_URL = "{{ url_for('pswdo.gis_map') }}";
+window.RELIEFLINE_DASHBOARD_EVENT_ID = {{ map_event_id if map_event_id else 'null' }};
+window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
+</script>
+<script src="{{ url_for('static', filename='js/dashboard_map.js') }}?v={{ asset_version('js/dashboard_map.js') }}"></script>
 <script>
 (function () {
     var clockEl = document.getElementById('live-clock');

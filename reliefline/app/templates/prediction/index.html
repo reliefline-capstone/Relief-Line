@@ -203,37 +203,6 @@
                 <p class="empty-note">Walang recommendations ngayon — malusog ang stock levels.</p>
                 {% endfor %}
 
-                <div class="pa-model-panel">
-                    <span class="pa-rec-title" style="margin-top:0;">MODEL PERFORMANCE</span>
-                    {% if latest_metrics %}
-                    <div class="pa-model-rows">
-                        <div><span>Trained on</span><strong>{{ latest_metrics.training_samples }} real allocation records</strong></div>
-                        <div><span>Mean Absolute Error</span><strong>{{ latest_metrics.mae|round(0) }} packs</strong></div>
-                        <div><span>R² (leave-one-out)</span><strong>{{ latest_metrics.r_squared }}</strong></div>
-                        <div><span>Confidence</span>
-                            <strong>
-                                {% if latest_metrics.r_squared >= 0.5 %}<span class="badge-priority badge-priority-low">Good</span>
-                                {% elif latest_metrics.r_squared >= 0 %}<span class="badge-priority badge-priority-medium">Fair</span>
-                                {% else %}<span class="badge-priority badge-priority-critical">Low — needs more data</span>{% endif %}
-                            </strong>
-                        </div>
-                    </div>
-                    <p class="rd-sub" style="margin-top:8px;">Linear Regression (scikit-learn), evaluated with leave-one-out cross-validation. Estimates the demand for barangays that haven't submitted a request yet; accuracy will improve as more real allocation history accumulates.</p>
-                    {% else %}
-                    <p class="empty-note">Model not trained yet — run scripts/train_model.py.</p>
-                    {% endif %}
-                </div>
-
-                <div class="pa-decision-logic">
-                    <span class="pa-rec-title" style="margin-top:0;">DECISION LOGIC</span>
-                    <div class="pa-decision-grid">
-                        <span>Rule 1: Priority ranking — status tier + affected families</span>
-                        <span>Rule 2: Warehouse — nearest office actually fulfilling requests</span>
-                        <span>Rule 3: Transfer — suggested when stock falls below threshold</span>
-                        <span>Rule 4: Burn rate — stock ÷ daily distribution</span>
-                        <span>Model: Estimated Need for barangays without a request — Ridge regression (see Model Performance)</span>
-                    </div>
-                </div>
                 {{ prediction_disclaimer() }}
             </section>
 

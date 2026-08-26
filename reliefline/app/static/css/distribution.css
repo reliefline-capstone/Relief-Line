@@ -26,3 +26,141 @@
 .badge-status-delayed { background: #fdecea; color: #c0392b; }
 
 .badge-status { display: inline-flex; align-items: center; gap: 5px; }
+
+/* New Distribution wizard */
+.nd-modal { max-width: 460px; }
+
+.nd-steps {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.nd-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #b8bfc9;
+}
+
+.nd-step.is-active { color: #0f2547; }
+
+.nd-step-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #f0f2f6;
+    color: #8a94a6;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.nd-step.is-active .nd-step-num { background: #2f54eb; color: white; }
+
+.nd-step-line {
+    flex: 1;
+    height: 1px;
+    background: #e6e9f0;
+}
+
+.nd-muni-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.nd-muni-tile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    padding: 14px 16px;
+    border: 1px solid #d8dee8;
+    border-radius: 10px;
+    background: white;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.nd-muni-tile:hover { border-color: #2f54eb; background: #f7f9fe; }
+.nd-muni-tile strong { font-size: 14px; color: #0f2547; }
+.nd-muni-tile span { font-size: 12px; color: #8a94a6; }
+
+.nd-back-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #2f54eb;
+    background: none;
+    padding: 0;
+    margin-bottom: 10px;
+}
+
+.nd-request-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 260px;
+    overflow-y: auto;
+    margin-top: 8px;
+}
+
+.nd-request-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid #d8dee8;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/* A class-level `display` beats the UA [hidden]{display:none} rule at equal
+   specificity, so the JS toggling .hidden on these to filter by municipality
+   would otherwise leave them visibly laid out. */
+.nd-request-option[hidden] { display: none; }
+
+.nd-request-option:hover { border-color: #2f54eb; }
+.nd-request-option.is-selected { border-color: #2f54eb; background: #f7f9fe; }
+.nd-request-option input[type="radio"] { flex-shrink: 0; }
+
+.nd-request-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.nd-request-body strong { font-size: 13.5px; color: #0f2547; }
+.nd-request-body span { font-size: 12px; color: #8a94a6; }
+
+.nd-stock-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.nd-stock-badge.is-ok { background: #e8faf0; color: #1e8449; }
+.nd-stock-badge.is-low { background: #fdecea; color: #c0392b; }
+
+.nd-stock-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fdecea;
+    color: #c0392b;
+    font-size: 12.5px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-top: 14px;
+}

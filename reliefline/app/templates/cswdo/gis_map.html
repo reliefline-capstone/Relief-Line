@@ -58,12 +58,12 @@
             <section class="panel gis-map-panel">
                 <div id="gis-map"></div>
                 <div class="map-legend-box">
-                    <span class="map-legend-title">Legend</span>
+                    <span class="map-legend-title">Barangay Status</span>
                     <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
                     <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
-                    <div class="map-legend-row"><i class="legend-square monitoring"></i> Monitoring</div>
-                    <div class="map-legend-row"><i class="legend-square normal"></i> Normal</div>
-                    <div class="map-legend-row"><i class="legend-square no-data"></i> No Data</div>
+                    <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
+                    <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
+                    <div class="map-legend-row"><i class="legend-square no-data"></i> Unrated</div>
                     <div class="map-legend-divider"></div>
                     <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
                     <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit (schematic)</div>
@@ -105,5 +105,5 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>window.RELIEFLINE_GIS_CONFIG = {{ gis_config|tojson }};</script>
-<script src="{{ url_for('static', filename='js/gis_map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/gis_map.js') }}?v={{ asset_version('js/gis_map.js') }}"></script>
 {% endblock %}

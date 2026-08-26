@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }).addTo(map);
 
     // Drill-down state: overview -> municipality -> barangay-list -> barangay-detail
-    var state = { level: 'overview', lgu: null, barangayId: null, barangayName: null };
+    var state = { level: 'overview', lgu: null, barangayId: null, barangayName: null, showBreakdown: false };
     var currentData = null;
 
     function escapeHtml(s) {
@@ -32,25 +32,75 @@ document.addEventListener('DOMContentLoaded', function () {
     // by default instead of an overview that only ever has one entry.
     var GIS_CONFIG = window.RELIEFLINE_GIS_CONFIG || { role: null, reliefRequestsUrl: null, distributionUrl: null, defaultLgu: null };
 
-    var provinceLayer = L.geoJSON(null, {
-        style: function (feature) {
-            // is_target is already restricted server-side to this user's own
-            // scope (app.routes.pswdo._gis_scope_lgus) — a bold solid border
-            // marks exactly the municipality/ies this account is allowed to
-            // see data for; everything else stays the plain dashed background.
-            var isTarget = feature.properties.is_target;
+    // PSWDO (province-wide oversight) sees municipality-level aggregates
+    // only — no barangay boundaries, no barangay drill-down. That level of
+    // operational detail is CSWDO/MSWDO's job (they only ever have one
+    // municipality in scope anyway). system_admin gets the same province-wide
+    // view PSWDO does.
+    var IS_MUNI_ONLY = GIS_CONFIG.role !== 'cswdo_admin';
+
+    // is_target is already restricted server-side to this user's own scope
+    // (app.routes.pswdo._gis_scope_lgus) — a bold solid border marks exactly
+    // the municipality/ies this account is allowed to see data for.
+    // Neighboring municipalities' boundaries only carry a handful of
+    // vertices each (coarse province-wide context data, not surveyed to the
+    // same precision as the 3 target LGUs' barangay-derived shapes) — fine
+    // as a faint backdrop at the whole-province overview, but blocky enough
+    // up close that once the user drills into one LGU, a neighboring shape
+    // can read as a stray rectangle "box" over the view. So they're hidden
+    // past the overview level, leaving only the clicked LGU's own accurate
+    // boundary on screen — see setLevel(), which re-applies this style.
+    function provinceStyle(feature) {
+        var isTarget = feature.properties.is_target;
+        if (state.level !== 'overview' && !isTarget) {
+            return { color: 'transparent', weight: 0, opacity: 0, fillOpacity: 0 };
+        }
+        if (isTarget && IS_MUNI_ONLY) {
+            // PSWDO's municipality-level view: fill each target LGU by its
+            // own real demand tier (same Critical/High/Medium/Low/Unrated
+            // scale as the legend and every badge elsewhere) instead of a
+            // flat color, so the map itself answers "which municipality
+            // needs attention" at a glance — updates automatically whenever
+            // the underlying barangay status/allocation data changes, since
+            // this is computed fresh from currentData on every render.
+            var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === feature.properties.lgu; }) : null;
+            var demandColor = TIER_COLORS[muni ? muni.status_tier : 'unrated'];
+            var isSelected = state.lgu === feature.properties.lgu;
             return {
-                color: isTarget ? '#2c5aa0' : '#c3cad6',
-                weight: isTarget ? 3 : 1,
-                fillColor: isTarget ? '#2c5aa0' : '#f4f6fa',
-                fillOpacity: isTarget ? 0.04 : 0.3,
-                dashArray: isTarget ? null : '3,3',
+                color: isSelected ? '#0f2547' : '#55606b',
+                weight: isSelected ? 3 : 1.5,
+                fillColor: demandColor,
+                fillOpacity: isSelected ? 0.6 : 0.45,
             };
-        },
+        }
+        return {
+            // Every non-target (or CSWDO-scope) municipality gets the same
+            // on-brand blue fill so the whole province reads as one shaded
+            // region against neighboring provinces (Nueva Ecija, Tarlac, La
+            // Union, Benguet) — target LGUs stand out further on top of that
+            // with a bolder navy border and a touch more fill.
+            color: isTarget ? '#0f2547' : '#5b86b8',
+            weight: isTarget ? 3 : 1,
+            fillColor: isTarget ? '#2c5aa0' : '#bcd4f0',
+            fillOpacity: isTarget ? 0.12 : 0.45,
+        };
+    }
+
+    var provinceLayer = L.geoJSON(null, {
+        style: provinceStyle,
         onEachFeature: function (feature, layer) {
             var p = feature.properties;
             if (p.is_target) {
-                layer.bindTooltip('Click to view ' + escapeHtml(p.lgu));
+                // currentData is already assigned before addData() runs (see
+                // loadData()), so the per-LGU relief rollup — the closest
+                // real figure to "predicted demand" this dataset has — is
+                // available here to enrich the hover tooltip.
+                var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === p.lgu; }) : null;
+                var demandLine = muni ? (
+                    '<br>Predicted Demand: ' + fmt(muni.predicted_demand) + ' packs' +
+                    '<br>Demand Level: ' + escapeHtml(muni.status_label)
+                ) : '';
+                layer.bindTooltip('<strong>' + escapeHtml(p.lgu) + '</strong>' + demandLine + '<br><em>Click to view</em>', { sticky: true });
                 layer.on('click', function () { setLevel('municipality', p.lgu); });
                 layer.on('mouseover', function () { layer.setStyle({ weight: 2.5 }); });
                 layer.on('mouseout', function () { layer.setStyle({ weight: 1.5 }); });
@@ -187,18 +237,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         html += '</div></section>';
 
-        html += '<section class="panel"><div class="panel-header"><h3>Priority Barangays</h3></div><div>';
-        if (!currentData.priority_barangays.length) {
-            html += '<p class="empty-note">No priority barangays right now.</p>';
-        } else {
-            currentData.priority_barangays.forEach(function (p) {
-                html += '<div class="gis-priority-row gis-clickable" data-nav="barangay-detail" data-lgu="' + escapeHtml(p.lgu) + '" data-barangay-id="' + p.barangay_id + '" data-barangay-name="' + escapeHtml(p.name) + '">' +
-                    '<div><strong>' + escapeHtml(p.name) + '</strong><span>' + escapeHtml(p.lgu) + '</span></div>' +
-                    '<div class="gis-priority-row-right"><strong>' + fmt(p.affected_families) + ' families</strong>' + tierBadge(p.priority_tier, p.priority_label) + '</div>' +
-                    '</div>';
-            });
+        // Barangay-level priority listing is CSWDO/MSWDO operational detail
+        // — PSWDO's oversight view stops at the "Municipalities" list above,
+        // which already answers "which LGU has the highest demand."
+        if (!IS_MUNI_ONLY) {
+            html += '<section class="panel"><div class="panel-header"><h3>Priority Barangays</h3></div><div>';
+            if (!currentData.priority_barangays.length) {
+                html += '<p class="empty-note">No priority barangays right now.</p>';
+            } else {
+                currentData.priority_barangays.forEach(function (p) {
+                    html += '<div class="gis-priority-row gis-clickable" data-nav="barangay-detail" data-lgu="' + escapeHtml(p.lgu) + '" data-barangay-id="' + p.barangay_id + '" data-barangay-name="' + escapeHtml(p.name) + '">' +
+                        '<div><strong>' + escapeHtml(p.name) + '</strong><span>' + escapeHtml(p.lgu) + '</span></div>' +
+                        '<div class="gis-priority-row-right"><strong>' + fmt(p.affected_families) + ' families</strong>' + tierBadge(p.priority_tier, p.priority_label) + '</div>' +
+                        '</div>';
+                });
+            }
+            html += '</div></section>';
         }
-        html += '</div></section>';
         return html;
     }
 
@@ -229,6 +284,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
         html += '<section class="panel"><div class="panel-header"><h3>Relief Statistics</h3></div>' + reliefRows(m.relief) + '</section>';
 
+        html += '<section class="panel"><div class="panel-header"><h3>Demand &amp; Allocation</h3></div>';
+        html += '<div class="dd-summary-row"><span>Predicted Demand</span><strong>' + fmt(m.predicted_demand) + '</strong></div>';
+        html += '<div class="dd-summary-row"><span>Available Allocation</span><strong>' + fmt(m.relief.approved) + '</strong></div>';
+        html += '<div class="dd-summary-row"><span>Shortage</span><strong class="' + (m.shortage > 0 ? 'text-red' : 'text-green') + '">' + fmt(m.shortage) + '</strong></div>';
+        html += '<div class="dd-summary-row"><span>Allocation Status</span><span class="badge-status badge-status-' + (m.shortage > 0 ? 'pending' : 'released') + '">' + escapeHtml(m.allocation_status) + '</span></div>';
+        html += '</section>';
+
+        if (IS_MUNI_ONLY) {
+            html += '<section class="panel">';
+            html += '<div class="panel-header"><h3>Barangay Breakdown</h3>' +
+                '<button type="button" class="btn-outline" id="btn-toggle-breakdown">' + (state.showBreakdown ? 'Hide' : 'View Barangay Breakdown') + '</button></div>';
+            if (state.showBreakdown) {
+                var lguBarangays = currentData.target_barangays.features
+                    .filter(function (f) { return f.properties.lgu === lgu && f.properties.has_data; })
+                    .map(function (f) { return f.properties; })
+                    .sort(function (a, b) { return b.food_packs_current - a.food_packs_current; });
+                if (!lguBarangays.length) {
+                    html += '<p class="empty-note">No barangay data on record.</p>';
+                } else {
+                    html += '<div class="gis-barangay-list">';
+                    lguBarangays.forEach(function (p) {
+                        html += '<div class="gis-priority-row">' +
+                            '<div><strong>' + escapeHtml(p.name) + '</strong><span>' + (p.food_packs_source === 'request' ? 'submitted request' : 'model estimate') + '</span></div>' +
+                            '<div class="gis-priority-row-right"><strong>' + fmt(p.food_packs_current) + ' packs</strong>' + tierBadge(p.priority_tier, p.priority_label) + '</div>' +
+                            '</div>';
+                    });
+                    html += '</div>';
+                }
+            } else {
+                html += '<p class="empty-note">Per-barangay food-pack demand — not shown on the map by default.</p>';
+            }
+            html += '</section>';
+        }
+
         html += '<section class="panel"><div class="panel-header"><h3>Warehouse Information</h3></div>';
         if (m.warehouse) {
             html += '<div class="dd-summary-row"><span>Assigned Warehouse</span><strong>' + escapeHtml(m.warehouse.name) + '</strong></div>';
@@ -253,7 +342,9 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '<section class="panel">';
         html += distributionButtonHtml(m.lgu);
         html += reliefButtonHtml(m.lgu);
-        html += '<button type="button" class="btn-decision dd-full-width gis-btn-dark" data-nav="barangay-list" data-lgu="' + escapeHtml(m.lgu) + '" style="margin-top:10px;">' + ICON.mapPin + ' View Barangays</button>';
+        if (!IS_MUNI_ONLY) {
+            html += '<button type="button" class="btn-decision dd-full-width gis-btn-dark" data-nav="barangay-list" data-lgu="' + escapeHtml(m.lgu) + '" style="margin-top:10px;">' + ICON.mapPin + ' View Barangays</button>';
+        }
         html += '<button type="button" class="btn-outline dd-full-width" data-external="report" data-lgu="' + escapeHtml(m.lgu) + '" style="justify-content:center; margin-top:10px;">' + ICON.download + ' Generate Report</button>';
         html += '</section>';
 
@@ -380,16 +471,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }).join('');
     }
 
-    function allTargetBounds() {
-        if (!currentData || !currentData.target_barangays.features.length) return null;
-        return L.geoJSON(currentData.target_barangays).getBounds();
-    }
-
     function focusMap() {
         if (!currentData) return;
         if (state.level === 'overview') {
-            var b = allTargetBounds();
-            if (b && b.isValid()) map.fitBounds(b.pad(0.05));
+            // Whole province, not just the target LGUs' barangays — those sit
+            // in a narrow N-S sliver, so fitting to them alone stretched the
+            // map's east-west extent to match the container's wide aspect
+            // ratio and left far-off municipalities (e.g. Alaminos, San
+            // Carlos) misleadingly in frame instead of the intended overview.
+            var b = provinceLayer.getBounds();
+            if (b && b.isValid()) map.fitBounds(b.pad(0.02));
             return;
         }
         var feats = currentData.target_barangays.features.filter(function (f) { return f.properties.lgu === state.lgu; });
@@ -422,6 +513,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function applyClientFilters() {
         if (!currentData) return;
+        barangayLayer.clearLayers();
+        if (IS_MUNI_ONLY) return;
+
         var lgu = document.getElementById('filter-lgu').value;
         var status = document.getElementById('filter-status').value;
 
@@ -430,16 +524,22 @@ document.addEventListener('DOMContentLoaded', function () {
             if (status && f.properties.status !== status) return false;
             return true;
         });
-        barangayLayer.clearLayers();
         barangayLayer.addData({ type: 'FeatureCollection', features: filtered });
     }
 
     function setLevel(level, lgu, barangayId, barangayName) {
+        // Municipality-level view never drills further than 'municipality' —
+        // no barangay boundary layer is even populated to select from.
+        if (IS_MUNI_ONLY && (level === 'barangay-list' || level === 'barangay-detail')) {
+            level = 'municipality';
+        }
         state.level = level;
         state.lgu = lgu || null;
         state.barangayId = barangayId || null;
         state.barangayName = barangayName || null;
+        state.showBreakdown = false;
         document.getElementById('filter-lgu').value = state.lgu || '';
+        provinceLayer.setStyle(provinceStyle);
         applyClientFilters();
         focusMap();
         renderBreadcrumb();
@@ -495,6 +595,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Delegated click handling for breadcrumb + info panel (both are re-rendered
     // via innerHTML, so listeners are attached once on stable ancestors).
     function handleActionClick(e) {
+        if (e.target.closest('#btn-toggle-breakdown')) {
+            state.showBreakdown = !state.showBreakdown;
+            renderPanel();
+            return;
+        }
         var navEl = e.target.closest('[data-nav]');
         if (navEl) {
             var level = navEl.getAttribute('data-nav');
@@ -531,6 +636,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (state.level === 'barangay-list') renderPanel();
     });
     document.getElementById('btn-refresh').addEventListener('click', loadData);
+
+    // Only present on the PSWDO template — CSWDO/MSWDO's single-LGU scope
+    // has no real "province overview" to reset back to.
+    var resetBtn = document.getElementById('btn-reset-map');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function () { setLevel('overview'); });
+    }
 
     loadData();
 });

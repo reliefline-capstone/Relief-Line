@@ -25,7 +25,7 @@ def _dashboard_endpoint(role):
 
 @auth_bp.route("/")
 def landing():
-    return redirect(url_for("auth.login"))
+    return render_template("landing.html")
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -56,7 +56,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for("auth.login"))
+    return redirect(url_for("auth.landing"))
 
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])

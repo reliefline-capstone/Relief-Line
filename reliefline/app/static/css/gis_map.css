@@ -63,8 +63,12 @@
     }
 }
 
-/* Map panel */
+/* Map panel — wrapped in .gis-map-col alongside the routes table below it,
+   so this stays sized to its own content (the map) instead of a bare grid
+   item that would otherwise stretch to match the taller sidebar next to it. */
 .gis-map-panel { position: relative; padding: 0; overflow: hidden; }
+
+.gis-map-col { min-width: 0; }
 
 #gis-map {
     height: 560px;

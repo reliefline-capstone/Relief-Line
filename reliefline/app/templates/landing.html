@@ -1,2 +1,347 @@
-<h1>ReliefLine</h1>
-<p><a href="/login">Login</a></p>
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}ReliefLine - Disaster Relief Management System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="lp">
+
+    <!-- Nav -->
+    <nav class="lp-nav">
+        <div class="lp-nav-inner">
+            <a href="#home" class="lp-brand">
+                <img src="{{ url_for('static', filename='img/province-seal.png') }}" alt="Province of Pangasinan Seal">
+                <div class="lp-brand-text">
+                    <strong>Province of Pangasinan</strong>
+                    <span>Provincial Social Welfare and Development Office</span>
+                </div>
+            </a>
+
+            <button type="button" class="lp-nav-toggle" id="lp-nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+                {{ icon('menu', 22) }}
+            </button>
+
+            <div class="lp-nav-links" id="lp-nav-links">
+                <a href="#home">Home</a>
+                <a href="#services">Services</a>
+                <a href="#about">About ReliefLine</a>
+                <a href="#contact">Contacts</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="lp-hero" id="home">
+        <div class="lp-hero-overlay"></div>
+        <div class="lp-hero-inner lp-hero-split">
+
+            <div class="lp-hero-copy">
+                <div class="lp-hero-lockup">
+                    <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="ReliefLine" class="lp-hero-logo">
+                    <div class="lp-hero-title">
+                        <h1>ReliefLine</h1>
+                        <p class="lp-hero-tagline">Disaster Relief Management System</p>
+                    </div>
+                </div>
+                <p class="lp-hero-desc">
+                    A Data-Driven Relief Supplies Pipeline System for the Province of Pangasinan —
+                    transforming fragmented, manual relief planning into a structured, centralized,
+                    and evidence-based platform.
+                </p>
+                <div class="lp-hero-actions">
+                    <a href="#services" class="lp-btn lp-btn-secondary">Learn More {{ icon('arrow-right', 14) }}</a>
+                </div>
+            </div>
+
+            <div class="login-card" id="login-card">
+                <div class="lock-badge">
+                    {{ icon('lock', 28, '#0f2547') }}
+                </div>
+                <h2>Welcome Back!</h2>
+                <p class="subtext">Sign in to continue to ReliefLine.</p>
+                <p class="subtext-small">Enter your credentials to access the system.</p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <label for="hero-username">Username</label>
+                    <div class="input-wrapper">
+                        {{ icon('user', 18, '#8a94a6') }}
+                        <input type="text" id="hero-username" name="email" placeholder="Enter username" required>
+                    </div>
+
+                    <label for="hero-password">Password</label>
+                    <div class="input-wrapper">
+                        {{ icon('lock', 18, '#8a94a6') }}
+                        <input type="password" id="hero-password" name="password" placeholder="Enter password" required>
+                        <button type="button" class="toggle-password" data-target="hero-password" aria-label="Show password">
+                            <span class="icon-eye">{{ icon('eye', 18, '#8a94a6') }}</span>
+                            <span class="icon-eye-off">{{ icon('eye-off', 18, '#8a94a6') }}</span>
+                        </button>
+                    </div>
+
+                    <div class="form-row">
+                        <label class="remember-me">
+                            <input type="checkbox" name="remember">
+                            Remember me
+                        </label>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="login-btn">Sign in</button>
+                </form>
+
+                <div class="secured-divider"><span>Secured System</span></div>
+                <div class="secured-note">
+                    {{ icon('shield', 16, '#8a94a6') }}
+                    <span>Authorized government system. Unauthorized access is prohibited.</span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- System Capabilities -->
+    <section class="lp-section" id="services">
+        <div class="lp-section-inner">
+            <div class="lp-section-head lp-reveal">
+                <span class="lp-eyebrow lp-eyebrow-blue">System Capabilities</span>
+                <h2>What ReliefLine Does</h2>
+                <p>A structured pipeline connecting prediction, pre-positioning, monitoring, and validation — end to end.</p>
+            </div>
+
+            <div class="lp-card-grid">
+                <div class="lp-feature-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('grid', 20, '#2f54eb') }}</div>
+                    <h3>Predictive Food Pack Allocation</h3>
+                    <p>Uses a Linear Regression model to estimate recommended food pack quantities per barangay, based on population, poverty incidence, disaster risk, calamity history, and prior allocations.</p>
+                </div>
+                <div class="lp-feature-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('package', 20, '#2f54eb') }}</div>
+                    <h3>Pre-positioning Support</h3>
+                    <p>Uses predicted demand and current warehouse stock levels to guide inter-warehouse redistribution ahead of forecasted typhoon-related disasters.</p>
+                </div>
+                <div class="lp-feature-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('building', 20, '#2f54eb') }}</div>
+                    <h3>Warehouse Stock Monitoring</h3>
+                    <p>Monitors food pack inventory and non-food items such as hygiene kits and kitchen kits across provincial warehouses.</p>
+                </div>
+                <div class="lp-feature-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('map-pin', 20, '#2f54eb') }}</div>
+                    <h3>Geospatial Mapping</h3>
+                    <p>Displays barangay-level predicted food pack demand and priority status using interactive maps.</p>
+                </div>
+                <div class="lp-feature-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('check-circle', 20, '#2f54eb') }}</div>
+                    <h3>Allocation Monitoring</h3>
+                    <p>Supports food pack allocation review from warehouse to target barangays, and lets PSWDO and CSWDO/MSWDO users track allocation status.</p>
+                </div>
+                <div class="lp-feature-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('clipboard', 20, '#2f54eb') }}</div>
+                    <h3>Distribution Validation</h3>
+                    <p>Supports photo-based or signature-based validation records to confirm that food packs reached their intended barangay recipients.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About -->
+    <section class="lp-section lp-section-alt" id="about">
+        <div class="lp-section-inner lp-about-grid">
+            <div class="lp-about-copy lp-reveal">
+                <span class="lp-eyebrow lp-eyebrow-green">About ReliefLine</span>
+                <h2>From Fragmented to <span class="lp-accent">Data-Driven</span></h2>
+                <p>ReliefLine is designed to transform the fragmented, manual relief planning process into a structured, centralized, and data-driven platform — from barangay-level field reporting all the way to provincial warehouse management.</p>
+                <p>Built as a capstone research project aligned with the Province of Pangasinan's disaster preparedness goals, it uses Linear Regression to estimate food pack demand at the barangay level based on historical disaster and allocation data.</p>
+
+                <ul class="lp-check-list">
+                    <li>{{ icon('check-circle', 16, '#1e8449') }} Evidence-based food pack allocation using a predictive model</li>
+                    <li>{{ icon('check-circle', 16, '#1e8449') }} Centralized warehouse stock visibility for PSWDO</li>
+                    <li>{{ icon('check-circle', 16, '#1e8449') }} Photo or signature-based distribution validation records</li>
+                </ul>
+            </div>
+
+            <div class="lp-architecture">
+                <span class="lp-architecture-label">Three-Level Architecture</span>
+
+                <div class="lp-arch-card lp-arch-barangay lp-reveal">
+                    <div class="lp-arch-card-head">{{ icon('users', 18, '#2f54eb') }} <h4>Barangay Level</h4></div>
+                    <ul>
+                        <li>{{ icon('check', 12, '#2f54eb') }} Submits disaster impact reports</li>
+                        <li>{{ icon('check', 12, '#2f54eb') }} Views predicted food pack allocation</li>
+                        <li>{{ icon('check', 12, '#2f54eb') }} Confirms receipt of delivered relief goods</li>
+                    </ul>
+                </div>
+
+                <div class="lp-arch-card lp-arch-city lp-reveal">
+                    <div class="lp-arch-card-head">{{ icon('building', 18, '#7c4fd6') }} <h4>City / Municipal Level</h4></div>
+                    <ul>
+                        <li>{{ icon('check', 12, '#7c4fd6') }} Verifies barangay damage assessment reports</li>
+                        <li>{{ icon('check', 12, '#7c4fd6') }} Views aggregated municipal-level demand</li>
+                        <li>{{ icon('check', 12, '#7c4fd6') }} CSWDO / MSWDO allocation coordination</li>
+                    </ul>
+                </div>
+
+                <div class="lp-arch-card lp-arch-provincial lp-reveal">
+                    <div class="lp-arch-card-head">{{ icon('shield', 18, '#1e8449') }} <h4>Provincial Level — PSWDO</h4></div>
+                    <ul>
+                        <li>{{ icon('check', 12, '#1e8449') }} Warehouse stock visibility and pre-positioning</li>
+                        <li>{{ icon('check', 12, '#1e8449') }} Allocation request review and approval</li>
+                        <li>{{ icon('check', 12, '#1e8449') }} Province-wide distribution tracking</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact -->
+    <section class="lp-section" id="contact">
+        <div class="lp-section-inner">
+            <div class="lp-section-head lp-reveal">
+                <span class="lp-eyebrow lp-eyebrow-orange">Get in Touch</span>
+                <h2>Contact Information</h2>
+                <p>Province of Pangasinan · Provincial Social Welfare and Development Office</p>
+            </div>
+
+            <div class="lp-contact-grid">
+                <div class="lp-contact-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('mail', 18, '#2f54eb') }}</div>
+                    <h4>Email</h4>
+                    <span>pswdo@pangasinan.gov.ph</span>
+                </div>
+                <div class="lp-contact-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('phone', 18, '#2f54eb') }}</div>
+                    <h4>Telephone</h4>
+                    <span>(075) 542-2589</span>
+                </div>
+                <div class="lp-contact-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('map-pin', 18, '#2f54eb') }}</div>
+                    <h4>Office Address</h4>
+                    <span>Capitol Complex, Lingayen, Pangasinan</span>
+                </div>
+                <div class="lp-contact-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('clock', 18, '#2f54eb') }}</div>
+                    <h4>Office Hours</h4>
+                    <span>Monday – Friday, 8:00 AM – 5:00 PM</span>
+                </div>
+            </div>
+
+            <div class="lp-emergency-note lp-reveal">
+                <div class="lp-emergency-icon">{{ icon('info', 18, 'white') }}</div>
+                <div class="lp-emergency-text">
+                    <strong>Emergency Notice</strong>
+                    <span>For emergency or disaster-related concerns, please coordinate with your local CSWDO / MSWDO immediately.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="lp-footer">
+        <div class="lp-footer-inner">
+            <div class="lp-footer-brand">
+                <div class="lp-footer-brand-head">
+                    <img src="{{ url_for('static', filename='img/province-seal.png') }}" alt="ReliefLine">
+                    <div>
+                        <strong>ReliefLine</strong>
+                        <span>Province of Pangasinan<br>Provincial SWD Office</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lp-footer-col">
+                <h5>Navigation</h5>
+                <a href="#home">Home</a>
+                <a href="#services">Services</a>
+                <a href="#about">About ReliefLine</a>
+                <a href="#contact">Contacts</a>
+            </div>
+
+            <div class="lp-footer-col">
+                <h5>Legal</h5>
+                <a href="{{ url_for('auth.privacy_page') }}">Privacy Notice</a>
+                <a href="{{ url_for('auth.terms_page') }}">Terms of Use</a>
+                <a href="{{ url_for('auth.contact_page') }}">Contact Support</a>
+            </div>
+        </div>
+
+        <div class="lp-footer-bottom">
+            <span>© 2026 Province of Pangasinan. All rights reserved.</span>
+            <span class="lp-status"><span class="lp-status-dot"></span> System Operational</span>
+        </div>
+    </footer>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+<script>
+(function () {
+    var toggle = document.getElementById('lp-nav-toggle');
+    var links = document.getElementById('lp-nav-links');
+    if (!toggle || !links) return;
+    toggle.addEventListener('click', function () {
+        var isOpen = links.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    links.querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', function () {
+            links.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
+        });
+    });
+
+    // "Log In" / "Log In to System" scroll to the embedded card and drop
+    // focus straight into the username field instead of leaving the user
+    // to find it themselves after the jump.
+    document.querySelectorAll('a[href="#login-card"]').forEach(function (a) {
+        a.addEventListener('click', function () {
+            window.setTimeout(function () {
+                var field = document.getElementById('hero-username');
+                if (field) field.focus();
+            }, 350);
+        });
+    });
+
+    // Nav gets a soft shadow once the page has scrolled past the hero top,
+    // reinforcing that it's staying pinned rather than just sitting there.
+    var nav = document.querySelector('.lp-nav');
+    if (nav) {
+        var onScroll = function () {
+            nav.classList.toggle('is-scrolled', window.scrollY > 8);
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    }
+
+    // Fade/slide each section's cards and copy blocks into place as they
+    // enter the viewport, instead of dumping the whole page at once.
+    var revealTargets = document.querySelectorAll('.lp-reveal');
+    if (revealTargets.length && 'IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+        revealTargets.forEach(function (el) { observer.observe(el); });
+    } else {
+        revealTargets.forEach(function (el) { el.classList.add('is-visible'); });
+    }
+})();
+</script>
+{% endblock %}

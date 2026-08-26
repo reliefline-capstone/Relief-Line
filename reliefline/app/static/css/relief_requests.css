@@ -108,6 +108,7 @@
 .pill-pending { background: #fef5e3; color: #d68910; }
 .pill-approved { background: #e8faf0; color: #1e8449; }
 .pill-released { background: #ede7f6; color: #6c3483; }
+.pill-rejected { background: #fdecea; color: #c0392b; }
 
 .summary-note {
     margin-left: auto;

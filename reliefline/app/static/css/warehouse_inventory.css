@@ -1,3 +1,19 @@
+/* Warehouse map */
+.wh-map-panel { margin-bottom: 16px; }
+
+.wh-map-legend { gap: 14px; }
+
+.wh-dot-healthy { background: #27ae60; }
+.wh-dot-moderate { background: #f1c40f; }
+.wh-dot-low { background: #e74c3c; }
+
+.wh-map {
+    height: 320px;
+    width: 100%;
+    border-radius: 12px;
+    background: #eaf1fb;
+}
+
 /* Breadcrumb */
 .wh-breadcrumb {
     display: flex;

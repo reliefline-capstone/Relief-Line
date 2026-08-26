@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from app.config import Config
 from app.extensions import db, login_manager
@@ -12,6 +14,20 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     app.jinja_env.filters["ph_time"] = ph_time
+
+    def asset_version(filename):
+        # File mtime as a cache-busting query string — browsers otherwise hold
+        # onto a stale copy of a static JS/CSS file across edits (bit us with
+        # gis_map.js: the fix was live on the server but the browser kept
+        # serving the old cached script), so this forces a re-fetch whenever
+        # the file on disk actually changes.
+        try:
+            path = os.path.join(app.static_folder, filename)
+            return int(os.path.getmtime(path))
+        except OSError:
+            return 0
+
+    app.jinja_env.globals["asset_version"] = asset_version
 
     from app.models.user import User
     from app.models.office import Office

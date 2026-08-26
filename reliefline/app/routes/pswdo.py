@@ -1,3 +1,4 @@
+import calendar
 import csv
 import io
 import json
@@ -27,6 +28,11 @@ from app.ml import predict as ml_predict
 pswdo_bp = Blueprint("pswdo", __name__)
 
 TARGET_LGUS = ["Urdaneta City", "Santa Barbara", "Calasiao"]
+
+MONTH_NAMES = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+]
 
 WAREHOUSE_HEALTHY_DEFAULT = 0.70
 WAREHOUSE_MODERATE_DEFAULT = 0.30
@@ -172,16 +178,24 @@ _geojson_cache = {}
 
 
 def _load_geojson_file(filename):
-    if filename not in _geojson_cache:
-        path = os.path.join(current_app.root_path, "static", "geo", filename)
+    # Keyed on the file's mtime, not just its name — a boundary-data fix
+    # edited on disk (e.g. the Santa Barbara/Calasiao/Urdaneta polygon
+    # corrections) used to keep serving the stale in-memory copy for the
+    # rest of that server process's life until someone thought to restart
+    # it. Re-reading on mtime change costs one cheap stat() per request and
+    # means a saved edit is just live, no restart required.
+    path = os.path.join(current_app.root_path, "static", "geo", filename)
+    mtime = os.path.getmtime(path)
+    cached = _geojson_cache.get(filename)
+    if cached is None or cached[0] != mtime:
         with open(path) as f:
-            _geojson_cache[filename] = json.load(f)
-    return _geojson_cache[filename]
+            _geojson_cache[filename] = (mtime, json.load(f))
+    return _geojson_cache[filename][1]
 
 
 def _bbox_center(geometry):
-    """Bounding-box midpoint — stable for marker placement even on concave
-    polygons, where a naive vertex-average centroid could land oddly."""
+    """Bounding-box midpoint — used only as a fallback when a polygon is too
+    degenerate for _polygon_centroid to compute an area."""
     lons, lats = [], []
 
     def collect(coords):
@@ -194,6 +208,49 @@ def _bbox_center(geometry):
 
     collect(geometry["coordinates"])
     return ((min(lats) + max(lats)) / 2, (min(lons) + max(lons)) / 2)
+
+
+def _ring_signed_area_centroid(ring):
+    """Shoelace-formula signed area and centroid of a single [lon, lat] ring."""
+    area = 0.0
+    cx = 0.0
+    cy = 0.0
+    n = len(ring)
+    for i in range(n):
+        x0, y0 = ring[i][0], ring[i][1]
+        x1, y1 = ring[(i + 1) % n][0], ring[(i + 1) % n][1]
+        cross = x0 * y1 - x1 * y0
+        area += cross
+        cx += (x0 + x1) * cross
+        cy += (y0 + y1) * cross
+    area *= 0.5
+    if area == 0:
+        return 0.0, None, None
+    return area, cx / (6 * area), cy / (6 * area)
+
+
+def _polygon_centroid(geometry):
+    """Area-weighted centroid of a Polygon/MultiPolygon's exterior ring(s) —
+    correct for concave, bay-wrapping coastal shapes (e.g. Alaminos) where a
+    bounding-box midpoint can land in open water. Falls back to the bbox
+    center only if every ring turns out to be degenerate (zero area)."""
+    polygons = geometry["coordinates"] if geometry["type"] == "MultiPolygon" else [geometry["coordinates"]]
+
+    total_area = 0.0
+    weighted_lon = 0.0
+    weighted_lat = 0.0
+    for poly in polygons:
+        area, cx, cy = _ring_signed_area_centroid(poly[0])
+        area = abs(area)
+        if area == 0:
+            continue
+        total_area += area
+        weighted_lon += cx * area
+        weighted_lat += cy * area
+
+    if total_area == 0:
+        return _bbox_center(geometry)
+    return (weighted_lat / total_area, weighted_lon / total_area)
 
 
 def _normalize_muni_name(name):
@@ -228,7 +285,7 @@ def _municipality_centroid(area_covered):
     target = _normalize_muni_name(area_covered).lower()
     for feature in province["features"]:
         if _normalize_muni_name(feature["properties"]["name"]).lower() == target:
-            return _bbox_center(feature["geometry"])
+            return _polygon_centroid(feature["geometry"])
     return None
 
 
@@ -288,7 +345,7 @@ def _target_barangay_centroid(lgu, barangay_name):
     raw = _load_geojson_file(GIS_LGU_FILES[lgu])
     for feature in raw["features"]:
         if feature["properties"]["name"] == barangay_name:
-            return _bbox_center(feature["geometry"])
+            return _polygon_centroid(feature["geometry"])
     return None
 
 
@@ -575,6 +632,45 @@ def _recent_stock_movements(office_ids, limit=6):
     return _full_stock_movements(office_ids)[:limit]
 
 
+def _resolve_dashboard_period():
+    """Reads ?period=monthly|yearly&month=&year= off the dashboard request and
+    turns it into a (period_start, period_end) date range, or (None, None)
+    when no period is selected — the caller's cue to fall back to today's
+    live/current-state view (the dashboard's original behavior).
+
+    Deliberately does NOT touch warehouse stock — WarehouseInventory only ever
+    stores today's on-hand quantity, never a historical daily balance, so
+    "stock as of a past month" isn't data this system actually has. Food Packs
+    Available / Low Stock Items stay live regardless of the period picked."""
+    period = request.args.get("period")
+    if period not in ("monthly", "yearly"):
+        return None, None, None
+
+    # Falls back to the current year/month rather than bailing out to Live —
+    # switching the Monthly/Yearly tab resubmits the form without the field
+    # that only the other tab renders (e.g. "month" doesn't exist while
+    # Yearly is showing), and that toggle shouldn't silently drop the filter.
+    year = request.args.get("year", type=int) or date.today().year
+
+    if period == "yearly":
+        return period, date(year, 1, 1), date(year, 12, 31)
+
+    month = request.args.get("month", type=int)
+    if not month or not (1 <= month <= 12):
+        month = date.today().month
+    last_day = calendar.monthrange(year, month)[1]
+    return period, date(year, month, 1), date(year, month, last_day)
+
+
+def _dashboard_period_years():
+    """Selectable years for the dashboard filter — spans every DisasterEvent
+    on record through the current year, so a past-dated seed event is never
+    out of the dropdown's reach."""
+    earliest = db.session.query(db.func.min(DisasterEvent.start_date)).scalar()
+    start_year = earliest.year if earliest else date.today().year
+    return list(range(date.today().year, start_year - 1, -1))
+
+
 @pswdo_bp.route("/dashboard")
 @login_required
 @role_required("pswdo_admin", "system_admin")
@@ -582,10 +678,27 @@ def dashboard():
     today = date.today()
     now = datetime.now()
 
-    # Active typhoon/disaster events
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    period, period_start, period_end = _resolve_dashboard_period()
+    is_filtered = period is not None
+    # Reflect _resolve_dashboard_period()'s own defaulting (e.g. a bare tab
+    # switch with no month yet) so the filter bar's selects show what's
+    # actually driving the KPIs below, not just the raw querystring.
+    selected_month = period_start.month if is_filtered else None
+    selected_year = period_start.year if is_filtered else None
+
+    if is_filtered:
+        # Historical view: any event whose date range overlaps the selected
+        # month/year, regardless of its current status (an event that has
+        # since ended still "happened" in the month being viewed).
+        active_events = DisasterEvent.query.filter(
+            DisasterEvent.start_date <= period_end,
+            db.or_(DisasterEvent.end_date.is_(None), DisasterEvent.end_date >= period_start)
+        ).order_by(DisasterEvent.start_date.desc()).all()
+    else:
+        # Live view: only what's active right now — the dashboard's original behavior.
+        active_events = DisasterEvent.query.filter_by(status="active").order_by(
+            DisasterEvent.start_date.desc()
+        ).all()
     primary_event = active_events[0] if active_events else None
 
     all_offices, warehouses, total_food_packs = _load_warehouses()
@@ -595,18 +708,22 @@ def dashboard():
     office_ids = [o.office_id for o in cswdo_offices]
 
     # Pending allocation requests (a rejected request keeps status="pending" but
-    # carries rejection_reason, so it must be excluded here — see AllocationRecord.display_status)
-    pending_requests = AllocationRecord.query.join(Barangay).filter(
+    # carries rejection_reason, so it must be excluded here — see AllocationRecord.display_status).
+    # Filtered mode scopes to requests actually submitted within the selected
+    # month/year that are still awaiting a decision today — there's no status-
+    # history table, so "still pending" is always as-of-now, not as-of-period.
+    pending_query = AllocationRecord.query.join(Barangay).filter(
         Barangay.city_municipality.in_(TARGET_LGUS),
         AllocationRecord.status == "pending",
         AllocationRecord.rejection_reason.is_(None)
-    ).order_by(AllocationRecord.allocation_date.desc()).limit(6).all()
-
-    pending_requests_count = AllocationRecord.query.join(Barangay).filter(
-        Barangay.city_municipality.in_(TARGET_LGUS),
-        AllocationRecord.status == "pending",
-        AllocationRecord.rejection_reason.is_(None)
-    ).count()
+    )
+    if is_filtered:
+        pending_query = pending_query.filter(
+            AllocationRecord.allocation_date >= period_start,
+            AllocationRecord.allocation_date <= period_end,
+        )
+    pending_requests = pending_query.order_by(AllocationRecord.allocation_date.desc()).limit(6).all()
+    pending_requests_count = pending_query.count()
 
     # Affected families + municipalities (3 target LGUs only)
     total_affected_families = 0
@@ -643,13 +760,18 @@ def dashboard():
     # System Recommendations — simple threshold-based logic, food_pack only
     recommendations = _stock_recommendations(warehouses)
 
-    # Today's Distribution Progress (3 target LGUs, active event)
+    # Today's Distribution Progress (3 target LGUs, TODAY's actual active event —
+    # deliberately independent of the month/year filter above, which only
+    # scopes the historical KPI cards, never this always-live "today" panel).
+    today_active_event = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).first()
     today_allocations = []
-    if primary_event:
+    if today_active_event:
         today_allocations = AllocationRecord.query.join(Barangay).filter(
             Barangay.city_municipality.in_(TARGET_LGUS),
             AllocationRecord.status.in_(["approved", "released"]),
-            AllocationRecord.event_id == primary_event.event_id
+            AllocationRecord.event_id == today_active_event.event_id
         ).all()
 
     total_allocated_today = sum(a.allocated_quantity for a in today_allocations)
@@ -693,6 +815,15 @@ def dashboard():
         "pswdo/dashboard.html",
         active_events=active_events,
         primary_event=primary_event,
+        today_active_event=today_active_event,
+        period=period,
+        is_filtered=is_filtered,
+        selected_month=selected_month,
+        selected_year=selected_year,
+        selected_month_name=MONTH_NAMES[selected_month - 1] if selected_month else None,
+        month_names=MONTH_NAMES,
+        available_years=_dashboard_period_years(),
+        map_event_id=primary_event.event_id if (is_filtered and primary_event) else None,
         warehouses=warehouses,
         total_food_packs=total_food_packs,
         pending_requests=pending_requests,
@@ -744,6 +875,23 @@ def warehouse_inventory():
 
     recent_movements = _recent_stock_movements(office_ids, limit=6)
 
+    # Warehouse map markers — same municipality-centroid approximation used by
+    # the GIS Map / dashboard mini-map (see _municipality_centroid), not a
+    # claim of the warehouse's precise street address.
+    warehouse_map_points = []
+    for w in warehouses:
+        centroid = _municipality_centroid(w["office"].area_covered)
+        if not centroid:
+            continue
+        warehouse_map_points.append({
+            "name": w["office"].office_name,
+            "area_covered": w["office"].area_covered,
+            "lat": centroid[0], "lng": centroid[1],
+            "health": w["health"], "pct": w["pct"],
+            "food_pack_qty": w["food_pack_qty"], "capacity": w["capacity"],
+            "office_id": w["office"].office_id,
+        })
+
     return render_template(
         "pswdo/warehouse_inventory.html",
         warehouses=warehouses,
@@ -753,6 +901,7 @@ def warehouse_inventory():
         transfers_today_count=transfers_today_count,
         recent_movements=recent_movements,
         default_office_id=warehouses[0]["office"].office_id if warehouses else None,
+        warehouse_map_points=warehouse_map_points,
     )
 
 
@@ -1454,6 +1603,16 @@ def gis_map_data():
                 "capacity": closest["capacity"],
             }
 
+        relief = _relief_summary(barangay_ids, event_id)
+        # Predicted demand — sum of each tracked barangay's food_packs_current
+        # (real submitted request where one exists, else the Linear
+        # Regression model's live estimate; see _current_packs_needed). Same
+        # methodology Predictive Analytics already reports per barangay,
+        # rolled up here for PSWDO's municipality-level oversight view so it
+        # never disagrees with that page or the barangay hover detail.
+        predicted_demand = sum(p["food_packs_current"] for p in lgu_props)
+        shortage = max(predicted_demand - relief["approved"], 0)
+
         municipalities.append({
             "lgu": lgu,
             "total_barangays": len(lgu_props),
@@ -1462,7 +1621,10 @@ def gis_map_data():
             "total_population": sum(p["population"] for p in lgu_props),
             "status_label": worst_tier["label"],
             "status_tier": worst_tier["tier"],
-            "relief": _relief_summary(barangay_ids, event_id),
+            "relief": relief,
+            "predicted_demand": predicted_demand,
+            "shortage": shortage,
+            "allocation_status": "Fulfilled" if shortage == 0 and relief["requested"] > 0 else "For Allocation",
             "warehouse": warehouse_info,
             "current_distribution": current_distribution,
         })
@@ -1609,16 +1771,35 @@ def _filtered_relief_requests():
         Barangay.city_municipality.in_(TARGET_LGUS)
     )
 
-    total_count = base_query.count()
-    pending_count = base_query.filter(
+    # Summary pills scope to the selected municipality (all statuses at once,
+    # so they still make sense as "which bucket to jump to next") — but never
+    # to status_filter itself, since these three counts ARE the status buckets.
+    summary_query = base_query
+    if municipality_filter != "all":
+        summary_query = summary_query.filter(Barangay.city_municipality == municipality_filter)
+
+    total_count = summary_query.count()
+    pending_count = summary_query.filter(
         AllocationRecord.status == "pending",
         AllocationRecord.rejection_reason.is_(None)
     ).count()
-    approved_count = base_query.filter(AllocationRecord.status == "approved").count()
-    released_count = base_query.filter(AllocationRecord.status == "released").count()
+    approved_count = summary_query.filter(AllocationRecord.status == "approved").count()
+    released_count = summary_query.filter(AllocationRecord.status == "released").count()
+    rejected_count = summary_query.filter(AllocationRecord.rejection_reason.isnot(None)).count()
 
     query = base_query
-    if status_filter != "all":
+    # "rejected" isn't its own status column value — it's status="pending" with
+    # rejection_reason set (see AllocationRecord.display_status) — so it needs
+    # its own branch, and "pending" must explicitly exclude it or a rejected
+    # request would show up under both filters.
+    if status_filter == "rejected":
+        query = query.filter(AllocationRecord.rejection_reason.isnot(None))
+    elif status_filter == "pending":
+        query = query.filter(
+            AllocationRecord.status == "pending",
+            AllocationRecord.rejection_reason.is_(None)
+        )
+    elif status_filter != "all":
         query = query.filter(AllocationRecord.status == status_filter)
     if municipality_filter != "all":
         query = query.filter(Barangay.city_municipality == municipality_filter)
@@ -1662,6 +1843,7 @@ def _filtered_relief_requests():
         "pending_count": pending_count,
         "approved_count": approved_count,
         "released_count": released_count,
+        "rejected_count": rejected_count,
         "total_count": total_count,
         "status_filter": status_filter,
         "municipality_filter": municipality_filter,
@@ -1693,6 +1875,7 @@ def relief_requests():
         pending_count=ctx["pending_count"],
         approved_count=ctx["approved_count"],
         released_count=ctx["released_count"],
+        rejected_count=ctx["rejected_count"],
         total_count=ctx["total_count"],
         total_filtered=total_filtered,
         status_filter=ctx["status_filter"],
@@ -1983,12 +2166,38 @@ def _eligible_for_distribution():
     "New Distribution" can schedule from. Once scheduled, an allocation drops
     out of this list (see create_distribution) since dispatch-status changes
     happen afterward via the existing distribution detail actions, not by
-    creating a second DistributionRecord."""
-    return AllocationRecord.query.join(Barangay).filter(
+    creating a second DistributionRecord.
+
+    Each row is enriched with the fulfilling warehouse's CURRENT stock (not
+    just what was available at approval time) so the New Distribution modal
+    can double-check availability up front, before the user even submits —
+    create_distribution() re-checks the same thing server-side regardless,
+    since stock can still move between page load and submit."""
+    allocations = AllocationRecord.query.join(Barangay).filter(
         Barangay.city_municipality.in_(TARGET_LGUS),
         AllocationRecord.status == "approved",
         ~AllocationRecord.distribution_records.any(),
     ).order_by(AllocationRecord.allocation_date.desc()).all()
+
+    office_ids = {a.fulfilling_office_id for a in allocations if a.fulfilling_office_id}
+    stock_by_office = {}
+    if office_ids:
+        rows = WarehouseInventory.query.filter(
+            WarehouseInventory.office_id.in_(office_ids),
+            WarehouseInventory.item_type == "food_pack",
+        ).all()
+        stock_by_office = {r.office_id: r.quantity_available for r in rows}
+
+    enriched = []
+    for a in allocations:
+        available = stock_by_office.get(a.fulfilling_office_id, 0)
+        enriched.append({
+            "allocation": a,
+            "municipality": a.barangay.city_municipality,
+            "available_stock": available,
+            "stock_ok": available >= a.allocated_quantity,
+        })
+    return enriched
 
 
 @pswdo_bp.route("/distribution")
@@ -1996,10 +2205,21 @@ def _eligible_for_distribution():
 @role_required("pswdo_admin", "system_admin")
 def distribution():
     ctx = _filtered_distributions()
+    eligible_allocations = _eligible_for_distribution()
+
+    # Municipality counts for the New Distribution wizard's first step —
+    # ordered by TARGET_LGUS so the tile order stays stable across loads.
+    municipality_counts = {}
+    for lgu in TARGET_LGUS:
+        count = sum(1 for row in eligible_allocations if row["municipality"] == lgu)
+        if count:
+            municipality_counts[lgu] = count
+
     return render_template(
         "pswdo/distribution.html",
         dispatch_labels=DISPATCH_STATUS_LABELS,
-        eligible_allocations=_eligible_for_distribution(),
+        eligible_allocations=eligible_allocations,
+        municipality_counts=municipality_counts,
         today_str=date.today().isoformat(),
         **ctx,
     )
@@ -2020,6 +2240,23 @@ def create_distribution():
         return redirect(url_for("pswdo.distribution"))
     if allocation.distribution_records:
         flash("A distribution has already been scheduled for this request.", "error")
+        return redirect(url_for("pswdo.distribution"))
+
+    # Re-check stock at schedule time, not just at approval time — the
+    # fulfilling warehouse's stock can move (other releases, transfers) in
+    # the gap between a request being approved and actually being scheduled.
+    office = allocation.fulfilling_office
+    inventory = WarehouseInventory.query.filter_by(
+        office_id=office.office_id, item_type="food_pack"
+    ).first() if office else None
+    available = inventory.quantity_available if inventory else 0
+    if not office or available < allocation.allocated_quantity:
+        flash(
+            f"Cannot schedule — {office.office_name if office else 'the fulfilling warehouse'} now has only "
+            f"{available:,} food packs available, but this request needs {allocation.allocated_quantity:,}. "
+            f"Transfer more stock in or re-approve with a lower quantity first.",
+            "error"
+        )
         return redirect(url_for("pswdo.distribution"))
 
     distribution_date = date.today()
