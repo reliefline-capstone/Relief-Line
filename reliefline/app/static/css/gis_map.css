@@ -253,6 +253,32 @@
 .leaflet-popup-content strong { display: block; margin-bottom: 4px; font-size: 13px; }
 .leaflet-popup-content span { display: block; color: #666; font-size: 12px; }
 
+/* Warehouse popup (PSWDO) — the food-pack figure and its status badge sit
+   on one row instead of as two more plain text lines among everything
+   else, and "Other Relief Items" gets its own small label + divider, so
+   the popup reads as "here's the relief situation" rather than a flat
+   list of facts about the office. */
+.gis-wh-popup-stock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+}
+.gis-wh-popup-stock span { display: inline-flex; align-items: center; }
+.gis-wh-popup-qty { font-size: 15px; font-weight: 700; color: #1a1a1a; }
+.gis-wh-popup-qty small { font-size: 11px; font-weight: 400; color: #8a94a6; margin-left: 3px; }
+.gis-wh-popup-divider { height: 1px; background: #eee; margin: 10px 0 6px; }
+.gis-wh-popup-label {
+    font-size: 10px;
+    color: #8a94a6;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.gis-wh-relief-items { color: #333 !important; }
+
 /* Side stat cards — 1 column stack instead of dashboard's row */
 .gis-stat-cards {
     grid-template-columns: 1fr;

@@ -193,18 +193,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 iconAnchor: [30, 13],
             });
             var marker = L.marker([w.lat, w.lng], { icon: icon });
+            // Food packs are the one figure every warehouse popup leads
+            // with, everywhere in the app — the badge next to it is the
+            // same badge-health used on the Dashboard/Warehouse Inventory,
+            // so "is this warehouse okay" reads the same way here too.
             var popupHtml =
                 '<strong>' + escapeHtml(w.name) + '</strong>' +
                 '<span>' + escapeHtml(w.area_covered) + '</span>' +
-                '<span>' + fmt(w.food_pack_qty) + ' / ' + fmt(w.capacity) + ' packs (' + w.pct.toFixed(0) + '%)</span>';
+                '<div class="gis-wh-popup-stock">' +
+                '<span class="gis-wh-popup-qty">' + fmt(w.food_pack_qty) + ' <small>/ ' + fmt(w.capacity) + ' packs (' + w.pct.toFixed(0) + '%)</small></span>' +
+                '<span class="badge-health badge-' + healthClass + '">' + escapeHtml(w.health || 'No data available') + '</span>' +
+                '</div>';
             // PSWDO only (CSWDO/MSWDO keeps the popup exactly as it was) —
-            // relief-supply-focused additions: the stock-health label spelled
-            // out, and any other real relief items this office has on record
-            // (see WarehouseInventory in gis_map_data — never fabricated,
-            // "No data available" when there's genuinely nothing to show).
+            // every other relief item this office has on record, never
+            // fabricated ("No data available" when there's genuinely
+            // nothing), kept visually separate from the food-pack figure
+            // above rather than just another plain text line among others,
+            // so the whole popup reads as "relief supplies", not a generic
+            // office info card.
             if (IS_MUNI_ONLY) {
-                popupHtml += '<span>Relief Stock Status: ' + escapeHtml(w.health || 'No data available') + '</span>';
-                popupHtml += '<span class="gis-wh-relief-items">Other Relief Items: ';
+                popupHtml += '<div class="gis-wh-popup-divider"></div>';
+                popupHtml += '<span class="gis-wh-popup-label">Other Relief Items</span>';
+                popupHtml += '<span class="gis-wh-relief-items">';
                 if (w.other_relief_items && w.other_relief_items.length) {
                     popupHtml += escapeHtml(w.other_relief_items.map(function (i) {
                         return i.name + ' (' + fmt(i.qty) + ' ' + i.unit + ')';
