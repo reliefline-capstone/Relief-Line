@@ -9,8 +9,9 @@
     </div>
     <nav class="sidebar-nav">
         <a href="{{ url_for('barangay.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} Dashboard</a>
-        <a href="{{ url_for('barangay.damage_report') }}" class="{{ 'active' if active_page == 'damage_report' }}">{{ icon('alert-triangle', 18) }} Damage Report</a>
+        <a href="{{ url_for('barangay.damage_report') }}" class="{{ 'active' if active_page == 'damage_report' }}">{{ icon('clipboard', 18) }} Relief Request</a>
         <a href="{{ url_for('barangay.relief_monitoring') }}" class="{{ 'active' if active_page == 'relief_monitoring' }}">{{ icon('truck', 18) }} Relief Monitoring</a>
+        <a href="{{ url_for('barangay.inventory') }}" class="{{ 'active' if active_page == 'inventory' }}">{{ icon('package', 18) }} Inventory</a>
         <a href="{{ url_for('barangay.reports') }}" class="{{ 'active' if active_page == 'reports' }}">{{ icon('bar-chart', 18) }} Reports</a>
         <a href="{{ url_for('barangay.notifications') }}" class="{{ 'active' if active_page == 'notifications' }}">{{ icon('bell', 18) }} Notifications {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}</a>
     </nav>

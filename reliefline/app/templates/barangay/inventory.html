@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Barangay Inventory - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'inventory' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "barangay/_flash.html" %}
+
+        <div class="page-header">
+            <div>
+                <h2>Barangay Inventory</h2>
+                <p>Brgy. {{ barangay.barangay_name }} · food packs currently on hand</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn-outline" data-open-modal="bi-distribute">{{ icon('minus', 14) }} Record Distribution</button>
+                <button type="button" class="btn-add-warehouse" data-open-modal="bi-adjust">{{ icon('sliders', 14, 'white') }} Adjust</button>
+            </div>
+        </div>
+
+        <section class="stat-cards stat-cards-3">
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('package', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ "{:,}".format(on_hand) }}</span>
+                <span class="stat-label">Food Packs On Hand</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('download', 18, '#3867d6') }}</div>
+                <span class="stat-value">+{{ "{:,}".format(received) }}</span>
+                <span class="stat-label">Total Received</span>
+                <span class="stat-sub">from validated deliveries</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
+                <span class="stat-value">-{{ "{:,}".format(given_out) }}</span>
+                <span class="stat-label">Given Out</span>
+                <span class="stat-sub">distributed to residents</span>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header"><h3>Movement History</h3></div>
+            {% for l in logs %}
+            <div class="wh-movement-row">
+                <div class="wh-movement-icon {{ 'wh-move-out' if l.delta < 0 else 'wh-move-in' }}">
+                    <span>{{ icon('arrow-right', 14) }}</span>
+                </div>
+                <div class="wh-movement-text">
+                    <strong>{{ l.source_type|capitalize }}</strong>
+                    <span>{{ l.reason or '—' }}</span>
+                </div>
+                <div class="wh-movement-amount">
+                    <strong class="{{ 'text-red' if l.delta < 0 else 'text-green' }}">{{ '+' if l.delta > 0 }}{{ "{:,}".format(l.delta) }}</strong>
+                    <span>{{ l.created_at.strftime('%b %d, %Y') if l.created_at }}</span>
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-note">No movement yet. Your inventory grows when you validate a delivery on Relief Monitoring.</p>
+            {% endfor %}
+        </section>
+
+    </main>
+</div>
+
+<div class="rd-modal-overlay" id="bi-distribute" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header"><h3>{{ icon('minus', 18, '#0f2547') }} Record Distribution</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
+        <form method="POST" action="{{ url_for('barangay.inventory_record') }}" class="settings-form">
+            <input type="hidden" name="kind" value="distribution">
+            <div class="form-row">
+                <label for="bi-d-amount">Food packs handed out *</label>
+                <input type="number" name="amount" id="bi-d-amount" min="1" max="{{ on_hand }}" required>
+                <span class="form-hint">You have {{ "{:,}".format(on_hand) }} on hand.</span>
+            </div>
+            <div class="form-row">
+                <label for="bi-d-reason">Note (optional)</label>
+                <input type="text" name="reason" id="bi-d-reason" placeholder="e.g. Distributed at evacuation center, Purok 3">
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Record</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="rd-modal-overlay" id="bi-adjust" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header"><h3>{{ icon('sliders', 18, '#0f2547') }} Adjust Count</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
+        <form method="POST" action="{{ url_for('barangay.inventory_record') }}" class="settings-form">
+            <input type="hidden" name="kind" value="adjustment">
+            <div class="form-row">
+                <label>Direction</label>
+                <select name="direction">
+                    <option value="add">Add (found extra / recount up)</option>
+                    <option value="subtract">Subtract (spoilage / recount down)</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="bi-a-amount">Amount *</label>
+                <input type="number" name="amount" id="bi-a-amount" min="1" required>
+            </div>
+            <div class="form-row">
+                <label for="bi-a-reason">Reason *</label>
+                <input type="text" name="reason" id="bi-a-reason" placeholder="e.g. 20 packs water-damaged" required>
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Apply</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
+{% endblock %}

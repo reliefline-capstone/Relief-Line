@@ -49,7 +49,7 @@ def run():
             Barangay.city_municipality.in_(TARGET_LGUS)
         ).all()}
         muni_offices = {o.area_covered: o for o in Office.query.filter_by(office_type="cswdo").all()}
-        warehouse_a = Office.query.filter_by(office_name="Warehouse A").first()
+        warehouse_a = Office.query.filter_by(office_name="PSWDO Warehouse").first()
         admin_users = {u.role: u for u in User.query.all()}
         pswdo_admin = admin_users.get("pswdo_admin") or admin_users.get("system_admin")
         cswdo_admin_by_office = {u.office_id: u for u in User.query.filter_by(role="cswdo_admin").all()}
@@ -75,7 +75,7 @@ def run():
             db.session.flush()
         print(f"Using event: {event.event_name} (id={event.event_id})")
 
-        # --- Warehouse A stock: give it real, non-zero inventory to fulfill demo allocations ---
+        # --- PSWDO Warehouse stock: give it real, non-zero inventory to fulfill demo allocations ---
         wa_inventory = WarehouseInventory.query.filter_by(office_id=warehouse_a.office_id, item_type="food_pack").first()
         if not wa_inventory:
             wa_inventory = WarehouseInventory(office_id=warehouse_a.office_id, item_type="food_pack",
@@ -84,7 +84,7 @@ def run():
         else:
             wa_inventory.quantity_available = 22000
 
-        # --- Warehouse A general info + extra stock catalog (demonstrates the
+        # --- PSWDO Warehouse general info + extra stock catalog (demonstrates the
         # flexible, non-food_pack inventory catalog alongside the reserved item) ---
         if not warehouse_a.full_address:
             warehouse_a.full_address = f"Capitol Compound, {warehouse_a.area_covered}, Pangasinan"
@@ -105,7 +105,7 @@ def run():
                     unit=unit, quantity_available=qty, min_stock_level=min_level,
                 ))
         db.session.flush()
-        print("Seeded Warehouse A general info + extra stock catalog (rice, water, blankets, medicine kit)")
+        print("Seeded PSWDO Warehouse general info + extra stock catalog (rice, water, blankets, medicine kit)")
 
         # --- Barangay disaster statuses (drives Priority + Affected Families everywhere) ---
         status_plan = [
@@ -113,9 +113,9 @@ def run():
             ("Bactad East", "needs_assistance", 800),
             ("Bayaoas", "monitoring", 400),
             ("Cabaruan", "needs_assistance", 600),
-            ("Calepaan", "high_priority", 900),
-            ("Coliling", "needs_assistance", 600),
-            ("Ban-ao", "monitoring", 300),
+            ("Botao", "high_priority", 900),
+            ("Dalongue", "needs_assistance", 600),
+            ("Balingueo", "monitoring", 300),
             ("Lasip", "high_priority", 700),
             ("Cabilocaan", "needs_assistance", 500),
             ("Doyong", "monitoring", 350),
@@ -149,8 +149,8 @@ def run():
                 cswdo_admin = cswdo_admin_by_office.get(office.office_id)
                 batch = ReliefRequestBatch(
                     office_id=office.office_id, event_id=event.event_id,
-                    requested_food_packs=0, priority="medium",
-                    reason="Verified barangay reports show typhoon-related flooding requiring food pack support.",
+                    requested_food_packs=0, priority="medium", status="pending",
+                    reason="Municipal warehouse replenishment for the active event.",
                     created_by=cswdo_admin.user_id if cswdo_admin else None,
                     created_at=submitted_at, submitted_at=submitted_at,
                 )
@@ -209,11 +209,11 @@ def run():
         d2 = make_distribution(a2, "in_transit",
                            dtime(7, 30), dtime(9, 45))
 
-        a3 = make_allocation("Calepaan", "Santa Barbara", 900, "approved", 900)
+        a3 = make_allocation("Botao", "Santa Barbara", 900, "approved", 900)
         make_distribution(a3, "dispatched",
                            dtime(9, 0), dtime(11, 15))
 
-        a4 = make_allocation("Coliling", "Santa Barbara", 600, "approved", 600)
+        a4 = make_allocation("Dalongue", "Santa Barbara", 600, "approved", 600)
         make_distribution(a4, "loaded")
 
         a5 = make_allocation("Lasip", "Calasiao", 1800, "approved", 1800)
@@ -227,7 +227,7 @@ def run():
                            dtime(6, 45), dtime(9, 0), "Maria Santos", "complete", "2 hrs 15 mins")
 
         make_allocation("Bayaoas", "Urdaneta City", 1000, "pending")
-        make_allocation("Ban-ao", "Santa Barbara", 700, "pending")
+        make_allocation("Balingueo", "Santa Barbara", 700, "pending")
         make_allocation("Banaoang", "Calasiao", 500, "approved", 300, expected_delivery_days=1)
         make_allocation("Cabaruan", "Urdaneta City", 800, "pending",
                          rejection_reason="Municipal warehouse already has adequate stock for this barangay; redirected to Bayaoas instead.")
@@ -262,7 +262,7 @@ def run():
 
         db.session.commit()
         print("\nSeed complete.")
-        print(f"Warehouse A food_pack stock: {wa_inventory.quantity_available:,} / 22,000 capacity")
+        print(f"PSWDO Warehouse food_pack stock: {wa_inventory.quantity_available:,} / 22,000 capacity")
 
 
 if __name__ == "__main__":

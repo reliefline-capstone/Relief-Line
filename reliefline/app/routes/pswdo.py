@@ -21,6 +21,8 @@ from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.activity_log import ActivityLog, DailyOpsStat
 from app.models.logistics import WarehouseTransfer
+from app.models.relief_request_batch import ReliefRequestBatch
+from app.models.barangay_report import BarangayReport
 from app.models.user import User
 from app.utils.settings import get_setting
 from app.ml import predict as ml_predict
@@ -96,6 +98,10 @@ NOTIFICATION_META = {
     "distribution_receipt_confirmed": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Distribution"},
     "disaster_event_declared": {"icon": "cloud-lightning", "color": "#c0392b", "category": "disaster_events", "category_label": "Disaster Events"},
     "disaster_event_ended": {"icon": "check-circle", "color": "#1e8449", "category": "disaster_events", "category_label": "Disaster Events"},
+    "direct_allocation": {"icon": "package", "color": "#6c5ce7", "category": "relief_requests", "category_label": "Relief Requests"},
+    # Tier 1 (barangay -> CSWDO) — CSWDO + barangay feeds only, never PSWDO's.
+    "barangay_relief_approved": {"icon": "check-circle", "color": "#1e8449", "category": "relief_requests", "category_label": "Relief Requests"},
+    "barangay_relief_declined": {"icon": "x-circle", "color": "#c0392b", "category": "relief_requests", "category_label": "Relief Requests"},
 }
 DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
 
@@ -106,49 +112,41 @@ DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "ot
 # PSWDO's own notification feed excludes them outright; NOTIFICATION_META
 # itself stays the shared source of truth since CSWDO's and Barangay's own
 # notification feeds still need these 3 action_types.
-PSWDO_EXCLUDED_NOTIFICATION_TYPES = {"damage_report_submitted", "damage_report_verified", "damage_report_returned"}
+PSWDO_EXCLUDED_NOTIFICATION_TYPES = {
+    "damage_report_submitted", "damage_report_verified", "damage_report_returned",
+    "barangay_relief_approved", "barangay_relief_declined",
+}
 PSWDO_NOTIFICATION_TYPES = [k for k in NOTIFICATION_META if k not in PSWDO_EXCLUDED_NOTIFICATION_TYPES]
 
-def _relief_request_submitted_link(log):
-    """PSWDO reviews relief requests per barangay (AllocationRecord), not per
-    batch, so the "exact" screen for a submission notification is the first
-    AllocationRecord that submitted batch created — falls back to the
-    unfiltered Relief Requests list on the rare chance the batch has no
-    children yet (e.g. the batch was submitted but its eligible-barangay
-    pool was empty)."""
-    if not log.batch_id:
-        return url_for("pswdo.relief_requests")
-    first_child = AllocationRecord.query.filter_by(batch_id=log.batch_id).order_by(
-        AllocationRecord.allocation_id
-    ).first()
-    if first_child:
-        return url_for("pswdo.relief_request_detail", allocation_id=first_child.allocation_id)
+def _batch_link(log):
+    """Stock Request notifications resolve to that batch's detail page."""
+    if log.batch_id:
+        return url_for("pswdo.relief_request_detail", batch_id=log.batch_id)
     return url_for("pswdo.relief_requests")
 
 
-# Keyed by action_type (not category) since two action_types in the same
-# category — e.g. allocation_approved vs. relief_request_submitted, both
-# "relief_requests" — point at different kinds of records (an allocation vs.
-# a batch) and need different resolution logic.
+def _batch_transfer_id(log):
+    if not log.batch_id:
+        return None
+    t = WarehouseTransfer.query.filter_by(batch_id=log.batch_id).order_by(
+        WarehouseTransfer.transfer_id.desc()
+    ).first()
+    return t.transfer_id if t else None
+
+
 NOTIFICATION_LINK_BUILDERS = {
-    "allocation_approved": lambda log: (
-        url_for("pswdo.relief_request_detail", allocation_id=log.allocation_id) if log.allocation_id else None
-    ),
-    "allocation_rejected": lambda log: (
-        url_for("pswdo.relief_request_detail", allocation_id=log.allocation_id) if log.allocation_id else None
-    ),
-    "relief_request_submitted": _relief_request_submitted_link,
-    "distribution_status": lambda log: (
-        url_for("pswdo.distribution_detail", distribution_id=log.distribution_id) if log.distribution_id else None
-    ),
-    "distribution_delivered": lambda log: (
-        url_for("pswdo.distribution_detail", distribution_id=log.distribution_id) if log.distribution_id else None
-    ),
+    "allocation_approved": _batch_link,
+    "allocation_rejected": _batch_link,
+    "relief_request_submitted": _batch_link,
+    "distribution_status": lambda log: url_for("pswdo.transfers"),
+    "distribution_delivered": lambda log: url_for("pswdo.transfers"),
     "warehouse_transfer_completed": lambda log: (
-        url_for("pswdo.warehouse_detail", office_id=log.office_id) if log.office_id else None
+        url_for("pswdo.transfer_detail", transfer_id=_batch_transfer_id(log)) if _batch_transfer_id(log)
+        else (url_for("pswdo.warehouse_detail", office_id=log.office_id) if log.office_id else None)
     ),
     "disaster_event_declared": lambda log: url_for("pswdo.dashboard"),
     "disaster_event_ended": lambda log: url_for("pswdo.dashboard"),
+    "direct_allocation": lambda log: url_for("pswdo.transfers"),
 }
 
 
@@ -362,9 +360,16 @@ def _relief_summary(barangay_ids, event_id):
     if not barangay_ids:
         return empty
 
+    # Scoped to the current relief context: the active event's allocations, or —
+    # when no event is active — only standing/direct allocations (event_id IS
+    # NULL). Historical allocations from past ended events are NOT current need
+    # and must never be summed in here (a barangay with several past typhoons on
+    # record would otherwise show a "requested" figure in the tens of thousands).
     alloc_query = AllocationRecord.query.filter(AllocationRecord.barangay_id.in_(barangay_ids))
     if event_id:
         alloc_query = alloc_query.filter(AllocationRecord.event_id == event_id)
+    else:
+        alloc_query = alloc_query.filter(AllocationRecord.event_id.is_(None))
     allocations = alloc_query.all()
     if not allocations:
         return empty
@@ -712,23 +717,19 @@ def dashboard():
     cswdo_offices = [o for o in all_offices if o.office_type == "cswdo"]
     office_ids = [o.office_id for o in cswdo_offices]
 
-    # Pending allocation requests (a rejected request keeps status="pending" but
-    # carries rejection_reason, so it must be excluded here — see AllocationRecord.display_status).
-    # Filtered mode scopes to requests actually submitted within the selected
-    # month/year that are still awaiting a decision today — there's no status-
-    # history table, so "still pending" is always as-of-now, not as-of-period.
-    pending_query = AllocationRecord.query.join(Barangay).filter(
-        Barangay.city_municipality.in_(TARGET_LGUS),
-        AllocationRecord.status == "pending",
-        AllocationRecord.rejection_reason.is_(None)
+    # Pending Stock Requests — the municipal-warehouse replenishment requests
+    # PSWDO decides on (the ONLY request type it acts on).
+    pending_q = ReliefRequestBatch.query.filter(
+        ReliefRequestBatch.submitted_at.isnot(None),
+        ReliefRequestBatch.status == "pending",
     )
     if is_filtered:
-        pending_query = pending_query.filter(
-            AllocationRecord.allocation_date >= period_start,
-            AllocationRecord.allocation_date <= period_end,
+        pending_q = pending_q.filter(
+            ReliefRequestBatch.submitted_at >= period_start,
+            ReliefRequestBatch.submitted_at <= period_end,
         )
-    pending_requests = pending_query.order_by(AllocationRecord.allocation_date.desc()).limit(6).all()
-    pending_requests_count = pending_query.count()
+    pending_requests = pending_q.order_by(ReliefRequestBatch.submitted_at.desc()).limit(6).all()
+    pending_requests_count = pending_q.count()
 
     # Affected families + municipalities (3 target LGUs only)
     total_affected_families = 0
@@ -771,13 +772,17 @@ def dashboard():
     today_active_event = DisasterEvent.query.filter_by(status="active").order_by(
         DisasterEvent.start_date.desc()
     ).first()
-    today_allocations = []
+    # Scoped to the active event when one exists; otherwise every approved/
+    # released allocation counts (direct allocations and standing requests
+    # can both happen with no declared event — see direct_allocation).
+    today_query = AllocationRecord.query.join(Barangay).filter(
+        Barangay.city_municipality.in_(TARGET_LGUS),
+        AllocationRecord.status.in_(["approved", "released"]),
+        AllocationRecord.source != "barangay_request",
+    )
     if today_active_event:
-        today_allocations = AllocationRecord.query.join(Barangay).filter(
-            Barangay.city_municipality.in_(TARGET_LGUS),
-            AllocationRecord.status.in_(["approved", "released"]),
-            AllocationRecord.event_id == today_active_event.event_id
-        ).all()
+        today_query = today_query.filter(AllocationRecord.event_id == today_active_event.event_id)
+    today_allocations = today_query.all()
 
     total_allocated_today = sum(a.allocated_quantity for a in today_allocations)
 
@@ -902,9 +907,10 @@ def declare_disaster_event():
         flash("Event name is required to declare a disaster event.", "error")
         return redirect(url_for("pswdo.dashboard"))
 
-    event_type = request.form.get("event_type", "typhoon")
-    if event_type not in ("typhoon", "flood", "other"):
-        event_type = "typhoon"
+    # The system is scoped to typhoon-related response (manuscript: other
+    # disaster types are "future implementations"). The per-barangay hazard
+    # sub-classification lives on BarangayReport.disaster_type instead.
+    event_type = "typhoon"
 
     start_date_raw = request.form.get("start_date", "")
     try:
@@ -1029,7 +1035,7 @@ def warehouse_create():
 
     # office_type="pswdo" marks it as province-managed warehouse infrastructure,
     # so it's picked up by _load_warehouses() regardless of which LGU it's in —
-    # same pattern as the existing "Warehouse A"/"Warehouse C" seed offices.
+    # same pattern as the existing "PSWDO Warehouse" seed offices.
     office = Office(
         office_name=office_name, office_type="pswdo", area_covered=area_covered,
         capacity_food_pack=capacity_food_pack,
@@ -1860,140 +1866,91 @@ def gis_map_municipality_report(lgu):
     )
 
 
-def _filtered_relief_requests():
-    """Shared filter/sort logic for the relief requests page and its CSV export."""
-    status_filter = request.args.get("status", "all")
-    municipality_filter = request.args.get("municipality", "all")
-    priority_filter = request.args.get("priority", "all")
-    date_filter = request.args.get("date", "")
-    date_filter_display = ""
-    search_query = request.args.get("q", "").strip()
+# ---------------------------------------------------------------------------
+# Stock Requests (PSWDO decides) — CSWDO municipal-warehouse replenishment.
+# The only request type PSWDO acts on. Approving one performs a WarehouseTransfer
+# from a provincial depot into the CSWDO warehouse; PSWDO monitors that leg.
+# ---------------------------------------------------------------------------
 
-    active_event = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).first()
+RR_STATUS_LABELS = {
+    "draft": "Draft", "pending": "Under Review", "approved": "Approved",
+    "partially_approved": "Partially Approved", "declined": "Declined", "fulfilled": "Fulfilled",
+}
 
-    base_query = AllocationRecord.query.join(Barangay).filter(
-        Barangay.city_municipality.in_(TARGET_LGUS)
-    )
 
-    # Summary pills scope to the selected municipality (all statuses at once,
-    # so they still make sense as "which bucket to jump to next") — but never
-    # to status_filter itself, since these three counts ARE the status buckets.
-    summary_query = base_query
-    if municipality_filter != "all":
-        summary_query = summary_query.filter(Barangay.city_municipality == municipality_filter)
+def _stock_request_rows(status_filter="all", municipality_filter="all", search=""):
+    q = ReliefRequestBatch.query.filter(ReliefRequestBatch.submitted_at.isnot(None))
+    batches = q.order_by(ReliefRequestBatch.submitted_at.desc()).all()
+    rows = []
+    for b in batches:
+        lgu = b.office.area_covered if b.office else ""
+        if municipality_filter != "all" and lgu != municipality_filter:
+            continue
+        if status_filter != "all" and b.display_status != status_filter:
+            continue
+        if search and search.lower() not in b.ref.lower() and search.lower() not in lgu.lower():
+            continue
+        rows.append(b)
+    return rows
 
-    total_count = summary_query.count()
-    pending_count = summary_query.filter(
-        AllocationRecord.status == "pending",
-        AllocationRecord.rejection_reason.is_(None)
-    ).count()
-    approved_count = summary_query.filter(AllocationRecord.status == "approved").count()
-    released_count = summary_query.filter(AllocationRecord.status == "released").count()
-    rejected_count = summary_query.filter(AllocationRecord.rejection_reason.isnot(None)).count()
 
-    query = base_query
-    # "rejected" isn't its own status column value — it's status="pending" with
-    # rejection_reason set (see AllocationRecord.display_status) — so it needs
-    # its own branch, and "pending" must explicitly exclude it or a rejected
-    # request would show up under both filters.
-    if status_filter == "rejected":
-        query = query.filter(AllocationRecord.rejection_reason.isnot(None))
-    elif status_filter == "pending":
-        query = query.filter(
-            AllocationRecord.status == "pending",
-            AllocationRecord.rejection_reason.is_(None)
-        )
-    elif status_filter != "all":
-        query = query.filter(AllocationRecord.status == status_filter)
-    if municipality_filter != "all":
-        query = query.filter(Barangay.city_municipality == municipality_filter)
-    if date_filter:
-        try:
-            parsed_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
-            query = query.filter(AllocationRecord.allocation_date == parsed_date)
-            date_filter_display = parsed_date.strftime("%m/%d/%Y")
-        except ValueError:
-            pass
-    if search_query:
-        like = f"%{search_query}%"
-        query = query.filter(
-            db.or_(
-                Barangay.city_municipality.ilike(like),
-                Barangay.barangay_name.ilike(like),
-            )
-        )
-
-    matching_requests = query.order_by(AllocationRecord.allocation_date.desc()).all()
-
-    # Priority lookup, scoped to the active event (falls back to "Unrated" otherwise)
-    status_map = {}
-    if active_event:
-        statuses = BarangayDisasterStatus.query.filter_by(event_id=active_event.event_id).all()
-        status_map = {s.barangay_id: s.status for s in statuses}
-
-    enriched = []
-    for req in matching_requests:
-        priority = _priority_info(status_map.get(req.barangay_id))
-        enriched.append((req, priority))
-
-    if priority_filter != "all":
-        enriched = [pair for pair in enriched if pair[1]["tier"] == priority_filter]
-
-    enriched.sort(key=lambda pair: (pair[1]["rank"], pair[0].allocation_date), reverse=True)
-
-    return {
-        "enriched": enriched,
-        "active_event": active_event,
-        "pending_count": pending_count,
-        "approved_count": approved_count,
-        "released_count": released_count,
-        "rejected_count": rejected_count,
-        "total_count": total_count,
-        "status_filter": status_filter,
-        "municipality_filter": municipality_filter,
-        "priority_filter": priority_filter,
-        "date_filter": date_filter,
-        "date_filter_display": date_filter_display,
-        "search_query": search_query,
-    }
+def _municipal_demand_for(office, event):
+    """Sum of the barangay-level model outputs for an office's LGU — the exact
+    figure PSWDO sees (aggregation traceability). Real active-event barangay
+    request where one exists, else the model estimate."""
+    lgu = office.area_covered if office else None
+    if not lgu:
+        return [], 0
+    event_id = event.event_id if event else None
+    rows = []
+    for b in Barangay.query.filter_by(city_municipality=lgu).order_by(Barangay.barangay_name).all():
+        req = None
+        if event_id:
+            rep = BarangayReport.query.filter_by(barangay_id=b.barangay_id, event_id=event_id).filter(
+                BarangayReport.status.in_(("pending", "approved", "fulfilled"))
+            ).first()
+            req = rep.requested_food_packs if rep else None
+        model = ml_predict.predict_quantity(b) or 0
+        demand = req if (req and req > 0) else model
+        rows.append({"barangay": b, "model": model, "requested": req, "demand": demand})
+    return rows, sum(r["demand"] for r in rows)
 
 
 @pswdo_bp.route("/relief-requests")
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def relief_requests():
-    ctx = _filtered_relief_requests()
-    enriched = ctx["enriched"]
+    status_filter = request.args.get("status", "all")
+    municipality_filter = request.args.get("municipality", "all")
+    search_query = request.args.get("q", "").strip()
+    rows = _stock_request_rows(status_filter, municipality_filter, search_query)
 
-    per_page = 10
-    total_filtered = len(enriched)
+    all_submitted = ReliefRequestBatch.query.filter(ReliefRequestBatch.submitted_at.isnot(None)).all()
+    counts = {
+        "pending": sum(1 for b in all_submitted if b.display_status == "pending"),
+        "approved": sum(1 for b in all_submitted if b.display_status in ("approved", "partially_approved")),
+        "fulfilled": sum(1 for b in all_submitted if b.display_status == "fulfilled"),
+        "declined": sum(1 for b in all_submitted if b.display_status == "declined"),
+    }
+    per_page = 12
+    total_filtered = len(rows)
     total_pages = max((total_filtered + per_page - 1) // per_page, 1)
-    page = max(request.args.get("page", 1, type=int), 1)
-    page = min(page, total_pages)
-    start = (page - 1) * per_page
-    page_items = enriched[start:start + per_page]
+    page = min(max(request.args.get("page", 1, type=int), 1), total_pages)
+    page_rows = rows[(page - 1) * per_page: page * per_page]
+
+    _, warehouses, _ = _load_warehouses()
+    depots = [w for w in warehouses if w["office"].office_type == "pswdo" and w["food_pack_qty"] > 0]
+    cswdo_offices = Office.query.filter(
+        Office.office_type == "cswdo", Office.area_covered.in_(TARGET_LGUS)
+    ).order_by(Office.area_covered).all()
 
     return render_template(
         "pswdo/relief_requests.html",
-        active_event=ctx["active_event"],
-        pending_count=ctx["pending_count"],
-        approved_count=ctx["approved_count"],
-        released_count=ctx["released_count"],
-        rejected_count=ctx["rejected_count"],
-        total_count=ctx["total_count"],
-        total_filtered=total_filtered,
-        status_filter=ctx["status_filter"],
-        municipality_filter=ctx["municipality_filter"],
-        priority_filter=ctx["priority_filter"],
-        date_filter=ctx["date_filter"],
-        date_filter_display=ctx["date_filter_display"],
-        search_query=ctx["search_query"],
-        target_lgus=TARGET_LGUS,
-        requests=page_items,
-        page=page,
-        total_pages=total_pages,
+        rows=page_rows, counts=counts, total_count=len(all_submitted), total_filtered=total_filtered,
+        cswdo_offices=cswdo_offices,
+        status_filter=status_filter, municipality_filter=municipality_filter, search_query=search_query,
+        target_lgus=TARGET_LGUS, status_labels=RR_STATUS_LABELS, priority_labels={"high": "High", "medium": "Medium", "low": "Low"},
+        depots=depots, page=page, total_pages=total_pages,
     )
 
 
@@ -2001,53 +1958,22 @@ def relief_requests():
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def export_relief_requests():
-    ctx = _filtered_relief_requests()
-
+    rows = _stock_request_rows(
+        request.args.get("status", "all"), request.args.get("municipality", "all"),
+        request.args.get("q", "").strip(),
+    )
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow([
-        "Municipality", "Barangay", "Request ID", "Typhoon Event",
-        "Requested Packs", "Priority", "Date", "Status"
-    ])
-    for req, priority in ctx["enriched"]:
+    writer.writerow(["Request ID", "Municipality", "Event", "Requested", "Approved", "Status", "Submitted"])
+    for b in rows:
         writer.writerow([
-            req.barangay.city_municipality,
-            req.barangay.barangay_name,
-            f"RR-{req.allocation_date.year}-{req.allocation_id:03d}",
-            req.event.event_name if req.event else (req.disaster_event or ""),
-            req.predicted_quantity,
-            priority["label"],
-            req.allocation_date.isoformat(),
-            req.status,
+            b.ref, b.office.area_covered if b.office else "", b.event.event_name if b.event else "",
+            b.requested_food_packs, b.approved_food_packs,
+            RR_STATUS_LABELS.get(b.display_status, b.display_status),
+            b.submitted_at.strftime("%Y-%m-%d") if b.submitted_at else "",
         ])
-
-    return Response(
-        buffer.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=relief_requests.csv"},
-    )
-
-
-def _urgency_score(barangay, status_key, predicted_quantity, municipal_available):
-    """
-    0-100 score, weighted from real fields since there's no urgency column in the
-    schema: disaster status tier (40%), barangay disaster_risk_index (20%),
-    poverty_incidence (15%), past_calamity_freq (10%), and the requested-vs-available
-    stock gap at the municipal office (15%).
-    """
-    rank = _priority_info(status_key)["rank"]  # 0-4
-    status_component = (rank / 4) * 40
-    risk_component = min(float(barangay.disaster_risk_index or 0) / 10, 1) * 20
-    poverty_component = min(float(barangay.poverty_incidence or 0) / 100, 1) * 15
-    calamity_component = min((barangay.past_calamity_freq or 0) / 10, 1) * 10
-
-    if predicted_quantity > 0:
-        gap = max(0, (predicted_quantity - municipal_available) / predicted_quantity)
-    else:
-        gap = 0
-    stock_component = gap * 15
-
-    return round(status_component + risk_component + poverty_component + calamity_component + stock_component)
+    return Response(buffer.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=stock_requests.csv"})
 
 
 def _get_target_scoped_request(allocation_id):
@@ -2057,167 +1983,335 @@ def _get_target_scoped_request(allocation_id):
     return req
 
 
-@pswdo_bp.route("/relief-requests/<int:allocation_id>")
+@pswdo_bp.route("/relief-requests/<int:batch_id>")
 @login_required
 @role_required("pswdo_admin", "system_admin")
-def relief_request_detail(allocation_id):
-    req = _get_target_scoped_request(allocation_id)
+def relief_request_detail(batch_id):
+    batch = ReliefRequestBatch.query.get_or_404(batch_id)
+    if not batch.office or batch.office.office_type != "cswdo":
+        abort(404)
+    breakdown, predicted_demand = _municipal_demand_for(batch.office, batch.event)
 
-    status_key = None
-    affected_families = 0
-    if req.event_id:
-        bs = BarangayDisasterStatus.query.filter_by(
-            barangay_id=req.barangay_id, event_id=req.event_id
-        ).first()
-        if bs:
-            status_key = bs.status
-            affected_families = bs.affected_families
-
-    priority = _priority_info(status_key)
-
-    affected_barangays_count = 0
-    if req.event_id:
-        affected_barangays_count = BarangayDisasterStatus.query.join(Barangay).filter(
-            BarangayDisasterStatus.event_id == req.event_id,
-            BarangayDisasterStatus.status != "normal",
-            Barangay.city_municipality == req.barangay.city_municipality,
-        ).count()
-
-    # The requesting municipality's own office stock, for the inventory-gap comparison
-    municipal_office = req.office
-    municipal_inventory = None
-    if municipal_office:
-        municipal_inventory = WarehouseInventory.query.filter_by(
-            office_id=municipal_office.office_id, item_type="food_pack"
-        ).first()
-    municipal_available = municipal_inventory.quantity_available if municipal_inventory else 0
-    municipal_capacity = municipal_office.capacity_food_pack if municipal_office else 20000
-
-    _, warehouses, total_food_packs = _load_warehouses()
-
-    urgency_score = _urgency_score(req.barangay, status_key, req.predicted_quantity, municipal_available)
-    suggested_allocation = min(req.predicted_quantity, total_food_packs)
-    enough_stock = total_food_packs >= req.predicted_quantity
-
-    # Fixed 2-day SLA heuristic off the real allocation_date, purely for the deadline hint
-    deadline_label, deadline_state = None, None
-    if req.display_status == "pending":
-        days_left = (req.allocation_date + timedelta(days=2) - date.today()).days
-        if days_left < 0:
-            deadline_label, deadline_state = "Overdue", "overdue"
-        elif days_left == 0:
-            deadline_label, deadline_state = "Today", "today"
-        else:
-            deadline_label, deadline_state = f"In {days_left} day{'s' if days_left != 1 else ''}", "upcoming"
-
-    fulfillable_warehouses = [w for w in warehouses if w["food_pack_qty"] > 0]
+    fp = WarehouseInventory.query.filter_by(office_id=batch.office_id, item_type="food_pack").first()
+    cswdo_on_hand = fp.quantity_available if fp else 0
+    _, warehouses, _ = _load_warehouses()
+    depots = [w for w in warehouses if w["office"].office_type == "pswdo" and w["food_pack_qty"] > 0]
+    transfer = batch.transfer
 
     return render_template(
         "pswdo/relief_request_detail.html",
-        req=req,
-        priority=priority,
-        affected_families=affected_families,
-        affected_barangays_count=affected_barangays_count,
-        municipal_office=municipal_office,
-        municipal_available=municipal_available,
-        municipal_capacity=municipal_capacity,
-        total_food_packs=total_food_packs,
-        urgency_score=urgency_score,
-        suggested_allocation=suggested_allocation,
-        enough_stock=enough_stock,
-        deadline_label=deadline_label,
-        deadline_state=deadline_state,
-        fulfillable_warehouses=fulfillable_warehouses,
+        batch=batch, breakdown=breakdown, predicted_demand=predicted_demand,
+        cswdo_on_hand=cswdo_on_hand, shortfall=max(predicted_demand - cswdo_on_hand, 0),
+        depots=depots, transfer=transfer,
+        status_labels=RR_STATUS_LABELS, priority_labels={"high": "High", "medium": "Medium", "low": "Low"},
+        dispatch_labels={"preparing": "Preparing", "in_transit": "In Transit", "delivered": "Delivered"},
     )
 
 
-@pswdo_bp.route("/relief-requests/<int:allocation_id>/approve", methods=["POST"])
+@pswdo_bp.route("/relief-requests/<int:batch_id>/approve", methods=["POST"])
 @login_required
 @role_required("pswdo_admin", "system_admin")
-def approve_relief_request(allocation_id):
-    req = _get_target_scoped_request(allocation_id)
+def approve_relief_request(batch_id):
+    batch = ReliefRequestBatch.query.get_or_404(batch_id)
+    if batch.display_status != "pending":
+        flash("This stock request has already been decided.", "error")
+        return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
 
-    if req.display_status != "pending":
-        flash("This request has already been decided.", "error")
-        return redirect(url_for("pswdo.relief_request_detail", allocation_id=allocation_id))
-
-    office_id = request.form.get("fulfilling_office_id", type=int)
+    depot_id = request.form.get("fulfilling_office_id", type=int)
     quantity = request.form.get("quantity", type=int)
-    expected_delivery = request.form.get("expected_delivery_date", "")
-    remarks = request.form.get("remarks", "").strip()
+    remarks = request.form.get("remarks", "").strip() or None
+    depot = Office.query.get(depot_id) if depot_id else None
+    if not depot or depot.office_type != "pswdo":
+        flash("Select a provincial depot to transfer from.", "error")
+        return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
+    if not quantity or quantity <= 0 or quantity > batch.requested_food_packs:
+        flash(f"Quantity must be between 1 and {batch.requested_food_packs:,}.", "error")
+        return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
 
-    office = Office.query.get(office_id) if office_id else None
-    if not office:
-        flash("Select a warehouse to fulfill this request.", "error")
-        return redirect(url_for("pswdo.relief_request_detail", allocation_id=allocation_id))
-
-    if not quantity or quantity <= 0 or quantity > req.predicted_quantity:
-        flash(f"Quantity must be between 1 and {req.predicted_quantity:,}.", "error")
-        return redirect(url_for("pswdo.relief_request_detail", allocation_id=allocation_id))
-
-    inventory = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first()
-    available = inventory.quantity_available if inventory else 0
+    src = WarehouseInventory.query.filter_by(office_id=depot.office_id, item_type="food_pack").first()
+    available = src.quantity_available if src else 0
     if quantity > available:
-        flash(f"{office.office_name} only has {available:,} food packs available.", "error")
-        return redirect(url_for("pswdo.relief_request_detail", allocation_id=allocation_id))
+        flash(f"{depot.office_name} only has {available:,} food packs available.", "error")
+        return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
 
-    req.status = "approved"
-    req.allocated_quantity = quantity
-    req.fulfilling_office_id = office.office_id
-    req.remarks = remarks or None
-    req.rejection_reason = None
-    req.decided_by = current_user.user_id
-    if expected_delivery:
-        try:
-            req.expected_delivery_date = datetime.strptime(expected_delivery, "%Y-%m-%d").date()
-        except ValueError:
-            pass
-
-    inventory.quantity_available -= quantity
-
-    label = "Partially approved" if quantity < req.predicted_quantity else "Approved"
-    db.session.add(ActivityLog(
-        actor_id=current_user.user_id,
-        action_type="allocation_approved",
-        description=f"{label} {quantity:,} food packs for {req.barangay.city_municipality} from {office.office_name}",
-        office_id=office.office_id,
-        barangay_id=req.barangay_id,
-        allocation_id=req.allocation_id,
+    src.quantity_available -= quantity
+    src.updated_by = current_user.user_id
+    transfer = WarehouseTransfer(
+        from_office_id=depot.office_id, to_office_id=batch.office_id,
+        item_type="food_pack", quantity=quantity, batch_id=batch.batch_id,
+        status="pending", dispatch_status="preparing",
+        requested_by=current_user.user_id,
+    )
+    db.session.add(transfer)
+    db.session.add(WarehouseStockLog(
+        office_id=depot.office_id, item_type="food_pack", item_name="Food Packs",
+        delta=-quantity, reason=f"Replenishment to {batch.office.office_name} ({batch.ref})",
+        source_type="standard", updated_by=current_user.user_id,
     ))
 
+    batch.status = "partially_approved" if quantity < batch.requested_food_packs else "approved"
+    batch.approved_food_packs = quantity
+    batch.fulfilling_office_id = depot.office_id
+    batch.decided_by = current_user.user_id
+    batch.decided_at = datetime.utcnow()
+    batch.decision_remarks = remarks
+
+    label = "Partially approved" if quantity < batch.requested_food_packs else "Approved"
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="allocation_approved",
+        description=f"{label} stock request {batch.ref} — {quantity:,} food packs to "
+                    f"{batch.office.office_name} from {depot.office_name}",
+        office_id=batch.office_id, batch_id=batch.batch_id,
+    ))
     db.session.commit()
-    flash(f"{label}: {quantity:,} food packs allocated to {req.barangay.city_municipality}.", "success")
-    return redirect(url_for("pswdo.relief_request_detail", allocation_id=allocation_id))
+    flash(f"{label}: {quantity:,} food packs transferring to {batch.office.area_covered}.", "success")
+    return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
 
 
-@pswdo_bp.route("/relief-requests/<int:allocation_id>/reject", methods=["POST"])
+@pswdo_bp.route("/relief-requests/<int:batch_id>/reject", methods=["POST"])
 @login_required
 @role_required("pswdo_admin", "system_admin")
-def reject_relief_request(allocation_id):
-    req = _get_target_scoped_request(allocation_id)
-
-    if req.display_status != "pending":
-        flash("This request has already been decided.", "error")
-        return redirect(url_for("pswdo.relief_request_detail", allocation_id=allocation_id))
-
+def reject_relief_request(batch_id):
+    batch = ReliefRequestBatch.query.get_or_404(batch_id)
+    if batch.display_status != "pending":
+        flash("This stock request has already been decided.", "error")
+        return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
     reason = request.form.get("reason", "").strip()
     if not reason:
-        flash("A reason is required to reject a request.", "error")
-        return redirect(url_for("pswdo.relief_request_detail", allocation_id=allocation_id))
-
-    req.rejection_reason = reason
-    req.decided_by = current_user.user_id
+        flash("A reason is required to decline a stock request.", "error")
+        return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
+    batch.status = "declined"
+    batch.decision_remarks = reason
+    batch.decided_by = current_user.user_id
+    batch.decided_at = datetime.utcnow()
     db.session.add(ActivityLog(
-        actor_id=current_user.user_id,
-        action_type="allocation_rejected",
-        description=f"Rejected relief request from {req.barangay.city_municipality}: {reason}",
-        office_id=req.office_id,
-        barangay_id=req.barangay_id,
-        allocation_id=req.allocation_id,
+        actor_id=current_user.user_id, action_type="allocation_rejected",
+        description=f"Declined stock request {batch.ref} from {batch.office.office_name}: {reason}",
+        office_id=batch.office_id, batch_id=batch.batch_id,
     ))
     db.session.commit()
-    flash(f"Request from {req.barangay.city_municipality} has been rejected.", "success")
-    return redirect(url_for("pswdo.relief_request_detail", allocation_id=allocation_id))
+    flash(f"Stock request {batch.ref} declined.", "success")
+    return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
+
+
+@pswdo_bp.route("/allocations/direct", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def direct_allocation():
+    """PSWDO pre-positioning stock into a CSWDO warehouse proactively, ahead of
+    any Stock Request (manuscript's pre-positioning phase). Creates a monitored
+    WarehouseTransfer, not a barangay allocation — PSWDO never allocates to a
+    barangay directly (that is CSWDO's job)."""
+    to_office_id = request.form.get("to_office_id", type=int)
+    to_office = Office.query.get(to_office_id) if to_office_id else None
+    if not to_office or to_office.office_type != "cswdo" or to_office.area_covered not in TARGET_LGUS:
+        flash("Select a target municipal warehouse.", "error")
+        return redirect(url_for("pswdo.relief_requests"))
+    depot_id = request.form.get("fulfilling_office_id", type=int)
+    depot = Office.query.get(depot_id) if depot_id else None
+    if not depot or depot.office_type != "pswdo":
+        flash("Select a provincial depot to transfer from.", "error")
+        return redirect(url_for("pswdo.relief_requests"))
+    quantity = request.form.get("quantity", type=int)
+    if not quantity or quantity <= 0:
+        flash("Enter a quantity greater than zero.", "error")
+        return redirect(url_for("pswdo.relief_requests"))
+
+    src = WarehouseInventory.query.filter_by(office_id=depot.office_id, item_type="food_pack").first()
+    available = src.quantity_available if src else 0
+    if quantity > available:
+        flash(f"{depot.office_name} only has {available:,} food packs available.", "error")
+        return redirect(url_for("pswdo.relief_requests"))
+
+    src.quantity_available -= quantity
+    src.updated_by = current_user.user_id
+    transfer = WarehouseTransfer(
+        from_office_id=depot.office_id, to_office_id=to_office.office_id,
+        item_type="food_pack", quantity=quantity, batch_id=None,
+        status="pending", dispatch_status="in_transit",
+        issued_by=current_user.user_id, issued_at=datetime.utcnow(),
+        note=request.form.get("remarks", "").strip() or "Proactive pre-positioning",
+        requested_by=current_user.user_id,
+    )
+    db.session.add(transfer)
+    db.session.add(WarehouseStockLog(
+        office_id=depot.office_id, item_type="food_pack", item_name="Food Packs",
+        delta=-quantity, reason=f"Pre-positioning to {to_office.office_name}",
+        source_type="standard", updated_by=current_user.user_id,
+    ))
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="direct_allocation",
+        description=f"Pre-positioned {quantity:,} food packs to {to_office.office_name} from {depot.office_name}",
+        office_id=to_office.office_id,
+    ))
+    db.session.commit()
+    flash(f"{quantity:,} food packs pre-positioned to {to_office.area_covered}.", "success")
+    return redirect(url_for("pswdo.transfers"))
+
+
+# ---------------------------------------------------------------------------
+# Stock Transfers monitor — PSWDO -> CSWDO warehouse legs (Stock-Request
+# fulfilments + proactive pre-positioning). PSWDO monitors the trip; the CSWDO
+# warehouse confirms receipt (which credits the stock). This is the ONLY
+# delivery monitoring PSWDO does — barangay deliveries are CSWDO's.
+# ---------------------------------------------------------------------------
+
+TRANSFER_STATUS_LABELS = {"preparing": "Preparing", "in_transit": "In Transit", "delivered": "Delivered"}
+TRANSFER_STEPS = ["preparing", "in_transit", "delivered"]
+
+
+def _cswdo_office_ids():
+    return [o.office_id for o in Office.query.filter(
+        Office.office_type == "cswdo", Office.area_covered.in_(TARGET_LGUS)
+    ).all()]
+
+
+@pswdo_bp.route("/transfers")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def transfers():
+    status_filter = request.args.get("status", "all")
+    cswdo_ids = _cswdo_office_ids()
+    q = WarehouseTransfer.query.filter(WarehouseTransfer.to_office_id.in_(cswdo_ids))
+    all_t = q.order_by(WarehouseTransfer.requested_at.desc()).all()
+    # Instant depot->depot redistributions never get a dispatch_status; exclude.
+    monitored = [t for t in all_t if t.dispatch_status is not None or t.batch_id is not None]
+
+    rows = monitored
+    if status_filter == "active":
+        rows = [t for t in rows if t.status != "completed"]
+    elif status_filter == "completed":
+        rows = [t for t in rows if t.status == "completed"]
+
+    return render_template(
+        "pswdo/transfers.html",
+        rows=rows, status_filter=status_filter,
+        labels=TRANSFER_STATUS_LABELS,
+        active_count=sum(1 for t in monitored if t.status != "completed"),
+        completed_count=sum(1 for t in monitored if t.status == "completed"),
+        in_transit_packs=sum(t.quantity for t in monitored if t.dispatch_status == "in_transit"),
+    )
+
+
+@pswdo_bp.route("/transfers/<int:transfer_id>")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def transfer_detail(transfer_id):
+    t = WarehouseTransfer.query.get_or_404(transfer_id)
+    if t.to_office_id not in _cswdo_office_ids():
+        abort(404)
+    idx = TRANSFER_STEPS.index(t.dispatch_status) if t.dispatch_status in TRANSFER_STEPS else 0
+    return render_template(
+        "pswdo/transfer_detail.html",
+        t=t, steps=TRANSFER_STEPS, labels=TRANSFER_STATUS_LABELS, current_index=idx,
+        can_issue=(t.dispatch_status == "preparing" and not t.issued_at),
+    )
+
+
+@pswdo_bp.route("/transfers/<int:transfer_id>/issue", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def transfer_issue(transfer_id):
+    t = WarehouseTransfer.query.get_or_404(transfer_id)
+    if t.to_office_id not in _cswdo_office_ids() or t.dispatch_status != "preparing":
+        flash("This transfer can't be dispatched right now.", "error")
+        return redirect(url_for("pswdo.transfer_detail", transfer_id=transfer_id))
+    t.issued_by = current_user.user_id
+    t.issued_at = datetime.utcnow()
+    t.dispatch_status = "in_transit"
+    t.note = request.form.get("note", "").strip() or t.note
+    ea = request.form.get("expected_arrival", "")
+    if ea:
+        try:
+            t.expected_arrival = datetime.strptime(ea, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="distribution_status",
+        description=f"{t.ref} dispatched — {t.quantity:,} food packs en route to {t.to_office.office_name}",
+        office_id=t.to_office_id, batch_id=t.batch_id,
+    ))
+    db.session.commit()
+    flash(f"{t.ref} dispatched. Awaiting {t.to_office.area_covered}'s receipt confirmation.", "success")
+    return redirect(url_for("pswdo.transfer_detail", transfer_id=transfer_id))
+
+
+# ---------------------------------------------------------------------------
+# Recommendations — PSWDO's read-only decision-support view. It does NOT run
+# the model (manuscript: the provincial level "draws from city and municipality
+# demand projections rather than generating a separate prediction model"). Each
+# line carries its numbers so the reasoning is explainable (Molnar, 2022).
+# ---------------------------------------------------------------------------
+
+@pswdo_bp.route("/recommendations")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def recommendations_page():
+    active_event = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).first()
+    _, warehouses, total_food_packs = _load_warehouses()
+    depots = [w for w in warehouses if w["office"].office_type == "pswdo"]
+    healthiest = max(depots, key=lambda w: w["food_pack_qty"], default=None)
+
+    municipalities = []
+    total_demand = total_shortfall = 0
+    for lgu in TARGET_LGUS:
+        office = Office.query.filter_by(office_type="cswdo", area_covered=lgu).first()
+        breakdown, demand = _municipal_demand_for(office, active_event)
+        fp = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first() if office else None
+        on_hand = fp.quantity_available if fp else 0
+        shortfall = max(demand - on_hand, 0)
+        total_demand += demand
+        total_shortfall += shortfall
+        # any open stock request for this municipality?
+        open_req = ReliefRequestBatch.query.filter(
+            ReliefRequestBatch.office_id == (office.office_id if office else 0),
+            ReliefRequestBatch.status.in_(("pending", "approved", "partially_approved")),
+        ).order_by(ReliefRequestBatch.submitted_at.desc()).first() if office else None
+        municipalities.append({
+            "lgu": lgu, "office": office, "demand": demand, "on_hand": on_hand,
+            "shortfall": shortfall, "coverage_pct": round(min(on_hand / demand * 100, 100)) if demand else 100,
+            "barangay_count": len(breakdown), "open_request": open_req,
+        })
+
+    recs = []
+    for m in sorted(municipalities, key=lambda x: x["shortfall"], reverse=True):
+        if m["shortfall"] <= 0:
+            continue
+        src = healthiest["office"].office_name if healthiest else "a provincial depot"
+        if m["open_request"] and m["open_request"].status == "pending":
+            action = f"Stock request {m['open_request'].ref} is pending — approve up to {m['shortfall']:,} packs."
+            link = url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id)
+        elif m["open_request"]:
+            action = f"Stock request {m['open_request'].ref} already approved — monitor the transfer."
+            link = url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id)
+        else:
+            action = f"No request on file yet. Consider pre-positioning ~{m['shortfall']:,} packs from {src}."
+            link = url_for("pswdo.relief_requests")
+        recs.append({
+            "type": "critical" if m["coverage_pct"] < 50 else "warning",
+            "title": f"{m['lgu']}: {m['demand']:,} predicted demand vs {m['on_hand']:,} on hand → short {m['shortfall']:,}",
+            "detail": action, "link": link,
+        })
+    for w in depots:
+        if w["health"] == "Low":
+            recs.append({
+                "type": "warning",
+                "title": f"{w['office'].office_name} stock low — {w['pct']:.0f}% of capacity ({w['food_pack_qty']:,} packs)",
+                "detail": "Replenish this depot before it can't cover municipal requests.",
+                "link": url_for("pswdo.warehouse_inventory"),
+            })
+    if not recs:
+        recs.append({"type": "info", "title": "All municipal warehouses are covered",
+                     "detail": f"Predicted demand {total_demand:,} packs is met by current municipal stock.", "link": None})
+
+    return render_template(
+        "pswdo/recommendations.html",
+        active_event=active_event, municipalities=municipalities, recommendations=recs,
+        total_demand=total_demand, total_shortfall=total_shortfall,
+        total_food_packs=total_food_packs,
+    )
 
 
 def _filtered_distributions():
@@ -2230,8 +2324,9 @@ def _filtered_distributions():
         DisasterEvent.start_date.desc()
     ).first()
 
-    base_query = DistributionRecord.query.join(Barangay).filter(
-        Barangay.city_municipality.in_(TARGET_LGUS)
+    base_query = DistributionRecord.query.join(Barangay).join(AllocationRecord).filter(
+        Barangay.city_municipality.in_(TARGET_LGUS),
+        AllocationRecord.source != "barangay_request",
     )
     today_query = base_query.filter(DistributionRecord.distribution_date == today)
 
@@ -2282,6 +2377,7 @@ def _eligible_for_distribution():
     allocations = AllocationRecord.query.join(Barangay).filter(
         Barangay.city_municipality.in_(TARGET_LGUS),
         AllocationRecord.status == "approved",
+        AllocationRecord.source != "barangay_request",
         ~AllocationRecord.distribution_records.any(),
     ).order_by(AllocationRecord.allocation_date.desc()).all()
 

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, prediction_disclaimer with context %}
+
+{% block title %}Recommendations - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/prediction.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'recommendations' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_flash.html" %}
+
+        <section class="page-header">
+            <div>
+                <h2>Recommendations</h2>
+                <p>Demand-vs-stock across the target municipalities. The model runs at the barangay level (CSWDO/MSWDO) — this view aggregates its outputs.
+                    {%- if active_event %} · {{ active_event.event_name }}{% endif %}</p>
+            </div>
+        </section>
+
+        <section class="stat-cards stat-cards-3">
+            <div class="stat-card"><div class="stat-icon blue">{{ icon('trending-up', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_demand) }}</span><span class="stat-label">Predicted Demand (all target LGUs)</span></div>
+            <div class="stat-card"><div class="stat-icon {{ 'red' if total_shortfall else 'green' }}">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_shortfall) }}</span><span class="stat-label">Total Shortfall</span></div>
+            <div class="stat-card"><div class="stat-icon green">{{ icon('building', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span><span class="stat-label">Provincial Stock (all warehouses)</span></div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header"><h3>{{ icon('trending-up', 18, '#0f2547') }} Recommended Actions</h3><span class="tag-outline">{{ recommendations|length }}</span></div>
+            {% for rec in recommendations %}
+            <div class="recommendation-row rec-{{ rec.type }}">
+                {% if rec.type == 'info' %}{{ icon('check-circle', 14) }}{% else %}{{ icon('alert-triangle', 14) }}{% endif %}
+                <div>
+                    <strong>{{ rec.title }}</strong>
+                    <span>{{ rec.detail }}</span>
+                    {% if rec.link %}<a href="{{ rec.link }}" class="link-manage" style="display:block; margin-top:4px;">Act on this →</a>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {{ prediction_disclaimer() }}
+        </section>
+
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header"><h3>Per-Municipality Breakdown</h3><span class="rd-sub">municipal demand = Σ barangay model outputs</span></div>
+            <table class="rr-table">
+                <thead><tr><th>Municipality</th><th>Barangays</th><th>Predicted Demand</th><th>Warehouse On Hand</th><th>Coverage</th><th>Shortfall</th><th></th></tr></thead>
+                <tbody>
+                    {% for m in municipalities %}
+                    <tr>
+                        <td><strong>{{ m.lgu }}</strong></td>
+                        <td>{{ m.barangay_count }}</td>
+                        <td>{{ "{:,}".format(m.demand) }}</td>
+                        <td>{{ "{:,}".format(m.on_hand) }}</td>
+                        <td>
+                            <div class="warehouse-bar" style="width:110px;"><div class="warehouse-bar-fill {{ 'fill-low' if m.coverage_pct < 50 else ('fill-moderate' if m.coverage_pct < 100 else 'fill-healthy') }}" style="width: {{ m.coverage_pct }}%;"></div></div>
+                            <span class="rd-sub">{{ m.coverage_pct }}%</span>
+                        </td>
+                        <td>{% if m.shortfall %}<strong class="text-red">{{ "{:,}".format(m.shortfall) }}</strong>{% else %}<span class="text-green">covered</span>{% endif %}</td>
+                        <td>
+                            {% if m.open_request %}<a href="{{ url_for('pswdo.relief_request_detail', batch_id=m.open_request.batch_id) }}" class="btn-view-sm">{{ m.open_request.ref }}</a>
+                            {% else %}<span class="rd-sub">no request</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

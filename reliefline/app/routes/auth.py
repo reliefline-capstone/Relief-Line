@@ -33,11 +33,20 @@ def login():
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")
+        # Which page the form was submitted from, so a failed attempt lands the
+        # user back where they were instead of bouncing them to a different
+        # login screen. "landing" = the marketing page's hero login card;
+        # anything else = the standalone /login page.
+        origin = request.form.get("origin", "login")
+        retry = (
+            redirect(url_for("auth.landing") + "#login-card")
+            if origin == "landing" else redirect(url_for("auth.login"))
+        )
         user = User.query.filter_by(email=email).first()
 
         if user and not user.is_active:
             flash("This account has been deactivated. Contact a System Administrator.", "error")
-            return render_template("login.html")
+            return retry
 
         if user and user.check_password(password):
             login_user(user)
@@ -48,6 +57,7 @@ def login():
                 return redirect(url_for("auth.force_change_password"))
             return redirect(url_for(_dashboard_endpoint(user.role)))
         flash("Invalid username/email or password.", "error")
+        return retry
 
     return render_template("login.html")
 

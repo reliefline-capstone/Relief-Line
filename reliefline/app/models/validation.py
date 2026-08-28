@@ -16,6 +16,17 @@ class DistributionRecord(db.Model):
     status = db.Column(db.Enum("pending", "confirmed"), default="pending")
     submitted_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
+    # Issuance confirmation record — the CSWDO/MSWDO side: "these packs were
+    # released from our warehouse." Distinct from the validation record above
+    # (status='confirmed' + validation_type/file), which is the barangay's
+    # "we received them" with photo/signature. The manuscript keeps these two
+    # confirmations separate on purpose. A barangay Relief Request only closes
+    # (report -> 'fulfilled', barangay inventory bumped) on the barangay's
+    # validation — never on issuance alone.
+    issued_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
+    issued_at = db.Column(db.DateTime, nullable=True)
+    issuance_note = db.Column(db.String(255), nullable=True)
+
     # Dispatch/logistics lifecycle — tracks the trip itself, separate from proof-of-delivery above
     dispatch_status = db.Column(
         db.Enum("preparing", "loaded", "dispatched", "in_transit", "delivered", "delayed"),
@@ -32,3 +43,13 @@ class DistributionRecord(db.Model):
 
     barangay = db.relationship("Barangay", backref="distribution_records")
     allocation = db.relationship("AllocationRecord", backref="distribution_records")
+    issued_by_user = db.relationship("User", foreign_keys=[issued_by])
+
+    @property
+    def is_issued(self):
+        return self.issued_at is not None
+
+    @property
+    def is_validated(self):
+        """Barangay confirmed receipt with a photo/signature validation record."""
+        return self.status == "confirmed"

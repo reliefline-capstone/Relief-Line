@@ -138,23 +138,16 @@
         <div class="rd-modal-overlay" id="declare-event-modal" hidden>
             <div class="rd-modal">
                 <div class="rd-modal-header">
-                    <h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Declare Disaster Event</h3>
+                    <h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Declare Typhoon-Related Event</h3>
                     <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
                 </div>
-                <p class="form-hint">This opens a new active disaster event — it unblocks damage reports, relief requests, and allocations across every LGU until you end it.</p>
+                <p class="form-hint">This opens a new active <strong>typhoon-related event</strong> and ties every relief request and allocation to it until you end it. The system is scoped to typhoon response — the specific hazard (flooding, storm surge, strong winds) is recorded per barangay, not as a separate event type.</p>
                 <form method="POST" action="{{ url_for('pswdo.declare_disaster_event') }}" class="settings-form">
                     <div class="form-row">
                         <label for="declare-event-name">Event Name *</label>
                         <input type="text" name="event_name" id="declare-event-name" placeholder="e.g. Typhoon Josie" required>
                     </div>
-                    <div class="form-row">
-                        <label for="declare-event-type">Event Type *</label>
-                        <select name="event_type" id="declare-event-type" required>
-                            <option value="typhoon" selected>Typhoon</option>
-                            <option value="flood">Flood</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
+                    <input type="hidden" name="event_type" value="typhoon">
                     <div class="form-row">
                         <label for="declare-start-date">Start Date *</label>
                         <input type="date" name="start_date" id="declare-start-date" value="{{ now.strftime('%Y-%m-%d') }}" required>
@@ -212,22 +205,22 @@
 
             <section class="panel requests-panel">
                 <div class="panel-header">
-                    <h3>Pending Relief Requests</h3>
+                    <h3>Pending Stock Requests</h3>
                     <span class="badge-count">{{ pending_requests_count }}</span>
                 </div>
 
-                {% for req in pending_requests %}
+                {% for b in pending_requests %}
                 <div class="request-card">
                     <div class="request-top">
-                        <strong>{{ req.barangay.barangay_name }}</strong>
+                        <strong>{{ b.office.area_covered if b.office else '—' }}</strong>
                     </div>
-                    <span class="request-sub">{{ "{:,}".format(req.predicted_quantity) }} packs · {{ req.allocation_date.strftime('%b') }} {{ req.allocation_date.day }}</span>
+                    <span class="request-sub">{{ b.ref }} · {{ "{:,}".format(b.requested_food_packs) }} packs · {{ b.submitted_at.strftime('%b %d') if b.submitted_at }}</span>
                     <div class="request-actions">
-                        <a href="{{ url_for('pswdo.relief_request_detail', allocation_id=req.allocation_id) }}" class="btn-approve">{{ icon('check-circle', 14, 'white') }} Review</a>
+                        <a href="{{ url_for('pswdo.relief_request_detail', batch_id=b.batch_id) }}" class="btn-approve">{{ icon('check-circle', 14, 'white') }} Review</a>
                     </div>
                 </div>
                 {% else %}
-                <p class="empty-note">Walang pending request ngayon.</p>
+                <p class="empty-note">No pending stock requests.</p>
                 {% endfor %}
 
                 <a href="{{ url_for('pswdo.relief_requests', status='pending') }}" class="btn-view-all">View All →</a>
@@ -267,8 +260,8 @@
 
             <section class="panel">
                 <div class="panel-header">
-                    <h3>Predictive Analytics</h3>
-                    <span class="tag-outline">Next 3 Days Forecast</span>
+                    <h3>Recommendations</h3>
+                    <a href="{{ url_for('pswdo.recommendations_page') }}" class="link-manage">Full view →</a>
                 </div>
 
                 <div class="pa-metrics">
@@ -324,7 +317,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h3>Today's Distribution Progress</h3>
-                    <a href="{{ url_for('pswdo.distribution') }}" class="link-manage">Track →</a>
+                    <a href="{{ url_for('pswdo.transfers') }}" class="link-manage">Transfers →</a>
                 </div>
 
                 <div class="progress-summary">

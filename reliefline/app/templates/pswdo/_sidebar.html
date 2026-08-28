@@ -9,11 +9,11 @@
     </div>
     <nav class="sidebar-nav">
         <a href="{{ url_for('pswdo.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} Dashboard</a>
-        <a href="{{ url_for('pswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('clipboard', 18) }} Relief Requests</a>
-        <a href="{{ url_for('pswdo.distribution') }}" class="{{ 'active' if active_page == 'distribution' }}">{{ icon('truck', 18) }} Distribution</a>
+        <a href="{{ url_for('pswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('clipboard', 18) }} Stock Requests</a>
+        <a href="{{ url_for('pswdo.transfers') }}" class="{{ 'active' if active_page == 'distribution' }}">{{ icon('truck', 18) }} Stock Transfers</a>
         <a href="{{ url_for('pswdo.warehouse_inventory') }}" class="{{ 'active' if active_page == 'warehouse_inventory' }}">{{ icon('building', 18) }} Warehouse Inventory</a>
         <a href="{{ url_for('pswdo.gis_map') }}" class="{{ 'active' if active_page == 'gis_map' }}">{{ icon('map', 18) }} GIS Map</a>
-        <a href="{{ url_for('prediction.index') }}" class="{{ 'active' if active_page == 'predictive_analytics' }}">{{ icon('trending-up', 18) }} Predictive Analytics</a>
+        <a href="{{ url_for('pswdo.recommendations_page') }}" class="{{ 'active' if active_page == 'recommendations' }}">{{ icon('trending-up', 18) }} Recommendations</a>
         <a href="{{ url_for('pswdo.warehouse_reports') }}" class="{{ 'active' if active_page == 'reports' }}">{{ icon('bar-chart', 18) }} Reports</a>
         <a href="{{ url_for('pswdo.notifications') }}" class="{{ 'active' if active_page == 'notifications' }}">{{ icon('bell', 18) }} Notifications {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}</a>
     </nav>

@@ -9,8 +9,11 @@
     </div>
     <nav class="sidebar-nav">
         <a href="{{ url_for('cswdo.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} Dashboard</a>
-        <a href="{{ url_for('cswdo.damage_assessment') }}" class="{{ 'active' if active_page == 'damage_assessment' }}">{{ icon('alert-triangle', 18) }} Damage Assessment</a>
-        <a href="{{ url_for('cswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('clipboard', 18) }} Relief Requests</a>
+        <a href="{{ url_for('cswdo.damage_assessment') }}" class="{{ 'active' if active_page == 'damage_assessment' }}">{{ icon('clipboard', 18) }} Relief Requests</a>
+        <a href="{{ url_for('cswdo.deliveries') }}" class="{{ 'active' if active_page == 'deliveries' }}">{{ icon('truck', 18) }} Deliveries</a>
+        <a href="{{ url_for('cswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('download', 18) }} Stock Requests</a>
+        <a href="{{ url_for('prediction.index') }}" class="{{ 'active' if active_page == 'predictive_analytics' }}">{{ icon('trending-up', 18) }} Predictive Analytics</a>
+        <a href="{{ url_for('cswdo.municipal_inventory') }}" class="{{ 'active' if active_page == 'municipal_inventory' }}">{{ icon('building', 18) }} Municipal Warehouse</a>
         <a href="{{ url_for('cswdo.gis_map') }}" class="{{ 'active' if active_page == 'gis_map' }}">{{ icon('map', 18) }} GIS Map</a>
         <a href="{{ url_for('cswdo.reports') }}" class="{{ 'active' if active_page == 'reports' }}">{{ icon('bar-chart', 18) }} Reports</a>
         <a href="{{ url_for('cswdo.notifications') }}" class="{{ 'active' if active_page == 'notifications' }}">{{ icon('bell', 18) }} Notifications {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}</a>

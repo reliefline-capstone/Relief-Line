@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
-{% block title %}{{ 'Edit ' + report.ref if report else 'New Damage Report' }} - ReliefLine{% endblock %}
+{% block title %}{{ 'Edit ' + report.ref if report else 'New Relief Request' }} - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
@@ -22,16 +22,10 @@
         <section class="page-header">
             <div>
                 <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Cancel</a>
-                <h2>{{ 'Edit ' + report.ref if report else 'New Damage Report' }}</h2>
-                <p>Brgy. {{ barangay.barangay_name }} · {{ (report.event.event_name if report and report.event else (active_events[0].event_name if active_events else 'No active event')) }}</p>
+                <h2>{{ 'Edit ' + report.ref if report else 'New Relief Request' }}</h2>
+                <p>Brgy. {{ barangay.barangay_name }} · {{ (report.event.event_name if report and report.event else (active_events[0].event_name if active_events else 'Standing Request')) }}</p>
             </div>
         </section>
-
-        {% if not active_events %}
-        <section class="panel">
-            <p class="empty-note">There is no active typhoon event right now, so no new damage report can be filed. Check back once PSWDO declares an active event.</p>
-        </section>
-        {% else %}
 
         {% if report and report.status == 'returned' %}
         <div class="stock-warning" style="margin-bottom:16px;">
@@ -43,7 +37,7 @@
         <div class="panel wizard-stepper-panel">
             <div class="wizard-stepper" id="wizard-stepper">
                 {% for s in [
-                    ('1','Basic Info'), ('2','Disaster Info'), ('3','Damage Data'),
+                    ('1','Basic Info'), ('2','Situation'), ('3','Damage Data'),
                     ('4','Relief Needs'), ('5','Evidence'), ('6','Review & Submit')
                 ] %}
                 <div class="wizard-step-node" data-step-node="{{ s[0] }}">
@@ -66,7 +60,7 @@
             <!-- Step 1: Basic Info -->
             <section class="panel wizard-step" data-step="1">
                 <div class="panel-header"><h3>{{ icon('map-pin', 18, '#0f2547') }} Basic Information</h3></div>
-                <p class="form-hint">Confirm the identifying details below, then select which typhoon event this report is for.</p>
+                <p class="form-hint">Confirm the identifying details below, then continue.</p>
                 <div class="autofill-box">
                     <span class="autofill-box-title">Auto-filled Basic Information</span>
                     <div class="autofill-grid">
@@ -78,21 +72,21 @@
                 </div>
                 <input type="hidden" name="submitted_by_name" value="{{ report.submitted_by_name if report else current_user.name }}">
                 <input type="hidden" name="submitted_by_designation" value="{{ (report.submitted_by_designation if report else current_user.designation) or '' }}">
-                <div class="form-row">
-                    <label for="event_id">Typhoon Event <span class="required-mark">*</span></label>
-                    <select id="event_id" name="event_id" required>
-                        {% for ev in active_events %}
-                        <option value="{{ ev.event_id }}" {{ 'selected' if (report.event_id if report else active_events[0].event_id) == ev.event_id }}>{{ ev.event_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                {% if active_events %}
+                <p class="form-hint">This relief request will be linked to the active typhoon-related event: <strong>{{ active_events[0].event_name }}</strong>.</p>
+                {% else %}
+                <p class="form-hint">There is no PSWDO-declared active event right now — this will be filed as a standing request.</p>
+                {% endif %}
                 <div class="wizard-nav"><span></span><button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button></div>
             </section>
 
-            <!-- Step 2: Disaster Info -->
+            <!-- Step 2: Situation -->
             <section class="panel wizard-step" data-step="2" hidden>
-                <div class="panel-header"><h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Disaster Information</h3></div>
-                <p class="form-hint">Provide details about the typhoon event and flood conditions.</p>
+                <div class="panel-header"><h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Situation</h3></div>
+                <p class="form-hint">
+                    This report is for the current <strong>typhoon-related event</strong>{% if active_events %} ({{ active_events[0].event_name }}){% endif %}.
+                    Tell us which hazard hit your barangay and record what you observed.
+                </p>
 
                 <div class="weather-widget" data-weather-widget data-endpoint="{{ url_for('barangay.dashboard_weather') }}" style="margin-bottom:18px;">
                     <div class="weather-widget-header">
@@ -100,50 +94,62 @@
                     </div>
                     <p class="weather-empty">Loading live weather…</p>
                 </div>
-                <p class="form-hint" style="margin-top:-10px; margin-bottom:16px;">
-                    For reference only — record this report's own incident date, time, and severity below based on what was actually observed, not the live reading above.
-                </p>
 
-                <div class="form-row-2col">
-                    <div class="form-row">
-                        <label for="disaster_type">Disaster Type <span class="required-mark">*</span></label>
-                        <select id="disaster_type" name="disaster_type" required>
-                            {% for opt in disaster_type_options %}
-                            <option value="{{ opt }}" {{ 'selected' if (report.disaster_type if report else disaster_type_options[0]) == opt }}>{{ opt }}</option>
-                            {% endfor %}
-                        </select>
+                <div class="form-row">
+                    <label>Primary typhoon-related hazard <span class="required-mark">*</span></label>
+                    <div class="severity-cards disaster-type-cards" id="hazard-cards">
+                        {% for opt in hazard_options %}
+                        <label class="severity-card">
+                            <input type="radio" name="disaster_type" value="{{ opt }}"
+                                   {{ 'checked' if (report.disaster_type if report and report.disaster_type else 'Combined') == opt }} required>
+                            {{ icon(hazard_icons.get(opt, 'cloud-lightning'), 20, '#2c5aa0') }}
+                            <strong>{{ opt }}</strong>
+                        </label>
+                        {% endfor %}
                     </div>
+                </div>
+                <div class="form-row-2col">
                     <div class="form-row">
                         <label for="incident_date">Date of Incident <span class="required-mark">*</span></label>
                         <input type="date" id="incident_date" name="incident_date" max="{{ today.isoformat() }}"
                                value="{{ report.incident_date.isoformat() if report and report.incident_date else '' }}" required>
                     </div>
-                </div>
-                <div class="form-row-2col">
                     <div class="form-row">
                         <label for="incident_time">Time of Incident</label>
                         <input type="time" id="incident_time" name="incident_time"
                                value="{{ report.incident_time.strftime('%H:%M') if report and report.incident_time else '' }}">
                     </div>
+                </div>
+
+                <div class="form-row-2col hazard-field" data-hazard="water" hidden>
                     <div class="form-row">
-                        <label for="flood_depth_m">Flood Depth (meters) <span class="required-mark">*</span></label>
+                        <label for="flood_depth_m">Flood / Surge Depth (meters)</label>
                         <input type="number" id="flood_depth_m" name="flood_depth_m" min="0" step="0.1" placeholder="e.g. 1.2"
-                               value="{{ report.flood_depth_m if report and report.flood_depth_m is not none else '' }}" required>
+                               value="{{ report.flood_depth_m if report and report.flood_depth_m is not none else '' }}">
+                    </div>
+                    <div class="form-row">
+                        <label for="water_level_desc">Water Level Description</label>
+                        <input type="text" id="water_level_desc" name="water_level_desc" placeholder="e.g. Waist-deep on main road"
+                               value="{{ report.water_level_desc or '' }}">
                     </div>
                 </div>
-                <div class="form-row">
-                    <label>Severity Level <span class="required-mark">*</span></label>
-                    <div class="severity-cards">
-                        {% for card in severity_cards %}
-                        <label class="severity-card severity-{{ card.dot }}">
-                            <input type="radio" name="flood_level" value="{{ card.value }}"
-                                   {{ 'checked' if (report.flood_level if report else 'normal') == card.value }} required>
-                            <span class="severity-dot"></span>
-                            <strong>{{ card.label }}</strong>
-                            <small>{{ card.detail }}</small>
-                        </label>
-                        {% endfor %}
+
+                <div class="form-row-2col hazard-field" data-hazard="wind" hidden>
+                    <div class="form-row">
+                        <label for="roofs_damaged">Roofs Damaged / Blown Off</label>
+                        <input type="number" id="roofs_damaged" name="roofs_damaged" min="0"
+                               value="{{ report.roofs_damaged or 0 }}">
                     </div>
+                    <div class="form-row">
+                        <label for="wind_signal">Wind Signal in Effect</label>
+                        <input type="text" id="wind_signal" name="wind_signal" placeholder="e.g. Signal No. 3"
+                               value="{{ report.wind_signal or '' }}">
+                    </div>
+                </div>
+
+                <div class="autofill-box" style="margin-top:4px;">
+                    {{ icon('info', 14, '#2c5aa0') }}
+                    <span><strong>Severity is assessed automatically</strong> from what you report — depth, damaged houses/roofs, casualties, and affected families. You don't grade it yourself; the assessed level shows on the Review step.</span>
                 </div>
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
@@ -203,13 +209,27 @@
                 </div>
             </section>
 
-            <!-- Step 4: Relief Needs (non-food items only — see BarangayReport docstring) -->
+            <!-- Step 4: Relief Needs -->
             <section class="panel wizard-step" data-step="4" hidden>
                 <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Needs</h3></div>
-                <p class="form-hint">
-                    Estimated non-food item needs for your barangay. Food pack quantities are not entered here —
-                    they're calculated automatically by ReliefLine's allocation model once MSWDO/CSWDO reviews your report.
-                </p>
+                <p class="form-hint">Tell MSWDO/CSWDO what your barangay needs. Your request is reviewed — the final allocation is decided by MSWDO/CSWDO.</p>
+
+                <div class="form-row">
+                    <label for="requested_food_packs">Food Packs Being Requested <span class="required-mark">*</span></label>
+                    <input type="number" id="requested_food_packs" name="requested_food_packs" min="1" style="max-width: calc(50% - 8px);"
+                           value="{{ report.requested_food_packs if report and report.requested_food_packs else '' }}"
+                           placeholder="e.g. 150" required>
+                    {% if model_estimate %}
+                    <span class="form-hint">
+                        System estimate for Brgy. {{ barangay.barangay_name }}: <strong>~{{ "{:,}".format(model_estimate) }} packs</strong> (decision support only)
+                        &middot; <a href="#" id="use-model-estimate" data-value="{{ model_estimate }}">use this figure</a>
+                    </span>
+                    {% else %}
+                    <span class="form-hint">Enter the number of food packs your barangay needs for this event.</span>
+                    {% endif %}
+                </div>
+
+                <p class="form-hint" style="margin-top:14px;">Estimated non-food item needs (optional):</p>
                 <div class="form-row-2col">
                     <div class="form-row">
                         <label for="drinking_water_cases">Drinking Water (cases)</label>
@@ -265,11 +285,10 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                 <div class="review-grid">
                     <div class="review-box">
                         <span class="review-box-title">Disaster Info</span>
-                        <div class="review-row"><span>Typhoon</span><strong id="rv-event"></strong></div>
                         <div class="review-row"><span>Type</span><strong id="rv-disaster-type"></strong></div>
                         <div class="review-row"><span>Date</span><strong id="rv-date"></strong></div>
                         <div class="review-row"><span>Depth</span><strong id="rv-depth"></strong></div>
-                        <div class="review-row"><span>Severity</span><strong id="rv-severity"></strong></div>
+                        <div class="review-row"><span>Assessed Severity</span><strong id="rv-severity"></strong></div>
                     </div>
                     <div class="review-box">
                         <span class="review-box-title">Damage Numbers</span>
@@ -282,6 +301,7 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                     </div>
                     <div class="review-box">
                         <span class="review-box-title">Relief Needs</span>
+                        <div class="review-row"><span>Food Packs Requested</span><strong id="rv-requested-packs"></strong></div>
                         <div class="review-row"><span>Drinking Water</span><strong id="rv-water"></strong></div>
                         <div class="review-row"><span>Hygiene Kits</span><strong id="rv-hygiene"></strong></div>
                         <div class="review-row"><span>Blankets</span><strong id="rv-blankets"></strong></div>
@@ -306,7 +326,6 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                 <button type="submit" formaction="{{ url_for('barangay.save_damage_report_draft') }}" formnovalidate class="btn-outline">{{ icon('file-text', 14) }} Save Draft</button>
             </div>
         </form>
-        {% endif %}
 
     </main>
 </div>
@@ -360,7 +379,58 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
             }
             document.getElementById('individuals-hint').classList.remove('hint-error');
         }
+        if (current === 4) {
+            var packs = parseInt(document.getElementById('requested_food_packs').value || '0', 10);
+            if (!packs || packs < 1) {
+                document.getElementById('requested_food_packs').reportValidity();
+                return false;
+            }
+        }
         return true;
+    }
+
+    function num(id) { return parseInt((document.getElementById(id) || {}).value || '0', 10) || 0; }
+    function fnum(id) { return parseFloat((document.getElementById(id) || {}).value || '0') || 0; }
+    function hazard() { return ((document.querySelector('input[name="disaster_type"]:checked') || {}).value || '').toLowerCase(); }
+
+    var WATER_HAZARDS = {{ water_hazards|tojson }};
+    var WIND_HAZARDS = {{ wind_hazards|tojson }};
+
+    function syncHazardFields() {
+        var h = hazard();
+        document.querySelectorAll('.hazard-field').forEach(function (el) {
+            var kind = el.dataset.hazard;
+            var show = (kind === 'water' && WATER_HAZARDS.indexOf(h) !== -1)
+                    || (kind === 'wind' && WIND_HAZARDS.indexOf(h) !== -1);
+            el.hidden = !show;
+        });
+    }
+    document.querySelectorAll('input[name="disaster_type"]').forEach(function (r) {
+        r.addEventListener('change', syncHazardFields);
+    });
+    syncHazardFields();
+
+    // Mirror of app.routes.barangay._compute_severity — keep the two in sync.
+    function computeSeverity() {
+        var h = hazard();
+        var depth = fnum('flood_depth_m');
+        var score = 0;
+        score += Math.min(num('casualties_deaths') * 25, 50);
+        score += Math.min(num('missing_persons') * 12, 24);
+        var isWater = h === '' || WATER_HAZARDS.indexOf(h) !== -1;
+        if (isWater && depth > 0) {
+            score += depth > 2 ? 32 : (depth > 1 ? 20 : (depth >= 0.5 ? 10 : 3));
+        }
+        var t = num('totally_damaged_houses');
+        var p = num('partially_damaged_houses') + num('roofs_damaged');
+        score += t >= 50 ? 30 : (t >= 20 ? 20 : (t >= 5 ? 10 : (t >= 1 ? 4 : 0)));
+        score += p >= 100 ? 12 : (p >= 30 ? 7 : (p >= 1 ? 3 : 0));
+        var f = num('affected_families');
+        score += f >= 300 ? 14 : (f >= 100 ? 8 : (f >= 30 ? 4 : 0));
+        if (score >= 55) return 'Critical';
+        if (score >= 30) return 'High';
+        if (score >= 12) return 'Moderate';
+        return 'Low';
     }
 
     document.querySelectorAll('.wizard-next').forEach(function (btn) {
@@ -379,12 +449,13 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
     }
 
     function populateReview() {
-        document.getElementById('rv-event').textContent = textOf('event_id') || '—';
-        document.getElementById('rv-disaster-type').textContent = textOf('disaster_type') || '—';
+        var checkedType = document.querySelector('input[name="disaster_type"]:checked');
+        document.getElementById('rv-disaster-type').textContent = checkedType ? checkedType.value : '—';
         document.getElementById('rv-date').textContent = (textOf('incident_date') || '—') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
-        document.getElementById('rv-depth').textContent = (textOf('flood_depth_m') || '0') + 'm';
-        var checkedSeverity = document.querySelector('input[name="flood_level"]:checked');
-        document.getElementById('rv-severity').textContent = checkedSeverity ? checkedSeverity.closest('.severity-card').querySelector('strong').textContent : '—';
+        var dv = textOf('flood_depth_m');
+        document.getElementById('rv-depth').textContent = dv ? dv + 'm' : '—';
+        document.getElementById('rv-severity').textContent = computeSeverity() + ' (auto-assessed)';
+        document.getElementById('rv-requested-packs').textContent = (textOf('requested_food_packs') || '0') + ' packs';
         document.getElementById('rv-families').textContent = textOf('affected_families') || '0';
         document.getElementById('rv-individuals').textContent = textOf('affected_individuals') || '0';
         document.getElementById('rv-totally').textContent = textOf('totally_damaged_houses') || '0';
@@ -397,6 +468,14 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
         var fileInput = document.getElementById('photo_files');
         document.getElementById('rv-photo-count').textContent = (fileInput && fileInput.files ? fileInput.files.length : 0) + ' photo(s) attached';
         document.getElementById('rv-remarks').textContent = textOf('remarks') || 'None';
+    }
+
+    var useEstimate = document.getElementById('use-model-estimate');
+    if (useEstimate) {
+        useEstimate.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.getElementById('requested_food_packs').value = useEstimate.dataset.value;
+        });
     }
 
     var photoInput = document.getElementById('photo_files');

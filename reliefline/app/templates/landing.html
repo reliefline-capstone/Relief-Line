@@ -75,6 +75,7 @@
                 {% endwith %}
 
                 <form method="POST" action="{{ url_for('auth.login') }}">
+                    <input type="hidden" name="origin" value="landing">
                     <label for="hero-username">Username</label>
                     <div class="input-wrapper">
                         {{ icon('user', 18, '#8a94a6') }}

@@ -41,6 +41,13 @@
 .rr-panel-header h3 { font-size: 14px; margin-bottom: 2px; }
 .rr-panel-header p { font-size: 11.5px; color: #8a94a6; }
 
+/* Panel whose <table class="rr-table"> should run edge to edge (no side padding
+   on the table, header keeps its inset) */
+.rr-panel-flush { padding: 0; overflow: hidden; }
+.rr-panel-flush .rr-panel-header { padding: 18px 20px 0; margin-bottom: 14px; }
+.rr-panel-flush > .rr-table { border-top: 1px solid #eee; }
+.rr-panel-flush > .rr-table:first-child { border-top: none; }
+
 .badge-verified {
     display: inline-flex;
     align-items: center;

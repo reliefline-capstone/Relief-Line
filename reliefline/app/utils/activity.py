@@ -15,6 +15,9 @@ MODULE_LABELS = {
     "allocation_approved": "Allocation",
     "allocation_rejected": "Allocation",
     "relief_request_submitted": "Allocation",
+    "direct_allocation": "Allocation",
+    "disaster_event_declared": "Disaster Events",
+    "disaster_event_ended": "Disaster Events",
     "distribution_status": "Distribution",
     "distribution_delivered": "Distribution",
     "warehouse_transfer_completed": "Inventory",
@@ -52,6 +55,7 @@ MODULE_BADGE_CLASS = {
     "Office Management": "mod-blue",
     "Barangay Management": "mod-green",
     "System Settings": "mod-gray",
+    "Disaster Events": "mod-red",
 }
 DEFAULT_MODULE_BADGE_CLASS = "mod-gray"
 

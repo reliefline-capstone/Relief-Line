@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Deliveries - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'deliveries' %}
+    {% include "cswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "cswdo/_flash.html" %}
+
+        <div class="page-header">
+            <div>
+                <h2>Deliveries</h2>
+                <p>{{ lgu or '—' }} · food packs released from your warehouse to barangays</p>
+            </div>
+            <a href="{{ url_for('cswdo.damage_assessment') }}" class="btn-outline">{{ icon('clipboard', 16) }} Relief Requests</a>
+        </div>
+
+        <section class="stat-cards stat-cards-4">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ preparing_count }}</span>
+                <span class="stat-label">Preparing / Loading</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ in_transit_count }}</span>
+                <span class="stat-label">Issued / In Transit</span>
+                <span class="stat-sub">{{ "{:,}".format(packs_in_transit) }} packs on the road</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('clock', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ awaiting_validation_count }}</span>
+                <span class="stat-label">Awaiting Barangay Validation</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ validated_count }}</span>
+                <span class="stat-label">Validated Received</span>
+            </div>
+        </section>
+
+        <form class="filter-bar dist-filter-bar" method="GET">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search barangay...">
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if status_filter == 'all' }}>All statuses</option>
+                {% for key, label in dispatch_labels.items() %}
+                <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-outline">{{ icon('search', 14) }} Filter</button>
+            <span class="rr-table-count">{{ rows|length }} deliver{{ 'ies' if rows|length != 1 else 'y' }}</span>
+        </form>
+
+        <section class="panel rr-table-panel">
+            <table class="rr-table">
+                <thead>
+                    <tr><th>Delivery ID</th><th>Relief Request</th><th>Barangay</th><th>Packs</th><th>Status</th><th>Progress</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    {% set r = row.rec %}
+                    <tr>
+                        <td>{{ row.ref }}</td>
+                        <td>{{ row.request_ref or '—' }}</td>
+                        <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
+                        <td><strong>{{ "{:,}".format(r.quantity_released) }}</strong></td>
+                        <td>
+                            <span class="badge-status status-{{ 'validated' if r.status == 'confirmed' else ('delayed' if r.dispatch_status == 'delayed' else r.dispatch_status) }}">
+                                {{ 'Validated Received' if r.status == 'confirmed' else dispatch_labels.get(r.dispatch_status, r.dispatch_status) }}
+                            </span>
+                            {% if row.awaiting_validation %}<span class="rr-sub">awaiting barangay validation</span>{% endif %}
+                        </td>
+                        <td>
+                            <div class="warehouse-bar" style="width:90px;"><div class="warehouse-bar-fill fill-healthy" style="width: {{ row.progress_pct }}%;"></div></div>
+                        </td>
+                        <td><a href="{{ url_for('cswdo.delivery_detail', distribution_id=r.distribution_id) }}" class="btn-view-sm">{{ icon('eye', 13) }} View</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7"><p class="empty-note" style="padding:16px 0;">No deliveries yet. Approve a relief request to start one.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

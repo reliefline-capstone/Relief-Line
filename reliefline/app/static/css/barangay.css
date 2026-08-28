@@ -242,6 +242,11 @@
 
 .severity-card:has(input:checked) { border-color: #2c5aa0; background: #f4f8ff; box-shadow: 0 0 0 1px #2c5aa0 inset; }
 
+/* Disaster Type radio (damage_report_form.html) — reuses .severity-card's
+   selectable-card look with an icon in place of the colored dot. */
+.disaster-type-cards { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 700px) { .disaster-type-cards { grid-template-columns: repeat(1, 1fr); } }
+
 .upload-dropzone {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
     border: 1.5px dashed #d8dee8; border-radius: 10px; padding: 36px 20px; cursor: pointer; text-align: center;

@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 
-from flask import Blueprint, render_template, request, Response
-from flask_login import login_required
+from flask import Blueprint, render_template, request, Response, url_for
+from flask_login import login_required, current_user
 
 from app.utils.decorators import role_required
+from app.models.office import Office
+from app.models.warehouse import WarehouseInventory
 from app.models.barangay import Barangay
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.disaster_event import DisasterEvent
@@ -20,6 +22,28 @@ from app.routes.pswdo import (
 )
 
 prediction_bp = Blueprint("prediction", __name__)
+
+
+def _scope_lgus():
+    """LGUs this user's analytics view may cover.
+
+    The Linear Regression model is a CSWDO/MSWDO decision-support tool (see the
+    manuscript's Ch.1 Purpose and Ch.3 Project Design), so a cswdo_admin is
+    pinned to their own municipality — same per-office boundary as
+    app.routes.pswdo._gis_scope_lgus. PSWDO/system_admin still see all three
+    target LGUs. A CSWDO admin with no office on record gets an empty scope
+    rather than falling back to full access.
+    """
+    if current_user.role == "cswdo_admin":
+        office = current_user.office
+        if office and office.area_covered in TARGET_LGUS:
+            return [office.area_covered]
+        return []
+    return list(TARGET_LGUS)
+
+
+def _is_cswdo():
+    return current_user.role == "cswdo_admin"
 
 
 def _resolve_event(event_id):
@@ -68,7 +92,7 @@ def _barangay_snapshot(barangay, status_row, event_id):
 
 @prediction_bp.route("/")
 @login_required
-@role_required("pswdo_admin", "system_admin")
+@role_required("cswdo_admin", "system_admin")
 def index():
     active_events = DisasterEvent.query.filter_by(status="active").order_by(
         DisasterEvent.start_date.desc()
@@ -77,10 +101,15 @@ def index():
     event = _resolve_event(event_id)
     event_id = event.event_id if event else None
 
+    scope_lgus = _scope_lgus()
+    is_cswdo = _is_cswdo()
     municipality_filter = request.args.get("municipality", "all")
+    if municipality_filter != "all" and municipality_filter in scope_lgus:
+        lgus = [municipality_filter]
+    else:
+        municipality_filter = "all"
+        lgus = scope_lgus
     days_filter = request.args.get("days", 30, type=int)
-
-    lgus = [municipality_filter] if municipality_filter != "all" else TARGET_LGUS
 
     barangays = Barangay.query.filter(Barangay.city_municipality.in_(lgus)).order_by(
         Barangay.city_municipality, Barangay.barangay_name
@@ -103,8 +132,20 @@ def index():
 
     # ---- Stat cards ----
     estimated_need = sum(s["undelivered"] for s in snapshots)
-    all_offices, warehouses, total_food_packs = _load_warehouses()
-    total_affected_families = sum(s["affected_families"] for s in snapshots if s["status"] != "normal")
+    all_offices, all_warehouses, _ = _load_warehouses()
+    # A CSWDO/MSWDO admin only ever sees their own municipal warehouse here —
+    # province-wide depot visibility stays a PSWDO responsibility.
+    if is_cswdo and current_user.office:
+        warehouses = [w for w in all_warehouses if w["office"].office_id == current_user.office.office_id]
+    else:
+        warehouses = all_warehouses
+    total_food_packs = sum(w["food_pack_qty"] for w in warehouses)
+    fulfillable_warehouses = [w for w in warehouses if w["food_pack_qty"] > 0]
+    # Burn rate is only meaningful during an active disaster event/operation —
+    # one food pack sustains one family for three days (manuscript Scope), so
+    # daily burn = affected_families / 3. No active event ⇒ no burn rate.
+    total_affected_families = sum(s["affected_families"] for s in snapshots if s["status"] != "normal") if event else 0
+    estimated_three_day_need = total_affected_families  # 1 pack per affected family
     burn_rate = round(total_affected_families / 3, 0) if total_affected_families > 0 else 0
     days_remaining = round(total_food_packs / burn_rate, 1) if burn_rate > 0 else None
 
@@ -140,7 +181,9 @@ def index():
     # "assigned warehouse" card instead) ----
     warehouse_cards = []
     for w in warehouses:
-        if w["office"].office_type != "pswdo":
+        # PSWDO sees the province-wide depots; a CSWDO admin sees their own
+        # municipal warehouse (already the only entry in `warehouses` for them).
+        if not is_cswdo and w["office"].office_type != "pswdo":
             continue
         days_left = round(w["food_pack_qty"] / burn_rate, 1) if burn_rate > 0 else None
         warehouse_cards.append({
@@ -171,6 +214,12 @@ def index():
     latest_metrics = ModelMetrics.query.order_by(ModelMetrics.trained_at.desc()).first()
 
     # ---- Recommendations: real stock-transfer rules + top-priority barangay ----
+    # Link targets are role-aware — the PSWDO stock-transfer / relief-request
+    # pages are role_required("pswdo_admin", ...) and would 403 a cswdo_admin.
+    relief_link = url_for("cswdo.relief_requests") if is_cswdo else "/pswdo/relief-requests"
+    transfer_link = url_for("cswdo.municipal_inventory") if is_cswdo else "/pswdo/warehouse-inventory/transfer"
+    stock_word = "Municipal" if is_cswdo else "Provincial"
+
     recommendations = []
     top = ranking[0] if ranking else None
     if top and top["priority_rank"] >= 3:
@@ -184,19 +233,19 @@ def index():
                        f" ({'submitted request' if top['need_source'] == 'request' else 'model estimate'})."
                        f" Current local stock: {local_stock:,} packs only.",
             "link_label": "View Relief Request",
-            "link": "/pswdo/relief-requests?municipality=" + top["lgu"],
+            "link": relief_link + ("?municipality=" + top["lgu"] if not is_cswdo else ""),
         })
     for rec in _stock_recommendations(warehouses):
         recommendations.append({
             "type": rec["type"], "title": rec["title"], "tag": None, "detail": rec["detail"],
-            "link_label": "View Stock Transfer", "link": "/pswdo/warehouse-inventory/transfer",
+            "link_label": "View Stock Transfer" if not is_cswdo else "View Warehouse", "link": transfer_link,
         })
     if days_remaining is not None:
         recommendations.append({
             "type": "info" if days_remaining >= 8 else "warning",
-            "title": f"Current inventory sufficient for {int(days_remaining)} days" if days_remaining >= 8 else "Provincial stock running low",
+            "title": f"Current inventory sufficient for {int(days_remaining)} days" if days_remaining >= 8 else f"{stock_word} stock running low",
             "tag": None,
-            "detail": f"Provincial stock of {total_food_packs:,} packs covers estimated needs for "
+            "detail": f"{stock_word} stock of {total_food_packs:,} packs covers estimated needs for "
                       f"approximately {int(days_remaining)} days at the current combined burn rate of "
                       f"{burn_rate:,.0f} packs/day.",
             "link_label": None, "link": None,
@@ -207,12 +256,17 @@ def index():
         active_events=active_events,
         event=event,
         event_id=event_id,
-        target_lgus=TARGET_LGUS,
+        target_lgus=scope_lgus,
+        is_cswdo=is_cswdo,
+        scope_label=(scope_lgus[0] + " MSWDO/CSWDO") if is_cswdo and scope_lgus else "PSWDO",
         municipality_filter=municipality_filter,
         days_filter=days_filter,
         estimated_need=estimated_need,
         total_food_packs=total_food_packs,
         days_remaining=days_remaining,
+        burn_rate=burn_rate,
+        estimated_three_day_need=estimated_three_day_need,
+        total_affected_families=total_affected_families,
         recommendations=recommendations,
         forecast_by_lgu=forecast_by_lgu,
         ranking=ranking,
@@ -220,12 +274,13 @@ def index():
         historical_trend=historical_trend,
         latest_metrics=latest_metrics,
         model_available=ml_predict.is_model_available(),
+        fulfillable_warehouses=fulfillable_warehouses,
     )
 
 
 @prediction_bp.route("/export.csv")
 @login_required
-@role_required("pswdo_admin", "system_admin")
+@role_required("cswdo_admin", "system_admin")
 def export_forecast():
     import csv
     import io
@@ -233,8 +288,12 @@ def export_forecast():
     event_id = request.args.get("event_id", type=int)
     event = _resolve_event(event_id)
     event_id = event.event_id if event else None
+    scope_lgus = _scope_lgus()
     municipality_filter = request.args.get("municipality", "all")
-    lgus = [municipality_filter] if municipality_filter != "all" else TARGET_LGUS
+    if municipality_filter != "all" and municipality_filter in scope_lgus:
+        lgus = [municipality_filter]
+    else:
+        lgus = scope_lgus
 
     barangays = Barangay.query.filter(Barangay.city_municipality.in_(lgus)).order_by(
         Barangay.city_municipality, Barangay.barangay_name

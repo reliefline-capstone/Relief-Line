@@ -33,23 +33,23 @@ app = create_app()
 #  review_remarks, hours_ago_submitted)
 PLAN = {
     "Santa Barbara": [
-        ("Abot", "Ricardo Manalo", "Barangay Captain", "pending", "monitoring", 150, 600, 2, 5, 0.3,
+        ("Alibago", "Ricardo Manalo", "Barangay Captain", "pending", "monitoring", 150, 600, 2, 5, 0.3,
          "Light flooding along the creek. Monitoring water level.", None, 3),
-        ("Ban-ao", "Corazon Dizon", "Barangay Secretary", "verified", "monitoring", 300, 1200, 4, 9, 0.4,
+        ("Balingueo", "Corazon Dizon", "Barangay Secretary", "verified", "monitoring", 300, 1200, 4, 9, 0.4,
          "Flooding receding. Residents advised to stay alert.", "Consistent with barangay visit.", 6),
-        ("Batayang", "Ernesto Villar", "Barangay Kagawad", "pending", "needs_assistance", 220, 880, 9, 14, 0.6,
+        ("Sonquil", "Ernesto Villar", "Barangay Kagawad", "pending", "needs_assistance", 220, 880, 9, 14, 0.6,
          "Several households still without power.", None, 2),
         # Bungallon — no report submitted yet
-        ("Calepaan", "Marissa Ocampo", "Barangay Captain", "verified", "high_priority", 900, 3600, 22, 31, 1.1,
+        ("Botao", "Marissa Ocampo", "Barangay Captain", "verified", "high_priority", 900, 3600, 22, 31, 1.1,
          "Critical flooding, main road impassable.", "Verified on-site. Matches CDRRMO advisory.", 8),
-        ("Carosucan Norte", "Danilo Ferrer", "Barangay Secretary", "returned", "normal", 80, 320, 0, 3, 0.1,
+        ("Cablong", "Danilo Ferrer", "Barangay Secretary", "returned", "normal", 80, 320, 0, 3, 0.1,
          "Minor debris on roadside only.", "Please confirm affected-families count — seems too high for the reported damage.", 5),
         # Carosucan Sur — no report submitted yet
-        ("Coliling", "Teresita Bautista", "Barangay Captain", "verified", "needs_assistance", 600, 2400, 11, 19, 0.7,
+        ("Dalongue", "Teresita Bautista", "Barangay Captain", "verified", "needs_assistance", 600, 2400, 11, 19, 0.7,
          "Several families relocated to higher ground.", "Verified. Data consistent with field visit.", 7),
-        ("Hacienda", "Romeo Castillo", "Barangay Kagawad", "pending", "high_priority", 340, 1360, 15, 20, 0.9,
+        ("Erfe", "Romeo Castillo", "Barangay Kagawad", "pending", "high_priority", 340, 1360, 15, 20, 0.9,
          "Rising water level near the irrigation canal.", None, 1),
-        ("Mapolopolo", "Luz Aquino", "Barangay Secretary", "verified", "normal", 40, 160, 0, 1, 0.0,
+        ("Gueguesangen", "Luz Aquino", "Barangay Secretary", "verified", "normal", 40, 160, 0, 1, 0.0,
          "No significant impact observed.", "Verified.", 9),
     ],
     "Urdaneta City": [

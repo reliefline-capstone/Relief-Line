@@ -40,7 +40,7 @@ ENTRIES = [
      "donation", "Philippine Red Cross", "Typhoon relief donation drive", 9),
     ("Provincial Social Welfare and Development Office", "hygiene_kit", 300,
      "donation", "DSWD Central Office", "National office augmentation for hygiene kit stock", 7),
-    ("Warehouse A", "food_pack", 2000,
+    ("PSWDO Warehouse", "food_pack", 2000,
      "donation", "Jollibee Group Foundation, Inc.", "Corporate relief drive donation", 6),
     ("Urdaneta City Social Welfare and Development Office", "food_pack", 300,
      "donation", "SM Foundation", "Typhoon relief donation drive", 5),
@@ -50,7 +50,7 @@ ENTRIES = [
      "donation", "Ayala Foundation", "Typhoon relief donation drive", 3),
     # Plain restocks alongside the donations, so the movement feed reads as a
     # realistic mix rather than looking artificially all-donation.
-    ("Warehouse A", "food_pack", 3000,
+    ("PSWDO Warehouse", "food_pack", 3000,
      "standard", None, "Provincial budget replenishment", 8),
     ("Urdaneta City Social Welfare and Development Office", "hygiene_kit", 150,
      "standard", None, "Routine restock from provincial supply", 2),

@@ -30,7 +30,23 @@ class AllocationRecord(db.Model):
     # exactly the same either way.
     batch_id = db.Column(db.Integer, db.ForeignKey("relief_request_batches.batch_id"), nullable=True)
 
+    # Provenance:
+    #   pswdo_batch      — CSWDO batched it up to PSWDO (Tier 2, legacy/current)
+    #   barangay_request — a barangay's Relief Request, fulfilled by CSWDO from
+    #                      its own municipal warehouse (Tier 1). PSWDO never sees
+    #                      or schedules these (filtered out of its queues).
+    #   cswdo_direct     — CSWDO pushed stock to a barangay proactively (model-
+    #                      driven), no barangay request behind it.
+    source = db.Column(
+        db.Enum("pswdo_batch", "barangay_request", "cswdo_direct"),
+        nullable=False, default="pswdo_batch", server_default="pswdo_batch",
+    )
+    barangay_report_id = db.Column(
+        db.Integer, db.ForeignKey("barangay_reports.report_id"), nullable=True
+    )
+
     barangay = db.relationship("Barangay", backref="allocation_records")
+    barangay_report = db.relationship("BarangayReport", foreign_keys=[barangay_report_id])
     office = db.relationship("Office", backref="allocation_records", foreign_keys=[office_id])
     fulfilling_office = db.relationship("Office", foreign_keys=[fulfilling_office_id])
     event = db.relationship("DisasterEvent", backref="allocation_records")

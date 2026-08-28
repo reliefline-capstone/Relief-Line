@@ -45,7 +45,14 @@ def _predict(barangay):
 
 
 def run():
-    with app.app_context():
+    # DEPRECATED — the per-barangay ReliefRequestBatch fan-out this script used
+    # was replaced (Phase 3): barangay Relief Requests are Tier 1 (CSWDO fulfils
+    # locally), and a ReliefRequestBatch is now a Tier-2 municipal Stock Request.
+    # Demo data for both flows is seeded by scripts/seed_training_data.py.
+    print("seed_relief_requests.py is deprecated — use scripts/seed_training_data.py instead.")
+    return
+
+    with app.app_context():  # noqa: unreachable — kept for reference only
         if ReliefRequestBatch.query.first():
             print("ReliefRequestBatch rows already present — skipping. "
                   "Delete existing rows first if you want to reseed.")
@@ -54,7 +61,7 @@ def run():
         today = date.today()
         barangays = {b.barangay_name: b for b in Barangay.query.filter_by(city_municipality=LGU).all()}
         office = Office.query.filter_by(office_type="cswdo", area_covered=LGU).first()
-        warehouse_a = Office.query.filter_by(office_name="Warehouse A").first()
+        warehouse_a = Office.query.filter_by(office_name="PSWDO Warehouse").first()
         cswdo_admin = User.query.filter_by(office_id=office.office_id, role="cswdo_admin").first()
         pswdo_admin = User.query.filter_by(role="pswdo_admin").first()
 
@@ -101,9 +108,9 @@ def run():
             db.session.flush()
             return report
 
-        _verify("Hacienda", 340, 1360)
-        _verify("Bungallon", 210, 840)
-        _verify("Carosucan Sur", 175, 700)
+        _verify("Erfe", 340, 1360)
+        _verify("Banzal", 210, 840)
+        _verify("Carusocan", 175, 700)
         db.session.flush()
         print("Verified Hacienda, Bungallon, Carosucan Sur for the active event")
 
@@ -177,14 +184,14 @@ def run():
 
         # --- Under Review: Hacienda (still pending PSWDO decision) ---
         make_batch(
-            ["Hacienda"], requested_packs=1500, priority="high",
+            ["Erfe"], requested_packs=1500, priority="high",
             reason="Rising floodwater near the irrigation canal is displacing households; requesting priority food pack allocation.",
             remarks="", days_ago=1,
         )
 
         # --- Approved: Mapolopolo + Abot, PSWDO approved, preparing distribution ---
         make_batch(
-            ["Mapolopolo", "Abot"], requested_packs=900, priority="medium",
+            ["Gueguesangen", "Alibago"], requested_packs=900, priority="medium",
             reason="Verified barangay reports show sustained flooding; requesting food packs to cover the affected families.",
             remarks="Please prioritize Abot given the higher affected household count.",
             days_ago=3, decision="approved", distribution_stage="preparing",
@@ -192,7 +199,7 @@ def run():
 
         # --- Rejected: Bungallon + Carosucan Sur ---
         make_batch(
-            ["Bungallon", "Carosucan Sur"], requested_packs=700, priority="low",
+            ["Banzal", "Carusocan"], requested_packs=700, priority="low",
             reason="Minor flooding reported; requesting food packs as a precaution.",
             remarks="", days_ago=4, decision="rejected",
             rejection_reason="Insufficient damage report documentation. Please resubmit with complete barangay verification.",
@@ -225,13 +232,13 @@ def run():
             db.session.flush()
 
         make_batch(
-            ["Batayang", "Carosucan Norte"], requested_packs=900, priority="medium",
+            ["Sonquil", "Cablong"], requested_packs=900, priority="medium",
             reason="Post-typhoon flooding required food pack assistance for the two barangays.",
             remarks="", days_ago=390, decision="approved", distribution_stage="delivered",
             event=dante,
         )
         make_batch(
-            ["Ban-ao", "Coliling", "Calepaan"], requested_packs=1200, priority="high",
+            ["Balingueo", "Dalongue", "Botao"], requested_packs=1200, priority="high",
             reason="Widespread flooding across three barangays required urgent food pack support.",
             remarks="", days_ago=430, decision="approved", distribution_stage="delivered",
             event=egay,

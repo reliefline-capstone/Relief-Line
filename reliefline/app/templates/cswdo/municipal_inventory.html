@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
-{% block title %}{{ office.office_name }} - ReliefLine{% endblock %}
+{% block title %}{{ office.office_name }} — Municipal Warehouse - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
@@ -12,7 +12,7 @@
 {% block content %}
 <div class="dashboard-layout">
 
-    {% set active_page = 'dashboard' %}
+    {% set active_page = 'municipal_inventory' %}
     {% include "cswdo/_sidebar.html" %}
 
     <main class="dashboard-main">
@@ -21,9 +21,23 @@
 
         {% set crumbs = [
             {"label": "Dashboard", "url": url_for('cswdo.dashboard')},
-            {"label": office.office_name, "url": none, "status": ('Low Stock' if health == 'Low' else health)}
+            {"label": office.office_name + " Warehouse", "url": none, "status": ('Low Stock' if health == 'Low' else health)}
         ] %}
         {% include "pswdo/_warehouse_subnav.html" %}
+
+        <section class="page-header">
+            <form method="GET" class="wh-search-form">
+                <div class="wh-search-wrapper">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search item...">
+                </div>
+            </form>
+            <div class="wh-header-actions">
+                <a href="{{ url_for('cswdo.municipal_inventory_movements') }}" class="btn-outline">{{ icon('activity', 14) }} Movement History</a>
+                <a href="{{ url_for('cswdo.municipal_inventory_export') }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+                <button type="button" class="btn-add-warehouse" data-open-modal="mi-add-item-modal">{{ icon('plus', 14, 'white') }} Add Item</button>
+            </div>
+        </section>
 
         <div class="main-grid">
 
@@ -31,7 +45,6 @@
                 <div class="panel-header">
                     <h3>General Information</h3>
                 </div>
-
                 <div class="wh-info-rows">
                     <div class="wh-info-row"><span>Office Name</span><strong>{{ office.office_name }}</strong></div>
                     <div class="wh-info-row"><span>Location</span><strong>{{ office.area_covered }}</strong></div>
@@ -39,11 +52,11 @@
                     <div class="wh-info-row"><span>Contact Number</span><strong>{{ office.contact_number or '—' }}</strong></div>
                     <div class="wh-info-row"><span>Email</span><strong>{{ office.email or '—' }}</strong></div>
                     <div class="wh-info-row"><span>Storage Capacity</span><strong>{{ "{:,}".format(capacity) }} Packs</strong></div>
-                    <div class="wh-info-row"><span>Current Stock</span><strong>{{ "{:,}".format(food_pack_qty) }} Packs</strong></div>
-                    <div class="wh-info-row"><span>Burn Rate</span><strong>{% if burn %}~{{ burn|int }} packs/day{% else %}No active demand data{% endif %}</strong></div>
-                    <div class="wh-info-row"><span>Days Remaining</span><strong>{% if days_remaining is not none %}{{ days_remaining|int }} days at current rate{% else %}—{% endif %}</strong></div>
+                    <div class="wh-info-row"><span>Food Packs On Hand</span><strong>{{ "{:,}".format(food_pack_qty) }} Packs</strong></div>
+                    <div class="wh-info-row"><span>Burn Rate</span><strong>{% if burn %}~{{ burn|int }} packs/day (active event){% else %}No active event{% endif %}</strong></div>
+                    <div class="wh-info-row"><span>Days of Supply</span><strong>{% if days_remaining is not none %}{{ days_remaining|int }} days at current rate{% else %}—{% endif %}</strong></div>
                 </div>
-                <p class="form-hint" style="margin-top:12px;">Inventory is monitored here for visibility. Stock updates and transfers are coordinated by the PSWDO.</p>
+                <p class="form-hint" style="margin-top:12px;">This office manages its own municipal stock. Provincial replenishment / pre-positioning transfers are coordinated with the PSWDO.</p>
             </section>
 
             <aside class="wh-side-col">
@@ -62,34 +75,70 @@
                         </div>
                     </div>
                     <div class="wh-info-rows">
-                        <div class="wh-info-row"><span>Current Stock</span><strong>{{ "{:,}".format(food_pack_qty) }}</strong></div>
+                        <div class="wh-info-row"><span>On Hand</span><strong>{{ "{:,}".format(food_pack_qty) }}</strong></div>
                         <div class="wh-info-row"><span>Max Capacity</span><strong>{{ "{:,}".format(capacity) }}</strong></div>
-                        <div class="wh-info-row"><span>Available Space</span><strong class="text-green">{{ "{:,}".format(capacity - food_pack_qty if capacity > food_pack_qty else 0) }}</strong></div>
-                        <div class="wh-info-row"><span>Days Remaining</span><strong class="text-green">{% if days_remaining is not none %}{{ days_remaining|int }} days{% else %}—{% endif %}</strong></div>
+                        <div class="wh-info-row"><span>Stock In (all-time)</span><strong class="text-green">+{{ "{:,}".format(stock_in) }}</strong></div>
+                        <div class="wh-info-row"><span>Stock Out (all-time)</span><strong class="text-red">-{{ "{:,}".format(stock_out) }}</strong></div>
                     </div>
                 </section>
             </aside>
 
         </div>
 
+        {% if incoming_transfers %}
         <section class="panel" style="margin-top:16px;">
-            <div class="panel-header">
-                <h3>Inventory Summary</h3>
+            <div class="panel-header"><h3>{{ icon('truck', 18, '#0f2547') }} Incoming from PSWDO</h3></div>
+            {% for t in incoming_transfers %}
+            <div class="wh-movement-row">
+                <div class="wh-movement-text">
+                    <strong>{{ "{:,}".format(t.quantity) }} food packs from {{ t.from_office.office_name }}</strong>
+                    <span>{{ t.batch.ref if t.batch else t.ref }} · dispatched {{ t.issued_at.strftime('%b %d, %I:%M %p') if t.issued_at }}{% if t.expected_arrival %} · ETA {{ t.expected_arrival.strftime('%b %d') }}{% endif %}</span>
+                </div>
+                <form method="POST" action="{{ url_for('cswdo.receive_transfer', transfer_id=t.transfer_id) }}">
+                    <input type="hidden" name="received_by" value="{{ current_user.name }}">
+                    <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 15, 'white') }} Confirm Receipt</button>
+                </form>
             </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        <section class="panel wh-table-panel" style="margin-top:16px;">
+            <div class="panel-header"><h3>Inventory</h3></div>
             <table class="wh-table">
                 <thead>
-                    <tr><th>ITEM</th><th>QUANTITY</th><th>UNIT</th><th>STATUS</th></tr>
+                    <tr>
+                        <th>ITEM</th><th>QUANTITY</th><th>UNIT</th><th>MIN. LEVEL</th><th>STATUS</th><th>ACTIONS</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    {% for row in inventory_summary %}
+                    {% for row in rows %}
+                    {% set item = row.item %}
                     <tr>
-                        <td>{{ row.item.item_name }}</td>
-                        <td><strong>{{ "{:,}".format(row.item.quantity_available) }}</strong></td>
-                        <td>{{ row.item.unit }}</td>
+                        <td>
+                            <div class="wh-item-name-cell">
+                                <span class="wh-item-icon">{{ icon('package', 14, '#3867d6') }}</span>
+                                <strong>{{ item.item_name }}</strong>
+                                {% if item.item_type == 'food_pack' %}<span class="wh-sub">predictive / allocation item</span>{% endif %}
+                            </div>
+                        </td>
+                        <td><strong>{{ "{:,}".format(item.quantity_available) }}</strong></td>
+                        <td>{{ item.unit }}</td>
+                        <td>{{ "{:,}".format(item.min_stock_level) }}</td>
                         <td><span class="badge-health badge-{{ row.status|lower }}">{{ 'Low Stock' if row.status == 'Low' else row.status }}</span></td>
+                        <td>
+                            <div class="wh-row-actions">
+                                <button type="button" class="wh-icon-btn" title="Update stock" data-open-modal="mi-update-modal-{{ item.inventory_id }}">{{ icon('external-link', 15, '#2c5aa0') }}</button>
+                                {% if item.item_type != 'food_pack' %}
+                                <form method="POST" action="{{ url_for('cswdo.municipal_inventory_delete', inventory_id=item.inventory_id) }}" onsubmit="return confirm('Remove {{ item.item_name }} from this warehouse?');">
+                                    <button type="submit" class="wh-icon-btn wh-icon-btn-danger" title="Delete item">{{ icon('x-circle', 15, '#c0392b') }}</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="empty-note" style="text-align:center; padding:24px;">Walang naka-record na item para sa opisinang ito.</td></tr>
+                    <tr><td colspan="6" class="empty-note" style="text-align:center; padding:28px;">No items recorded for this warehouse yet.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -97,7 +146,8 @@
 
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
-                <h3>Stock Movement History</h3>
+                <h3>Recent Stock Movement</h3>
+                <a href="{{ url_for('cswdo.municipal_inventory_movements') }}" class="link-manage">View all →</a>
             </div>
             {% for m in movements %}
             <div class="wh-movement-row">
@@ -114,10 +164,94 @@
                 </div>
             </div>
             {% else %}
-            <p class="empty-note">Wala pang stock movement na naitala.</p>
+            <p class="empty-note">No stock movement recorded yet.</p>
             {% endfor %}
         </section>
 
     </main>
 </div>
+
+<!-- Add Item modal -->
+<div class="rd-modal-overlay" id="mi-add-item-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('plus', 18, '#0f2547') }} Add Stock Item</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('cswdo.municipal_inventory_add') }}">
+            <label for="mi-item-name">Item Name *</label>
+            <input type="text" name="item_name" id="mi-item-name" placeholder="e.g. Hygiene Kits" required>
+            <div class="rd-form-row">
+                <div>
+                    <label for="mi-unit">Unit</label>
+                    <input type="text" name="unit" id="mi-unit" placeholder="e.g. kits">
+                </div>
+                <div>
+                    <label for="mi-qty">Quantity *</label>
+                    <input type="number" name="quantity" id="mi-qty" min="0" required>
+                </div>
+            </div>
+            <label for="mi-min">Min Stock Level</label>
+            <input type="number" name="min_stock_level" id="mi-min" min="0" value="0">
+            <label for="mi-source">Source</label>
+            <select name="source_type" id="mi-source" data-toggle-select>
+                <option value="standard">Standard / Provincial Supply</option>
+                <option value="donation">Donation (External Agency)</option>
+            </select>
+            <div data-toggle-field="donation">
+                <label for="mi-donor">Donor / Agency Name *</label>
+                <input type="text" name="donor_name" id="mi-donor" placeholder="e.g. Philippine Red Cross">
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Add Item</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Update Stock modals (one per item) -->
+{% for row in rows %}
+{% set item = row.item %}
+<div class="rd-modal-overlay" id="mi-update-modal-{{ item.inventory_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Update: {{ item.item_name }}</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('cswdo.municipal_inventory_update', inventory_id=item.inventory_id) }}">
+            <div class="rd-form-row">
+                <div>
+                    <label for="mi-q-{{ item.inventory_id }}">New Quantity *</label>
+                    <input type="number" name="quantity" id="mi-q-{{ item.inventory_id }}" min="0" value="{{ item.quantity_available }}" required>
+                </div>
+                <div>
+                    <label for="mi-u-{{ item.inventory_id }}">Unit</label>
+                    <input type="text" name="unit" id="mi-u-{{ item.inventory_id }}" value="{{ item.unit }}">
+                </div>
+            </div>
+            <label for="mi-s-{{ item.inventory_id }}">Source <span class="rd-sub">(only applies when increasing stock)</span></label>
+            <select name="source_type" id="mi-s-{{ item.inventory_id }}" data-toggle-select>
+                <option value="standard">Standard / Provincial Supply</option>
+                <option value="donation">Donation (External Agency)</option>
+            </select>
+            <div data-toggle-field="donation">
+                <label for="mi-d-{{ item.inventory_id }}">Donor / Agency Name *</label>
+                <input type="text" name="donor_name" id="mi-d-{{ item.inventory_id }}" placeholder="e.g. Philippine Red Cross">
+            </div>
+            <label for="mi-r-{{ item.inventory_id }}">Reason for Update</label>
+            <textarea name="reason" id="mi-r-{{ item.inventory_id }}" rows="2" placeholder="e.g. Received from provincial supply, recount, released to barangay..."></textarea>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Update Stock</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 {% endblock %}

@@ -118,10 +118,20 @@
 
 .rr-table-panel { padding: 0; overflow: hidden; }
 
+/* Card wrapper for a bare <table class="rr-table"> that is not inside a .panel */
+.rr-table-wrap {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+
 .rr-table {
     width: 100%;
     border-collapse: collapse;
 }
+
+.rr-table tbody tr:last-child td { border-bottom: none; }
 
 .rr-table thead {
     background: #f8f9fc;
@@ -246,3 +256,106 @@
         flex: 1 1 100%;
     }
 }
+
+/* ------------------------------------------------------------------ *
+ * Shared bits for the two-tier request / delivery / transfer tables
+ * (Stock Requests, Deliveries, Stock Transfers). These pages lift
+ * markup from the distribution templates, so the helper classes live
+ * here where every one of them links relief_requests.css.
+ * ------------------------------------------------------------------ */
+
+/* Row count sitting at the right edge of a filter bar */
+.rr-table-count,
+.da-filter-count { margin-left: auto; font-size: 12px; color: #8a94a6; }
+
+/* Filter bar variant lifted from the distribution pages */
+.da-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+.da-filter-bar input[type="text"],
+.da-filter-bar select {
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    background: white;
+}
+.da-filter-bar input[type="text"] { flex: 1; min-width: 220px; }
+
+/* Small row action button */
+.btn-view-sm,
+.btn-review-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.btn-view-sm { border: 1px solid #d8dee8; background: white; color: #333; }
+.btn-view-sm:hover { background: #f8f9fc; }
+.btn-review-sm { background: #0f2547; color: white; }
+.btn-review-sm:hover { background: #16305e; }
+
+.rr-table .da-barangay-name { font-weight: 700; color: #1a1a1a; }
+
+/* Generic status badge colours — markup is class="badge-status status-X"
+   (the older single-class .badge-status-X rules above stay for legacy pages) */
+.badge-status.status-pending,
+.badge-status.status-partially_approved { background: #fef5e3; color: #d68910; }
+.badge-status.status-approved,
+.badge-status.status-fulfilled,
+.badge-status.status-validated,
+.badge-status.status-delivered,
+.badge-status.status-completed,
+.badge-status.status-confirmed { background: #e8faf0; color: #1e8449; }
+.badge-status.status-declined,
+.badge-status.status-rejected,
+.badge-status.status-delayed { background: #fdecea; color: #c0392b; }
+.badge-status.status-draft { background: #f0f2f6; color: #667; }
+.badge-status.status-preparing,
+.badge-status.status-loaded,
+.badge-status.status-issued,
+.badge-status.status-dispatched,
+.badge-status.status-in_transit { background: #eaf0fd; color: #2c5aa0; }
+
+/* Summary pills rendered as plain <span> children (no .pill class) */
+.summary-pills > span {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    background: #f0f2f6;
+    color: #55606f;
+}
+.summary-pills > span:first-child { background: #fef5e3; color: #b7791f; }
+
+/* Numbered pagination rendered as bare <a> links */
+.rr-pagination { justify-content: center; gap: 6px; }
+.rr-pagination a {
+    padding: 6px 12px;
+    border: 1px solid #d8dee8;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #444;
+}
+.rr-pagination a.active {
+    background: #0f2547;
+    color: white;
+    border-color: #0f2547;
+}
+
+/* Priority badge colours (class="badge-priority tier-X") — the tier-critical/
+   high/medium/low/unrated set is defined in dashboard.css, which every page
+   using this also links. Only the extra aliases are needed here. */
+.badge-priority.tier-moderate { background: #fef5e3; color: #d68910; }
+.badge-priority.tier-none { background: #f0f2f6; color: #8a94a6; }

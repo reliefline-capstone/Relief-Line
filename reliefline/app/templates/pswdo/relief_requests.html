@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
-{% block title %}Relief Requests - ReliefLine{% endblock %}
+{% block title %}Stock Requests - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -14,212 +15,113 @@
     {% set active_page = 'relief_requests' %}
     {% include "pswdo/_sidebar.html" %}
 
-    <!-- Main content -->
     <main class="dashboard-main">
 
         {% include "pswdo/_flash.html" %}
 
-        <!-- Page title -->
         <section class="page-header">
             <div>
-                <h2>Relief Requests</h2>
-                <p>{{ active_event.event_name if active_event else 'No active event' }} · {{ pending_count }} pending decisions</p>
+                <h2>Stock Requests</h2>
+                <p>Municipal warehouse replenishment requests from CSWDO/MSWDO offices — the only requests PSWDO decides on.</p>
             </div>
-            <div class="rr-actions">
-                <form method="GET" class="rr-search-form">
-                    <input type="hidden" name="status" value="{{ status_filter }}">
-                    <input type="hidden" name="municipality" value="{{ municipality_filter }}">
-                    <input type="hidden" name="priority" value="{{ priority_filter }}">
-                    <input type="hidden" name="date" value="{{ date_filter }}">
-                    <div class="rr-search-wrapper">
-                        {{ icon('search', 14, '#8a94a6') }}
-                        <input type="text" name="q" value="{{ search_query }}" placeholder="Search municipality or ID...">
-                    </div>
-                </form>
-                <a href="{{ url_for('pswdo.relief_requests') }}" class="btn-icon" title="Reset filters">{{ icon('rotate-ccw', 16, '#555') }}</a>
-                <a href="{{ url_for('pswdo.export_relief_requests', status=status_filter, municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+            <div style="display:flex; gap:10px;">
+                <a href="{{ url_for('pswdo.transfers') }}" class="btn-outline">{{ icon('truck', 14) }} Transfers</a>
+                <a href="{{ url_for('pswdo.export_relief_requests', status=status_filter, municipality=municipality_filter, q=search_query) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+                <button type="button" class="btn-add-warehouse" data-open-modal="direct-preposition-modal">{{ icon('plus', 14, 'white') }} Pre-position Stock</button>
             </div>
         </section>
 
-        <!-- Filter bar -->
-        <form method="GET" class="filter-bar">
-            <span class="filter-label">FILTER:</span>
+        <div class="summary-pills">
+            <span>{{ counts.pending }} awaiting decision</span>
+            <span>{{ counts.approved }} approved / in transit</span>
+            <span>{{ counts.fulfilled }} fulfilled</span>
+            <span>{{ counts.declined }} declined</span>
+        </div>
 
-            <input type="hidden" name="q" value="{{ search_query }}">
-
+        <form class="filter-bar" method="GET">
             <select name="status" onchange="this.form.submit()">
-                <option value="all" {{ 'selected' if status_filter == 'all' }}>All Status</option>
-                <option value="pending" {{ 'selected' if status_filter == 'pending' }}>Pending</option>
-                <option value="approved" {{ 'selected' if status_filter == 'approved' }}>Approved</option>
-                <option value="released" {{ 'selected' if status_filter == 'released' }}>Released</option>
-                <option value="rejected" {{ 'selected' if status_filter == 'rejected' }}>Rejected</option>
+                <option value="all" {{ 'selected' if status_filter == 'all' }}>All statuses</option>
+                {% for k, v in status_labels.items() if k != 'draft' %}
+                <option value="{{ k }}" {{ 'selected' if status_filter == k }}>{{ v }}</option>
+                {% endfor %}
             </select>
-
             <select name="municipality" onchange="this.form.submit()">
-                <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All Municipalities</option>
+                <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All municipalities</option>
                 {% for lgu in target_lgus %}
                 <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
                 {% endfor %}
             </select>
-
-            <select name="priority" onchange="this.form.submit()">
-                <option value="all" {{ 'selected' if priority_filter == 'all' }}>All Priority</option>
-                <option value="critical" {{ 'selected' if priority_filter == 'critical' }}>Critical</option>
-                <option value="high" {{ 'selected' if priority_filter == 'high' }}>High</option>
-                <option value="medium" {{ 'selected' if priority_filter == 'medium' }}>Medium</option>
-                <option value="low" {{ 'selected' if priority_filter == 'low' }}>Low</option>
-            </select>
-
-            <input type="hidden" name="date" id="date-filter-iso" value="{{ date_filter }}">
-            <div class="date-input-wrapper">
-                {{ icon('calendar', 14, '#8a94a6') }}
-                <input type="text"
-                       id="date-filter-display"
-                       inputmode="numeric"
-                       autocomplete="off"
-                       placeholder="MM/DD/YYYY"
-                       maxlength="10"
-                       pattern="(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/[0-9]{4}"
-                       value="{{ date_filter_display }}">
-            </div>
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search request ID...">
+            <button type="submit" class="btn-outline">{{ icon('search', 14) }} Filter</button>
+            <span class="rr-table-count">{{ total_filtered }} of {{ total_count }}</span>
         </form>
 
-        <!-- Summary pills -->
-        <div class="summary-pills">
-            <a href="{{ url_for('pswdo.relief_requests', status='pending', municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="pill pill-pending">
-                <strong>{{ pending_count }}</strong> Pending
-            </a>
-            <a href="{{ url_for('pswdo.relief_requests', status='approved', municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="pill pill-approved">
-                <strong>{{ approved_count }}</strong> Approved
-            </a>
-            <a href="{{ url_for('pswdo.relief_requests', status='released', municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="pill pill-released">
-                <strong>{{ released_count }}</strong> Released
-            </a>
-            <a href="{{ url_for('pswdo.relief_requests', status='rejected', municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="pill pill-rejected">
-                <strong>{{ rejected_count }}</strong> Rejected
-            </a>
-            <span class="summary-note">{{ total_filtered }} of {{ total_count }} shown · Sorted by priority (highest first)</span>
-        </div>
-
-        <!-- Table -->
-        <section class="panel rr-table-panel">
+        <div class="rr-table-wrap">
             <table class="rr-table">
                 <thead>
-                    <tr>
-                        <th>MUNICIPALITY</th>
-                        <th>TYPHOON EVENT</th>
-                        <th>REQUESTED PACKS</th>
-                        <th>PRIORITY</th>
-                        <th>DATE</th>
-                        <th>STATUS</th>
-                        <th>ACTION</th>
-                    </tr>
+                    <tr><th>Request ID</th><th>Municipality</th><th>Event</th><th>Requested</th><th>Approved</th><th>Priority</th><th>Status</th><th></th></tr>
                 </thead>
                 <tbody>
-                    {% for req, priority in requests %}
+                    {% for b in rows %}
                     <tr>
-                        <td>
-                            <strong>{{ req.barangay.city_municipality }}</strong>
-                            <span class="rr-sub">RR-{{ req.allocation_date.year }}-{{ '%03d'|format(req.allocation_id) }}</span>
-                        </td>
-                        <td>
-                            {% if req.event %}
-                            {{ icon('cloud-lightning', 14, '#3867d6') }} {{ req.event.event_name }}
-                            {% else %}
-                            <span class="rr-sub">{{ req.disaster_event or '—' }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <strong>{{ "{:,}".format(req.predicted_quantity) }}</strong>
-                            <span class="rr-sub">food packs</span>
-                        </td>
-                        <td>
-                            <span class="badge-priority badge-priority-{{ priority.tier }}"><i class="priority-dot"></i> {{ priority.label }}</span>
-                            <span class="rr-sub">{{ priority.detail }}</span>
-                        </td>
-                        <td>{{ req.allocation_date.strftime('%B') }} {{ req.allocation_date.day }}, {{ req.allocation_date.strftime('%Y') }}</td>
-                        <td>
-                            <span class="badge-status badge-status-{{ req.display_status }}">
-                                {{ req.display_status|replace('_', ' ')|title }}
-                            </span>
-                        </td>
-                        <td>
-                            <a href="{{ url_for('pswdo.relief_request_detail', allocation_id=req.allocation_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
-                        </td>
+                        <td>{{ b.ref }}</td>
+                        <td>{{ b.office.area_covered if b.office else '—' }}</td>
+                        <td>{{ b.event.event_name if b.event else '—' }}</td>
+                        <td><strong>{{ "{:,}".format(b.requested_food_packs) }}</strong></td>
+                        <td>{{ "{:,}".format(b.approved_food_packs) if b.approved_food_packs else '—' }}</td>
+                        <td><span class="badge-priority tier-{{ b.priority }}">{{ priority_labels.get(b.priority, b.priority) }}</span></td>
+                        <td><span class="badge-status status-{{ b.display_status }}">{{ status_labels.get(b.display_status, b.display_status) }}</span></td>
+                        <td><a href="{{ url_for('pswdo.relief_request_detail', batch_id=b.batch_id) }}" class="btn-view-sm">{{ icon('eye', 13) }} {{ 'Review' if b.display_status == 'pending' else 'View' }}</a></td>
                     </tr>
                     {% else %}
-                    <tr>
-                        <td colspan="7" class="empty-note" style="text-align:center; padding: 30px;">Walang relief request na tumutugma sa filter mo.</td>
-                    </tr>
+                    <tr><td colspan="8"><p class="empty-note" style="padding:16px 0;">No stock requests.</p></td></tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
 
-            <div class="rr-pagination">
-                <span>Showing {{ requests|length }} request{{ 's' if requests|length != 1 }} · Sorted by priority (highest first)</span>
-                <div class="pagination-controls">
-                    {% if page > 1 %}
-                    <a href="{{ url_for('pswdo.relief_requests', page=page-1, status=status_filter, municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="page-btn">Previous</a>
-                    {% endif %}
-                    <span class="page-btn active">{{ page }}</span>
-                    {% if page < total_pages %}
-                    <a href="{{ url_for('pswdo.relief_requests', page=page+1, status=status_filter, municipality=municipality_filter, priority=priority_filter, date=date_filter, q=search_query) }}" class="page-btn">Next</a>
-                    {% endif %}
-                </div>
-            </div>
-        </section>
+        {% if total_pages > 1 %}
+        <div class="rr-pagination">
+            {% for p in range(1, total_pages + 1) %}
+            <a href="{{ url_for('pswdo.relief_requests', page=p, status=status_filter, municipality=municipality_filter, q=search_query) }}" class="{{ 'active' if p == page }}">{{ p }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
 
     </main>
+</div>
+
+<div class="rd-modal-overlay" id="direct-preposition-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header"><h3>{{ icon('package', 18, '#0f2547') }} Pre-position Stock</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
+        <p class="form-hint">Push food packs into a municipal warehouse ahead of any request. The CSWDO office confirms receipt on arrival.</p>
+        <form method="POST" action="{{ url_for('pswdo.direct_allocation') }}" class="settings-form">
+            <div class="form-row">
+                <label for="pp-to">Target Municipal Warehouse *</label>
+                <select name="to_office_id" id="pp-to" required>
+                    <option value="">Select…</option>
+                    {% for o in cswdo_offices %}<option value="{{ o.office_id }}">{{ o.office_name }} ({{ o.area_covered }})</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="pp-depot">From Provincial Depot *</label>
+                <select name="fulfilling_office_id" id="pp-depot" required>
+                    <option value="">Select…</option>
+                    {% for w in depots %}<option value="{{ w.office.office_id }}">{{ w.office.office_name }} — {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-row"><label for="pp-qty">Quantity *</label><input type="number" name="quantity" id="pp-qty" min="1" required></div>
+            <div class="form-row"><label for="pp-note">Note</label><input type="text" name="remarks" id="pp-note" placeholder="e.g. Ahead of forecast landfall"></div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Pre-position</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-(function () {
-    var display = document.getElementById('date-filter-display');
-    var iso = document.getElementById('date-filter-iso');
-    if (!display || !iso) return;
-
-    var DATE_RE = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/(\d{4})$/;
-
-    function toIso(mmddyyyy) {
-        var m = DATE_RE.exec(mmddyyyy);
-        if (!m) return '';
-        var month = m[1], day = m[2], year = m[3];
-        // Guard against real-but-invalid dates like 02/31/2026.
-        var d = new Date(Number(year), Number(month) - 1, Number(day));
-        if (d.getFullYear() != year || (d.getMonth() + 1) != month || d.getDate() != day) return '';
-        return year + '-' + month + '-' + day;
-    }
-
-    // Auto-insert slashes as the user types digits.
-    display.addEventListener('input', function () {
-        var digits = display.value.replace(/\D/g, '').slice(0, 8);
-        var formatted = digits;
-        if (digits.length > 2) formatted = digits.slice(0, 2) + '/' + digits.slice(2);
-        if (digits.length > 4) formatted = formatted.slice(0, 5) + '/' + digits.slice(4);
-        display.value = formatted;
-        display.setCustomValidity('');
-    });
-
-    display.addEventListener('change', function () {
-        var value = display.value.trim();
-        if (!value) {
-            iso.value = '';
-            display.setCustomValidity('');
-            display.form.submit();
-            return;
-        }
-        var isoValue = toIso(value);
-        if (!isoValue) {
-            display.setCustomValidity('Enter a valid date as MM/DD/YYYY');
-            display.reportValidity();
-            return;
-        }
-        display.setCustomValidity('');
-        iso.value = isoValue;
-        display.form.submit();
-    });
-})();
-</script>
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 {% endblock %}

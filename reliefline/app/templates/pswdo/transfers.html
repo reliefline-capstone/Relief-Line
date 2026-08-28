@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Stock Transfers - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'distribution' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        {% include "pswdo/_flash.html" %}
+
+        <div class="page-header">
+            <div>
+                <h2>Stock Transfers</h2>
+                <p>PSWDO depot → municipal warehouse legs. PSWDO monitors dispatch; the CSWDO office confirms receipt.</p>
+            </div>
+            <a href="{{ url_for('pswdo.relief_requests') }}" class="btn-outline">{{ icon('clipboard', 14) }} Stock Requests</a>
+        </div>
+
+        <section class="stat-cards stat-cards-3">
+            <div class="stat-card"><div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ active_count }}</span><span class="stat-label">Active</span></div>
+            <div class="stat-card"><div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ "{:,}".format(in_transit_packs) }}</span><span class="stat-label">Packs In Transit</span></div>
+            <div class="stat-card"><div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ completed_count }}</span><span class="stat-label">Completed</span></div>
+        </section>
+
+        <form class="filter-bar dist-filter-bar" method="GET">
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if status_filter == 'all' }}>All</option>
+                <option value="active" {{ 'selected' if status_filter == 'active' }}>Active</option>
+                <option value="completed" {{ 'selected' if status_filter == 'completed' }}>Completed</option>
+            </select>
+            <span class="rr-table-count">{{ rows|length }} transfer{{ 's' if rows|length != 1 }}</span>
+        </form>
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table">
+                <thead><tr><th>Transfer</th><th>Type</th><th>From → To</th><th>Packs</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    {% for t in rows %}
+                    <tr>
+                        <td>{{ t.ref }}{% if t.batch %}<br><span class="wh-sub">{{ t.batch.ref }}</span>{% endif %}</td>
+                        <td>{{ 'Replenishment' if t.batch_id else 'Pre-positioning' }}</td>
+                        <td>{{ t.from_office.office_name }} → {{ t.to_office.office_name }}</td>
+                        <td><strong>{{ "{:,}".format(t.quantity) }}</strong></td>
+                        <td>
+                            <span class="badge-status status-{{ 'completed' if t.status == 'completed' else (t.dispatch_status or 'preparing') }}">
+                                {{ 'Received' if t.status == 'completed' else labels.get(t.dispatch_status, t.dispatch_status or 'Pending') }}
+                            </span>
+                        </td>
+                        <td><a href="{{ url_for('pswdo.transfer_detail', transfer_id=t.transfer_id) }}" class="btn-view-sm">{{ icon('eye', 13) }} View</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6"><p class="empty-note" style="padding:16px 0;">No transfers to municipal warehouses yet.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

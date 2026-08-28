@@ -15,11 +15,13 @@ from app.models.office import Office
 from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.barangay_report import BarangayReport
+from app.models.barangay_inventory import BarangayInventory, BarangayStockLog
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.activity_log import ActivityLog
 from app.models.user import User
 from app.utils import weather as weather_service
+from app.ml import predict as ml_predict
 
 # Reused from the PSWDO route module so a status label, priority tier, or
 # notification icon never drifts between the PSWDO/CSWDO screens and this
@@ -40,22 +42,99 @@ REPORT_STATUS_LABELS = {
     "returned": "Returned",
 }
 
-# Disaster Info step — sub-classification of the active typhoon event, per
-# the manuscript's Scope and Limitations list of typhoon-related phenomena
-# ("flash floods, storm surge, and strong winds that occur as direct
-# consequences of a typhoon event").
-DISASTER_TYPE_OPTIONS = ["Typhoon/Flood", "Flash Flood", "Storm Surge", "Strong Winds"]
+# The report is always for a TYPHOON-RELATED event (the manuscript scopes the
+# system to typhoons; other disaster types are "future implementations"). This
+# field is a SUB-CLASSIFICATION of that event — which typhoon-related hazard
+# actually hit the barangay — not a standalone disaster-type picker. Stored in
+# the `disaster_type` column. Drives which impact fields the form shows.
+HAZARD_OPTIONS = ["Strong Winds", "Flooding", "Storm Surge", "Combined"]
+HAZARD_ICONS = {
+    "Strong Winds": "wind", "Flooding": "cloud-rain",
+    "Storm Surge": "droplet", "Combined": "cloud-lightning",
+}
+# Hazards where flood-depth / water-level fields are relevant.
+_WATER_HAZARDS = {"flooding", "storm surge", "combined"}
+# Hazards where roofs-damaged / wind-signal fields are relevant.
+_WIND_HAZARDS = {"strong winds", "combined"}
 
-# Severity Level cards on the Disaster Info step — same flood_level values as
-# PRIORITY_BY_STATUS (app/routes/pswdo.py) so the tier driving this report's
-# eventual priority is the exact same vocabulary used on the dashboard/GIS map,
-# just with wording suited to a flood-depth picker instead of a status badge.
-SEVERITY_CARDS = [
-    {"value": "high_priority", "label": "Critical", "detail": ">2m · Extreme danger", "dot": "critical"},
-    {"value": "needs_assistance", "label": "High", "detail": "1-2m · Dangerous", "dot": "high"},
-    {"value": "monitoring", "label": "Moderate", "detail": "0.5-1m · Caution", "dot": "medium"},
-    {"value": "normal", "label": "Low", "detail": "<0.5m · Minor", "dot": "low"},
-]
+# Severity (flood_level) is NOT picked by hand — the system computes it from
+# the entered impact data (see _compute_severity). These labels/order are used
+# only to *display* the computed tier back to the barangay, and match
+# PRIORITY_BY_STATUS (app/routes/pswdo.py) so the dashboard / GIS map / this
+# form all read the same 4-tier vocabulary.
+SEVERITY_LABELS = {
+    "high_priority": {"label": "Critical", "dot": "critical"},
+    "needs_assistance": {"label": "High", "dot": "high"},
+    "monitoring": {"label": "Moderate", "dot": "medium"},
+    "normal": {"label": "Low", "dot": "low"},
+}
+SEVERITY_ORDER = ["normal", "monitoring", "needs_assistance", "high_priority"]
+
+
+def _compute_severity(*, situation_type=None, flood_depth_m=None, affected_families=0,
+                      affected_individuals=0, totally_damaged_houses=0,
+                      partially_damaged_houses=0, roofs_damaged=0,
+                      missing_persons=0, casualties_deaths=0):
+    """Derive the priority tier from what was actually reported, so the barangay
+    never has to grade its own emergency. Point-based, capped per factor:
+
+      life safety   casualties (25 each, cap 50) · missing persons (12 each, cap 24)
+      flooding      >2m 32 · 1-2m 20 · 0.5-1m 10 · <0.5m 3   (water hazards only)
+      housing       totally-damaged houses (heavier) + partial + roofs damaged
+      population    affected families reported
+
+    Tiers: >=55 Critical · >=30 High · >=12 Moderate · else Low.
+    """
+    depth = float(flood_depth_m or 0)
+    hazard = (situation_type or "").lower()
+    score = 0.0
+
+    score += min((casualties_deaths or 0) * 25, 50)
+    score += min((missing_persons or 0) * 12, 24)
+
+    is_water = (not hazard) or hazard in _WATER_HAZARDS
+    if is_water and depth > 0:
+        if depth > 2:
+            score += 32
+        elif depth > 1:
+            score += 20
+        elif depth >= 0.5:
+            score += 10
+        else:
+            score += 3
+
+    total_dmg = totally_damaged_houses or 0
+    part_dmg = (partially_damaged_houses or 0) + (roofs_damaged or 0)
+    if total_dmg >= 50:
+        score += 30
+    elif total_dmg >= 20:
+        score += 20
+    elif total_dmg >= 5:
+        score += 10
+    elif total_dmg >= 1:
+        score += 4
+    if part_dmg >= 100:
+        score += 12
+    elif part_dmg >= 30:
+        score += 7
+    elif part_dmg >= 1:
+        score += 3
+
+    fam = affected_families or 0
+    if fam >= 300:
+        score += 14
+    elif fam >= 100:
+        score += 8
+    elif fam >= 30:
+        score += 4
+
+    if score >= 55:
+        return "high_priority"
+    if score >= 30:
+        return "needs_assistance"
+    if score >= 12:
+        return "monitoring"
+    return "normal"
 
 
 def _own_barangay_or_404():
@@ -114,6 +193,8 @@ NOTIFICATION_LINK_BUILDERS = {
     "damage_report_returned": _damage_report_notification_link,
     "allocation_approved": _relief_monitoring_notification_link,
     "allocation_rejected": _relief_monitoring_notification_link,
+    "barangay_relief_approved": _relief_monitoring_notification_link,
+    "barangay_relief_declined": _damage_report_notification_link,
     "distribution_status": _relief_monitoring_notification_link,
     "distribution_delivered": _relief_monitoring_notification_link,
     "distribution_receipt_confirmed": _relief_monitoring_notification_link,
@@ -221,9 +302,10 @@ def dashboard():
     my_distributions = DistributionRecord.query.filter_by(barangay_id=barangay.barangay_id).order_by(
         DistributionRecord.distribution_date.desc()
     ).limit(5).all()
-    in_transit_count = len([d for d in my_distributions if d.dispatch_status == "in_transit"])
+    in_transit_count = len([d for d in my_distributions if d.dispatch_status in ("dispatched", "in_transit")])
     awaiting_confirmation = [
-        d for d in my_distributions if d.dispatch_status == "in_transit" and d.status == "pending"
+        d for d in my_distributions
+        if d.dispatch_status in ("dispatched", "in_transit", "delayed", "delivered") and d.status != "confirmed"
     ]
 
     # Active alerts — this barangay's own recent activity, read or unread
@@ -325,7 +407,12 @@ def damage_report():
         # Dashboard tab — this event's own open items (submitted/returned);
         # a verified report for this event has nothing left to act on, so it
         # moves to History instead of cluttering this table (see class docs).
-        event_reports = [r for r in all_reports if primary_event and r.event_id == primary_event.event_id]
+        # With no active event, "this context" means standing requests
+        # (event_id IS NULL) instead — not "match nothing".
+        if primary_event:
+            event_reports = [r for r in all_reports if r.event_id == primary_event.event_id]
+        else:
+            event_reports = [r for r in all_reports if r.event_id is None]
         # Drafts included here too — otherwise a saved draft would only ever
         # show up as a number on the stat card with no way to click back into it.
         open_reports = [r for r in event_reports if r.status in ("draft", "pending", "returned")]
@@ -366,7 +453,10 @@ def damage_report_export_open():
     barangay = _own_barangay_or_404()
     primary_event = _active_event()
     all_reports = _own_reports_all(barangay.barangay_id)
-    event_reports = [r for r in all_reports if primary_event and r.event_id == primary_event.event_id]
+    if primary_event:
+        event_reports = [r for r in all_reports if r.event_id == primary_event.event_id]
+    else:
+        event_reports = [r for r in all_reports if r.event_id is None]
     open_reports = [r for r in event_reports if r.status in ("draft", "pending", "returned")]
 
     search_query = request.args.get("q", "").strip().lower()
@@ -440,12 +530,19 @@ def _report_form_context(barangay, report=None):
     active_events = DisasterEvent.query.filter_by(status="active").order_by(
         DisasterEvent.start_date.desc()
     ).all()
+    # Model estimate for THIS barangay — shown next to the "Food Packs
+    # Requested" field as decision support only. None when no model is trained.
+    model_estimate = ml_predict.predict_quantity(barangay)
     return {
         "barangay": barangay,
         "report": report,
         "active_events": active_events,
-        "disaster_type_options": DISASTER_TYPE_OPTIONS,
-        "severity_cards": SEVERITY_CARDS,
+        "hazard_options": HAZARD_OPTIONS,
+        "hazard_icons": HAZARD_ICONS,
+        "water_hazards": list(_WATER_HAZARDS),
+        "wind_hazards": list(_WIND_HAZARDS),
+        "severity_labels": SEVERITY_LABELS,
+        "model_estimate": model_estimate,
         "today": date.today(),
     }
 
@@ -470,9 +567,9 @@ def edit_damage_report(report_id):
 
 
 def _apply_report_form(report):
-    report.event_id = request.form.get("event_id", type=int) or report.event_id
-    disaster_type = request.form.get("disaster_type", "")
-    report.disaster_type = disaster_type if disaster_type in DISASTER_TYPE_OPTIONS else DISASTER_TYPE_OPTIONS[0]
+    hazard = request.form.get("disaster_type", "")
+    report.disaster_type = hazard if hazard in HAZARD_OPTIONS else HAZARD_OPTIONS[-1]
+    _hazard_lc = report.disaster_type.lower()
 
     incident_date = request.form.get("incident_date", "")
     if incident_date:
@@ -487,9 +584,20 @@ def _apply_report_form(report):
         except ValueError:
             pass
 
-    report.flood_depth_m = request.form.get("flood_depth_m", type=float)
-    flood_level = request.form.get("flood_level", "normal")
-    report.flood_level = flood_level if flood_level in PRIORITY_BY_STATUS else "normal"
+    # Water-hazard branch fields
+    if _hazard_lc in _WATER_HAZARDS:
+        report.flood_depth_m = request.form.get("flood_depth_m", type=float)
+        report.water_level_desc = request.form.get("water_level_desc", "").strip() or None
+    else:
+        report.flood_depth_m = None
+        report.water_level_desc = None
+    # Wind-hazard branch fields
+    if _hazard_lc in _WIND_HAZARDS:
+        report.roofs_damaged = request.form.get("roofs_damaged", type=int) or 0
+        report.wind_signal = request.form.get("wind_signal", "").strip() or None
+    else:
+        report.roofs_damaged = 0
+        report.wind_signal = None
 
     report.affected_families = request.form.get("affected_families", type=int) or 0
     report.affected_individuals = request.form.get("affected_individuals", type=int) or 0
@@ -497,6 +605,23 @@ def _apply_report_form(report):
     report.partially_damaged_houses = request.form.get("partially_damaged_houses", type=int) or 0
     report.missing_persons = request.form.get("missing_persons", type=int) or 0
     report.casualties_deaths = request.form.get("casualties_deaths", type=int) or 0
+
+    # Severity is derived, never hand-picked (see _compute_severity).
+    report.flood_level = _compute_severity(
+        situation_type=report.disaster_type,
+        flood_depth_m=report.flood_depth_m,
+        affected_families=report.affected_families,
+        affected_individuals=report.affected_individuals,
+        totally_damaged_houses=report.totally_damaged_houses,
+        partially_damaged_houses=report.partially_damaged_houses,
+        roofs_damaged=report.roofs_damaged,
+        missing_persons=report.missing_persons,
+        casualties_deaths=report.casualties_deaths,
+    )
+
+    # The barangay's own requested food-pack figure — decision support, not the
+    # final allocation (CSWDO/MSWDO sets that when it acts on the request).
+    report.requested_food_packs = max(request.form.get("requested_food_packs", type=int) or 0, 0)
 
     report.drinking_water_cases = request.form.get("drinking_water_cases", type=int) or 0
     report.hygiene_kits_est = request.form.get("hygiene_kits_est", type=int) or 0
@@ -524,10 +649,11 @@ def _get_or_create_report(barangay, report_id, event_id):
 def save_damage_report_draft():
     barangay = _own_barangay_or_404()
     report_id = request.form.get("report_id", type=int)
-    event_id = request.form.get("event_id", type=int) or (_active_event().event_id if _active_event() else None)
-    if not event_id:
-        flash("There is no active typhoon event to file a report against right now.", "error")
-        return redirect(url_for("barangay.damage_report"))
+    # Auto-links to whichever event PSWDO currently has declared, or leaves
+    # this report standalone (event_id=None) — filing no longer requires
+    # PSWDO to have declared anything first.
+    active_event = _active_event()
+    event_id = active_event.event_id if active_event else None
 
     report, is_new = _get_or_create_report(barangay, report_id, event_id)
     _apply_report_form(report)
@@ -547,10 +673,8 @@ def save_damage_report_draft():
 def submit_damage_report():
     barangay = _own_barangay_or_404()
     report_id = request.form.get("report_id", type=int)
-    event_id = request.form.get("event_id", type=int) or (_active_event().event_id if _active_event() else None)
-    if not event_id:
-        flash("There is no active typhoon event to file a report against right now.", "error")
-        return redirect(url_for("barangay.damage_report"))
+    active_event = _active_event()
+    event_id = active_event.event_id if active_event else None
 
     report, is_new = _get_or_create_report(barangay, report_id, event_id)
     _apply_report_form(report)
@@ -561,6 +685,10 @@ def submit_damage_report():
                          else url_for("barangay.new_damage_report"))
     if report.affected_individuals < report.affected_families:
         flash("Affected Individuals must be greater than or equal to Affected Families.", "error")
+        return redirect(url_for("barangay.edit_damage_report", report_id=report.report_id) if not is_new
+                         else url_for("barangay.new_damage_report"))
+    if not report.requested_food_packs or report.requested_food_packs <= 0:
+        flash("Enter the number of food packs your barangay is requesting.", "error")
         return redirect(url_for("barangay.edit_damage_report", report_id=report.report_id) if not is_new
                          else url_for("barangay.new_damage_report"))
 
@@ -602,23 +730,22 @@ def submit_damage_report():
 # receiving barangay needs a separate step for. Ends in "Received" (this
 # barangay's own confirmation), which pswdo.DISPATCH_STEPS has no equivalent
 # of since that stepper is written from the dispatching side.
-BARANGAY_DELIVERY_STEPS = ["requested", "approved", "preparing", "in_transit", "delivered", "received"]
+BARANGAY_DELIVERY_STEPS = ["requested", "approved", "preparing", "issued", "in_transit", "validated"]
 BARANGAY_STEP_LABELS = {
     "requested": "Requested", "approved": "Approved", "preparing": "Preparing",
-    "in_transit": "In Transit", "delivered": "Delivered", "received": "Received",
+    "issued": "Issued (released)", "in_transit": "On the Way",
+    "validated": "Received (you confirm)",
 }
 
 
 def _delivery_step_index(dist):
     if dist.status == "confirmed":
         return 5
-    if dist.dispatch_status == "delivered":
-        return 4
     if dist.dispatch_status == "in_transit":
+        return 4
+    if dist.dispatch_status == "dispatched" or dist.is_issued:
         return 3
-    # preparing / loaded / dispatched all read as one "Preparing" stage here;
-    # "delayed" is a side-branch flag (see pswdo.py's own DISPATCH_STEPS
-    # comment), not a step of its own, so it falls back to the same stage.
+    # preparing / loaded read as one "Preparing" stage here.
     return 2
 
 
@@ -632,21 +759,24 @@ def relief_monitoring():
         DistributionRecord.distribution_date.desc()
     ).all()
 
+    _CONFIRMABLE = ("dispatched", "in_transit", "delayed", "delivered")
     total_packs = sum(d.quantity_released for d in distributions)
-    in_transit_count = len([d for d in distributions if d.dispatch_status == "in_transit" and d.status == "pending"])
+    in_transit_count = len([d for d in distributions if d.dispatch_status in _CONFIRMABLE and d.status != "confirmed"])
     received_count = len([d for d in distributions if d.status == "confirmed"])
 
     delivery_rows = []
     for i, d in enumerate(distributions, start=1):
         fulfilling = d.allocation.fulfilling_office or d.allocation.office
+        report = d.allocation.barangay_report if d.allocation else None
         delivery_rows.append({
             "distribution": d,
             "label": f"DEL-{i:03d}",
             "ref": f"D-{d.distribution_date.year}-{d.distribution_id:03d}",
-            "request_ref": f"RR-{d.allocation.allocation_date.year}-{d.allocation.allocation_id:03d}",
+            "request_ref": (report.ref if report
+                            else f"RR-{d.allocation.allocation_date.year}-{d.allocation.allocation_id:03d}"),
             "fulfilling_office": fulfilling,
             "step_index": _delivery_step_index(d),
-            "can_confirm": d.dispatch_status == "in_transit" and d.status == "pending",
+            "can_confirm": d.dispatch_status in _CONFIRMABLE and d.status != "confirmed",
             "is_delayed": d.dispatch_status == "delayed",
         })
 
@@ -694,7 +824,11 @@ def _get_own_distribution_or_404(distribution_id):
 def confirm_receipt(distribution_id):
     rec = _get_own_distribution_or_404(distribution_id)
 
-    if rec.dispatch_status != "in_transit" or rec.status != "pending":
+    # The barangay's VALIDATION RECORD (manuscript) — the only thing that
+    # closes a Relief Request and moves stock into the barangay's inventory.
+    # Available once CSWDO has confirmed issuance (dispatched) or the delivery
+    # is on the road.
+    if rec.dispatch_status not in ("dispatched", "in_transit", "delayed", "delivered") or rec.status == "confirmed":
         flash("This delivery isn't ready to be confirmed — it may have already been received.", "error")
         return redirect(url_for("barangay.relief_monitoring"))
 
@@ -732,11 +866,11 @@ def confirm_receipt(distribution_id):
     if saved_names:
         rec.validation_file = ",".join(saved_names)
     rec.status = "confirmed"
-    # The barangay confirming receipt is what closes out the trip — mirrors
-    # pswdo.confirm_delivery's own dispatch_status transition (app/routes/pswdo.py),
-    # just triggered from the receiving end instead of the dispatching end.
+    # The barangay's validation closes out the trip.
     rec.dispatch_status = "delivered"
     rec.submitted_by = current_user.user_id
+
+    _record_barangay_receipt(rec)
 
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="distribution_receipt_confirmed",
@@ -746,6 +880,117 @@ def confirm_receipt(distribution_id):
     db.session.commit()
     flash("Relief receipt confirmed. Thank you!", "success")
     return redirect(url_for("barangay.relief_monitoring"))
+
+
+def _record_barangay_receipt(rec):
+    """Validation closes the loop: bump the barangay's own food-pack inventory,
+    write the +delta to its ledger, and mark the originating Relief Request
+    fulfilled. Idempotent on distribution_id."""
+    if BarangayStockLog.query.filter_by(
+        distribution_id=rec.distribution_id, source_type="delivery"
+    ).first():
+        return
+    inv = BarangayInventory.query.filter_by(
+        barangay_id=rec.barangay_id, item_type="food_pack"
+    ).first()
+    if inv is None:
+        inv = BarangayInventory(
+            barangay_id=rec.barangay_id, item_type="food_pack",
+            item_name="Food Packs", unit="packs", quantity_available=0,
+        )
+        db.session.add(inv)
+    inv.quantity_available = (inv.quantity_available or 0) + (rec.quantity_released or 0)
+    inv.updated_by = current_user.user_id
+    db.session.add(BarangayStockLog(
+        barangay_id=rec.barangay_id, item_type="food_pack", item_name="Food Packs",
+        delta=rec.quantity_released or 0, source_type="delivery",
+        distribution_id=rec.distribution_id, updated_by=current_user.user_id,
+        reason=f"Received delivery D-{rec.distribution_date.year}-{rec.distribution_id:03d}",
+    ))
+    alloc = rec.allocation
+    if alloc and alloc.barangay_report_id:
+        rep = BarangayReport.query.get(alloc.barangay_report_id)
+        if rep and rep.status == "approved":
+            rep.status = "fulfilled"
+
+
+# ---------------------------------------------------------------------------
+# Inventory — the barangay's own food-pack stock. A plain +/- ledger for
+# operational visibility (CSWDO/PSWDO can also see it). Goes UP automatically
+# when the barangay validates a delivery; goes DOWN when barangay personnel
+# record having handed packs out to residents. Not a model predictor.
+# ---------------------------------------------------------------------------
+
+@barangay_bp.route("/inventory")
+@login_required
+@role_required("barangay_user")
+def inventory():
+    barangay = _own_barangay_or_404()
+    inv = BarangayInventory.query.filter_by(
+        barangay_id=barangay.barangay_id, item_type="food_pack"
+    ).first()
+    on_hand = inv.quantity_available if inv else 0
+
+    logs = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id).order_by(
+        BarangayStockLog.created_at.desc()
+    ).all()
+    received = sum(l.delta for l in logs if l.delta > 0)
+    given_out = sum(-l.delta for l in logs if l.delta < 0)
+
+    return render_template(
+        "barangay/inventory.html",
+        barangay=barangay, on_hand=on_hand, logs=logs[:30],
+        received=received, given_out=given_out,
+    )
+
+
+@barangay_bp.route("/inventory/record", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def inventory_record():
+    barangay = _own_barangay_or_404()
+    kind = request.form.get("kind", "distribution")   # distribution | adjustment
+    amount = request.form.get("amount", type=int) or 0
+    reason = request.form.get("reason", "").strip() or None
+
+    if amount <= 0:
+        flash("Enter a number greater than zero.", "error")
+        return redirect(url_for("barangay.inventory"))
+
+    inv = BarangayInventory.query.filter_by(
+        barangay_id=barangay.barangay_id, item_type="food_pack"
+    ).first()
+    if inv is None:
+        inv = BarangayInventory(
+            barangay_id=barangay.barangay_id, item_type="food_pack",
+            item_name="Food Packs", unit="packs", quantity_available=0,
+        )
+        db.session.add(inv)
+
+    if kind == "distribution":
+        delta = -amount
+        if (inv.quantity_available or 0) + delta < 0:
+            flash(f"You only have {inv.quantity_available or 0:,} food packs on hand.", "error")
+            return redirect(url_for("barangay.inventory"))
+        source_type, default_reason = "distribution", "Distributed to residents"
+    else:  # adjustment — allow + or - via sign toggle
+        direction = request.form.get("direction", "add")
+        delta = amount if direction == "add" else -amount
+        if (inv.quantity_available or 0) + delta < 0:
+            flash("That correction would put the count below zero.", "error")
+            return redirect(url_for("barangay.inventory"))
+        source_type, default_reason = "adjustment", "Manual correction"
+
+    inv.quantity_available = (inv.quantity_available or 0) + delta
+    inv.updated_by = current_user.user_id
+    db.session.add(BarangayStockLog(
+        barangay_id=barangay.barangay_id, item_type="food_pack", item_name="Food Packs",
+        delta=delta, source_type=source_type, reason=reason or default_reason,
+        updated_by=current_user.user_id,
+    ))
+    db.session.commit()
+    flash("Inventory updated.", "success")
+    return redirect(url_for("barangay.inventory"))
 
 
 # ---------------------------------------------------------------------------
