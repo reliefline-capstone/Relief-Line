@@ -8,12 +8,19 @@ document.addEventListener('DOMContentLoaded', function () {
     };
     var TIER_RANK = { critical: 4, high: 3, medium: 2, low: 1, unrated: 0 };
 
-    var map = L.map('gis-map', { zoomControl: true }).setView([15.98, 120.45], 11);
+    var map = L.map('gis-map', { zoomControl: false }).setView([15.98, 120.45], 11);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 18,
     }).addTo(map);
+
+    // Bottom-right instead of Leaflet's default top-left (which now sits
+    // under the search bar overlay anyway) — restyled in gis_map.css to
+    // match the app's own button/panel language instead of Leaflet's stock
+    // look. Leaflet stacks same-corner controls itself, so this shares the
+    // corner with the attribution control with no manual offset needed.
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     // Drill-down state: overview -> municipality -> barangay-list -> barangay-detail
     var state = { level: 'overview', lgu: null, barangayId: null, barangayName: null, showBreakdown: false };
@@ -79,10 +86,21 @@ document.addEventListener('DOMContentLoaded', function () {
             // region against neighboring provinces (Nueva Ecija, Tarlac, La
             // Union, Benguet) — target LGUs stand out further on top of that
             // with a bolder navy border and a touch more fill.
-            color: isTarget ? '#0f2547' : '#5b86b8',
-            weight: isTarget ? 3 : 1,
+            //
+            // Non-target municipalities have no real barangay-level source
+            // data (out of this project's scope — see Scope and Limitations),
+            // so pangasinan_municipalities.json carries only crude, low-point
+            // placeholder shapes for them — some render as an obvious
+            // near-rectangle. Rather than inventing a more accurate boundary
+            // (explicitly against project rules), the border is dropped
+            // entirely for non-target munis: a soft fill with no hard edge
+            // never draws attention to how few points a shape actually has,
+            // while target LGUs (real, accurate boundaries) keep their
+            // border as before.
+            color: isTarget ? '#0f2547' : 'transparent',
+            weight: isTarget ? 3 : 0,
             fillColor: isTarget ? '#2c5aa0' : '#bcd4f0',
-            fillOpacity: isTarget ? 0.12 : 0.45,
+            fillOpacity: isTarget ? 0.12 : 0.4,
         };
     }
 
@@ -140,11 +158,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var warehouseLayer = L.layerGroup().addTo(map);
     var routeLayer = L.layerGroup().addTo(map);
+    // Nominatim search result pin — separate from every other layer so a
+    // search never disturbs municipality/warehouse/route rendering.
+    var searchMarkerLayer = L.layerGroup().addTo(map);
+    // The actual road-routed polyline drawn from clicking a row in Active
+    // Distribution Routes (OSRM) — visually distinct (solid, teal) from the
+    // existing schematic dashed "in transit" lines in routeLayer above,
+    // which stay exactly as they were.
+    var osrmRouteLayer = L.layerGroup().addTo(map);
 
-    function warehouseCode(name) {
-        var m = name.match(/warehouse\s+([a-z0-9]+)/i);
+    function warehouseCode(w) {
+        var m = w.name.match(/warehouse\s+([a-z0-9]+)/i);
         if (m) return 'WH-' + m[1].toUpperCase();
-        return name.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+        // Generic names like "PSWDO Warehouse" and "PSWDO Warehouse -
+        // Alaminos" both reduce to the same "PW" initials — the dash isn't
+        // a word character, so the regex above never sees "Alaminos" at
+        // all. Falling back to the office's own area instead (already on
+        // every warehouse marker) is what actually tells two such
+        // warehouses apart on the map.
+        if (w.area_covered) {
+            return w.area_covered.split(' ').map(function (word) { return word[0]; }).slice(0, 3).join('').toUpperCase();
+        }
+        return w.name.split(' ').map(function (word) { return word[0]; }).slice(0, 2).join('').toUpperCase();
     }
 
     function renderWarehouses(warehouses) {
@@ -153,16 +188,33 @@ document.addEventListener('DOMContentLoaded', function () {
             var healthClass = (w.health || 'low').toLowerCase();
             var icon = L.divIcon({
                 className: 'gis-wh-marker gis-wh-' + healthClass,
-                html: '<span>' + escapeHtml(warehouseCode(w.name)) + '</span>',
+                html: '<span>' + escapeHtml(warehouseCode(w)) + '</span>',
                 iconSize: [60, 26],
                 iconAnchor: [30, 13],
             });
             var marker = L.marker([w.lat, w.lng], { icon: icon });
-            marker.bindPopup(
+            var popupHtml =
                 '<strong>' + escapeHtml(w.name) + '</strong>' +
                 '<span>' + escapeHtml(w.area_covered) + '</span>' +
-                '<span>' + fmt(w.food_pack_qty) + ' / ' + fmt(w.capacity) + ' packs (' + w.pct.toFixed(0) + '%)</span>'
-            );
+                '<span>' + fmt(w.food_pack_qty) + ' / ' + fmt(w.capacity) + ' packs (' + w.pct.toFixed(0) + '%)</span>';
+            // PSWDO only (CSWDO/MSWDO keeps the popup exactly as it was) —
+            // relief-supply-focused additions: the stock-health label spelled
+            // out, and any other real relief items this office has on record
+            // (see WarehouseInventory in gis_map_data — never fabricated,
+            // "No data available" when there's genuinely nothing to show).
+            if (IS_MUNI_ONLY) {
+                popupHtml += '<span>Relief Stock Status: ' + escapeHtml(w.health || 'No data available') + '</span>';
+                popupHtml += '<span class="gis-wh-relief-items">Other Relief Items: ';
+                if (w.other_relief_items && w.other_relief_items.length) {
+                    popupHtml += escapeHtml(w.other_relief_items.map(function (i) {
+                        return i.name + ' (' + fmt(i.qty) + ' ' + i.unit + ')';
+                    }).join(', '));
+                } else {
+                    popupHtml += 'No data available';
+                }
+                popupHtml += '</span>';
+            }
+            marker.bindPopup(popupHtml);
             marker.addTo(warehouseLayer);
         });
     }
@@ -174,6 +226,143 @@ document.addEventListener('DOMContentLoaded', function () {
                 color: '#3867d6', weight: 2, dashArray: '6,6', opacity: 0.8,
             }).bindTooltip('In transit to ' + escapeHtml(line.barangay)).addTo(routeLayer);
         });
+    }
+
+    // ---- Nominatim location search ----------------------------------
+    // Free, no API key. Query is biased toward Pangasinan (appended, not
+    // hard-bounded, so a warehouse/place name still resolves even if
+    // Nominatim's data ties it to a slightly different admin boundary).
+    var searchResultsEl = document.getElementById('gis-search-results');
+    var searchInputEl = document.getElementById('gis-search-input');
+    var searchClearEl = document.getElementById('gis-search-clear');
+
+    function updateSearchClearVisibility() {
+        searchClearEl.hidden = !searchInputEl.value;
+    }
+
+    function clearSearch() {
+        searchInputEl.value = '';
+        searchMarkerLayer.clearLayers();
+        hideSearchResults();
+        updateSearchClearVisibility();
+        searchInputEl.focus();
+    }
+
+    function hideSearchResults() {
+        searchResultsEl.hidden = true;
+        searchResultsEl.innerHTML = '';
+    }
+
+    function runSearch() {
+        var q = (searchInputEl.value || '').trim();
+        if (!q) { hideSearchResults(); return; }
+        searchResultsEl.hidden = false;
+        searchResultsEl.innerHTML = '<div class="gis-search-empty">Searching…</div>';
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&q=' +
+            encodeURIComponent(q + ', Pangasinan, Philippines');
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { if (!r.ok) throw new Error('search failed'); return r.json(); })
+            .then(function (results) {
+                if (!results.length) {
+                    searchResultsEl.innerHTML = '<div class="gis-search-empty">No results found.</div>';
+                    return;
+                }
+                searchResultsEl.innerHTML = results.map(function (r, i) {
+                    return '<div class="gis-search-result" data-idx="' + i + '">' + escapeHtml(r.display_name) + '</div>';
+                }).join('');
+                searchResultsEl.querySelectorAll('.gis-search-result').forEach(function (el, i) {
+                    el.addEventListener('click', function () { selectSearchResult(results[i]); });
+                });
+            })
+            .catch(function () {
+                // Never breaks the rest of the dashboard — this is a graceful,
+                // visible failure state, not a thrown error.
+                searchResultsEl.innerHTML = '<div class="gis-search-empty">Search is unavailable right now. Try again in a moment.</div>';
+            });
+    }
+
+    function selectSearchResult(r) {
+        searchMarkerLayer.clearLayers();
+        var lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+        L.marker([lat, lng]).addTo(searchMarkerLayer).bindPopup(escapeHtml(r.display_name)).openPopup();
+        map.setView([lat, lng], 15);
+        hideSearchResults();
+        searchInputEl.value = r.display_name;
+        updateSearchClearVisibility();
+    }
+
+    // ---- OSRM route visualization (Active Distribution Routes) ------
+    // Free public demo router, no API key. Draws the actual road path
+    // (distinct solid teal line) plus a popup with real distance/duration
+    // from OSRM itself — separate from the schematic dashed lines above.
+    var activeRouteRowId = null;
+
+    function clearRouteDetail() {
+        activeRouteRowId = null;
+        osrmRouteLayer.clearLayers();
+        var detailEl = document.getElementById('gis-route-detail');
+        if (detailEl) { detailEl.hidden = true; detailEl.innerHTML = ''; }
+        document.querySelectorAll('#routes-table-body tr.gis-route-row-active').forEach(function (el) {
+            el.classList.remove('gis-route-row-active');
+        });
+    }
+
+    function showRouteDetail(html) {
+        var detailEl = document.getElementById('gis-route-detail');
+        if (!detailEl) return;
+        detailEl.hidden = false;
+        detailEl.innerHTML = html;
+    }
+
+    function loadOsrmRoute(r, rowEl) {
+        osrmRouteLayer.clearLayers();
+        document.querySelectorAll('#routes-table-body tr.gis-route-row-active').forEach(function (el) {
+            el.classList.remove('gis-route-row-active');
+        });
+        rowEl.classList.add('gis-route-row-active');
+        activeRouteRowId = r.distribution_id;
+
+        if (r.from_lat == null || r.to_lat == null) {
+            showRouteDetail('<strong>D-' + r.distribution_id + '</strong>' +
+                '<span>Route unavailable — no coordinates on record for this warehouse or barangay.</span>');
+            return;
+        }
+
+        showRouteDetail('<strong>D-' + r.distribution_id + '</strong><span>Loading route…</span>');
+        var url = 'https://router.project-osrm.org/route/v1/driving/' +
+            r.from_lng + ',' + r.from_lat + ';' + r.to_lng + ',' + r.to_lat +
+            '?overview=full&geometries=geojson';
+        fetch(url).then(function (resp) { if (!resp.ok) throw new Error('routing failed'); return resp.json(); })
+            .then(function (data) {
+                if (activeRouteRowId !== r.distribution_id) return; // a newer click superseded this one
+                if (!data.routes || !data.routes.length) throw new Error('no route');
+                var route = data.routes[0];
+                var line = L.geoJSON(route.geometry, {
+                    style: { color: '#16a085', weight: 5, opacity: 0.85 },
+                }).addTo(osrmRouteLayer);
+                L.circleMarker([r.from_lat, r.from_lng], { radius: 6, color: '#0f2547', weight: 2, fillColor: '#16a085', fillOpacity: 1 })
+                    .bindTooltip(escapeHtml(r.from_office)).addTo(osrmRouteLayer);
+                L.circleMarker([r.to_lat, r.to_lng], { radius: 6, color: '#0f2547', weight: 2, fillColor: '#e74c3c', fillOpacity: 1 })
+                    .bindTooltip(escapeHtml(r.to_barangay)).addTo(osrmRouteLayer);
+                map.fitBounds(line.getBounds().pad(0.15));
+
+                var km = (route.distance / 1000).toFixed(1);
+                var mins = Math.round(route.duration / 60);
+                showRouteDetail(
+                    '<strong>D-' + r.distribution_id + ' &middot; ' + escapeHtml(r.from_office) + ' &rarr; ' + escapeHtml(r.to_barangay) + '</strong>' +
+                    '<div class="gis-route-detail-grid">' +
+                    '<div><span>Distance</span><strong>' + km + ' km</strong></div>' +
+                    '<div><span>Est. Travel Time</span><strong>' + mins + ' min</strong></div>' +
+                    '<div><span>Packs</span><strong>' + fmt(r.packs) + '</strong></div>' +
+                    '<div><span>Status</span><span class="badge-status badge-status-' + r.status + '">' + escapeHtml(r.status_label) + '</span></div>' +
+                    '</div>'
+                );
+            })
+            .catch(function () {
+                if (activeRouteRowId !== r.distribution_id) return;
+                showRouteDetail('<strong>D-' + r.distribution_id + '</strong>' +
+                    '<span>Could not load the route right now. The rest of the map is unaffected — try again in a moment.</span>');
+            });
     }
 
     function renderStats(stats) {
@@ -474,6 +663,22 @@ document.addEventListener('DOMContentLoaded', function () {
     function focusMap() {
         if (!currentData) return;
         if (state.level === 'overview') {
+            if (IS_MUNI_ONLY) {
+                // PSWDO overview: fit to just the 3 target MUNICIPALITY
+                // polygons (province_context, is_target features) — not the
+                // whole province, and not barangay polygons (those sit in a
+                // narrow N-S sliver and stretched the map's aspect ratio
+                // when tried before; see the CSWDO branch below for that
+                // history). CSWDO/MSWDO is untouched — still fits the whole
+                // province_context exactly as before.
+                var targetFeats = currentData.province_context.features.filter(function (f) { return f.properties.is_target; });
+                if (targetFeats.length) {
+                    var tb = L.geoJSON({ type: 'FeatureCollection', features: targetFeats }).getBounds();
+                    if (tb.isValid()) { map.fitBounds(tb.pad(0.08)); return; }
+                }
+                // Fall back to the whole-province fit below if, for some
+                // reason, no target features came back.
+            }
             // Whole province, not just the target LGUs' barangays — those sit
             // in a narrow N-S sliver, so fitting to them alone stretched the
             // map's east-west extent to match the container's wide aspect
@@ -489,11 +694,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
     }
 
+    var routesById = {};
+
     function renderRoutesTable() {
+        clearRouteDetail();
         var routes = currentData ? currentData.routes_table : [];
         if (state.lgu) {
             routes = routes.filter(function (r) { return r.to_municipality === state.lgu; });
         }
+        routesById = {};
+        routes.forEach(function (r) { routesById[r.distribution_id] = r; });
         document.getElementById('routes-count').textContent = routes.length;
         var body = document.getElementById('routes-table-body');
         if (!routes.length) {
@@ -501,7 +711,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         body.innerHTML = routes.map(function (r) {
-            return '<tr>' +
+            return '<tr class="gis-route-row" data-distribution-id="' + r.distribution_id + '" title="Click to view route on map">' +
                 '<td>D-' + r.distribution_id + '</td>' +
                 '<td>' + escapeHtml(r.from_office) + ' &rarr; ' + escapeHtml(r.to_barangay) + ' / ' + escapeHtml(r.to_municipality) + '</td>' +
                 '<td>' + fmt(r.packs) + '</td>' +
@@ -641,7 +851,57 @@ document.addEventListener('DOMContentLoaded', function () {
     // has no real "province overview" to reset back to.
     var resetBtn = document.getElementById('btn-reset-map');
     if (resetBtn) {
-        resetBtn.addEventListener('click', function () { setLevel('overview'); });
+        resetBtn.addEventListener('click', function () {
+            searchMarkerLayer.clearLayers();
+            searchInputEl.value = '';
+            updateSearchClearVisibility();
+            hideSearchResults();
+            clearRouteDetail();
+            setLevel('overview');
+        });
+    }
+
+    // Search: button click or Enter key; results dismiss on outside click.
+    document.getElementById('gis-search-btn').addEventListener('click', runSearch);
+    searchInputEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); runSearch(); }
+    });
+    searchInputEl.addEventListener('input', updateSearchClearVisibility);
+    searchClearEl.addEventListener('click', clearSearch);
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.gis-search-bar') && !e.target.closest('.gis-search-results')) {
+            hideSearchResults();
+        }
+    });
+
+    // Active Distribution Routes: click a row to draw its real OSRM route.
+    document.getElementById('routes-table-body').addEventListener('click', function (e) {
+        var row = e.target.closest('tr[data-distribution-id]');
+        if (!row) return;
+        var r = routesById[row.getAttribute('data-distribution-id')];
+        if (r) loadOsrmRoute(r, row);
+    });
+
+    // Fullscreen toggle — expands the whole map panel (search bar, map,
+    // legend included) via the browser's native Fullscreen API, no extra
+    // library. Leaflet needs an explicit invalidateSize() nudge after the
+    // container's size changes, or tiles render wrong until the next pan.
+    var fullscreenBtn = document.getElementById('gis-fullscreen-btn');
+    var mapPanelEl = document.querySelector('.gis-map-panel');
+    if (fullscreenBtn && mapPanelEl) {
+        fullscreenBtn.addEventListener('click', function () {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else if (mapPanelEl.requestFullscreen) {
+                mapPanelEl.requestFullscreen();
+            }
+        });
+        document.addEventListener('fullscreenchange', function () {
+            var isFull = !!document.fullscreenElement;
+            mapPanelEl.classList.toggle('gis-map-panel-fullscreen', isFull);
+            fullscreenBtn.title = isFull ? 'Exit fullscreen' : 'Toggle fullscreen';
+            setTimeout(function () { map.invalidateSize(); }, 100);
+        });
     }
 
     loadData();

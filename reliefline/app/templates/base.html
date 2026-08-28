@@ -4,14 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ReliefLine{% endblock %}</title>
+    <!-- Runs before any CSS/layout so a saved sidebar-collapsed preference
+         (see the toggle handler at the bottom of this file) applies before
+         first paint — without this, every page would flash briefly in the
+         wrong (default-expanded) state before JS could fix it up. -->
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('reliefline_sidebar_collapsed') === '1') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- One typeface, everywhere: Inter is drawn specifically for on-screen
+         UI legibility at small sizes and has unambiguous numerals (0/O, 1/l/I
+         stay distinct) — which matters more here than a decorative heading
+         face, since PSWDO/CSWDO/MSWDO/barangay users read a lot of counts and
+         figures under time pressure, not marketing copy. The wider weight
+         range (400-800) is what gives headings their own presence without a
+         second font family to load or keep visually consistent. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     {% block content %}{% endblock %}
     {% block extra_js %}{% endblock %}
+    <!-- Delegated (not bound to #sidebar-toggle-btn directly) so it works
+         no matter which role's _sidebar.html rendered the button, without
+         needing per-page wiring. -->
+    <script>
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('#sidebar-toggle-btn')) return;
+            var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+            try { localStorage.setItem('reliefline_sidebar_collapsed', collapsed ? '1' : '0'); } catch (err) {}
+        });
+    </script>
 </body>
 </html>

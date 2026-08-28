@@ -170,7 +170,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    /* Same root cause as .map-legend-box (see dashboard.css): a Leaflet map
+       on the page (e.g. the Warehouse Map) has internal panes running up to
+       z-index 700 with no isolating stacking context of their own, so a
+       modal at z-index 100 could render underneath it. 2000 clears that
+       range with room to spare, matching the legend's fix. */
+    z-index: 2000;
     padding: 20px;
 }
 
@@ -185,6 +190,9 @@
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     max-height: 90vh;
     overflow-y: auto;
+    /* @keyframes modalPopIn lives in base.css (loaded on every page) so it
+       still applies to .da-modal on pages that never load this stylesheet. */
+    animation: modalPopIn 0.18s ease-out both;
 }
 
 .rd-modal-header {

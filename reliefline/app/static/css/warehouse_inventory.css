@@ -208,7 +208,15 @@
    office names alongside DATE/TIME/ACTIVITY/QUANTITY columns — scrolls into
    view instead of being silently clipped with no way to reach it. Still clips
    the table's square corners to the panel's border-radius either way. */
-.wh-table-panel { padding: 0; overflow-x: auto; }
+/* .main-grid is a CSS grid with the default align-items: stretch, so
+   without this the panel stretches to match its taller sibling
+   (.wh-side-col — Stock Levels + Recent Stock Movements stacked), leaving a
+   large empty gap below the table's last row instead of the panel just
+   sizing to its own content. */
+.wh-table-panel { padding: 0; overflow-x: auto; align-self: start; }
+
+.wh-table tbody tr { transition: background-color 0.15s ease; }
+.wh-table tbody tr:hover { background: #f8f9fc; }
 
 .wh-table-panel .panel-header {
     padding: 16px 20px;

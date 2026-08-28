@@ -56,6 +56,13 @@
         <div class="main-grid">
 
             <section class="panel gis-map-panel">
+                <div class="gis-search-bar">
+                    <button type="button" class="gis-search-icon-btn" id="gis-search-btn" title="Search">{{ icon('search', 16) }}</button>
+                    <input type="text" id="gis-search-input" placeholder="Search location…" title="Search municipality, barangay, warehouse, or location" autocomplete="off">
+                    <button type="button" class="gis-search-clear" id="gis-search-clear" title="Clear search" hidden>{{ icon('x', 14) }}</button>
+                </div>
+                <div id="gis-search-results" class="gis-search-results" hidden></div>
+                <button type="button" class="gis-fullscreen-btn" id="gis-fullscreen-btn" title="Toggle fullscreen">{{ icon('maximize', 16, '#555') }}</button>
                 <div id="gis-map"></div>
                 <div class="map-legend-box">
                     <span class="map-legend-title">Barangay Status</span>
@@ -82,6 +89,8 @@
                 <h3>Active Distribution Routes</h3>
                 <span class="badge-count" id="routes-count">0</span>
             </div>
+            <p class="empty-note" style="padding:0 20px 10px;">Click a route to draw its actual road path on the map, with distance and estimated travel time.</p>
+            <div id="gis-route-detail" class="gis-route-detail" hidden></div>
             <table class="wh-table">
                 <thead>
                     <tr>

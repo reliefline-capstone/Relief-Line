@@ -1,3 +1,27 @@
+/* Leaflet's zoom control, moved to bottom-left (see gis_map.js) and
+   restyled to match the app's own button language instead of Leaflet's
+   stock square-cornered, thin-bordered look. margin-bottom clears
+   .map-legend-box, which already occupies that same corner (~222px tall) —
+   stacked above it rather than overlapping. */
+.leaflet-control-zoom {
+    margin: 0 12px 12px 0 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.15) !important;
+    overflow: hidden;
+}
+.leaflet-control-zoom a {
+    width: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    color: #555 !important;
+    background: white !important;
+    border: none !important;
+    font-size: 17px !important;
+}
+.leaflet-control-zoom a:hover { background: #f4f6fa !important; }
+.leaflet-control-zoom-in { border-bottom: 1px solid #f0f2f6 !important; }
+
 /* Filters */
 .gis-filters {
     display: flex;
@@ -76,6 +100,151 @@
     border-radius: 12px;
     background: #eaf1fb;
 }
+
+/* Fullscreen: the browser's Fullscreen API makes .gis-map-panel fill the
+   whole screen, so #gis-map's own fixed 560px needs to grow to use that
+   space — 56px reserves just enough room for the search bar row above it. */
+.gis-map-panel:fullscreen,
+.gis-map-panel.gis-map-panel-fullscreen {
+    background: white;
+}
+.gis-map-panel:fullscreen #gis-map,
+.gis-map-panel.gis-map-panel-fullscreen #gis-map {
+    height: calc(100vh - 56px);
+    border-radius: 0;
+}
+
+/* Nominatim search bar + fullscreen toggle — overlaid directly on the map
+   (position: absolute inside .gis-map-panel, which is already position:
+   relative) rather than sitting above it in flow. z-index 1000 matches the
+   fix already established for .map-legend-box in dashboard.css: Leaflet's
+   own internal panes (tooltip/popup) run up to z-index 700 with no
+   isolating stacking context of their own, so anything meant to float on
+   top of the map needs to clear that range. The zoom control now lives at
+   bottom-right (see gis_map.js), so nothing else claims the map's corners
+   at top-left any more — this can sit flush at 12px. */
+
+/* One unified pill (icon + input + clear button share a single rounded
+   container) instead of two separate boxes side by side — reads as one
+   search field, closer to how Google Maps/most map search bars look,
+   rather than "an input, then also a button". */
+.gis-search-bar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    /* A fixed, compact width instead of stretching edge-to-edge across the
+       whole map — a search box this wide read as oversized for what it
+       actually needs to hold. right (as a max so it never overflows onto
+       .gis-fullscreen-btn on very narrow panels) still applies as a cap. */
+    width: 320px;
+    max-width: calc(100% - 68px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+    padding: 0 4px;
+}
+.gis-search-bar input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 10px 4px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a1a;
+}
+.gis-search-bar input:focus { outline: none; }
+.gis-search-icon-btn,
+.gis-search-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: none;
+    border: none;
+    color: #8a94a6;
+    flex-shrink: 0;
+}
+/* The [hidden] attribute (JS toggles this on #gis-search-clear) and a class
+   selector carry equal specificity — author CSS loads after the browser's
+   own UA stylesheet, so without this, "display: flex" above would win the
+   cascade and the button would never actually disappear. */
+.gis-search-icon-btn[hidden],
+.gis-search-clear[hidden] { display: none; }
+.gis-search-icon-btn:hover,
+.gis-search-clear:hover { background: #f4f6fa; color: #0f2547; }
+
+.gis-fullscreen-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1000;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+    color: #555;
+}
+.gis-fullscreen-btn:hover { background: #f4f6fa; }
+
+.gis-search-results {
+    position: absolute;
+    top: 56px;
+    left: 12px;
+    width: 320px;
+    max-width: calc(100% - 24px);
+    z-index: 1000;
+    border: 1px solid #e5e9f0;
+    border-radius: 14px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: white;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.gis-search-result {
+    padding: 9px 14px;
+    font-size: 12.5px;
+    color: #333;
+    border-bottom: 1px solid #f0f2f6;
+    cursor: pointer;
+}
+.gis-search-result:last-child { border-bottom: none; }
+.gis-search-result:hover { background: #f4f6fa; }
+.gis-search-empty { padding: 12px 14px; font-size: 12.5px; color: #8a94a6; }
+
+/* Active Distribution Routes — clickable rows (OSRM route visualization) */
+.gis-route-row { cursor: pointer; transition: background-color 0.15s ease; }
+.gis-route-row:hover { background: #f8f9fc; }
+.gis-route-row-active { background: #eaf6f3; }
+
+.gis-route-detail {
+    margin: 0 20px 14px;
+    padding: 12px 14px;
+    background: #f8f9fc;
+    border-radius: 8px;
+    border-left: 3px solid #16a085;
+}
+.gis-route-detail strong { display: block; font-size: 13px; margin-bottom: 6px; }
+.gis-route-detail > span { font-size: 12.5px; color: #8a94a6; }
+.gis-route-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    margin-top: 4px;
+}
+.gis-route-detail-grid div { display: flex; flex-direction: column; gap: 2px; }
+.gis-route-detail-grid span { font-size: 11px; color: #8a94a6; }
+.gis-route-detail-grid strong { font-size: 14px; margin: 0; }
 
 .legend-square.no-data { background: #d8dee8; }
 

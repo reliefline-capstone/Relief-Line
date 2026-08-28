@@ -25,7 +25,7 @@
             <div class="greeting-main">
                 <h2>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }}, {{ current_user.name }}</h2>
                 <div class="banner-forecast-box" data-weather-forecast data-endpoint="{{ url_for('pswdo.dashboard_weather', cities='Lingayen') }}">
-                    <span class="banner-forecast-label">Loading forecast…</span>
+                    <span class="banner-forecast-label skeleton-shimmer-dark">Loading forecast…</span>
                 </div>
             </div>
             <div class="banner-aside">
@@ -129,7 +129,7 @@
             <div class="weather-widget-header">
                 <span class="weather-widget-title">{{ icon('cloud', 16) }} Weather &amp; Typhoon Watch</span>
             </div>
-            <p class="weather-empty">Loading live weather…</p>
+            <p class="weather-empty skeleton-shimmer">Loading live weather…</p>
         </div>
 
         <!-- Declare Disaster Event modal — see app.routes.pswdo.declare_disaster_event.
@@ -236,10 +236,10 @@
                     <a href="{{ url_for('pswdo.warehouse_inventory') }}" class="link-manage">Manage →</a>
                 </div>
                 {% for w in warehouses %}
-                <div class="warehouse-status-row">
+                <a href="{{ url_for('pswdo.warehouse_detail', office_id=w.office.office_id) }}" class="warehouse-status-row">
                     <div class="warehouse-status-top">
                         <div class="warehouse-status-name">
-                            {{ icon('building', 16, '#8a94a6') }}
+                            <span class="warehouse-status-icon icon-{{ w.health|lower }}">{{ icon('building', 16) }}</span>
                             <div>
                                 <strong>{{ w.office.office_name }}</strong>
                                 <span>{{ w.office.area_covered }}</span>
@@ -254,7 +254,7 @@
                         <div class="warehouse-bar-fill fill-{{ w.health|lower }}" style="width: {{ w.pct if w.pct <= 100 else 100 }}%;"></div>
                     </div>
                     <span class="warehouse-status-sub">{{ w.pct|int }}% capacity · {{ "{:,}".format(w.food_pack_qty) }} / {{ "{:,}".format(w.capacity) }} packs</span>
-                </div>
+                </a>
                 {% endfor %}
             </section>
 
@@ -284,11 +284,11 @@
 
                 <div class="pa-burn-row">
                     <div>
-                        <span class="pa-burn-label">BURN RATE</span>
+                        <span class="pa-burn-label">{{ icon('activity', 12) }} BURN RATE</span>
                         <strong>~{{ burn_rate|int }} packs / day</strong>
                     </div>
                     <div class="pa-burn-good">
-                        <span class="pa-burn-label">GOOD FOR</span>
+                        <span class="pa-burn-label">{{ icon('calendar', 12) }} GOOD FOR</span>
                         <strong>{% if days_remaining %}{{ days_remaining|int }}+ Days{% else %}N/A{% endif %}</strong>
                     </div>
                 </div>
@@ -314,7 +314,7 @@
         <!-- Distribution Progress + Recent Activities -->
         <div class="main-grid" style="margin-top: 16px;">
 
-            <section class="panel">
+            <section class="panel distribution-progress-panel">
                 <div class="panel-header">
                     <h3>Today's Distribution Progress</h3>
                     <a href="{{ url_for('pswdo.transfers') }}" class="link-manage">Transfers →</a>
@@ -343,13 +343,14 @@
 
                 <h4 class="pa-rec-title">BY MUNICIPALITY</h4>
                 {% for m in by_municipality %}
+                {% set pct = (m.released / m.allocated * 100) if m.allocated > 0 else 0 %}
                 <div class="municipality-row">
                     <div class="municipality-row-top">
                         <span>{{ m.lgu }}</span>
-                        <span>{{ "{:,}".format(m.released) }} / {{ "{:,}".format(m.allocated) }}</span>
+                        <span>{{ "{:,}".format(m.released) }} / {{ "{:,}".format(m.allocated) }} <strong class="municipality-pct">({{ pct|round|int }}%)</strong></span>
                     </div>
                     <div class="municipality-bar">
-                        <div class="municipality-bar-fill" style="width: {{ (m.released / m.allocated * 100) if m.allocated > 0 else 0 }}%;"></div>
+                        <div class="municipality-bar-fill {{ 'bar-low' if pct < 30 else ('bar-mid' if pct < 70 else 'bar-high') }}" style="width: {{ pct }}%;"></div>
                     </div>
                 </div>
                 {% else %}

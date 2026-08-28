@@ -5,18 +5,135 @@
     overflow: hidden;
 }
 
+/* Click-to-toggle sidebar (see .sidebar-toggle + the early-run script in
+   base.html, which applies the "sidebar-collapsed" class to <html> — before
+   first paint, from a saved localStorage preference — so there's no flash
+   of the wrong state on load). Expanded (icons + labels) is the default;
+   toggling adds .sidebar-collapsed to <html> for a persistent icon-only
+   rail. Fixed positioning keeps it in view while .dashboard-main scrolls;
+   .dashboard-main's margin-left below tracks the same width so content
+   reflows alongside it instead of being covered. */
 .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 250px;
-    flex-shrink: 0;
     height: 100vh;
     background: white;
     border-right: 1px solid #e5e9f0;
     display: flex;
     flex-direction: column;
     padding: 20px 16px;
-    position: sticky;
-    top: 0;
+    overflow-x: hidden;
     overflow-y: auto;
+    z-index: 500;
+    transition: width 0.22s ease, padding 0.22s ease;
+}
+
+html.sidebar-collapsed .sidebar {
+    width: 72px;
+    padding: 20px 12px;
+}
+
+/* Floating round toggle button anchored to the sidebar's right edge —
+   half in, half out of the border, like a tab. The chevron itself just
+   rotates 180° between states instead of swapping icons. */
+/* A sibling of .sidebar (see _sidebar.html), not a child — .sidebar has
+   overflow-x: hidden (needed so labels don't cause a horizontal scrollbar
+   mid-collapse-animation), which was clipping this button in half when it
+   lived inside that box, straddling the edge. As its own fixed-position
+   element, "left" just tracks the sidebar's current width directly, with
+   its own transition kept in sync with .sidebar's. */
+.sidebar-toggle {
+    position: fixed;
+    top: 28px;
+    left: 250px;
+    transform: translateX(-50%);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #e5e9f0;
+    box-shadow: 0 1px 4px rgba(15, 37, 71, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    z-index: 501;
+    flex-shrink: 0;
+    /* Hidden until the pointer is near the sidebar's edge — kept out of the
+       way rather than sitting on screen permanently — then a quick fade-in.
+       pointer-events stays off while hidden so it can never intercept a
+       click meant for whatever's underneath it. */
+    opacity: 0;
+    pointer-events: none;
+    transition: left 0.22s ease, opacity 0.15s ease;
+}
+
+/* Revealed by hovering the sidebar itself (edge included) or the button;
+   :focus-visible keeps it reachable for keyboard users without requiring a
+   mouse hover at all. */
+.sidebar:hover ~ .sidebar-toggle,
+.sidebar-toggle:hover,
+.sidebar-toggle:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+html.sidebar-collapsed .sidebar-toggle {
+    left: 72px;
+}
+
+.sidebar-toggle:hover { background: #f4f6fa; color: #0f2547; }
+
+.sidebar-toggle svg {
+    transition: transform 0.22s ease;
+}
+
+html.sidebar-collapsed .sidebar-toggle svg {
+    transform: rotate(180deg);
+}
+
+/* A label (nav link text, the brand wordmark, the user name/role block)
+   that only makes sense once the rail has room for it — visible by
+   default, collapsed to zero-width/invisible once .sidebar-collapsed is
+   set, with the reveal-on-expand transition delayed slightly so text
+   doesn't render squashed mid-animation. Applies to .sidebar-label (added
+   around each nav link's text in every role's _sidebar.html) plus the two
+   spots that already had their own wrapper: the brand's text column and
+   .sidebar-user-info. */
+.sidebar-label,
+.sidebar-brand > div,
+.sidebar-user-info {
+    opacity: 1;
+    max-width: 200px;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: opacity 0.18s ease 0.08s, max-width 0.22s ease;
+}
+
+html.sidebar-collapsed .sidebar-label,
+html.sidebar-collapsed .sidebar-brand > div,
+html.sidebar-collapsed .sidebar-user-info {
+    opacity: 0;
+    max-width: 0;
+    transition: opacity 0.12s ease, max-width 0.22s ease;
+}
+
+/* Notification/pending-count badges stay visible even while collapsed —
+   they're the one thing on a collapsed icon that still needs to be seen
+   without expanding — as a small corner dot on the icon instead of their
+   normal inline position next to the (currently hidden) label. */
+html.sidebar-collapsed .sidebar-nav a { position: relative; }
+html.sidebar-collapsed .nav-badge {
+    position: absolute;
+    top: 6px;
+    left: 30px;
+    margin-left: 0;
+    min-width: 8px;
+    height: 8px;
+    padding: 0;
+    font-size: 0;
 }
 
 .sidebar-footer {
@@ -31,10 +148,13 @@
 .sidebar-user {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 10px;
     padding: 8px;
     border-radius: 8px;
 }
+
+html.sidebar-collapsed .sidebar-user { justify-content: center; gap: 0; }
 
 .sidebar-user:hover { background: #f4f6fa; }
 .sidebar-user.active { background: #eaf0fd; }
@@ -55,6 +175,7 @@
 .sidebar-footer a:not(.sidebar-user) {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 12px;
     padding: 11px 14px;
     border-radius: 8px;
@@ -62,14 +183,22 @@
     font-size: 14px;
 }
 
+html.sidebar-collapsed .sidebar-footer a:not(.sidebar-user) { justify-content: center; gap: 0; }
+
 .sidebar-footer a:not(.sidebar-user):hover { background: #fdecea; }
 
 .sidebar-brand {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 10px;
     padding: 8px;
     margin-bottom: 20px;
+}
+
+html.sidebar-collapsed .sidebar-brand {
+    justify-content: center;
+    gap: 0;
 }
 
 .brand-icon { width: 26px; height: 26px; }
@@ -85,6 +214,7 @@
 .sidebar-nav a {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 12px;
     padding: 11px 14px;
     border-radius: 8px;
@@ -93,6 +223,16 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* Icon sits centered in the narrow collapsed rail; expanded, it settles
+   back to a normal left-aligned icon+label row. gap: 0 matters here too —
+   flexbox's gap reserves space between items even when one of them (the
+   zero-width label) is invisible, which was pushing the icon off-center
+   inside its own active/hover highlight. */
+html.sidebar-collapsed .sidebar-nav a {
+    justify-content: center;
+    gap: 0;
 }
 
 /* Flex items shrink to fit by default — without this, a long label (e.g.
@@ -135,6 +275,15 @@
     height: 100vh;
     overflow-y: auto;
     padding: 20px 28px;
+    /* Tracks the fixed sidebar's current width (see .sidebar / html.sidebar-
+       collapsed) so content reflows into the reclaimed space when the rail
+       collapses, instead of the rail overlaying on top of it. */
+    margin-left: 250px;
+    transition: margin-left 0.22s ease;
+}
+
+html.sidebar-collapsed .dashboard-main {
+    margin-left: 72px;
 }
 
 .user-avatar {
@@ -761,14 +910,46 @@
 }
 
 @media (max-width: 700px) {
+    /* The collapse toggle doesn't buy much on a narrow touch screen, so the
+       rail reverts to its old full-width, in-flow, always-expanded behavior
+       here regardless of the saved collapsed preference — the !important
+       pair is a deliberate, narrow override of html.sidebar-collapsed's
+       higher specificity, scoped to just this breakpoint. */
     .dashboard-layout { flex-direction: column; }
-    .sidebar { width: 100%; }
+    .sidebar, html.sidebar-collapsed .sidebar {
+        position: static;
+        width: 100% !important;
+        height: auto;
+        padding: 20px 16px !important;
+    }
+    .sidebar-toggle { display: none; }
+    .sidebar-label, .sidebar-brand > div, .sidebar-user-info,
+    html.sidebar-collapsed .sidebar-label,
+    html.sidebar-collapsed .sidebar-brand > div,
+    html.sidebar-collapsed .sidebar-user-info {
+        opacity: 1;
+        max-width: none;
+    }
+    .dashboard-main, html.sidebar-collapsed .dashboard-main { margin-left: 0; }
     .stat-cards { grid-template-columns: repeat(2, 1fr); }
 }
 /* Warehouse status */
 .link-manage { color: #0f2547; font-size: 12px; font-weight: 600; }
 
-.warehouse-status-row { padding: 12px 0; border-bottom: 1px solid #f0f2f6; }
+/* Now an <a> (links to that warehouse's detail page) rather than a bare
+   <div> — the hover/focus tint plus the cursor make that discoverable
+   instead of the row silently doing nothing when clicked. Negative margin
+   +matching padding lets the hover fill bleed to the panel's own edges. */
+.warehouse-status-row {
+    display: block;
+    padding: 12px 8px;
+    margin: 0 -8px;
+    border-radius: 8px;
+    border-bottom: 1px solid #f0f2f6;
+    color: inherit;
+    transition: background-color 0.15s ease;
+}
+.warehouse-status-row:hover, .warehouse-status-row:focus-visible { background: #f8f9fc; }
 .warehouse-status-row:last-child { border-bottom: none; }
 
 .warehouse-status-top {
@@ -781,8 +962,24 @@
 .warehouse-status-name {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
+
+/* Color-tinted circle behind the icon echoes the health badge on the far
+   right (same green/amber/red), so a row's status reads at a glance from
+   the left edge too, not just after scanning all the way across. */
+.warehouse-status-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.warehouse-status-icon.icon-healthy { background: #e8faf0; color: #1e8449; }
+.warehouse-status-icon.icon-moderate { background: #fef5e3; color: #d68910; }
+.warehouse-status-icon.icon-low { background: #fdecea; color: #c0392b; }
 
 .warehouse-status-name strong { display: block; font-size: 13px; }
 .warehouse-status-name span { font-size: 11px; color: #8a94a6; }
@@ -814,7 +1011,7 @@
     margin-bottom: 4px;
 }
 
-.warehouse-bar-fill { height: 100%; }
+.warehouse-bar-fill { height: 100%; transition: width 0.4s ease; }
 .fill-healthy { background: #27ae60; }
 .fill-moderate { background: #f1c40f; }
 .fill-low { background: #e74c3c; }
@@ -864,7 +1061,15 @@
     margin-bottom: 16px;
 }
 
-.pa-burn-label { font-size: 10px; color: #8a94a6; display: block; }
+.pa-burn-label {
+    font-size: 10px;
+    color: #8a94a6;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.pa-burn-good .pa-burn-label { justify-content: flex-end; }
+.pa-burn-label svg { flex-shrink: 0; }
 .pa-burn-row strong { font-size: 16px; }
 .pa-burn-good { text-align: right; }
 .pa-burn-good strong { color: #27ae60; }
@@ -892,7 +1097,15 @@
 .rec-warning { background: #fef5e3; color: #b7791f; }
 .rec-critical { background: #fdecea; color: #c0392b; }
 
-/* Distribution progress */
+/* Distribution progress — .main-grid is a CSS grid with the default
+   align-items: stretch, so without this the panel stretches to match its
+   much taller sibling (Recent Activities), leaving a large empty gap below
+   the municipality list instead of the panel just sizing to its own
+   content. */
+.distribution-progress-panel {
+    align-self: start;
+}
+
 .progress-summary {
     display: flex;
     align-items: center;
@@ -956,7 +1169,17 @@
 .municipality-bar-fill {
     height: 100%;
     background: #0f2547;
+    transition: width 0.4s ease;
 }
+
+/* Color reads as "how much is left to do", same red/amber/green language as
+   demand-tier colors elsewhere in the system — low completion (more work
+   remaining) is the one that should catch the eye first. */
+.municipality-bar-fill.bar-low { background: #e74c3c; }
+.municipality-bar-fill.bar-mid { background: #f1c40f; }
+.municipality-bar-fill.bar-high { background: #27ae60; }
+
+.municipality-pct { color: #8a94a6; font-weight: 500; }
 
 /* Recent activities + notifications */
 .panel-date { font-size: 11px; color: #8a94a6; }
@@ -1145,6 +1368,7 @@
 
 .page-tab.active .page-tab-badge { background: #0f2547; color: white; }
 
+.stat-cards-3 { grid-template-columns: repeat(3, 1fr); }
 .stat-cards-4 { grid-template-columns: repeat(4, 1fr); }
 
 /* ============================================

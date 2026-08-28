@@ -25,7 +25,7 @@
             <div class="greeting-main">
                 <h2>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }}, {{ current_user.name }}</h2>
                 <div class="banner-forecast-box" data-weather-forecast data-endpoint="{{ url_for('barangay.dashboard_weather') }}">
-                    <span class="banner-forecast-label">Loading forecast…</span>
+                    <span class="banner-forecast-label skeleton-shimmer-dark">Loading forecast…</span>
                 </div>
             </div>
             <div class="banner-aside">

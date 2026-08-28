@@ -17,10 +17,24 @@ body {
     font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
     color: #1a1a1a;
     line-height: 1.5;
+    /* Inter's own recommended settings for on-screen text: 'cv11' switches to
+       a single-story 'a' (closer to handwriting, easier for less tech-fluent
+       or older readers to recognize at a glance) and tabular numerals keep
+       stacked figures — food pack counts, percentages — aligned in tables
+       and stat cards instead of jittering column to column. */
+    font-feature-settings: 'cv11', 'tnum';
+    -webkit-font-smoothing: antialiased;
 }
 
+/* One family site-wide (see base.html) — headings lean on Inter's own
+   heavier weights for hierarchy instead of a second, more decorative
+   typeface, so the whole system reads as one consistent, no-nonsense
+   voice for PSWDO/CSWDO/MSWDO/barangay users rather than mixing a
+   stylized display face into a data-heavy dashboard. */
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
 a {
@@ -36,4 +50,83 @@ button {
 
 input {
     font-family: inherit;
+}
+
+/* ============================================================
+   Motion — one shared set of subtle, purposeful micro-interactions
+   for every role's UI (loaded here in base.css, so it reaches every
+   page without per-role duplication). Kept understated on purpose,
+   in keeping with a government decision-support tool: short
+   durations, no bounce/spin/attention-seeking loops, and everything
+   backs off for anyone whose OS asks for reduced motion.
+   ============================================================ */
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+    from { background-position: -300px 0; }
+    to   { background-position: 300px 0; }
+}
+
+/* Used by .rd-modal / .da-modal (relief_request_detail.css /
+   damage_assessment.css) — defined here, not there, so it still applies
+   on pages that load one modal stylesheet but not the other. */
+@keyframes modalPopIn {
+    from { opacity: 0; transform: scale(0.96) translateY(6px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Every role's main content area (dashboard-main wraps the page body
+   in all PSWDO/CSWDO/barangay/admin templates) settles in on load or
+   navigation instead of just snapping into view. */
+.dashboard-main {
+    animation: fadeInUp 0.28s ease-out both;
+}
+
+/* Consistent hover/focus feedback on every clickable or card-like
+   surface site-wide, instead of leaving each page to (re)define its
+   own transition timing or forget one entirely. */
+a, button, select, input, textarea,
+.panel, .stat-card, [class*="btn"], [class*="modal"] {
+    transition: background-color 0.15s ease, color 0.15s ease,
+                border-color 0.15s ease, box-shadow 0.15s ease,
+                transform 0.15s ease, opacity 0.15s ease;
+}
+
+.panel:hover, .stat-card:hover {
+    box-shadow: 0 6px 18px rgba(15, 37, 71, 0.08);
+    transform: translateY(-2px);
+}
+
+/* Placeholder shown while a widget is still fetching data (e.g. the
+   dashboard banner's "Loading forecast…" and the weather widget's
+   "Loading live weather…" — see weather_widget.js). A moving shimmer
+   reads as "working" far more clearly than static gray text, and
+   since the real content that later replaces it is written fresh
+   (innerHTML, not a text update), this class never has to be removed
+   by hand — it's simply not part of the replacement markup.
+   Two variants: default for light/card backgrounds, -dark for the
+   navy header banner. */
+.skeleton-shimmer, .skeleton-shimmer-dark {
+    background-size: 600px 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: 4px;
+}
+.skeleton-shimmer {
+    background-image: linear-gradient(90deg, rgba(15,37,71,0.06) 25%, rgba(15,37,71,0.14) 50%, rgba(15,37,71,0.06) 75%);
+}
+.skeleton-shimmer-dark {
+    background-image: linear-gradient(90deg, rgba(255,255,255,0.10) 25%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.10) 75%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
 }

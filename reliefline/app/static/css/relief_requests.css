@@ -64,6 +64,23 @@
 
 .filter-bar select[name="municipality"] { width: 190px; }
 
+/* Matches .filter-bar select's own height/border/radius — there was no rule
+   for the plain text input at all before, so it fell back to the browser's
+   bare default appearance next to the styled dropdowns beside it. */
+.filter-bar input[type="text"] {
+    height: 38px;
+    padding: 8px 14px;
+    border: 1px solid #d8dee8;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #333;
+    box-sizing: border-box;
+    min-width: 180px;
+    flex: 1 1 180px;
+}
+.filter-bar input[type="text"]:focus { outline: none; border-color: #0f2547; }
+
 .date-input-wrapper {
     display: flex;
     align-items: center;

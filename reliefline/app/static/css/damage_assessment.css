@@ -208,7 +208,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    /* Same reasoning as .rd-modal-overlay (relief_request_detail.css): pages
+       using this modal (e.g. cswdo/dashboard.html) can have a Leaflet map
+       whose internal panes run up to z-index 700 with no isolating stacking
+       context, so a low z-index here could render underneath it. */
+    z-index: 2000;
     padding: 20px;
 }
 
@@ -223,6 +227,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    animation: modalPopIn 0.18s ease-out both;
 }
 
 .da-modal-header {

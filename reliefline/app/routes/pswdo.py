@@ -712,6 +712,10 @@ def dashboard():
     primary_event = active_events[0] if active_events else None
 
     all_offices, warehouses, total_food_packs = _load_warehouses()
+    # Dashboard's "Warehouse Status" widget only — highest capacity % first,
+    # lowest (i.e. the warehouses most in need of attention) at the bottom,
+    # per how the widget is meant to read top-to-bottom.
+    warehouses.sort(key=lambda w: w["pct"], reverse=True)
 
     # CSWDO offices only — scope for relief operations (3 target LGUs)
     cswdo_offices = [o for o in all_offices if o.office_type == "cswdo"]
@@ -971,6 +975,10 @@ def warehouse_inventory():
 
     all_offices, warehouses, total_food_packs = _load_warehouses()
     office_ids = [o.office_id for o in all_offices]
+    # Warehouse Overview table — highest capacity % first, lowest (i.e. the
+    # warehouses most in need of attention) at the bottom, same ordering as
+    # the dashboard's "Warehouse Status" widget.
+    warehouses.sort(key=lambda w: w["pct"], reverse=True)
 
     for w in warehouses:
         burn = _lgu_burn_rate(w["office"], active_events)
@@ -1595,13 +1603,31 @@ def gis_map_data():
         centroid = _municipality_centroid(w["office"].area_covered)
         if not centroid:
             continue
-        warehouse_markers.append({
+        marker = {
             "name": w["office"].office_name,
             "area_covered": w["office"].area_covered,
             "lat": centroid[0], "lng": centroid[1],
             "health": w["health"], "pct": w["pct"],
             "food_pack_qty": w["food_pack_qty"], "capacity": w["capacity"],
-        })
+        }
+        if full_scope:
+            # PSWDO-only addition (gated on full_scope, the same flag this
+            # function already uses to distinguish PSWDO's province-wide view
+            # from CSWDO's single-LGU one) — real WarehouseInventory rows for
+            # this office, item_type != "food_pack" (that one's covered by
+            # food_pack_qty/capacity above). Any such row is, by definition,
+            # a relief-supply stock-monitoring line item (see
+            # app.models.warehouse.WarehouseInventory's own docstring) — not
+            # general inventory — so all of them are relief-relevant here.
+            # CSWDO's payload shape is completely unchanged by this branch.
+            other_items = WarehouseInventory.query.filter(
+                WarehouseInventory.office_id == w["office"].office_id,
+                WarehouseInventory.item_type != "food_pack",
+            ).all()
+            marker["other_relief_items"] = [{
+                "name": i.item_name, "qty": i.quantity_available, "unit": i.unit,
+            } for i in other_items]
+        warehouse_markers.append(marker)
     if not full_scope:
         total_food_packs = sum(w["food_pack_qty"] for w in warehouse_markers)
 
@@ -1645,11 +1671,22 @@ def gis_map_data():
     for d in active_routes:
         allocation = d.allocation
         office = allocation.fulfilling_office if allocation else None
+        # Same municipality-centroid approximations used above for
+        # in_transit_lines — real coordinates (not a road route), just
+        # enough for the client to hand off to OSRM for the actual routing.
+        # None when a centroid can't be resolved; the frontend simply won't
+        # offer route visualization for that row rather than guessing.
+        from_point = _municipality_centroid(office.area_covered) if office else None
+        to_point = _target_barangay_centroid(d.barangay.city_municipality, d.barangay.barangay_name)
         routes_table.append({
             "distribution_id": d.distribution_id,
             "from_office": office.office_name if office else "—",
+            "from_lat": from_point[0] if from_point else None,
+            "from_lng": from_point[1] if from_point else None,
             "to_barangay": d.barangay.barangay_name,
             "to_municipality": d.barangay.city_municipality,
+            "to_lat": to_point[0] if to_point else None,
+            "to_lng": to_point[1] if to_point else None,
             "packs": d.quantity_released,
             "status": d.dispatch_status,
             "status_label": DISPATCH_STATUS_LABELS.get(d.dispatch_status, d.dispatch_status),

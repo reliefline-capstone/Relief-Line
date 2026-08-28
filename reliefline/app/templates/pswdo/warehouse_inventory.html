@@ -31,8 +31,6 @@
                 <p>Provincial food pack storage monitoring</p>
             </div>
             <div class="wh-header-actions">
-                <a href="{{ url_for('pswdo.warehouse_stock_movements') }}" class="wh-text-link">{{ icon('list', 14) }} Movements</a>
-                <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-text-link">{{ icon('rotate-ccw', 14) }} Transfer</a>
                 <a href="{{ url_for('pswdo.warehouse_list') }}" class="btn-outline">{{ icon('building', 14) }} Warehouses</a>
                 <button type="button" class="btn-add-warehouse" data-open-modal="add-warehouse-modal">{{ icon('plus', 14, 'white') }} Add Warehouse</button>
             </div>
@@ -77,37 +75,6 @@
                 </div>
             </div>
             <div id="warehouse-map" class="wh-map"></div>
-        </section>
-
-        <!-- System Recommendations -->
-        <section class="wh-reco-panel">
-            <div class="wh-reco-header">
-                <h3>{{ icon('trending-up', 18, '#d68910') }} System Recommendations</h3>
-                <span class="wh-reco-meta">Data-driven · Updated just now</span>
-            </div>
-            <div class="wh-reco-list" id="wh-reco-list">
-                {% for rec in recommendations %}
-                <div class="wh-reco-item{% if loop.index > 3 %} wh-reco-extra{% endif %}">
-                    <span class="wh-reco-num">{{ loop.index }}</span>
-                    <div class="wh-reco-text">
-                        <strong>{{ rec.title }}</strong>
-                        <span>{{ rec.detail }}</span>
-                    </div>
-                    <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-reco-action">Act Now {{ icon('arrow-right', 14) }}</a>
-                </div>
-                {% else %}
-                <p class="empty-note">Walang stock recommendations ngayon — malusog ang lahat ng warehouse.</p>
-                {% endfor %}
-            </div>
-            {% if recommendations|length > 3 %}
-            <button type="button" class="wh-reco-view-all" id="wh-reco-toggle" onclick="
-                var extras = document.querySelectorAll('#wh-reco-list .wh-reco-extra');
-                var expanded = extras[0] && extras[0].style.display === 'flex';
-                extras.forEach(function(el) { el.style.display = expanded ? 'none' : 'flex'; });
-                this.textContent = expanded ? 'View All ({{ recommendations|length }})' : 'Show Less';
-            ">View All ({{ recommendations|length }})</button>
-            {% endif %}
-            {{ prediction_disclaimer() }}
         </section>
 
         <!-- Warehouse Overview + side panels -->
@@ -169,10 +136,10 @@
                         <h3>Stock Levels</h3>
                     </div>
                     {% for w in warehouses %}
-                    <div class="warehouse-status-row">
+                    <a href="{{ url_for('pswdo.warehouse_detail', office_id=w.office.office_id) }}" class="warehouse-status-row">
                         <div class="warehouse-status-top">
                             <div class="warehouse-status-name">
-                                {{ icon('building', 16, '#8a94a6') }}
+                                <span class="warehouse-status-icon icon-{{ w.health|lower }}">{{ icon('building', 16) }}</span>
                                 <div><strong>{{ w.office.office_name }}</strong></div>
                             </div>
                             <div class="warehouse-status-right">
@@ -182,7 +149,7 @@
                         </div>
                         <div class="warehouse-bar"><div class="warehouse-bar-fill fill-{{ w.health|lower }}" style="width: {{ w.pct if w.pct <= 100 else 100 }}%;"></div></div>
                         <span class="warehouse-status-sub">{{ "{:,}".format(w.food_pack_qty) }} / {{ "{:,}".format(w.capacity) }} packs · {{ w.health }}</span>
-                    </div>
+                    </a>
                     {% else %}
                     <p class="empty-note">Walang warehouse data.</p>
                     {% endfor %}

@@ -38,8 +38,9 @@
 
         <section class="panel">
             <div class="panel-header"><h3>{{ icon('trending-up', 18, '#0f2547') }} Recommended Actions</h3><span class="tag-outline">{{ recommendations|length }}</span></div>
+            <div id="reco-list">
             {% for rec in recommendations %}
-            <div class="recommendation-row rec-{{ rec.type }}">
+            <div class="recommendation-row rec-{{ rec.type }}{% if loop.index > 4 %} reco-row-extra{% endif %}"{% if loop.index > 4 %} style="display:none;"{% endif %}>
                 {% if rec.type == 'info' %}{{ icon('check-circle', 14) }}{% else %}{{ icon('alert-triangle', 14) }}{% endif %}
                 <div>
                     <strong>{{ rec.title }}</strong>
@@ -48,6 +49,15 @@
                 </div>
             </div>
             {% endfor %}
+            </div>
+            {% if recommendations|length > 4 %}
+            <button type="button" class="link-manage" id="reco-toggle-all" style="background:none; padding:8px 0 0;" onclick="
+                var extras = document.querySelectorAll('#reco-list .reco-row-extra');
+                var expanded = extras[0] && extras[0].style.display !== 'none';
+                extras.forEach(function(el) { el.style.display = expanded ? 'none' : 'flex'; });
+                this.textContent = expanded ? 'View All ({{ recommendations|length }}) →' : 'Show Less ←';
+            ">View All ({{ recommendations|length }}) →</button>
+            {% endif %}
             {{ prediction_disclaimer() }}
         </section>
 
