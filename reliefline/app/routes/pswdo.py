@@ -24,6 +24,7 @@ from app.models.logistics import WarehouseTransfer
 from app.models.user import User
 from app.utils.settings import get_setting
 from app.ml import predict as ml_predict
+from app.utils import weather as weather_service
 
 pswdo_bp = Blueprint("pswdo", __name__)
 
@@ -93,6 +94,8 @@ NOTIFICATION_META = {
     "damage_report_verified": {"icon": "check-circle", "color": "#1e8449", "category": "damage_reports", "category_label": "Damage Reports"},
     "damage_report_returned": {"icon": "x-circle", "color": "#c0392b", "category": "damage_reports", "category_label": "Damage Reports"},
     "distribution_receipt_confirmed": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Distribution"},
+    "disaster_event_declared": {"icon": "cloud-lightning", "color": "#c0392b", "category": "disaster_events", "category_label": "Disaster Events"},
+    "disaster_event_ended": {"icon": "check-circle", "color": "#1e8449", "category": "disaster_events", "category_label": "Disaster Events"},
 }
 DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
 
@@ -144,6 +147,8 @@ NOTIFICATION_LINK_BUILDERS = {
     "warehouse_transfer_completed": lambda log: (
         url_for("pswdo.warehouse_detail", office_id=log.office_id) if log.office_id else None
     ),
+    "disaster_event_declared": lambda log: url_for("pswdo.dashboard"),
+    "disaster_event_ended": lambda log: url_for("pswdo.dashboard"),
 }
 
 
@@ -845,8 +850,109 @@ def dashboard():
         by_municipality=by_municipality,
         recent_activities=recent_activities,
         notifications=notifications,
+        weather_cities=TARGET_LGUS,
         now=now
     )
+
+
+@pswdo_bp.route("/dashboard/weather")
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def dashboard_weather():
+    """JSON feed for the dashboard's live weather. Fetched client-side (see
+    static/js/weather_widget.js) so a slow/unreachable upstream never blocks
+    the dashboard's own page load.
+
+    Defaults to all three target LGUs, for the dashboard's Weather & Typhoon
+    Watch detail panel. The greeting header instead passes
+    ?cities=Lingayen — the PSWDO's own seat (see app.utils.weather.LGU_COORDS)
+    — so the header shows conditions where PSWDO staff actually are, distinct
+    from the target-LGU breakdown in the panel below.
+    """
+    requested = request.args.get("cities")
+    if requested:
+        cities = [c.strip() for c in requested.split(",") if c.strip() in weather_service.LGU_COORDS]
+        if cities:
+            return weather_service.get_dashboard_snapshot(cities)
+    return weather_service.get_dashboard_snapshot(TARGET_LGUS)
+
+
+@pswdo_bp.route("/disaster-events/declare", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def declare_disaster_event():
+    """Opens a new active DisasterEvent — the one action that was previously
+    only possible by editing the database directly (see scripts/seed_demo_data.py;
+    no route ever constructed a DisasterEvent before this one). Meant to be
+    triggered off the live Weather & Typhoon Watch panel (app/utils/weather.py)
+    once PSWDO decides a real detected system warrants an official response,
+    though the form works with any manually-entered name too.
+
+    Only one event may be active at a time — every dashboard's "primary_event"
+    logic already assumes a single current event, so a second concurrent one
+    would make "the" active typhoon ambiguous everywhere it's used.
+    """
+    existing = DisasterEvent.query.filter_by(status="active").first()
+    if existing:
+        flash(f"“{existing.event_name}” is already active. End it before declaring a new event.", "error")
+        return redirect(url_for("pswdo.dashboard"))
+
+    event_name = request.form.get("event_name", "").strip()
+    if not event_name:
+        flash("Event name is required to declare a disaster event.", "error")
+        return redirect(url_for("pswdo.dashboard"))
+
+    event_type = request.form.get("event_type", "typhoon")
+    if event_type not in ("typhoon", "flood", "other"):
+        event_type = "typhoon"
+
+    start_date_raw = request.form.get("start_date", "")
+    try:
+        start_date = datetime.strptime(start_date_raw, "%Y-%m-%d").date() if start_date_raw else date.today()
+    except ValueError:
+        start_date = date.today()
+
+    weather_condition = request.form.get("weather_condition", "").strip() or None
+
+    event = DisasterEvent(
+        event_name=event_name, event_type=event_type, status="active",
+        weather_condition=weather_condition, start_date=start_date,
+        created_by=current_user.user_id,
+    )
+    db.session.add(event)
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="disaster_event_declared",
+        description=f"Declared {event_name} as the active disaster event.",
+    ))
+    db.session.commit()
+
+    flash(f"{event_name} has been declared as the active disaster event.", "success")
+    return redirect(url_for("pswdo.dashboard"))
+
+
+@pswdo_bp.route("/disaster-events/<int:event_id>/end", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def end_disaster_event(event_id):
+    """Closes out an active DisasterEvent — the counterpart to
+    declare_disaster_event above. Existing allocation/distribution/damage-report
+    history tied to this event is untouched; it simply stops being "the"
+    active event so a new one can be declared."""
+    event = DisasterEvent.query.get_or_404(event_id)
+    if event.status != "active":
+        flash(f"{event.event_name} is not currently active.", "error")
+        return redirect(url_for("pswdo.dashboard"))
+
+    event.status = "ended"
+    event.end_date = date.today()
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="disaster_event_ended",
+        description=f"Marked {event.event_name} as ended.",
+    ))
+    db.session.commit()
+
+    flash(f"{event.event_name} has been marked as ended.", "success")
+    return redirect(url_for("pswdo.dashboard"))
 
 
 @pswdo_bp.route("/warehouse-inventory")

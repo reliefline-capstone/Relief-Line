@@ -6,6 +6,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -21,36 +22,20 @@
 
         <!-- Greeting banner -->
         <section class="greeting-banner">
-            <div>
-                <p>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }},</p>
-                <h2>PSWDO Officer 👋</h2>
-                {% if primary_event %}
-                <div class="active-event-badge">
-                    <div>
-                        <span class="badge-label">
-                            {%- if period == 'monthly' -%}
-                            TYPHOON EVENT — {{ selected_month_name|upper }} {{ selected_year }}
-                            {%- elif period == 'yearly' -%}
-                            TYPHOON EVENT — {{ selected_year }}
-                            {%- else -%}
-                            ACTIVE TYPHOON EVENT
-                            {%- endif -%}
-                        </span>
-                        <strong>{{ icon('cloud-lightning', 14) }} {{ primary_event.event_name }}</strong>
-                    </div>
-                    <span class="badge-active badge-status-{{ primary_event.status }}">{{ primary_event.status|upper }}</span>
+            <div class="greeting-main">
+                <h2>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }}, {{ current_user.name }}</h2>
+                <div class="banner-forecast-box" data-weather-forecast data-endpoint="{{ url_for('pswdo.dashboard_weather', cities='Lingayen') }}">
+                    <span class="banner-forecast-label">Loading forecast…</span>
                 </div>
-                {% endif %}
             </div>
-            <div class="banner-time">
-                <strong id="live-clock">{{ now.strftime('%I:%M:%S %p') }}</strong>
-                <span id="live-date">{{ now.strftime('%a, %B') }} {{ now.day }}</span>
-                {% if primary_event and primary_event.weather_condition %}
-                <div class="banner-weather-block">
-                    <span class="banner-weather-label">Weather</span>
-                    <span class="banner-weather">{{ icon('cloud-lightning', 12) }} {{ primary_event.weather_condition }}</span>
+            <div class="banner-aside">
+                <div class="banner-time">
+                    <strong id="live-clock">{{ now.strftime('%I:%M:%S %p') }}</strong>
+                    <span id="live-date">{{ now.strftime('%a, %B') }} {{ now.day }}</span>
                 </div>
-                {% endif %}
+                <div class="banner-weather-live" data-weather-header data-endpoint="{{ url_for('pswdo.dashboard_weather', cities='Lingayen') }}">
+                    <span class="weather-header-loading">Checking conditions…</span>
+                </div>
             </div>
         </section>
 
@@ -133,6 +118,58 @@
                 </span>
             </div>
         </section>
+
+        <!-- Weather & Typhoon Watch (live, via app/utils/weather.py) -->
+        <div class="weather-widget" data-weather-widget data-endpoint="{{ url_for('pswdo.dashboard_weather') }}"
+             data-can-declare-events="true"
+             data-active-event-id="{{ primary_event.event_id if primary_event else '' }}"
+             data-active-event-name="{{ primary_event.event_name if primary_event else '' }}"
+             data-declare-url="{{ url_for('pswdo.declare_disaster_event') }}"
+             data-end-url="{{ url_for('pswdo.end_disaster_event', event_id=primary_event.event_id) if primary_event else '' }}">
+            <div class="weather-widget-header">
+                <span class="weather-widget-title">{{ icon('cloud', 16) }} Weather &amp; Typhoon Watch</span>
+            </div>
+            <p class="weather-empty">Loading live weather…</p>
+        </div>
+
+        <!-- Declare Disaster Event modal — see app.routes.pswdo.declare_disaster_event.
+             Opened by static/js/weather_widget.js, either manually via the panel's
+             header button or pre-filled off a live-detected storm. -->
+        <div class="rd-modal-overlay" id="declare-event-modal" hidden>
+            <div class="rd-modal">
+                <div class="rd-modal-header">
+                    <h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Declare Disaster Event</h3>
+                    <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+                </div>
+                <p class="form-hint">This opens a new active disaster event — it unblocks damage reports, relief requests, and allocations across every LGU until you end it.</p>
+                <form method="POST" action="{{ url_for('pswdo.declare_disaster_event') }}" class="settings-form">
+                    <div class="form-row">
+                        <label for="declare-event-name">Event Name *</label>
+                        <input type="text" name="event_name" id="declare-event-name" placeholder="e.g. Typhoon Josie" required>
+                    </div>
+                    <div class="form-row">
+                        <label for="declare-event-type">Event Type *</label>
+                        <select name="event_type" id="declare-event-type" required>
+                            <option value="typhoon" selected>Typhoon</option>
+                            <option value="flood">Flood</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="declare-start-date">Start Date *</label>
+                        <input type="date" name="start_date" id="declare-start-date" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="form-row">
+                        <label for="declare-weather-condition">Weather Condition</label>
+                        <input type="text" name="weather_condition" id="declare-weather-condition" placeholder="e.g. Super Typhoon">
+                    </div>
+                    <div class="rd-modal-actions">
+                        <button type="submit" class="btn-decision btn-partial">{{ icon('cloud-lightning', 16, 'white') }} Declare Event</button>
+                        <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- GIS Map + Pending Requests -->
         <div class="main-grid">
@@ -372,6 +409,8 @@ window.RELIEFLINE_DASHBOARD_EVENT_ID = {{ map_event_id if map_event_id else 'nul
 window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
 </script>
 <script src="{{ url_for('static', filename='js/dashboard_map.js') }}?v={{ asset_version('js/dashboard_map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
+<script src="{{ url_for('static', filename='js/weather_widget.js') }}?v={{ asset_version('js/weather_widget.js') }}"></script>
 <script>
 (function () {
     var clockEl = document.getElementById('live-clock');

@@ -21,29 +21,20 @@
 
         <!-- Greeting banner -->
         <section class="greeting-banner">
-            <div>
-                <p>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }},</p>
-                <h2>{{ current_user.name }} 👋</h2>
-                <p style="margin-bottom: 12px;">{{ ROLE_LABELS.get(current_user.role, current_user.role) }}{% if lgu %} · {{ lgu }}{% endif %}</p>
-                {% if primary_event %}
-                <div class="active-event-badge">
-                    <div>
-                        <span class="badge-label">ACTIVE TYPHOON EVENT</span>
-                        <strong>{{ icon('cloud-lightning', 14) }} {{ primary_event.event_name }}</strong>
-                    </div>
-                    <span class="badge-active">ACTIVE</span>
+            <div class="greeting-main">
+                <h2>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }}, {{ current_user.name }}</h2>
+                <div class="banner-forecast-box" data-weather-forecast data-endpoint="{{ url_for('cswdo.dashboard_weather') }}">
+                    <span class="banner-forecast-label">Loading forecast…</span>
                 </div>
-                {% endif %}
             </div>
-            <div class="banner-time">
-                <strong id="live-clock">{{ now.strftime('%I:%M:%S %p') }}</strong>
-                <span id="live-date">{{ now.strftime('%a, %B') }} {{ now.day }}</span>
-                {% if primary_event and primary_event.weather_condition %}
-                <div class="banner-weather-block">
-                    <span class="banner-weather-label">Weather</span>
-                    <span class="banner-weather">{{ icon('cloud-lightning', 12) }} {{ primary_event.weather_condition }}</span>
+            <div class="banner-aside">
+                <div class="banner-time">
+                    <strong id="live-clock">{{ now.strftime('%I:%M:%S %p') }}</strong>
+                    <span id="live-date">{{ now.strftime('%a, %B') }} {{ now.day }}</span>
                 </div>
-                {% endif %}
+                <div class="banner-weather-live" data-weather-header data-endpoint="{{ url_for('cswdo.dashboard_weather') }}">
+                    <span class="weather-header-loading">Checking conditions…</span>
+                </div>
             </div>
         </section>
 
@@ -277,6 +268,7 @@ window.RELIEFLINE_GIS_MAP_URL = "{{ url_for('cswdo.gis_map') }}";
 window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
 </script>
 <script src="{{ url_for('static', filename='js/dashboard_map.js') }}?v={{ asset_version('js/dashboard_map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/weather_widget.js') }}?v={{ asset_version('js/weather_widget.js') }}"></script>
 <script>
 (function () {
     var clockEl = document.getElementById('live-clock');

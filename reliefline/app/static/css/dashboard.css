@@ -213,64 +213,104 @@
 }
 
 .greeting-banner p { font-size: 13px; opacity: 0.85; }
-.greeting-banner h2 { font-size: 22px; margin: 4px 0 12px; }
+.greeting-banner h2 { font-size: 22px; margin: 0 0 12px; font-weight: 700; }
 
-.active-event-badge {
+.greeting-main { display: flex; flex-direction: column; }
+
+/* Forecast strip in the greeting banner — sits where a manually-logged
+   DisasterEvent badge used to (see static/js/weather_widget.js's
+   [data-weather-forecast] renderer for why that badge was removed from
+   here: it's a logged record, not live weather, and didn't belong beside
+   one). Dark-background variant of .weather-forecast-day/.wf-* below. */
+.banner-forecast-box {
     background: rgba(255,255,255,0.1);
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    padding: 8px 14px;
     border-radius: 8px;
+    padding: 10px 16px;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.badge-label {
-    display: block;
+.banner-forecast-label {
     font-size: 10px;
-    opacity: 0.7;
+    font-weight: 600;
+    text-transform: uppercase;
     letter-spacing: 0.4px;
+    opacity: 0.7;
 }
 
-.active-event-badge strong {
+.banner-forecast-strip { display: flex; gap: 18px; }
+
+.banner-forecast-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10.5px;
+    color: white;
+}
+
+.banner-forecast-day .bf-day { font-weight: 700; opacity: 0.85; }
+.banner-forecast-day .bf-icon { opacity: 0.9; display: flex; }
+.banner-forecast-day .bf-temps { font-size: 11px; font-weight: 600; }
+.banner-forecast-day .bf-low { opacity: 0.6; font-weight: 500; }
+
+.banner-forecast-error {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 12px;
+    opacity: 0.75;
 }
 
-.badge-active {
-    background: #e74c3c;
-    padding: 3px 9px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 700;
+.banner-aside {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 14px;
 }
-
-.badge-active.badge-status-active { background: #e74c3c; }
-.badge-active.badge-status-monitoring { background: #d68910; }
-.badge-active.badge-status-ended { background: rgba(255,255,255,0.18); }
 
 .banner-time { text-align: right; }
 .banner-time strong { font-size: 20px; display: block; }
 .banner-time span { font-size: 12px; opacity: 0.75; display: block; margin-top: 2px; }
 
-.banner-weather-block { margin-top: 14px; }
+/* Live conditions chip in the greeting banner (static text version lived
+   here before app/utils/weather.py existed — see static/js/weather_widget.js
+   for the [data-weather-header] renderer that now fills this in). */
+.banner-weather-live { text-align: right; min-width: 180px; }
 
-.banner-weather-label {
-    display: block;
-    font-size: 10px;
-    opacity: 0.6;
-    margin-bottom: 4px;
-}
+.weather-header-loading { font-size: 12px; opacity: 0.7; }
 
-.banner-weather {
+.weather-header-conditions {
     display: flex;
     align-items: center;
-    gap: 4px;
     justify-content: flex-end;
-    opacity: 0.9;
+    gap: 6px;
+    font-size: 13px;
     font-weight: 600;
+    margin-bottom: 6px;
+    color: white;
 }
+
+.weather-header-conditions svg { opacity: 0.9; flex-shrink: 0; }
+.weather-header-city { opacity: 0.75; font-weight: 600; }
+.weather-header-temp { font-weight: 700; }
+.weather-header-cond { opacity: 0.75; font-weight: 500; }
+
+.weather-header-typhoon {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.weather-header-typhoon.is-clear { background: rgba(46, 213, 115, 0.18); color: #7ee8a8; }
+.weather-header-typhoon.is-alert { background: rgba(231, 76, 60, 0.28); color: #ffab9e; }
+.weather-header-typhoon.is-unknown { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.7); }
 
 /* Period filter */
 .dash-period-bar {
@@ -1106,3 +1146,206 @@
 .page-tab.active .page-tab-badge { background: #0f2547; color: white; }
 
 .stat-cards-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* ============================================
+   Weather & Typhoon Watch widget
+   (app/utils/weather.py + static/js/weather_widget.js)
+   ============================================ */
+.weather-widget {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.weather-widget.is-refreshing { opacity: 0.6; }
+
+.weather-widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.weather-widget-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.weather-refresh-btn {
+    background: #f4f6fa;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4a5568;
+    cursor: pointer;
+}
+
+.weather-refresh-btn:hover { background: #e8ecf3; }
+
+/* Declare/End Disaster Event — PSWDO-only header action, see
+   static/js/weather_widget.js's eventActionHtml/wireEventActions. */
+.weather-widget-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.weather-end-form { display: inline; }
+
+.weather-declare-btn,
+.weather-end-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.weather-declare-btn { background: #fdecea; color: #c0392b; }
+.weather-declare-btn:hover { background: #fbdcd8; }
+.weather-end-btn { background: #e8faf0; color: #1e8449; }
+.weather-end-btn:hover { background: #d7f5e4; }
+
+.weather-declare-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid currentColor;
+    color: #c0392b;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.weather-declare-cta-btn:hover { background: #fdecea; }
+
+.typhoon-watch-active { align-items: flex-start; }
+
+.weather-empty {
+    font-size: 13px;
+    color: #8a94a6;
+    margin: 0;
+}
+
+/* Typhoon watch banner */
+.typhoon-watch { margin-bottom: 14px; }
+
+.typhoon-watch-clear,
+.typhoon-watch-unknown {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 8px;
+}
+
+.typhoon-watch-clear { background: #e8faf0; color: #1e8449; }
+.typhoon-watch-unknown { background: #f4f6fa; color: #8a94a6; }
+
+.typhoon-watch-active { display: flex; flex-direction: column; gap: 8px; }
+
+.typhoon-storm {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    background: #fdf0e4;
+    color: #8a4b0a;
+}
+
+.typhoon-storm.typhoon-alert-orange { background: #fdf0e4; color: #8a4b0a; }
+.typhoon-storm.typhoon-alert-red { background: #fdecea; color: #a12b1f; }
+.typhoon-storm.typhoon-alert-green { background: #fef5e3; color: #8a6d1f; }
+
+.typhoon-storm strong { display: block; font-size: 13px; }
+.typhoon-storm-meta { display: block; font-size: 11.5px; opacity: 0.85; }
+.typhoon-storm a { font-size: 11.5px; color: inherit; text-decoration: underline; }
+
+/* Per-city current + forecast */
+.weather-cities {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.weather-city {
+    background: #f8f9fb;
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.weather-city-unavailable {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #8a94a6;
+}
+
+.weather-unavailable-note { display: flex; align-items: center; gap: 6px; }
+
+.weather-city-current {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.weather-city-icon { color: #4a7bd8; flex-shrink: 0; }
+
+.weather-city-main { display: flex; flex-direction: column; flex: 1; }
+.weather-city-name { font-size: 12px; font-weight: 700; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.3px; }
+.weather-city-temp { font-size: 22px; font-weight: 700; color: #1a1a1a; }
+.weather-city-label { font-size: 11.5px; color: #8a94a6; }
+
+.weather-city-extra {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: #8a94a6;
+    text-align: right;
+}
+
+.weather-city-extra span { display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
+
+.weather-forecast-strip {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #e8ecf3;
+    padding-top: 10px;
+}
+
+.weather-forecast-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10.5px;
+    color: #4a5568;
+}
+
+.wf-day { font-weight: 700; }
+.wf-icon { color: #6c8ac4; }
+.wf-temps { font-size: 11px; }
+.wf-rain { color: #8a94a6; font-size: 9.5px; }
+
+.weather-attribution {
+    margin: 12px 0 0;
+    font-size: 10.5px;
+    color: #b3bac6;
+}

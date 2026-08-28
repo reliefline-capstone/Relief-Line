@@ -19,6 +19,7 @@ from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.activity_log import ActivityLog
 from app.models.user import User
+from app.utils import weather as weather_service
 
 # Reused from the PSWDO route module so a status label, priority tier, or
 # notification icon never drifts between the PSWDO/CSWDO screens and this
@@ -252,7 +253,19 @@ def dashboard():
         recent_alerts=[_notification_view(log) for log in recent_alerts],
         dispatch_status_labels=DISPATCH_STATUS_LABELS,
         report_status_labels=REPORT_STATUS_LABELS,
+        weather_cities=[barangay.city_municipality] if barangay.city_municipality else [],
     )
+
+
+@barangay_bp.route("/dashboard/weather")
+@login_required
+@role_required("barangay_user")
+def dashboard_weather():
+    """JSON feed for the dashboard's Weather & Typhoon Watch widget — this
+    barangay's own city/municipality only."""
+    barangay = _own_barangay_or_404()
+    city = barangay.city_municipality
+    return weather_service.get_dashboard_snapshot([city] if city else [])
 
 
 # ---------------------------------------------------------------------------

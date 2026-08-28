@@ -56,9 +56,19 @@ def run():
 
         event = DisasterEvent.query.filter_by(status="active").order_by(DisasterEvent.start_date.desc()).first()
         if not event:
+            # A real, PAGASA-named 2026 typhoon rather than an invented
+            # placeholder (earlier demo data used "Typhoon Crising"/"Sample
+            # Typhoon Event", neither of which referred to an actual storm).
+            # Typhoon Inday (international name Bavi) was a real super
+            # typhoon affecting the Philippines in early-to-mid July 2026 —
+            # see Rappler (https://www.rappler.com/philippines/weather/super-typhoon-inday-update-pagasa-forecast-july-7-2026-11pm/)
+            # and Al Jazeera (https://www.aljazeera.com/news/2026/7/10/philippines-landslides-kill-15-as-typhoon-bavi-threatens-region).
+            # The seeded start_date below (7 days before "today") is meant to
+            # land in that same window for a fresh reseed; it won't exactly
+            # match if reseeded much later, but stays a real storm name either way.
             event = DisasterEvent(
-                event_name="Typhoon Crising", event_type="typhoon", status="active",
-                weather_condition="Thunderstorm", start_date=today - timedelta(days=7),
+                event_name="Typhoon Inday", event_type="typhoon", status="active",
+                weather_condition="Super Typhoon", start_date=today - timedelta(days=7),
                 created_by=pswdo_admin.user_id if pswdo_admin else None,
             )
             db.session.add(event)

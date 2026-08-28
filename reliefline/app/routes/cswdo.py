@@ -18,6 +18,7 @@ from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
+from app.utils import weather as weather_service
 from app.models.barangay_report import BarangayReport
 from app.models.relief_request_batch import ReliefRequestBatch
 from app.models.activity_log import ActivityLog
@@ -338,7 +339,20 @@ def dashboard():
         recent_activities=recent_activities,
         notifications=notifications,
         dispatch_status_labels=DISPATCH_STATUS_LABELS,
+        weather_cities=[lgu] if lgu else [],
     )
+
+
+@cswdo_bp.route("/dashboard/weather")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def dashboard_weather():
+    """JSON feed for the dashboard's Weather & Typhoon Watch widget — this
+    office's own LGU only (province-wide monitoring is a PSWDO concern, same
+    scoping as the rest of this dashboard — see Table 10 of the manuscript)."""
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    return weather_service.get_dashboard_snapshot([lgu] if lgu else [])
 
 
 @cswdo_bp.route("/gis-map")
