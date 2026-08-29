@@ -76,50 +76,13 @@
     font-weight: 600;
 }
 
-.settings-forms {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.settings-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    max-width: 480px;
-}
-
-.form-row {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.form-row label {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #333;
-}
-
-.form-row input {
-    padding: 10px 12px;
-    border: 1px solid #d8dee8;
-    border-radius: 8px;
-    font-size: 13.5px;
-    color: #1a1a1a;
-}
-
-.form-row input:focus {
-    outline: none;
-    border-color: #2c5aa0;
-}
-
-.form-row input:disabled {
-    background: #f4f6fa;
-    color: #8a94a6;
-}
-
-.form-hint { font-size: 11.5px; color: #8a94a6; }
+/* .settings-forms/.settings-form/.form-row (label-above-field stacking used
+   by every admin/pswdo/cswdo modal form) now live in dashboard.css — every
+   page using them loads that stylesheet, which wasn't true of this one
+   (e.g. relief_request_detail.html's transfer-issue form rendered with the
+   label and input squished onto one line, no border/padding on the input,
+   because it never pulled this file in). .form-hint has since moved there
+   too, for the same reason. */
 
 .btn-primary {
     display: inline-flex;

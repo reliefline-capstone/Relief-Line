@@ -98,19 +98,8 @@
 
 .wh-text-link:hover { color: #0f2547; }
 
-.btn-add-warehouse {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #0f2547;
-    color: white;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.btn-add-warehouse:hover { background: #1a3a6b; }
+/* .btn-add-warehouse now lives in dashboard.css — every page using this
+   button loads that stylesheet, which wasn't true of this one. */
 
 /* Stat cards — 4 across instead of the dashboard's 6 */
 .wh-stat-cards { grid-template-columns: repeat(4, 1fr); }

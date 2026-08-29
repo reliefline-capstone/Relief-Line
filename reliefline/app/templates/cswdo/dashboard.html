@@ -5,7 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,6 @@
     <!-- Main content -->
     <main class="dashboard-main">
 
-        {% include "cswdo/_flash.html" %}
 
         <!-- Greeting banner -->
         <section class="greeting-banner">

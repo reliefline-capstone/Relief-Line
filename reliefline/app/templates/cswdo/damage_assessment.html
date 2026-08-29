@@ -4,9 +4,9 @@
 {% block title %}Relief Requests - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/damage_assessment.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/damage_assessment.css') }}?v={{ asset_version('css/damage_assessment.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
 {% set TABS = [('queue','Queue', pending_rows), ('approved','Approved', approved_rows),
@@ -106,7 +106,6 @@
 
     <main class="dashboard-main">
 
-        {% include "cswdo/_flash.html" %}
 
         <div class="page-header">
             <div>

@@ -1,0 +1,168 @@
+/* Custom-styled dropdown that replaces every plain <select> in the app.
+   A browser's native open-dropdown listbox can't be restyled with CSS at
+   all — its background, hover highlight colour, borders and font are
+   drawn by the OS/browser itself, not the page — so every <select> in the
+   system looked jarringly plain and inconsistent with the rest of the UI
+   the moment it was opened (default white box, harsh blue selection bar).
+
+   This is built and wired up entirely by static/js/custom_select.js, which
+   wraps every <select> on the page into this markup:
+     <div class="csel-wrap">
+       <select class="csel-native">...</select>   (kept for name/value
+                                                     submission + required
+                                                     validation, visually
+                                                     hidden below)
+       <button class="csel-trigger">...</button>
+       <ul class="csel-list">...</ul>
+     </div>
+   Both files are loaded globally in base.html, so this applies to every
+   <select> on every page without needing to touch individual templates. */
+
+.csel-wrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    /* Inside a flex row (filter bars) this sizes to content like a normal
+       flex item would; inside a flex column (.form-row) the container's
+       own align-items: stretch takes over and fills the width regardless
+       of this. */
+}
+
+/* Kept in the DOM (not display:none) so it's still a real, focusable,
+   constraint-validated form control — `required` and any existing
+   `change` listeners elsewhere in the codebase keep working untouched —
+   just clipped down to an invisible 1x1px box instead of shown. */
+.csel-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.csel-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-width: 160px;
+    padding: 9px 12px;
+    background: white;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    font-weight: 400;
+    color: #1a1a1a;
+    text-align: left;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.csel-trigger:hover { border-color: #b9c2d0; }
+
+.csel-trigger .csel-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.csel-trigger .csel-value.csel-placeholder { color: #8a94a6; }
+
+.csel-trigger svg {
+    flex-shrink: 0;
+    color: #8a94a6;
+    transition: transform 0.12s ease;
+}
+
+.csel-wrap.is-open .csel-trigger {
+    border-color: #2c5aa0;
+    box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.12);
+}
+
+.csel-wrap.is-open .csel-trigger svg { transform: rotate(180deg); }
+
+.csel-trigger.csel-invalid { border-color: #c0392b; }
+
+.csel-wrap.is-disabled .csel-trigger {
+    background: #f4f6fa;
+    color: #8a94a6;
+    cursor: not-allowed;
+}
+.csel-wrap.is-disabled .csel-trigger:hover { border-color: #d8dee8; }
+.csel-wrap.is-disabled .csel-trigger svg { opacity: 0.5; }
+
+.csel-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 3000;
+    background: white;
+    border: 1px solid #d8dee8;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 37, 71, 0.16);
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 6px;
+    list-style: none;
+    margin: 0;
+}
+
+.csel-list[hidden] { display: none; }
+
+.csel-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    line-height: 1.35;
+    color: #333;
+    cursor: pointer;
+}
+
+.csel-option.csel-placeholder { color: #8a94a6; }
+
+.csel-option:hover,
+.csel-option.is-active { background: #eaf0fd; color: #1a1a1a; }
+
+.csel-option.is-selected { font-weight: 600; color: #2c5aa0; }
+.csel-option.is-selected:hover,
+.csel-option.is-selected.is-active { background: #eaf0fd; }
+
+.csel-option svg { flex-shrink: 0; color: #2c5aa0; visibility: hidden; }
+.csel-option.is-selected svg { visibility: visible; }
+
+.csel-option[aria-disabled="true"] {
+    color: #c3cad6;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* Compact inline variant — the dashboard period-filter's month/year
+   dropdowns sit next to a calendar icon and read as plain clickable text,
+   not a boxed control, so the generic bordered trigger would look wrong
+   there. */
+.dash-period-date .csel-wrap { width: auto; }
+.dash-period-date .csel-trigger {
+    min-width: 0;
+    width: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0f2547;
+}
+.dash-period-date .csel-trigger:hover { border-color: transparent; }
+.dash-period-date .csel-wrap.is-open .csel-trigger { box-shadow: none; }
+.dash-period-date .csel-list { min-width: 140px; left: auto; right: 0; }

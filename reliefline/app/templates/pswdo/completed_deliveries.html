@@ -4,10 +4,10 @@
 {% block title %}Completed Deliveries - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}?v={{ asset_version('css/distribution.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -18,7 +18,6 @@
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_flash.html" %}
 
         <div class="rd-breadcrumb">
             <a href="{{ url_for('pswdo.distribution') }}">{{ icon('arrow-right', 14) }} Distribution Operations</a>

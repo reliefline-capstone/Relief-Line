@@ -427,6 +427,37 @@ html { scroll-behavior: smooth; }
 .lp-arch-card.lp-reveal:nth-of-type(2) { transition-delay: 0.1s; }
 .lp-arch-card.lp-reveal:nth-of-type(3) { transition-delay: 0.2s; }
 
+/* Forgot Password modal — overlays the landing page itself (dims it, same
+   idea as .rd-modal-overlay elsewhere in the app) instead of navigating to
+   a separate standalone page. */
+.auth-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 37, 71, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.auth-modal-overlay[hidden] { display: none; }
+
+.auth-modal-card {
+    position: relative;
+    /* @keyframes modalPopIn lives in base.css, loaded on every page. */
+    animation: modalPopIn 0.18s ease-out both;
+}
+
+.auth-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: none;
+    padding: 4px;
+    color: var(--text-muted);
+}
+
 /* Motion-sensitive users get the same content with no animation. */
 @media (prefers-reduced-motion: reduce) {
     .lp-hero-lockup, .lp-hero-desc, .lp-hero-actions, #login-card {

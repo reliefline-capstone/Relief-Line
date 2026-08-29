@@ -4,8 +4,8 @@
 {% block title %}Warehouses - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -16,7 +16,6 @@
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_flash.html" %}
 
         {% set crumbs = [{"label": "Dashboard", "url": url_for('pswdo.warehouse_inventory')}, {"label": "Warehouses", "url": none}] %}
         {% include "pswdo/_warehouse_subnav.html" %}

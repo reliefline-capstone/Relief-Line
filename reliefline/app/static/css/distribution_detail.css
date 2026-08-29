@@ -67,6 +67,23 @@
 
 .dd-step-line-done { background: #27ae60; }
 
+/* Status callout for the "Update" panel's read-only states (waiting on the
+   other party / already confirmed) — previously a single bare line of
+   .empty-note text with no icon or visual weight, leaving the rest of the
+   panel a big block of empty white space next to it. */
+.dd-update-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.dd-update-banner svg { flex-shrink: 0; margin-top: 1px; }
+.dd-update-success { background: #e8faf0; color: #1e8449; }
+.dd-update-pending { background: #eaf0fd; color: #2c5aa0; }
+
 /* Key-value list */
 .dd-kv-list {
     display: grid;

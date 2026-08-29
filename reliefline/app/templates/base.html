@@ -1,3 +1,4 @@
+{% from "_macros.html" import icon with context %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,12 +28,49 @@
          range (400-800) is what gives headings their own presence without a
          second font family to load or keep visually consistent. -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}?v={{ asset_version('css/base.css') }}">
+    <!-- Custom dropdown for every <select> in the app — see
+         custom_select.css for why this needs to be global. Loaded before
+         extra_css so a page can still add its own overrides after it if
+         ever needed. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom_select.css') }}?v={{ asset_version('css/custom_select.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     {% block content %}{% endblock %}
+
+    <!-- Flash toast stack — rendered once here, as a sibling of the page's
+         own content (every role used to include an identical _flash.html
+         partial inside their own <main class="dashboard-main">, which
+         has an entrance `animation` using `transform` + fill-mode: both —
+         that quietly makes .dashboard-main a *permanent* containing block
+         for any position:fixed descendant, per spec. Practically: the
+         floating toast wasn't fixed to the viewport at all, it was pinned
+         to .dashboard-main and scrolled away with it. Rendering the toast
+         outside .dashboard-main entirely, right here, sidesteps that.
+
+         landing.html renders its own inline .flash-message next to the
+         login form instead (that context wants the error right by the
+         field, not in a corner toast), so it overrides this block empty
+         to avoid showing the same message twice. -->
+    {% block global_flash %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-stack">
+            {% for category, message in messages %}
+            <div class="flash-banner flash-{{ category }}" role="alert" data-flash-auto-dismiss>
+                {% if category == 'success' %}{{ icon('check-circle', 16) }}{% elif category == 'error' %}{{ icon('alert-triangle', 16) }}{% else %}{{ icon('info', 16) }}{% endif %}
+                <span>{{ message }}</span>
+                <button type="button" class="flash-dismiss" aria-label="Dismiss">{{ icon('x', 14) }}</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+    {% endblock %}
+
     {% block extra_js %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/custom_select.js') }}?v={{ asset_version('js/custom_select.js') }}"></script>
     <!-- Delegated (not bound to #sidebar-toggle-btn directly) so it works
          no matter which role's _sidebar.html rendered the button, without
          needing per-page wiring. -->
@@ -41,6 +79,24 @@
             if (!e.target.closest('#sidebar-toggle-btn')) return;
             var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
             try { localStorage.setItem('reliefline_sidebar_collapsed', collapsed ? '1' : '0'); } catch (err) {}
+        });
+    </script>
+    <!-- Flash message auto-dismiss + manual close for the .flash-banner
+         markup rendered above. -->
+    <script>
+        document.querySelectorAll('[data-flash-auto-dismiss]').forEach(function (banner) {
+            var dismissed = false;
+            function dismiss() {
+                if (dismissed) return;
+                dismissed = true;
+                banner.classList.add('is-leaving');
+                banner.addEventListener('transitionend', function () { banner.remove(); }, { once: true });
+                // Fallback in case the transition never fires (e.g. reduced-motion setups).
+                setTimeout(function () { banner.remove(); }, 400);
+            }
+            var closeBtn = banner.querySelector('.flash-dismiss');
+            if (closeBtn) closeBtn.addEventListener('click', dismiss);
+            setTimeout(dismiss, 5000);
         });
     </script>
 </body>

@@ -181,8 +181,12 @@
         var endForm = container.querySelector(".weather-end-form");
         if (endForm) {
             endForm.addEventListener("submit", function (e) {
-                var name = container.dataset.activeEventName || "this event";
-                if (!confirm('End "' + name + '" as the active disaster event?')) e.preventDefault();
+                // Native confirm() dialogs look out of place next to the rest of
+                // the app's own modal styling, so this opens the styled
+                // #end-event-modal instead and only actually submits the form
+                // once the user confirms there.
+                e.preventDefault();
+                openEndEventModal(endForm, container.dataset.activeEventName || "this event");
             });
         }
         var declareBtn = container.querySelector(".weather-declare-btn");
@@ -194,6 +198,27 @@
                 openDeclareModal(btn.dataset.prefillName, btn.dataset.prefillCondition);
             });
         });
+    }
+
+    function openEndEventModal(form, name) {
+        var modal = document.getElementById("end-event-modal");
+        if (!modal) return;
+        var nameEl = document.getElementById("end-event-name");
+        if (nameEl) nameEl.textContent = name;
+        modal.hidden = false;
+        var confirmBtn = document.getElementById("end-event-confirm-btn");
+        if (confirmBtn) {
+            // Reassigning .onclick (rather than addEventListener) each time
+            // keeps this to a single handler bound to the current form,
+            // even if the widget re-renders and wires up a new one.
+            confirmBtn.onclick = function () {
+                modal.hidden = true;
+                // form.submit() bypasses the 'submit' event entirely (unlike a
+                // real button click), so this doesn't re-trigger the listener
+                // above and reopen the modal.
+                form.submit();
+            };
+        }
     }
 
     function openDeclareModal(name, condition) {

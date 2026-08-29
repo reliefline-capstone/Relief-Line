@@ -4,9 +4,9 @@
 {% block title %}System Activity - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v={{ asset_version('css/admin.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,6 @@
 
     <main class="dashboard-main">
 
-        {% include "admin/_flash.html" %}
 
         <section class="page-header">
             <div>

@@ -4,9 +4,13 @@
 {% block title %}ReliefLine - Disaster Relief Management System{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}?v={{ asset_version('css/login.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}?v={{ asset_version('css/landing.css') }}">
 {% endblock %}
+
+<!-- This page shows its own inline .flash-message next to the login form
+     instead of base.html's corner toast — see the comment there. -->
+{% block global_flash %}{% endblock %}
 
 {% block content %}
 <div class="lp">
@@ -69,7 +73,11 @@
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
-                            <div class="flash-message {{ category }}">{{ message }}</div>
+                            <div class="flash-message {{ category }}" role="alert" data-flash-auto-dismiss>
+                                {% if category == 'success' %}{{ icon('check-circle', 15) }}{% elif category == 'error' %}{{ icon('alert-triangle', 15) }}{% else %}{{ icon('info', 15) }}{% endif %}
+                                <span>{{ message }}</span>
+                                <button type="button" class="flash-dismiss" aria-label="Dismiss">{{ icon('x', 13) }}</button>
+                            </div>
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
@@ -97,7 +105,7 @@
                             <input type="checkbox" name="remember">
                             Remember me
                         </label>
-                        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">Forgot Password?</a>
+                        <button type="button" class="forgot-link" data-open-modal="forgot-password-modal">Forgot Password?</button>
                     </div>
 
                     <button type="submit" class="login-btn">Sign in</button>
@@ -283,6 +291,32 @@
         </div>
     </footer>
 
+    <!-- Forgot Password modal — opened by the "Forgot Password?" button in
+         the login card above, in place, without navigating to a separate page. -->
+    <div class="auth-modal-overlay" id="forgot-password-modal" hidden>
+        <div class="login-card auth-modal-card">
+            <button type="button" class="auth-modal-close" data-close-modal aria-label="Close">{{ icon('x', 18) }}</button>
+
+            <div class="lock-badge">{{ icon('mail', 28, '#0f2547') }}</div>
+            <h2>Forgot Password?</h2>
+            <p class="subtext">Enter your account email and we'll send a password reset request to a System Administrator for approval.</p>
+
+            <form method="POST" action="{{ url_for('auth.forgot_password') }}">
+                <label for="forgot-email">Username/Email</label>
+                <div class="input-wrapper">
+                    {{ icon('user', 18, '#8a94a6') }}
+                    <input type="text" id="forgot-email" name="email" placeholder="Enter your account email" required>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    {{ icon('mail', 16, 'white') }} SEND RESET REQUEST
+                </button>
+            </form>
+
+            <button type="button" class="back-to-login" data-close-modal>{{ icon('arrow-left', 14) }} Back to Login</button>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
@@ -326,6 +360,31 @@
         window.addEventListener('scroll', onScroll, { passive: true });
         onScroll();
     }
+
+    // Forgot Password modal — same generic [data-open-modal]/[data-close-modal]
+    // pattern used elsewhere in the app (e.g. relief_request_detail.js), scoped
+    // to .auth-modal-overlay here since this page doesn't load that script.
+    document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var modal = document.getElementById(btn.dataset.openModal);
+            if (modal) modal.hidden = false;
+        });
+    });
+    document.querySelectorAll('.auth-modal-overlay').forEach(function (overlay) {
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) overlay.hidden = true;
+        });
+        overlay.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+            btn.addEventListener('click', function () { overlay.hidden = true; });
+        });
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.auth-modal-overlay').forEach(function (overlay) {
+                overlay.hidden = true;
+            });
+        }
+    });
 
     // Fade/slide each section's cards and copy blocks into place as they
     // enter the viewport, instead of dumping the whole page at once.

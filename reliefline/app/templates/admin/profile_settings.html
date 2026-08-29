@@ -4,8 +4,8 @@
 {% block title %}Profile Settings - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}?v={{ asset_version('css/profile_settings.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -16,7 +16,6 @@
 
     <main class="dashboard-main">
 
-        {% include "admin/_flash.html" %}
 
         <section class="page-header">
             <div>

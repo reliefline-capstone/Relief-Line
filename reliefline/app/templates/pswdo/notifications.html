@@ -4,9 +4,9 @@
 {% block title %}Notifications - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}?v={{ asset_version('css/notifications.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,6 @@
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_flash.html" %}
 
         <section class="page-header">
             <div>

@@ -4,10 +4,10 @@
 {% block title %}Deliveries - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}?v={{ asset_version('css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}?v={{ asset_version('css/distribution_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -18,7 +18,6 @@
 
     <main class="dashboard-main">
 
-        {% include "cswdo/_flash.html" %}
 
         <div class="page-header">
             <div>

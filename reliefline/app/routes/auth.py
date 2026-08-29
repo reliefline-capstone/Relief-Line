@@ -59,7 +59,10 @@ def login():
         flash("Invalid username/email or password.", "error")
         return retry
 
-    return render_template("login.html")
+    # The standalone login page has been retired — the landing page's hero
+    # already has a full login form (origin=landing), so a bare GET here
+    # just lands the user there instead of a separate page.
+    return redirect(url_for("auth.landing") + "#login-card")
 
 
 @auth_bp.route("/logout")
@@ -83,11 +86,18 @@ def forgot_password():
                 db.session.add(PasswordResetRequest(user_id=user.user_id))
                 db.session.commit()
 
-        # Same confirmation screen whether or not the email is registered,
-        # so this page can't be used to probe which emails have accounts.
-        return render_template("password_reset_request_sent.html")
+        # Same confirmation message whether or not the email is registered,
+        # so this can't be used to probe which emails have accounts.
+        flash(
+            "If that account exists, a password reset request has been sent "
+            "to a System Administrator for approval.",
+            "success",
+        )
+        return redirect(url_for("auth.landing"))
 
-    return render_template("forgot_password.html")
+    # Forgot Password is now a modal on the landing page (opened by the
+    # "Forgot Password?" button) rather than its own standalone page.
+    return redirect(url_for("auth.landing"))
 
 
 @auth_bp.route("/force-change-password", methods=["GET", "POST"])

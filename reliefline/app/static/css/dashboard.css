@@ -302,11 +302,81 @@ html.sidebar-collapsed .dashboard-main {
 .user-name { font-weight: 700; color: #1a1a1a; font-size: 13px; }
 .user-role { color: #8a94a6; font-size: 11.5px; }
 
-/* Flash messages */
-.flash-stack { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
-.flash-banner { padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; }
-.flash-success { background: #e8faf0; color: #1e8449; }
-.flash-error { background: #fdecea; color: #c0392b; }
+/* Flash messages — floating toast stack, bottom-right, above everything
+   else (including modals). Auto-dismiss + manual close wired up in
+   base.html's inline script, which toggles .is-leaving (transitioned
+   here) then removes the element once that transition ends. Every role's
+   _flash.html partial is identical, so this one rule set covers the whole
+   system. */
+.flash-stack {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 4000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 360px;
+    max-width: calc(100vw - 40px);
+    pointer-events: none;
+}
+
+.flash-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border-left: 3px solid transparent;
+    background: white;
+    /* Elevation has to read as "floating above the page" rather than the
+       soft, barely-there shadow an inline banner needed — this sits on
+       top of everything, corner-anchored, so it needs to look like it. */
+    box-shadow: 0 12px 32px rgba(15, 37, 71, 0.22);
+    overflow: hidden;
+    max-height: 80px;
+    pointer-events: auto;
+    transition: max-height 0.25s ease, opacity 0.25s ease, padding 0.25s ease, transform 0.25s ease;
+    animation: flashToastIn 0.22s ease-out both;
+}
+
+.flash-banner.is-leaving {
+    opacity: 0;
+    transform: translateX(12px);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+}
+
+.flash-banner svg { flex-shrink: 0; }
+.flash-banner span { flex: 1; }
+
+.flash-dismiss {
+    flex-shrink: 0;
+    display: flex;
+    background: none;
+    padding: 3px;
+    opacity: 0.6;
+    border-radius: 4px;
+    color: inherit;
+}
+.flash-dismiss:hover { opacity: 1; background: rgba(0, 0, 0, 0.08); }
+
+.flash-success { background: #f2fdf7; color: #1e8449; border-left-color: #1e8449; }
+.flash-error { background: #fef4f3; color: #c0392b; border-left-color: #c0392b; }
+.flash-info { background: #f3f7fe; color: #2c5aa0; border-left-color: #2c5aa0; }
+
+@keyframes flashToastIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+    .flash-stack { left: 16px; right: 16px; bottom: 16px; width: auto; }
+}
 
 /* Shared page header (non-dashboard pages) */
 .page-header {
@@ -335,6 +405,106 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 .btn-outline:hover { background: #f8f9fc; }
+
+/* Label-above-field modal/settings form layout, used across admin, pswdo,
+   cswdo and barangay forms. Moved here (from profile_settings.css) since
+   this is the one stylesheet essentially every page using it actually
+   loads — pages that only loaded profile_settings.css for this one rule
+   set are unaffected, and pages that never loaded it (e.g. the transfer
+   issuance form on relief_request_detail.html) now get it too. */
+.settings-forms {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 480px;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-row label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* select/textarea included alongside input — .form-row already wraps
+   dropdowns and textareas in several forms (e.g. Add User's Role/Office
+   selects, Decline's reason textarea), which had no border/padding of
+   their own before and fell back to the bare browser control. */
+.form-row input,
+.form-row select,
+.form-row textarea {
+    padding: 10px 12px;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #1a1a1a;
+    font-family: inherit;
+}
+
+.form-row textarea { resize: vertical; }
+
+.form-row input:focus,
+.form-row select:focus,
+.form-row textarea:focus {
+    outline: none;
+    border-color: #2c5aa0;
+}
+
+.form-row input:disabled,
+.form-row select:disabled,
+.form-row textarea:disabled {
+    background: #f4f6fa;
+    color: #8a94a6;
+}
+
+/* Small muted caption/hint text and a light callout box for remarks —
+   moved here (from profile_settings.css / damage_assessment.css
+   respectively) for the same reason as .settings-form/.form-row above:
+   this is the one stylesheet essentially every page using them loads. On
+   relief_request_detail.html specifically, both fell back to plain
+   16px/near-black body text since neither source file was loaded there. */
+.form-hint { font-size: 12px; line-height: 1.5; color: #8a94a6; }
+.form-hint strong { color: #55606f; }
+
+.da-remarks-box {
+    background: #f8f9fc;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+/* Solid primary page-header action (e.g. "Add Warehouse", "Pre-position
+   Stock") — moved here from warehouse_inventory.css since dashboard.css is
+   the one stylesheet every page using this button actually loads; it was
+   rendering unstyled (no background/padding) on pages like Stock Requests
+   that never pulled in warehouse_inventory.css. */
+.btn-add-warehouse {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #0f2547;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.btn-add-warehouse:hover { background: #1a3a6b; }
 
 .btn-icon {
     display: flex;
@@ -598,21 +768,29 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 .stat-icon {
-    width: 32px; height: 32px;
-    border-radius: 8px;
+    width: 38px; height: 38px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 6px;
+    /* Soft shadow tinted toward the card's own navy rather than plain
+       black, plus a subtle scale-up riding on .stat-card's existing
+       hover lift (base.css) — small touches that read as considered
+       rather than the flat, plain solid-colour square this used to be. */
+    box-shadow: 0 2px 6px rgba(15, 37, 71, 0.08);
+    transition: transform 0.15s ease;
 }
 
-.stat-icon.red { background: #fdecea; }
-.stat-icon.orange { background: #fdf0e4; }
-.stat-icon.purple { background: #f1edfe; }
-.stat-icon.green { background: #e8faf0; }
-.stat-icon.amber { background: #fef5e3; }
-.stat-icon.blue { background: #eaf0fd; }
-.stat-icon.brown { background: #f5efe6; }
+.stat-card:hover .stat-icon { transform: scale(1.08); }
+
+.stat-icon.red { background: linear-gradient(135deg, #fdecea, #fbd0c9); }
+.stat-icon.orange { background: linear-gradient(135deg, #fdf0e4, #fadfc0); }
+.stat-icon.purple { background: linear-gradient(135deg, #f1edfe, #ded2fb); }
+.stat-icon.green { background: linear-gradient(135deg, #e8faf0, #c3f0d8); }
+.stat-icon.amber { background: linear-gradient(135deg, #fef5e3, #fbe4b3); }
+.stat-icon.blue { background: linear-gradient(135deg, #eaf0fd, #cddaf8); }
+.stat-icon.brown { background: linear-gradient(135deg, #f5efe6, #e7d7bd); }
 
 .stat-value { font-size: 22px; font-weight: 700; color: #1a1a1a; }
 .stat-label { font-size: 12px; color: #444; font-weight: 600; }
@@ -623,6 +801,14 @@ html.sidebar-collapsed .dashboard-main {
     display: grid;
     grid-template-columns: 2.2fr 1fr;
     gap: 16px;
+    /* CSS Grid's own default (stretch) kept forcing whichever panel had
+       less content to match its taller sibling's height, leaving a wall
+       of blank space under the short one — this has come up enough times
+       across enough different pages (relief request detail, warehouse
+       inventory, distribution progress, and now transfer detail's sparse
+       "Update" panel) that it's clearly never the wanted behavior here;
+       each panel should size to its own content instead. */
+    align-items: start;
 }
 
 .panel {

@@ -4,9 +4,9 @@
 {% block title %}{{ t.ref }} - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}?v={{ asset_version('css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,6 @@
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_flash.html" %}
 
         <div class="rd-breadcrumb"><a href="{{ url_for('pswdo.transfers') }}">{{ icon('chevron-left', 14) }} Stock Transfers</a></div>
 
@@ -34,9 +33,10 @@
             <div class="dd-stepper">
                 {% for s in steps %}
                 <div class="dd-step {{ 'dd-step-done' if loop.index0 <= current_index }}">
-                    <span class="dd-step-dot"></span><span class="dd-step-label">{{ labels.get(s, s) }}</span>
+                    <div class="dd-step-circle">{% if loop.index0 <= current_index %}{{ icon('check-circle', 16, 'white') }}{% else %}{{ loop.index }}{% endif %}</div>
+                    <span>{{ labels.get(s, s) }}</span>
                 </div>
-                {% if not loop.last %}<span class="dd-step-line {{ 'dd-step-line-done' if loop.index0 < current_index }}"></span>{% endif %}
+                {% if not loop.last %}<div class="dd-step-line {{ 'dd-step-line-done' if loop.index0 < current_index }}"></div>{% endif %}
                 {% endfor %}
             </div>
         </section>
@@ -58,18 +58,24 @@
             <section class="panel">
                 <div class="panel-header"><h3>Update</h3></div>
                 {% if t.status == 'completed' %}
-                <p class="empty-note" style="color:#1e8449;">{{ icon('check-circle', 14) }} {{ t.to_office.office_name }} confirmed receipt — stock credited.</p>
+                <div class="dd-update-banner dd-update-success">
+                    {{ icon('check-circle', 16, '#1e8449') }}
+                    <p>{{ t.to_office.office_name }} confirmed receipt — stock credited.</p>
+                </div>
                 {% elif can_issue %}
                 <form method="POST" action="{{ url_for('pswdo.transfer_issue', transfer_id=t.transfer_id) }}" class="settings-form">
                     <p class="form-hint">Confirm the {{ "{:,}".format(t.quantity) }} food packs have left the depot.</p>
                     <div class="rd-form-row">
-                        <div><label>Expected Arrival</label><input type="date" name="expected_arrival"></div>
-                        <div><label>Note</label><input type="text" name="note" placeholder="e.g. Truck 2"></div>
+                        <div class="form-row"><label for="ti-arrival">Expected Arrival</label><input type="date" name="expected_arrival" id="ti-arrival"></div>
+                        <div class="form-row"><label for="ti-note">Note</label><input type="text" name="note" id="ti-note" placeholder="e.g. Truck 2"></div>
                     </div>
-                    <button type="submit" class="btn-decision btn-approve-full">{{ icon('truck', 16, 'white') }} Confirm Issuance &amp; Dispatch</button>
+                    <button type="submit" class="btn-decision btn-approve-full" style="margin-top:16px;">{{ icon('truck', 16, 'white') }} Confirm Issuance &amp; Dispatch</button>
                 </form>
                 {% else %}
-                <p class="empty-note">In transit — waiting for {{ t.to_office.area_covered }} to confirm receipt.</p>
+                <div class="dd-update-banner dd-update-pending">
+                    {{ icon('truck', 16, '#2c5aa0') }}
+                    <p>In transit — waiting for {{ t.to_office.area_covered }} to confirm receipt.</p>
+                </div>
                 {% endif %}
             </section>
         </div>

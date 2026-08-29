@@ -5,13 +5,13 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/gis_map.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}?v={{ asset_version('css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}?v={{ asset_version('css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gis_map.css') }}?v={{ asset_version('css/gis_map.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -22,7 +22,6 @@
 
     <main class="dashboard-main">
 
-        {% include "cswdo/_flash.html" %}
 
         <section class="page-header">
             <div>

@@ -49,7 +49,7 @@ CREATE TABLE `activity_logs` (
   CONSTRAINT `fk_activity_allocation` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`),
   CONSTRAINT `fk_activity_batch` FOREIGN KEY (`batch_id`) REFERENCES `relief_request_batches` (`batch_id`),
   CONSTRAINT `fk_activity_distribution` FOREIGN KEY (`distribution_id`) REFERENCES `distribution_records` (`distribution_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=417 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=455 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -207,11 +207,11 @@ INSERT INTO `activity_logs` VALUES
 (167,2,'distribution_status','D-2026-008 marked Dispatched',1,5,18,NULL,8,NULL,'2026-07-29 02:32:03',NULL),
 (168,2,'distribution_status','D-2026-008 marked In Transit',1,5,18,NULL,8,NULL,'2026-07-29 02:32:06',NULL),
 (169,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:35:25','127.0.0.1'),
-(170,11,'damage_report_submitted','DR-2026-029 submitted by Brgy. Anonas — 45 affected families',0,2,1,NULL,NULL,NULL,'2026-07-29 02:36:54',NULL),
+(170,11,'damage_report_submitted','DR-2026-029 submitted by Brgy. Anonas — 45 affected families',1,2,1,NULL,NULL,NULL,'2026-07-29 02:36:54',NULL),
 (171,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:37:09','127.0.0.1'),
 (172,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:39:39','127.0.0.1'),
 (173,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:41:30','127.0.0.1'),
-(174,3,'damage_report_verified','Damage report DR-2026-029 was verified by Urdaneta City Social Welfare and Development Office',0,2,1,NULL,NULL,NULL,'2026-07-29 02:42:14',NULL),
+(174,3,'damage_report_verified','Damage report DR-2026-029 was verified by Urdaneta City Social Welfare and Development Office',1,2,1,NULL,NULL,NULL,'2026-07-29 02:42:14',NULL),
 (175,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:45:31','127.0.0.1'),
 (176,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:34:56','127.0.0.1'),
 (177,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:35:46','127.0.0.1'),
@@ -266,10 +266,10 @@ INSERT INTO `activity_logs` VALUES
 (226,2,'distribution_status','D-2026-019 marked Dispatched',1,2,3,NULL,19,NULL,'2026-08-20 03:33:14',NULL),
 (227,2,'distribution_status','New distribution scheduled for Ban-ao, Santa Barbara — 700 food packs',1,3,12,NULL,25,NULL,'2026-08-20 03:36:04',NULL),
 (228,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:45:07','127.0.0.1'),
-(229,3,'damage_report_verified','Damage report DR-2026-030 was verified by Urdaneta City Social Welfare and Development Office',0,2,2,NULL,NULL,NULL,'2026-08-20 03:49:13',NULL),
+(229,3,'damage_report_verified','Damage report DR-2026-030 was verified by Urdaneta City Social Welfare and Development Office',1,2,2,NULL,NULL,NULL,'2026-08-20 03:49:13',NULL),
 (230,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:54:13','127.0.0.1'),
-(231,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',0,2,1,NULL,NULL,NULL,'2026-08-20 04:00:03',NULL),
-(232,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',0,2,1,NULL,NULL,NULL,'2026-08-20 04:00:47',NULL),
+(231,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',1,2,1,NULL,NULL,NULL,'2026-08-20 04:00:03',NULL),
+(232,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',1,2,1,NULL,NULL,NULL,'2026-08-20 04:00:47',NULL),
 (233,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:02:13','127.0.0.1'),
 (234,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:07:14','127.0.0.1'),
 (235,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:09:14','127.0.0.1'),
@@ -306,7 +306,7 @@ INSERT INTO `activity_logs` VALUES
 (267,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 09:17:23','127.0.0.1'),
 (268,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:08:33','127.0.0.1'),
 (269,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:09:43','127.0.0.1'),
-(270,3,'damage_report_verified','Damage report DR-2026-032 was verified by Urdaneta City Social Welfare and Development Office',0,2,1,NULL,NULL,NULL,'2026-08-23 14:12:05',NULL),
+(270,3,'damage_report_verified','Damage report DR-2026-032 was verified by Urdaneta City Social Welfare and Development Office',1,2,1,NULL,NULL,NULL,'2026-08-23 14:12:05',NULL),
 (271,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:13:05','127.0.0.1'),
 (272,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:13:30','127.0.0.1'),
 (273,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:15:37','127.0.0.1'),
@@ -367,7 +367,7 @@ INSERT INTO `activity_logs` VALUES
 (336,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:27:06','127.0.0.1'),
 (337,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:30:19','127.0.0.1'),
 (338,15,'login','Edgardo Villanueva logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:31:27','127.0.0.1'),
-(339,15,'damage_report_submitted','DR-2026-035 submitted by Brgy. Cabaruan — 3 affected families',0,2,5,NULL,NULL,NULL,'2026-08-28 07:33:23',NULL),
+(339,15,'damage_report_submitted','DR-2026-035 submitted by Brgy. Cabaruan — 3 affected families',1,2,5,NULL,NULL,NULL,'2026-08-28 07:33:23',NULL),
 (340,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:41:21','127.0.0.1'),
 (349,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:12:19','127.0.0.1'),
 (350,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-027 (207 food packs), received by Ramon Bautista',1,NULL,1,NULL,27,NULL,'2026-08-28 09:13:07',NULL),
@@ -436,7 +436,45 @@ INSERT INTO `activity_logs` VALUES
 (413,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:53:39','127.0.0.1'),
 (414,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:54:18','127.0.0.1'),
 (415,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:54:56','127.0.0.1'),
-(416,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:55:22','127.0.0.1');
+(416,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:55:22','127.0.0.1'),
+(417,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:14:40','127.0.0.1'),
+(418,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:36:08','127.0.0.1'),
+(419,2,'disaster_event_declared','Declared typhoon isa as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:42:05',NULL),
+(420,2,'disaster_event_ended','Marked typhoon isa as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:42:21',NULL),
+(421,2,'disaster_event_declared','Declared typhoon isaw as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:57:00',NULL),
+(422,2,'disaster_event_ended','Marked typhoon isaw as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:57:12',NULL),
+(423,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:03:10','127.0.0.1'),
+(424,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:07:53','127.0.0.1'),
+(425,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:32:37','127.0.0.1'),
+(426,2,'direct_allocation','Pre-positioned 2,000 food packs to Calasiao Municipal Social Welfare and Development Office from PSWDO Warehouse',0,4,NULL,NULL,NULL,NULL,'2026-08-29 07:33:34',NULL),
+(427,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:40:12','127.0.0.1'),
+(428,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:44:02','127.0.0.1'),
+(429,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:51:05','127.0.0.1'),
+(430,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:55:32','127.0.0.1'),
+(431,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:59:06','127.0.0.1'),
+(432,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:11:50','127.0.0.1'),
+(433,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:19:08','127.0.0.1'),
+(434,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:29:22','127.0.0.1'),
+(435,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:45:02','127.0.0.1'),
+(436,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:53:38','127.0.0.1'),
+(437,2,'direct_allocation','Pre-positioned 2,000 food packs to Urdaneta City Social Welfare and Development Office from PSWDO Warehouse',0,2,NULL,NULL,NULL,NULL,'2026-08-29 08:55:29',NULL),
+(438,2,'direct_allocation','Pre-positioned 100 food packs to Calasiao Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',0,4,NULL,NULL,NULL,NULL,'2026-08-29 09:02:49',NULL),
+(439,2,'direct_allocation','Pre-positioned 50 food packs to Santa Barbara Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',0,3,NULL,NULL,NULL,NULL,'2026-08-29 09:03:26',NULL),
+(440,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:08:26','127.0.0.1'),
+(441,2,'distribution_status','TR-2026-007 dispatched — 2,500 food packs en route to Urdaneta City Social Welfare and Development Office',0,2,NULL,NULL,NULL,19,'2026-08-29 09:08:59',NULL),
+(442,2,'direct_allocation','Pre-positioned 75 food packs to Calasiao Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',0,4,NULL,NULL,NULL,NULL,'2026-08-29 09:20:08',NULL),
+(443,2,'direct_allocation','Pre-positioned 25 food packs to Calasiao Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',0,4,NULL,NULL,NULL,NULL,'2026-08-29 09:20:44',NULL),
+(444,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:22:04','127.0.0.1'),
+(445,2,'disaster_event_declared','Declared swdas as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:22:21',NULL),
+(446,2,'disaster_event_ended','Marked swdas as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:22:34',NULL),
+(447,2,'disaster_event_ended','Marked Toast Scroll Test as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:27:12',NULL),
+(448,2,'disaster_event_ended','Marked Toast Scroll Test as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:42:14',NULL),
+(449,2,'disaster_event_ended','Marked Toast Scroll Test as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:42:45',NULL),
+(450,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:45:45','127.0.0.1'),
+(451,2,'disaster_event_declared','Declared typhoon isa as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:45:55',NULL),
+(452,2,'disaster_event_ended','Marked typhoon isa as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:46:06',NULL),
+(453,2,'disaster_event_declared','Declared swdas as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:46:19',NULL),
+(454,2,'disaster_event_ended','Marked swdas as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:46:38',NULL);
 /*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -1810,7 +1848,7 @@ CREATE TABLE `disaster_events` (
   PRIMARY KEY (`event_id`),
   KEY `created_by` (`created_by`),
   CONSTRAINT `disaster_events_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1829,7 +1867,12 @@ INSERT INTO `disaster_events` VALUES
 (9,'Typhoon Carina (2024)','typhoon','ended','Typhoon','2024-07-23','2024-07-30',2,'2026-08-28 07:06:10'),
 (10,'Super Typhoon Julian (2024)','typhoon','ended','Super Typhoon','2024-09-13','2024-09-22',2,'2026-08-28 07:06:10'),
 (11,'Tropical Storm Dante (2025)','typhoon','ended','Tropical Storm','2025-06-17','2025-06-21',2,'2026-08-28 07:06:11'),
-(12,'Typhoon Ramil (2025)','typhoon','ended','Typhoon','2025-10-01','2025-10-08',2,'2026-08-28 07:06:11');
+(12,'Typhoon Ramil (2025)','typhoon','ended','Typhoon','2025-10-01','2025-10-08',2,'2026-08-28 07:06:11'),
+(13,'typhoon isa','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 06:42:05'),
+(15,'typhoon isaw','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 06:57:00'),
+(16,'swdas','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 09:22:21'),
+(18,'typhoon isa','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 09:45:55'),
+(19,'swdas','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 09:46:19');
 /*!40000 ALTER TABLE `disaster_events` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2423,8 +2466,8 @@ LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
 (1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:53:18','2026-08-29 04:54:40'),
-(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:54:56','2026-08-29 04:54:56'),
-(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:55:22','2026-08-29 04:56:55'),
+(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 09:45:45','2026-08-29 09:45:58'),
+(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:55:22','2026-08-29 09:45:01'),
 (4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:54:18','2026-08-29 04:54:19'),
 (5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:50:13','2026-08-29 04:50:14'),
 (11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$hCcKMg13rKLOH9xY$f2105adfe2ca9210b04ea778dfffc96f177066a49a54ab8bb330e87c1649bed47608adfc91eda0880b050776ee56e1d2113c160e0e79a505597b8906bbb9868d','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-08-29 04:51:03','2026-08-29 04:54:40'),
@@ -2552,7 +2595,7 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `warehouse_inventory` WRITE;
 /*!40000 ALTER TABLE `warehouse_inventory` DISABLE KEYS */;
 INSERT INTO `warehouse_inventory` VALUES
-(1,1,'food_pack','Food Packs','packs',12000,0,'2026-08-28 05:08:19',2),
+(1,1,'food_pack','Food Packs','packs',11750,0,'2026-08-29 09:20:44',2),
 (2,1,'hygiene_kit','Hygiene Kits','kits',1500,0,'2026-07-27 02:01:14',2),
 (3,1,'kitchen_kit','Kitchen Kits','kits',800,0,'2026-07-20 02:49:52',2),
 (4,2,'food_pack','Food Packs','packs',8195,0,'2026-08-28 09:08:01',3),
@@ -2564,7 +2607,7 @@ INSERT INTO `warehouse_inventory` VALUES
 (10,4,'food_pack','Food Packs','packs',5830,0,'2026-08-28 09:01:55',5),
 (11,4,'hygiene_kit','Hygiene Kits','kits',750,0,'2026-08-28 07:38:34',5),
 (12,4,'kitchen_kit','Kitchen Kits','kits',250,0,'2026-07-20 02:49:52',5),
-(13,5,'food_pack','Food Packs','packs',11700,3000,'2026-08-29 04:01:46',2),
+(13,5,'food_pack','Food Packs','packs',7700,3000,'2026-08-29 08:55:29',2),
 (14,6,'food_pack','Food Packs','packs',500,0,'2026-07-29 02:31:11',NULL);
 /*!40000 ALTER TABLE `warehouse_inventory` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2594,7 +2637,7 @@ CREATE TABLE `warehouse_stock_logs` (
   KEY `updated_by` (`updated_by`),
   CONSTRAINT `warehouse_stock_logs_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   CONSTRAINT `warehouse_stock_logs_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2626,7 +2669,13 @@ INSERT INTO `warehouse_stock_logs` VALUES
 (31,2,'food_pack','Food Packs',-120,'Released to Brgy. Catablan (RR-2026-037)','standard',NULL,3,'2026-08-28 08:58:09'),
 (32,5,'food_pack','Food Packs',-1000,'Replenishment to Santa Barbara Municipal Social Welfare and Development Office (SR-2026-018)','standard',NULL,2,'2026-08-28 09:36:10'),
 (33,3,'food_pack','Food Packs',1000,'Received from PSWDO Warehouse (SR-2026-018)','standard',NULL,4,'2026-08-28 09:36:11'),
-(34,5,'food_pack','Food Packs',-2500,'Replenishment to Urdaneta City Social Welfare and Development Office (SR-2026-019)','standard',NULL,2,'2026-08-29 04:01:46');
+(34,5,'food_pack','Food Packs',-2500,'Replenishment to Urdaneta City Social Welfare and Development Office (SR-2026-019)','standard',NULL,2,'2026-08-29 04:01:46'),
+(35,5,'food_pack','Food Packs',-2000,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 07:33:34'),
+(36,5,'food_pack','Food Packs',-2000,'Pre-positioning to Urdaneta City Social Welfare and Development Office','standard',NULL,2,'2026-08-29 08:55:29'),
+(37,1,'food_pack','Food Packs',-100,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:02:49'),
+(38,1,'food_pack','Food Packs',-50,'Pre-positioning to Santa Barbara Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:03:26'),
+(39,1,'food_pack','Food Packs',-75,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:20:08'),
+(40,1,'food_pack','Food Packs',-25,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:20:44');
 /*!40000 ALTER TABLE `warehouse_stock_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2668,7 +2717,7 @@ CREATE TABLE `warehouse_transfers` (
   CONSTRAINT `warehouse_transfers_ibfk_1` FOREIGN KEY (`from_office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   CONSTRAINT `warehouse_transfers_ibfk_2` FOREIGN KEY (`to_office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   CONSTRAINT `warehouse_transfers_ibfk_3` FOREIGN KEY (`requested_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2684,7 +2733,13 @@ INSERT INTO `warehouse_transfers` VALUES
 (3,1,2,'food_pack',2000,NULL,'completed',NULL,2,'2026-08-24 15:34:43','2026-08-24 15:34:43',NULL,NULL,NULL,NULL,NULL,NULL),
 (4,5,3,'food_pack',1000,18,'completed','delivered',2,'2026-08-28 09:36:10','2026-08-28 09:36:11','2026-07-25',2,'2026-08-28 09:36:11','SB Warehouse Officer','2026-08-28 09:36:11','truck 3'),
 (5,5,4,'food_pack',1500,20,'pending','in_transit',5,'2026-08-28 09:39:49',NULL,'2026-08-28',2,'2026-08-28 09:39:49',NULL,NULL,'Truck 1'),
-(7,5,2,'food_pack',2500,19,'pending','preparing',2,'2026-08-29 04:01:46',NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+(7,5,2,'food_pack',2500,19,'pending','in_transit',2,'2026-08-29 04:01:46',NULL,NULL,2,'2026-08-29 09:08:59',NULL,NULL,NULL),
+(8,5,4,'food_pack',2000,NULL,'pending','in_transit',2,'2026-08-29 07:33:34',NULL,NULL,2,'2026-08-29 07:33:34',NULL,NULL,'wqe'),
+(9,5,2,'food_pack',2000,NULL,'pending','in_transit',2,'2026-08-29 08:55:29',NULL,NULL,2,'2026-08-29 08:55:29',NULL,NULL,'Proactive pre-positioning'),
+(10,1,4,'food_pack',100,NULL,'pending','in_transit',2,'2026-08-29 09:02:49',NULL,NULL,2,'2026-08-29 09:02:49',NULL,NULL,'Proactive pre-positioning'),
+(11,1,3,'food_pack',50,NULL,'pending','in_transit',2,'2026-08-29 09:03:26',NULL,NULL,2,'2026-08-29 09:03:26',NULL,NULL,'Proactive pre-positioning'),
+(12,1,4,'food_pack',75,NULL,'pending','in_transit',2,'2026-08-29 09:20:08',NULL,NULL,2,'2026-08-29 09:20:08',NULL,NULL,'Proactive pre-positioning'),
+(13,1,4,'food_pack',25,NULL,'pending','in_transit',2,'2026-08-29 09:20:44',NULL,NULL,2,'2026-08-29 09:20:44',NULL,NULL,'Proactive pre-positioning');
 /*!40000 ALTER TABLE `warehouse_transfers` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -2699,4 +2754,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-08-29  4:59:23
+-- Dump completed on 2026-08-29  9:47:34

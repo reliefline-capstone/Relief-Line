@@ -2,7 +2,7 @@
 {% from "_macros.html" import icon with context %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}?v={{ asset_version('css/login.css') }}">
 {% block page_css %}{% endblock %}
 {% endblock %}
 

@@ -812,18 +812,16 @@ def dashboard():
         if lgu_allocated > 0:
             by_municipality.append({"lgu": lgu, "released": lgu_released, "allocated": lgu_allocated})
 
-    # Recent activity feed — "Recent Activities" is the general audit trail,
-    # "Notifications" below it is only the unread subset needing attention.
-    # Both restricted to NOTIFICATION_META's known operational action_types —
-    # System Administration rows (logins, user/office/barangay management)
-    # belong on the System Admin's own System Activity page, not here.
+    # Recent activity feed — the general audit trail. Restricted to
+    # NOTIFICATION_META's known operational action_types — System
+    # Administration rows (logins, user/office/barangay management) belong
+    # on the System Admin's own System Activity page, not here. The
+    # dedicated Notifications page (sidebar) covers the unread subset now
+    # that the dashboard no longer duplicates it.
     known_types = PSWDO_NOTIFICATION_TYPES
     recent_activities = ActivityLog.query.filter(ActivityLog.action_type.in_(known_types)).order_by(
         ActivityLog.created_at.desc()
     ).limit(4).all()
-    notifications = ActivityLog.query.filter(
-        ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
-    ).order_by(ActivityLog.created_at.desc()).limit(3).all()
 
     return render_template(
         "pswdo/dashboard.html",
@@ -858,7 +856,6 @@ def dashboard():
         vehicles_active=vehicles_active,
         by_municipality=by_municipality,
         recent_activities=recent_activities,
-        notifications=notifications,
         weather_cities=TARGET_LGUS,
         now=now
     )

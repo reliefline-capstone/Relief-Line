@@ -4,10 +4,10 @@
 {% block title %}{{ batch.ref }} - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}?v={{ asset_version('css/distribution_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -18,7 +18,6 @@
 
     <main class="dashboard-main">
 
-        {% include "pswdo/_flash.html" %}
 
         <div class="rd-breadcrumb"><a href="{{ url_for('pswdo.relief_requests') }}">{{ icon('chevron-left', 14) }} Stock Requests</a></div>
 
@@ -33,78 +32,94 @@
             </div>
         </div>
 
-        <div class="main-grid">
-            <section class="panel">
-                <div class="panel-header"><h3>Request</h3></div>
-                <div class="rd-info-grid">
-                    <div><span>Requested</span><strong>{{ "{:,}".format(batch.requested_food_packs) }} packs</strong></div>
-                    <div><span>Priority</span><strong>{{ priority_labels.get(batch.priority, batch.priority) }}</strong></div>
-                    <div><span>Predicted municipal demand</span><strong>{{ "{:,}".format(predicted_demand) }}</strong></div>
-                    <div><span>CSWDO warehouse on hand</span><strong>{{ "{:,}".format(cswdo_on_hand) }}</strong></div>
-                    <div><span>Shortfall</span><strong>{{ "{:,}".format(shortfall) }}</strong></div>
-                    {% if batch.approved_food_packs %}<div><span>Approved</span><strong>{{ "{:,}".format(batch.approved_food_packs) }} from {{ batch.fulfilling_office.office_name if batch.fulfilling_office }}</strong></div>{% endif %}
-                </div>
-                {% if batch.reason %}<p class="da-remarks-box" style="margin-top:10px;">{{ batch.reason }}</p>{% endif %}
-                {% if batch.decision_remarks %}<p class="da-remarks-box" style="margin-top:8px;"><strong>Decision:</strong> {{ batch.decision_remarks }}</p>{% endif %}
-            </section>
+        <div class="main-grid rd-detail-grid">
+            <div class="rd-left-col">
+                <section class="panel">
+                    <div class="panel-header"><h3>Request</h3></div>
+                    <div class="rd-info-grid">
+                        <div><span>Requested</span><strong>{{ "{:,}".format(batch.requested_food_packs) }} packs</strong></div>
+                        <div><span>Priority</span><strong>{{ priority_labels.get(batch.priority, batch.priority) }}</strong></div>
+                        <div><span>Predicted municipal demand</span><strong>{{ "{:,}".format(predicted_demand) }}</strong></div>
+                        <div><span>CSWDO warehouse on hand</span><strong>{{ "{:,}".format(cswdo_on_hand) }}</strong></div>
+                        <div><span>Shortfall</span><strong>{{ "{:,}".format(shortfall) }}</strong></div>
+                        {% if batch.approved_food_packs %}<div><span>Approved</span><strong>{{ "{:,}".format(batch.approved_food_packs) }} from {{ batch.fulfilling_office.office_name if batch.fulfilling_office }}</strong></div>{% endif %}
+                    </div>
+                    {% if batch.reason %}<p class="da-remarks-box" style="margin-top:10px;">{{ batch.reason }}</p>{% endif %}
+                    {% if batch.decision_remarks %}<p class="da-remarks-box" style="margin-top:8px;"><strong>Decision:</strong> {{ batch.decision_remarks }}</p>{% endif %}
+                </section>
 
-            <section class="panel">
+                {% if transfer %}
+                <section class="panel dd-stepper-panel">
+                    <div class="panel-header"><h3>Replenishment Transfer {{ transfer.ref }}</h3></div>
+                    <div class="dd-stepper">
+                        {% set order = {'preparing':0,'in_transit':1,'delivered':2} %}
+                        {% for s in ['preparing','in_transit','delivered'] %}
+                        {% set done = order[transfer.dispatch_status or 'preparing'] >= loop.index0 %}
+                        <div class="dd-step {{ 'dd-step-done' if done }}">
+                            <div class="dd-step-circle">{% if done %}{{ icon('check-circle', 16, 'white') }}{% else %}{{ loop.index }}{% endif %}</div>
+                            <span>{{ dispatch_labels[s] }}</span>
+                        </div>
+                        {% if not loop.last %}<div class="dd-step-line {{ 'dd-step-line-done' if done }}"></div>{% endif %}
+                        {% endfor %}
+                    </div>
+                    <p class="form-hint" style="margin-top:10px;">
+                        {{ "{:,}".format(transfer.quantity) }} packs from {{ transfer.from_office.office_name }} → {{ transfer.to_office.office_name }}.
+                        {% if transfer.status == 'completed' %}Received {{ transfer.received_at.strftime('%b %d, %I:%M %p') if transfer.received_at }} by {{ transfer.received_by }}.
+                        {% elif transfer.dispatch_status == 'in_transit' %}In transit — awaiting CSWDO receipt confirmation.
+                        {% else %}Awaiting dispatch.{% endif %}
+                    </p>
+                    {% if transfer.dispatch_status == 'preparing' %}
+                    <form method="POST" action="{{ url_for('pswdo.transfer_issue', transfer_id=transfer.transfer_id) }}" class="settings-form" style="margin-top:8px;">
+                        <div class="rd-form-row">
+                            <div class="form-row"><label for="ti-arrival">Expected Arrival</label><input type="date" name="expected_arrival" id="ti-arrival"></div>
+                            <div class="form-row"><label for="ti-note">Note</label><input type="text" name="note" id="ti-note" placeholder="e.g. Truck 2, driver R. Cruz"></div>
+                        </div>
+                        <button type="submit" class="btn-decision btn-approve-full" style="margin-top:16px;">{{ icon('truck', 16, 'white') }} Confirm Issuance &amp; Dispatch</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('pswdo.transfer_detail', transfer_id=transfer.transfer_id) }}" class="link-manage">Open transfer →</a>
+                    {% endif %}
+                </section>
+                {% endif %}
+
+                {% if batch.display_status == 'pending' %}
+                <section class="panel">
+                    <div class="panel-header"><h3>Decision</h3></div>
+                    <div class="rd-action-row">
+                        <button type="button" class="btn-decision btn-approve-full" data-open-modal="approve-modal">{{ icon('check-circle', 16, 'white') }} Approve</button>
+                        <button type="button" class="btn-decision btn-reject" data-open-modal="reject-modal">{{ icon('x-circle', 16, 'white') }} Decline</button>
+                    </div>
+                </section>
+                {% endif %}
+            </div>
+
+            <section class="panel rd-request-panel">
                 <div class="panel-header"><h3>Aggregation Traceability</h3><span class="rd-sub">municipal figure = Σ barangay model outputs</span></div>
-                <table class="rr-table">
+                <table class="rr-table" id="rd-breakdown-table">
                     <thead><tr><th>Barangay</th><th>Model</th><th>Barangay Req.</th><th>Demand</th></tr></thead>
                     <tbody>
                         {% for r in breakdown %}
-                        <tr><td>{{ r.barangay.barangay_name }}</td><td>{{ "{:,}".format(r.model) }}</td>
+                        <tr{% if loop.index > 8 %} class="rd-breakdown-row-extra" style="display:none;"{% endif %}>
+                            <td>{{ r.barangay.barangay_name }}</td><td>{{ "{:,}".format(r.model) }}</td>
                             <td>{{ "{:,}".format(r.requested) if r.requested else '—' }}</td>
                             <td><strong>{{ "{:,}".format(r.demand) }}</strong></td></tr>
                         {% endfor %}
-                        <tr><td><strong>TOTAL</strong></td><td></td><td></td><td><strong>{{ "{:,}".format(predicted_demand) }}</strong></td></tr>
+                        <tr class="rd-breakdown-total"><td><strong>TOTAL</strong></td><td></td><td></td><td><strong>{{ "{:,}".format(predicted_demand) }}</strong></td></tr>
                     </tbody>
                 </table>
+                {% if breakdown|length > 8 %}
+                <button type="button" class="link-manage rd-breakdown-toggle" onclick="
+                    var extras = document.querySelectorAll('#rd-breakdown-table .rd-breakdown-row-extra');
+                    var expanded = this.dataset.expanded === 'true';
+                    extras.forEach(function (r) { r.style.display = expanded ? 'none' : 'table-row'; });
+                    this.dataset.expanded = expanded ? 'false' : 'true';
+                    this.textContent = expanded ? 'View All ({{ breakdown|length }} barangays) →' : 'Show Less ←';
+                ">View All ({{ breakdown|length }} barangays) →</button>
+                {% endif %}
             </section>
         </div>
 
-        {% if transfer %}
-        <section class="panel dd-stepper-panel">
-            <div class="panel-header"><h3>Replenishment Transfer {{ transfer.ref }}</h3></div>
-            <div class="dd-stepper">
-                {% for s in steps if false %}{% endfor %}
-                {% set order = {'preparing':0,'in_transit':1,'delivered':2} %}
-                {% for s in ['preparing','in_transit','delivered'] %}
-                {% set done = order[transfer.dispatch_status or 'preparing'] >= loop.index0 %}
-                <div class="dd-step {{ 'dd-step-done' if done }}"><span class="dd-step-dot"></span><span class="dd-step-label">{{ dispatch_labels[s] }}</span></div>
-                {% if not loop.last %}<span class="dd-step-line {{ 'dd-step-line-done' if done }}"></span>{% endif %}
-                {% endfor %}
-            </div>
-            <p class="form-hint" style="margin-top:10px;">
-                {{ "{:,}".format(transfer.quantity) }} packs from {{ transfer.from_office.office_name }} → {{ transfer.to_office.office_name }}.
-                {% if transfer.status == 'completed' %}Received {{ transfer.received_at.strftime('%b %d, %I:%M %p') if transfer.received_at }} by {{ transfer.received_by }}.
-                {% elif transfer.dispatch_status == 'in_transit' %}In transit — awaiting CSWDO receipt confirmation.
-                {% else %}Awaiting dispatch.{% endif %}
-            </p>
-            {% if transfer.dispatch_status == 'preparing' %}
-            <form method="POST" action="{{ url_for('pswdo.transfer_issue', transfer_id=transfer.transfer_id) }}" class="settings-form" style="margin-top:8px;">
-                <div class="rd-form-row">
-                    <div><label>Expected Arrival</label><input type="date" name="expected_arrival"></div>
-                    <div><label>Note</label><input type="text" name="note" placeholder="e.g. Truck 2, driver R. Cruz"></div>
-                </div>
-                <button type="submit" class="btn-decision btn-approve-full">{{ icon('truck', 16, 'white') }} Confirm Issuance &amp; Dispatch</button>
-            </form>
-            {% else %}
-            <a href="{{ url_for('pswdo.transfer_detail', transfer_id=transfer.transfer_id) }}" class="link-manage">Open transfer →</a>
-            {% endif %}
-        </section>
-        {% endif %}
-
         {% if batch.display_status == 'pending' %}
-        <section class="panel">
-            <div class="panel-header"><h3>Decision</h3></div>
-            <div class="rd-action-row">
-                <button type="button" class="btn-decision btn-approve-full" data-open-modal="approve-modal">{{ icon('check-circle', 16, 'white') }} Approve</button>
-                <button type="button" class="btn-decision btn-reject" data-open-modal="reject-modal">{{ icon('x-circle', 16, 'white') }} Decline</button>
-            </div>
-        </section>
-
         <div class="rd-modal-overlay" id="approve-modal" hidden>
             <div class="rd-modal">
                 <div class="rd-modal-header"><h3>Approve {{ batch.ref }}</h3><button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>

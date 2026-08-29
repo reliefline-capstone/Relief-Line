@@ -4,10 +4,10 @@
 {% block title %}Dashboard - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}?v={{ asset_version('css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}?v={{ asset_version('css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -18,7 +18,6 @@
 
     <main class="dashboard-main">
 
-        {% include "barangay/_flash.html" %}
 
         <!-- Greeting banner -->
         <section class="greeting-banner">

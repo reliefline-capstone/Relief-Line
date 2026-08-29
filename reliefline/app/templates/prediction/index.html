@@ -4,11 +4,11 @@
 {% block title %}Predictive Analytics - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/gis_map.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/prediction.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gis_map.css') }}?v={{ asset_version('css/gis_map.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/prediction.css') }}?v={{ asset_version('css/prediction.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -23,7 +23,6 @@
 
     <main class="dashboard-main">
 
-        {% if is_cswdo %}{% include "cswdo/_flash.html" %}{% else %}{% include "pswdo/_flash.html" %}{% endif %}
 
         <section class="page-header">
             <div>

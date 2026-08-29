@@ -4,10 +4,10 @@
 {% block title %}{{ ref }} - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}?v={{ asset_version('css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}?v={{ asset_version('css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -18,7 +18,6 @@
 
     <main class="dashboard-main">
 
-        {% include "cswdo/_flash.html" %}
 
         <div class="rd-breadcrumb">
             <a href="{{ url_for('cswdo.deliveries') }}">{{ icon('chevron-left', 14) }} Deliveries</a>
@@ -38,10 +37,10 @@
             <div class="dd-stepper">
                 {% for step in dispatch_steps %}
                 <div class="dd-step {{ 'dd-step-done' if loop.index0 <= current_index }}">
-                    <span class="dd-step-dot"></span>
-                    <span class="dd-step-label">{{ step_labels.get(step, step) }}</span>
+                    <div class="dd-step-circle">{% if loop.index0 <= current_index %}{{ icon('check-circle', 16, 'white') }}{% else %}{{ loop.index }}{% endif %}</div>
+                    <span>{{ step_labels.get(step, step) }}</span>
                 </div>
-                {% if not loop.last %}<span class="dd-step-line {{ 'dd-step-line-done' if loop.index0 < current_index }}"></span>{% endif %}
+                {% if not loop.last %}<div class="dd-step-line {{ 'dd-step-line-done' if loop.index0 < current_index }}"></div>{% endif %}
                 {% endfor %}
             </div>
         </section>

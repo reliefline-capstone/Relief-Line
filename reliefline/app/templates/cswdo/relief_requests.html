@@ -4,11 +4,11 @@
 {% block title %}Stock Requests - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/cswdo_relief_requests.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cswdo_relief_requests.css') }}?v={{ asset_version('css/cswdo_relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}?v={{ asset_version('css/distribution_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -19,7 +19,6 @@
 
     <main class="dashboard-main">
 
-        {% include "cswdo/_flash.html" %}
 
         <div class="page-header">
             <div>
@@ -133,8 +132,11 @@
             <div class="dd-stepper">
                 {% for s in ['preparing','in_transit','delivered'] %}
                 {% set done = ({'preparing':0,'in_transit':1,'delivered':2}[t.dispatch_status or 'preparing']) >= loop.index0 %}
-                <div class="dd-step {{ 'dd-step-done' if done }}"><span class="dd-step-dot"></span><span class="dd-step-label">{{ {'preparing':'Preparing','in_transit':'In Transit','delivered':'Delivered'}[s] }}</span></div>
-                {% if not loop.last %}<span class="dd-step-line {{ 'dd-step-line-done' if done }}"></span>{% endif %}
+                <div class="dd-step {{ 'dd-step-done' if done }}">
+                    <div class="dd-step-circle">{% if done %}{{ icon('check-circle', 16, 'white') }}{% else %}{{ loop.index }}{% endif %}</div>
+                    <span>{{ {'preparing':'Preparing','in_transit':'In Transit','delivered':'Delivered'}[s] }}</span>
+                </div>
+                {% if not loop.last %}<div class="dd-step-line {{ 'dd-step-line-done' if done }}"></div>{% endif %}
                 {% endfor %}
             </div>
             <p class="form-hint" style="margin-top:10px;">Transfer of {{ "{:,}".format(t.quantity) }} food packs from {{ t.from_office.office_name }}.</p>

@@ -4,9 +4,9 @@
 {% block title %}{{ report.ref }} - ReliefLine{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}?v={{ asset_version('css/reports.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,6 @@
 
     <main class="dashboard-main">
 
-        {% include "barangay/_flash.html" %}
 
         <section class="page-header">
             <div>

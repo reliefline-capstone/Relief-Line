@@ -25,6 +25,39 @@
 .rd-main-col { display: flex; flex-direction: column; gap: 16px; }
 .rd-sidebar { display: flex; flex-direction: column; gap: 16px; }
 
+/* .main-grid (dashboard.css) defaults to align-items: stretch, so the short
+   "Request" panel here used to be stretched down to match its much taller
+   "Aggregation Traceability" sibling, leaving a big block of empty space
+   under the request info. Sizing each panel to its own content instead. */
+.rd-request-panel { align-self: start; }
+
+/* Left grid column: Request stacked with Replenishment Transfer (when a
+   transfer exists) right below it, instead of Replenishment Transfer
+   spanning full-width underneath the whole grid — fills the space next to
+   the taller Aggregation Traceability column instead of leaving it empty. */
+.rd-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-self: start;
+}
+
+/* .dd-stepper-panel's own margin-bottom (distribution_detail.css) was
+   written for its usual standalone/block-flow placement. Stacked here as a
+   flex child of .rd-left-col, that margin stacked on top of the column's
+   own 16px gap, doubling the space after it to 32px — bigger and
+   inconsistent next to the plain 16px gap above it. */
+.rd-left-col .dd-stepper-panel { margin-bottom: 0; }
+
+.rd-breakdown-toggle {
+    background: none;
+    padding: 10px 0 0;
+    margin-top: 4px;
+    border-top: 1px solid #f0f2f6;
+    width: 100%;
+    text-align: left;
+}
+
 .rd-panel-title {
     font-size: 14px;
     color: #1a1a1a;
@@ -51,6 +84,11 @@
     gap: 16px 24px;
 }
 
+/* Label above value — this had no rule of its own at all before, so the
+   plain <span> fell all the way back to the browser/body default (16px,
+   near-black), reading louder and larger than the 14px bold value it was
+   labelling underneath it. */
+.rd-info-grid span { display: block; font-size: 11.5px; color: #8a94a6; margin-bottom: 2px; }
 .rd-info-grid strong { font-size: 14px; display: flex; align-items: center; gap: 6px; }
 
 /* Affected info tiles */
@@ -112,14 +150,26 @@
     color: white;
     font-weight: 700;
     font-size: 14px;
+    box-shadow: 0 2px 8px rgba(15, 37, 71, 0.14);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 
-.btn-approve-full { background: #3d7a63; }
-.btn-approve-full:hover { background: #326651; }
+.btn-decision:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(15, 37, 71, 0.2);
+}
+
+.btn-decision:active { transform: translateY(0); }
+
+/* Brightened to match the app's usual success/danger accents (badges,
+   pills, etc. elsewhere all use #1e8449 / #c0392b) — the previous muted
+   #3d7a63 / #a85450 read flat next to those and next to the new shadow. */
+.btn-approve-full { background: #1e8449; }
+.btn-approve-full:hover { background: #196f3d; }
 .btn-partial { background: #24456b; }
 .btn-partial:hover { background: #1c3656; }
-.btn-reject { background: #a85450; }
-.btn-reject:hover { background: #8f4744; }
+.btn-reject { background: #c0392b; }
+.btn-reject:hover { background: #a53125; }
 
 .btn-cancel {
     background: #f0f2f6;
@@ -204,6 +254,17 @@
 
 .rd-modal-header h3 { font-size: 17px; color: #0f2547; }
 .rd-modal-close { background: none; padding: 2px; color: #8a94a6; }
+
+/* .form-hint's base styling now lives in dashboard.css (loaded here), so
+   only the modal-specific spacing tweak below is still needed on this page.
+
+   Bottom margin only for a standalone intro paragraph sitting directly in
+   the modal (before the form) — a .form-hint nested inside a .form-row
+   (e.g. "Up to 1,800 requested." under a field) is a flex item there, so
+   this same margin would add on top of .settings-form's own 16px row gap
+   instead of just being ignored like it would on a plain inline <span>,
+   nearly doubling the gap after that one field versus every other row. */
+.rd-modal > .form-hint { margin: 0 0 18px; }
 
 .rd-modal-banner {
     display: flex;

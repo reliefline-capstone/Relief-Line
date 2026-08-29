@@ -333,15 +333,8 @@
     word-break: break-all;
 }
 
-.da-remarks-box {
-    background: #f8f9fc;
-    border-radius: 8px;
-    padding: 12px 14px;
-    font-size: 13px;
-    color: #333;
-    margin-bottom: 16px;
-    line-height: 1.5;
-}
+/* .da-remarks-box now lives in dashboard.css — every page using it loads
+   that stylesheet, which wasn't true of relief_request_detail.html. */
 
 .da-verification-record {
     display: flex;
