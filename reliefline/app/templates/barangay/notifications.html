@@ -22,42 +22,31 @@
         <section class="page-header">
             <div>
                 <h2>Notifications</h2>
-                <p>{{ unread_count }} unread of {{ total_count }} total notifications · Brgy. {{ barangay.barangay_name }}</p>
+                <p>{% if unread_count %}{{ unread_count }} new · {% endif %}{{ total_count }} total notifications · Brgy. {{ barangay.barangay_name }}</p>
             </div>
-            {% if unread_count %}
-            <form method="POST" action="{{ url_for('barangay.mark_all_notifications_read') }}">
-                <button type="submit" class="btn-outline">{{ icon('check-circle', 14) }} Mark All as Read</button>
-            </form>
-            {% endif %}
         </section>
 
         <div class="notif-filter-tabs">
             {% for cat in categories %}
-            <a href="{{ url_for('barangay.notifications', category=cat.value, status=status_filter) }}"
+            <a href="{{ url_for('barangay.notifications', category=cat.value) }}"
                class="notif-filter-tab {{ 'active' if category_filter == cat.value }}">{{ cat.label }}</a>
             {% endfor %}
         </div>
 
         <section class="panel">
             <div class="notif-panel-header">
-                <h3>{{ icon('bell', 18, '#0f2547') }} All Notifications</h3>
-                <form method="GET" class="filter-bar" style="padding:0; background:none;">
-                    <input type="hidden" name="category" value="{{ category_filter }}">
-                    <select name="status" onchange="this.form.submit()">
-                        <option value="all" {{ 'selected' if status_filter == 'all' }}>All</option>
-                        <option value="unread" {{ 'selected' if status_filter == 'unread' }}>Unread Only</option>
-                    </select>
-                </form>
+                <h3>{{ icon('bell', 18, '#0f2547') }}
+                    {%- for cat in categories if cat.value == category_filter %} {{ cat.label }}{% endfor %} Notifications</h3>
             </div>
 
             {% if items %}
             {% for item in items %}
             {% set tag = 'a' if item.link else 'div' %}
-            <{{ tag }} {% if item.link %}href="{{ url_for('barangay.view_notification', log_id=item.log.log_id) }}"{% endif %} class="notification-item {{ 'unread' if not item.log.is_read }} {{ 'notification-item-clickable' if item.link }}">
+            <{{ tag }} {% if item.link %}href="{{ url_for('barangay.view_notification', log_id=item.log.log_id) }}"{% endif %} class="notification-item {{ 'unread' if item.was_unread }} {{ 'notification-item-clickable' if item.link }}">
                 <div class="notification-item-icon">{{ icon(item.icon, 16, item.color) }}</div>
                 <div class="notification-item-body">
                     <div class="notification-item-top">
-                        {% if not item.log.is_read %}<span class="unread-dot"></span>{% endif %}
+                        {% if item.was_unread %}<span class="unread-dot"></span>{% endif %}
                         <span class="notification-item-desc">{{ item.log.description }}</span>
                     </div>
                     <div class="notification-item-meta">
@@ -75,16 +64,16 @@
                 <span>Showing {{ items|length }} of {{ total_filtered }} notification{{ 's' if total_filtered != 1 }}</span>
                 <div class="pagination-controls">
                     {% if page > 1 %}
-                    <a href="{{ url_for('barangay.notifications', page=page-1, category=category_filter, status=status_filter) }}" class="page-btn">Previous</a>
+                    <a href="{{ url_for('barangay.notifications', page=page-1, category=category_filter) }}" class="page-btn">Previous</a>
                     {% endif %}
                     <span class="page-btn active">{{ page }}</span>
                     {% if page < total_pages %}
-                    <a href="{{ url_for('barangay.notifications', page=page+1, category=category_filter, status=status_filter) }}" class="page-btn">Next</a>
+                    <a href="{{ url_for('barangay.notifications', page=page+1, category=category_filter) }}" class="page-btn">Next</a>
                     {% endif %}
                 </div>
             </div>
             {% else %}
-            <p class="empty-note">{{ "You're all caught up — no unread notifications." if status_filter == 'unread' else "No notifications yet." }}</p>
+            <p class="empty-note">No notifications yet.</p>
             {% endif %}
         </section>
 

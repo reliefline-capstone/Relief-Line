@@ -210,9 +210,8 @@
    the table's square corners to the panel's border-radius either way. */
 /* .main-grid is a CSS grid with the default align-items: stretch, so
    without this the panel stretches to match its taller sibling
-   (.wh-side-col — Stock Levels + Recent Stock Movements stacked), leaving a
-   large empty gap below the table's last row instead of the panel just
-   sizing to its own content. */
+   (.wh-side-col — Recent Stock Movements), leaving a large empty gap below
+   the table's last row instead of the panel just sizing to its own content. */
 .wh-table-panel { padding: 0; overflow-x: auto; align-self: start; }
 
 .wh-table tbody tr { transition: background-color 0.15s ease; }
@@ -222,6 +221,10 @@
     padding: 16px 20px;
     margin-bottom: 0;
 }
+
+.wh-table-panel .panel-header .wh-header-actions { gap: 12px; }
+
+.wh-showing-count { font-size: 12px; color: #8a94a6; }
 
 @media (max-width: 600px) {
     .wh-table-panel .panel-header { padding: 14px 16px; }

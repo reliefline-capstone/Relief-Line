@@ -31,20 +31,24 @@
             </div>
         </section>
 
-        <div class="summary-pills">
-            <span>{{ counts.pending }} awaiting decision</span>
-            <span>{{ counts.approved }} approved / in transit</span>
-            <span>{{ counts.fulfilled }} fulfilled</span>
-            <span>{{ counts.declined }} declined</span>
+        <div class="summary-pills status-filter-pills">
+            {% set pill_defs = [
+                ('all', 'All requests', total_count),
+                ('pending', 'awaiting decision', counts.pending),
+                ('approved', 'approved / in transit', counts.approved),
+                ('fulfilled', 'fulfilled', counts.fulfilled),
+                ('declined', 'declined', counts.declined),
+            ] %}
+            {% for key, label, n in pill_defs %}
+            <a href="{{ url_for('pswdo.relief_requests', status=key, municipality=municipality_filter, q=search_query) }}"
+               class="status-pill status-pill-{{ key }} {{ 'active' if status_filter == key }}">
+                <strong>{{ n }}</strong> {{ label }}
+            </a>
+            {% endfor %}
         </div>
 
         <form class="filter-bar" method="GET">
-            <select name="status" onchange="this.form.submit()">
-                <option value="all" {{ 'selected' if status_filter == 'all' }}>All statuses</option>
-                {% for k, v in status_labels.items() if k != 'draft' %}
-                <option value="{{ k }}" {{ 'selected' if status_filter == k }}>{{ v }}</option>
-                {% endfor %}
-            </select>
+            <input type="hidden" name="status" value="{{ status_filter }}">
             <select name="municipality" onchange="this.form.submit()">
                 <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All municipalities</option>
                 {% for lgu in target_lgus %}
@@ -96,22 +100,23 @@
         <div class="rd-modal-header"><h3>{{ icon('package', 18, '#0f2547') }} Pre-position Stock</h3>
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
         <p class="form-hint">Push food packs into a municipal warehouse ahead of any request. The CSWDO office confirms receipt on arrival.</p>
-        <form method="POST" action="{{ url_for('pswdo.direct_allocation') }}" class="settings-form">
+        <form method="POST" action="{{ url_for('pswdo.direct_allocation') }}" class="settings-form" data-transfer-calc>
             <div class="form-row">
                 <label for="pp-to">Target Municipal Warehouse *</label>
-                <select name="to_office_id" id="pp-to" required>
+                <select name="to_office_id" id="pp-to" required data-transfer-dest>
                     <option value="">Select…</option>
-                    {% for o in cswdo_offices %}<option value="{{ o.office_id }}">{{ o.office_name }} ({{ o.area_covered }})</option>{% endfor %}
+                    {% for w in cswdo_offices %}<option value="{{ w.office.office_id }}" data-current="{{ w.food_pack_qty }}" data-capacity="{{ w.capacity }}">{{ w.office.office_name }} ({{ w.office.area_covered }}) — {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
                 </select>
             </div>
             <div class="form-row">
                 <label for="pp-depot">From Provincial Depot *</label>
-                <select name="fulfilling_office_id" id="pp-depot" required>
+                <select name="fulfilling_office_id" id="pp-depot" required data-transfer-source>
                     <option value="">Select…</option>
-                    {% for w in depots %}<option value="{{ w.office.office_id }}">{{ w.office.office_name }} — {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
+                    {% for w in depots %}<option value="{{ w.office.office_id }}" data-available="{{ w.food_pack_qty }}">{{ w.office.office_name }} — {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
                 </select>
             </div>
-            <div class="form-row"><label for="pp-qty">Quantity *</label><input type="number" name="quantity" id="pp-qty" min="1" required></div>
+            <div class="form-row"><label for="pp-qty">Quantity *</label><input type="number" name="quantity" id="pp-qty" min="1" required data-transfer-qty></div>
+            <div class="transfer-calc-preview" data-transfer-preview hidden></div>
             <div class="form-row"><label for="pp-note">Note</label><input type="text" name="remarks" id="pp-note" placeholder="e.g. Ahead of forecast landfall"></div>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">Pre-position</button>

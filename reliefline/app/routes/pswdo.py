@@ -1923,7 +1923,10 @@ def _stock_request_rows(status_filter="all", municipality_filter="all", search="
         lgu = b.office.area_covered if b.office else ""
         if municipality_filter != "all" and lgu != municipality_filter:
             continue
-        if status_filter != "all" and b.display_status != status_filter:
+        if status_filter == "approved":
+            if b.display_status not in ("approved", "partially_approved"):
+                continue
+        elif status_filter != "all" and b.display_status != status_filter:
             continue
         if search and search.lower() not in b.ref.lower() and search.lower() not in lgu.lower():
             continue
@@ -1977,9 +1980,10 @@ def relief_requests():
 
     _, warehouses, _ = _load_warehouses()
     depots = [w for w in warehouses if w["office"].office_type == "pswdo" and w["food_pack_qty"] > 0]
-    cswdo_offices = Office.query.filter(
-        Office.office_type == "cswdo", Office.area_covered.in_(TARGET_LGUS)
-    ).order_by(Office.area_covered).all()
+    cswdo_offices = sorted(
+        (w for w in warehouses if w["office"].office_type == "cswdo"),
+        key=lambda w: w["office"].area_covered,
+    )
 
     return render_template(
         "pswdo/relief_requests.html",
@@ -2767,7 +2771,6 @@ def completed_deliveries():
 @role_required("pswdo_admin", "system_admin")
 def notifications():
     category_filter = request.args.get("category", "all")
-    status_filter = request.args.get("status", "all")
 
     # Restricted to PSWDO_NOTIFICATION_TYPES (NOTIFICATION_META minus damage
     # reports) — otherwise two kinds of rows leak into this feed: System
@@ -2785,8 +2788,6 @@ def notifications():
     if category_filter != "all":
         action_types = [k for k, v in NOTIFICATION_META.items() if v["category"] == category_filter]
         query = query.filter(ActivityLog.action_type.in_(action_types))
-    if status_filter == "unread":
-        query = query.filter(ActivityLog.is_read.is_(False))
 
     unread_count = ActivityLog.query.filter(base_scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(base_scope).count()
@@ -2797,7 +2798,20 @@ def notifications():
     total_pages = max((total_filtered + per_page - 1) // per_page, 1)
     page = max(request.args.get("page", 1, type=int), 1)
     page = min(page, total_pages)
-    page_items = [_notification_view(log) for log in all_matching[(page - 1) * per_page: page * per_page]]
+    page_items = []
+    for log in all_matching[(page - 1) * per_page: page * per_page]:
+        view = _notification_view(log)
+        view["was_unread"] = not log.is_read
+        page_items.append(view)
+
+    # Opening the Notifications page is itself the "read" action — no per-item
+    # or "Mark all as read" click needed. Unread rows still show highlighted on
+    # this render (via was_unread) so the user sees what's new before it clears.
+    if unread_count:
+        ActivityLog.query.filter(
+            base_scope, ActivityLog.is_read.is_(False)
+        ).update({"is_read": True}, synchronize_session=False)
+        db.session.commit()
 
     categories = [
         {"value": "all", "label": "All"},
@@ -2813,7 +2827,6 @@ def notifications():
         total_count=total_count,
         total_filtered=total_filtered,
         category_filter=category_filter,
-        status_filter=status_filter,
         categories=categories,
         page=page,
         total_pages=total_pages,

@@ -1152,12 +1152,11 @@ def notifications():
     lgu = office.area_covered if office else None
     filters = _own_activity_filters()
     category_filter = request.args.get("category", "all")
-    status_filter = request.args.get("status", "all")
 
     if not filters:
         return render_template(
             "cswdo/notifications.html", items=[], unread_count=0, total_count=0,
-            total_filtered=0, category_filter=category_filter, status_filter=status_filter,
+            total_filtered=0, category_filter=category_filter,
             categories=CSWDO_NOTIFICATION_CATEGORIES, page=1, total_pages=1, lgu=lgu,
         )
 
@@ -1171,8 +1170,6 @@ def notifications():
     if category_filter != "all":
         action_types = [k for k, v in NOTIFICATION_META.items() if v["category"] == category_filter]
         query = query.filter(ActivityLog.action_type.in_(action_types))
-    if status_filter == "unread":
-        query = query.filter(ActivityLog.is_read.is_(False))
 
     unread_count = ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(scope).count()
@@ -1183,12 +1180,27 @@ def notifications():
     total_pages = max((total_filtered + per_page - 1) // per_page, 1)
     page = max(request.args.get("page", 1, type=int), 1)
     page = min(page, total_pages)
-    page_items = [_cswdo_notification_view(log) for log in all_matching[(page - 1) * per_page: page * per_page]]
+    page_items = []
+    for log in all_matching[(page - 1) * per_page: page * per_page]:
+        view = _cswdo_notification_view(log)
+        view["was_unread"] = not log.is_read
+        page_items.append(view)
+
+    # Opening the Notifications page is itself the "read" action — no per-item
+    # or "Mark all as read" click needed. Unread rows still show highlighted on
+    # this render (via was_unread) so the user sees what's new before it clears.
+    if unread_count:
+        ActivityLog.query.filter(
+            db.or_(*filters),
+            ActivityLog.action_type.in_(known_types),
+            ActivityLog.is_read.is_(False),
+        ).update({"is_read": True}, synchronize_session=False)
+        db.session.commit()
 
     return render_template(
         "cswdo/notifications.html",
         items=page_items, unread_count=unread_count, total_count=total_count,
-        total_filtered=total_filtered, category_filter=category_filter, status_filter=status_filter,
+        total_filtered=total_filtered, category_filter=category_filter,
         categories=CSWDO_NOTIFICATION_CATEGORIES, page=page, total_pages=total_pages, lgu=lgu,
     )
 

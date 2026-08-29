@@ -1271,15 +1271,12 @@ def reports_export():
 def notifications():
     barangay = _own_barangay_or_404()
     category_filter = request.args.get("category", "all")
-    status_filter = request.args.get("status", "all")
 
     scope = _own_activity_scope()
     query = ActivityLog.query.filter(scope)
     if category_filter != "all":
         action_types = [k for k, v in NOTIFICATION_META.items() if v["category"] == category_filter]
         query = query.filter(ActivityLog.action_type.in_(action_types))
-    if status_filter == "unread":
-        query = query.filter(ActivityLog.is_read.is_(False))
 
     unread_count = ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(scope).count()
@@ -1290,7 +1287,20 @@ def notifications():
     total_pages = max((total_filtered + per_page - 1) // per_page, 1)
     page = max(request.args.get("page", 1, type=int), 1)
     page = min(page, total_pages)
-    page_items = [_notification_view(log) for log in all_matching[(page - 1) * per_page: page * per_page]]
+    page_items = []
+    for log in all_matching[(page - 1) * per_page: page * per_page]:
+        view = _notification_view(log)
+        view["was_unread"] = not log.is_read
+        page_items.append(view)
+
+    # Opening the Notifications page is itself the "read" action — no per-item
+    # or "Mark all as read" click needed. Unread rows still show highlighted on
+    # this render (via was_unread) so the user sees what's new before it clears.
+    if unread_count and scope is not None:
+        ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).update(
+            {"is_read": True}, synchronize_session=False
+        )
+        db.session.commit()
 
     # Only the categories this barangay's own ActivityLog rows can actually
     # carry (see _own_activity_scope) — no "Warehouse" tab like PSWDO's,
@@ -1305,7 +1315,7 @@ def notifications():
     return render_template(
         "barangay/notifications.html",
         items=page_items, unread_count=unread_count, total_count=total_count,
-        total_filtered=total_filtered, category_filter=category_filter, status_filter=status_filter,
+        total_filtered=total_filtered, category_filter=category_filter,
         categories=categories, page=page, total_pages=total_pages, barangay=barangay,
     )
 

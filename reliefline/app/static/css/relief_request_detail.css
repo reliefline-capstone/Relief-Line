@@ -263,6 +263,33 @@
 .rd-amount-highlight { background: #eaf0fd; }
 .rd-amount-highlight strong { color: #2c5aa0; }
 
+/* Live "stock after transfer" calculation preview */
+.transfer-calc-preview {
+    background: #f8f9fc;
+    border: 1px solid #e6e9f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 4px 0 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.transfer-calc-preview[hidden] { display: none; }
+.tcp-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 4px 12px;
+}
+.tcp-label { font-size: 12px; color: #55606f; font-weight: 600; }
+.tcp-flow { display: inline-flex; align-items: baseline; gap: 6px; font-size: 13px; color: #8a94a6; }
+.tcp-flow strong { font-size: 15px; color: #1a1a1a; }
+.tcp-arrow { color: #b3bccb; }
+.tcp-note { grid-column: 1 / -1; font-size: 11px; color: #8a94a6; }
+.tcp-good { color: #1e8449 !important; }
+.tcp-warn { color: #d35400 !important; }
+.tcp-bad { color: #c0392b !important; }
+
 .rd-modal-actions {
     display: flex;
     gap: 10px;

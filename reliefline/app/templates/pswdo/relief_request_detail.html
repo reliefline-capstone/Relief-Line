@@ -108,19 +108,24 @@
         <div class="rd-modal-overlay" id="approve-modal" hidden>
             <div class="rd-modal">
                 <div class="rd-modal-header"><h3>Approve {{ batch.ref }}</h3><button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
-                <form method="POST" action="{{ url_for('pswdo.approve_relief_request', batch_id=batch.batch_id) }}" class="settings-form">
+                <form method="POST" action="{{ url_for('pswdo.approve_relief_request', batch_id=batch.batch_id) }}" class="settings-form"
+                      data-transfer-calc
+                      data-dest-name="{{ batch.office.office_name }}"
+                      data-dest-current="{{ cswdo_on_hand }}"
+                      data-dest-capacity="{{ batch.office.capacity_food_pack or 20000 }}">
                     <div class="form-row">
                         <label for="ap-qty">Food packs to transfer *</label>
-                        <input type="number" name="quantity" id="ap-qty" min="1" max="{{ batch.requested_food_packs }}" value="{{ batch.requested_food_packs }}" required>
+                        <input type="number" name="quantity" id="ap-qty" min="1" max="{{ batch.requested_food_packs }}" value="{{ batch.requested_food_packs }}" required data-transfer-qty>
                         <span class="form-hint">Up to {{ "{:,}".format(batch.requested_food_packs) }} requested.</span>
                     </div>
                     <div class="form-row">
                         <label for="ap-depot">From Provincial Depot *</label>
-                        <select name="fulfilling_office_id" id="ap-depot" required>
+                        <select name="fulfilling_office_id" id="ap-depot" required data-transfer-source>
                             <option value="">Select…</option>
-                            {% for w in depots %}<option value="{{ w.office.office_id }}">{{ w.office.office_name }} — {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
+                            {% for w in depots %}<option value="{{ w.office.office_id }}" data-available="{{ w.food_pack_qty }}">{{ w.office.office_name }} — {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
                         </select>
                     </div>
+                    <div class="transfer-calc-preview" data-transfer-preview hidden></div>
                     <div class="form-row"><label for="ap-remarks">Remarks</label><textarea name="remarks" id="ap-remarks" rows="2"></textarea></div>
                     <div class="rd-modal-actions">
                         <button type="submit" class="btn-decision btn-approve-full">Approve &amp; Create Transfer</button>
