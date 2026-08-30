@@ -1,0 +1,205 @@
+/* Custom calendar + time pickers — replace the unstyleable browser-native
+   <input type="date"> / <input type="time"> popups. Built and wired up by
+   static/js/custom_datetime.js (loaded globally in base.html), which wraps
+   every such input into:
+     <div class="cdt-wrap cdt-date|cdt-time">
+       <input class="cdt-native">        (hidden — kept for submission/validation)
+       <button class="cdt-trigger">
+       <div class="cdt-popup">
+     </div>
+   Shares the visual language of custom_select.css (.csel-*). */
+
+.cdt-wrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+}
+
+/* Invisible but full-size overlay on the trigger (not a 1px clip) so the
+   browser's own "Please fill out this field" validation bubble anchors
+   under the visible control instead of floating off in a corner.
+   pointer-events:none lets the click fall through to the trigger. */
+.cdt-native {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.cdt-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-width: 160px;
+    padding: 9px 12px;
+    background: white;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    font-weight: 400;
+    color: #1a1a1a;
+    text-align: left;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.cdt-trigger:hover { border-color: #b9c2d0; }
+.cdt-trigger .cdt-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdt-trigger .cdt-value.cdt-placeholder { color: #8a94a6; }
+.cdt-trigger svg { flex-shrink: 0; color: #8a94a6; }
+
+.cdt-wrap.is-open .cdt-trigger {
+    border-color: #2c5aa0;
+    box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.12);
+}
+.cdt-trigger.cdt-invalid { border-color: #c0392b; }
+
+.cdt-wrap.is-disabled .cdt-trigger {
+    background: #f4f6fa;
+    color: #8a94a6;
+    cursor: not-allowed;
+}
+
+/* ---- popup shell ---- */
+/* position:fixed + JS-set top/left (see custom_datetime.js) so a scrollable
+   modal or table wrapper can never clip the calendar. */
+.cdt-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 4000;
+    background: white;
+    border: 1px solid #d8dee8;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 37, 71, 0.16);
+    padding: 10px;
+}
+.cdt-popup[hidden] { display: none; }
+.cdt-date .cdt-popup { width: 430px; padding: 14px 18px; }
+.cdt-time .cdt-popup { width: 236px; padding: 12px; }
+
+/* ---- calendar ---- */
+.cdt-cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.cdt-cal-title { font-size: 13.5px; font-weight: 700; color: #1a2233; }
+.cdt-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: #55606f;
+    cursor: pointer;
+}
+.cdt-nav:hover { background: #eef1f6; color: #0f2547; }
+
+.cdt-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+}
+.cdt-dow {
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #8a94a6;
+    padding: 4px 0 6px;
+}
+.cdt-day {
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    font-family: inherit;
+    font-size: 13px;
+    color: #1a2233;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+.cdt-day:hover { background: #eaf0fd; }
+.cdt-day.is-outside { color: #c3cad6; }
+.cdt-day.is-today { background: #eaf0fd; color: #2c5aa0; font-weight: 700; }
+.cdt-day.is-selected,
+.cdt-day.is-selected:hover {
+    background: #0f2547;
+    color: #fff;
+    font-weight: 700;
+}
+.cdt-day.is-disabled {
+    color: #d3d8e0;
+    background: none;
+    cursor: default;
+    pointer-events: none;
+}
+
+.cdt-cal-foot {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f2f6;
+}
+.cdt-foot-btn {
+    border: none;
+    background: none;
+    padding: 4px 6px;
+    font-family: inherit;
+    font-size: 12.5px;
+    color: #2c5aa0;
+    cursor: pointer;
+    border-radius: 6px;
+}
+.cdt-foot-btn:hover { background: #eef1f6; }
+.cdt-foot-primary { font-weight: 700; }
+
+/* ---- time columns ---- */
+.cdt-time-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    height: 208px;
+}
+.cdt-col {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.cdt-col::-webkit-scrollbar { width: 6px; }
+.cdt-col::-webkit-scrollbar-thumb { background: #d8dee8; border-radius: 3px; }
+
+.cdt-col-item {
+    padding: 8px 4px;
+    text-align: center;
+    border-radius: 7px;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+}
+.cdt-col-item:hover { background: #eaf0fd; color: #1a1a1a; }
+.cdt-col-item.is-selected {
+    background: #0f2547;
+    color: #fff;
+    font-weight: 700;
+}
+
+@media (max-width: 380px) {
+    .cdt-date .cdt-popup { width: calc(100vw - 40px); }
+}

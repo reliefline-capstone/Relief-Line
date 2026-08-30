@@ -26,7 +26,10 @@
                 <p>{{ lgu or '—' }} · ask PSWDO to replenish your municipal warehouse
                     {%- if primary_event %} · {{ primary_event.event_name }}{% endif %}</p>
             </div>
-            <a href="{{ url_for('cswdo.relief_request_export') }}" class="btn-outline">{{ icon('download', 16) }} Export</a>
+            <div class="rr-header-actions">
+                <a href="{{ url_for('cswdo.relief_request_export') }}" class="btn-outline">{{ icon('download', 16) }} Export</a>
+                <a href="{{ url_for('cswdo.relief_requests', tab='create') }}" class="btn-primary" style="text-decoration:none;">{{ icon('plus', 14, 'white') }} New Request</a>
+            </div>
         </div>
 
         <section class="stat-cards stat-cards-4">
@@ -102,12 +105,23 @@
                 <label>Reason <span class="required">*</span></label>
                 <textarea name="reason" rows="3" required placeholder="e.g. Barangay relief requests this week have drawn the warehouse down to {{ on_hand }} packs against {{ predicted_demand }} projected demand.">{{ reason_value }}</textarea>
             </div>
-            <div class="rr-field"><label>Remarks (optional)</label><textarea name="remarks" rows="2">{{ remarks_value }}</textarea></div>
-            <div class="rr-upload-row">
-                <label>Supporting files (optional)</label>
-                <input type="file" name="photo_files" multiple accept=".pdf,.jpg,.jpeg,.png">
+            <div class="rr-field" style="margin-top:14px;">
+                <label>Remarks (optional)</label>
+                <textarea name="remarks" rows="2">{{ remarks_value }}</textarea>
             </div>
-            <div class="rr-header-actions" style="margin-top:14px;">
+
+            <div class="rr-field" style="margin-top:14px;">
+                <label>Supporting files (optional)</label>
+                <label for="rr-photo-files" class="rr-dropzone" data-dropzone>
+                    <span class="rr-dropzone-icon">{{ icon('file-text', 20, '#2c5aa0') }}</span>
+                    <strong data-dropzone-label>Click to choose files</strong>
+                    <span class="rr-dropzone-hint">JPG, PNG, or PDF — you can select several</span>
+                    <input type="file" id="rr-photo-files" name="photo_files" multiple accept=".pdf,.jpg,.jpeg,.png">
+                </label>
+                <ul class="rr-file-list" data-file-list hidden></ul>
+            </div>
+
+            <div class="rr-header-actions" style="margin-top:18px; padding-top:16px; border-top:1px solid #f0f2f6;">
                 <button type="submit" class="btn-outline">{{ icon('file-text', 14) }} Save Draft</button>
                 <button type="submit" formaction="{{ url_for('cswdo.relief_request_submit') }}" class="btn-decision btn-approve-full">{{ icon('arrow-right', 16, 'white') }} Submit to PSWDO</button>
             </div>
@@ -202,4 +216,56 @@
 
     </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var input = document.getElementById('rr-photo-files');
+    if (!input) return;
+    var zone = input.closest('[data-dropzone]');
+    var label = zone.querySelector('[data-dropzone-label]');
+    var list = document.querySelector('[data-file-list]');
+    var defaultText = label.textContent;
+
+    function kb(bytes) { return bytes < 1024 * 1024
+        ? Math.max(1, Math.round(bytes / 1024)) + ' KB'
+        : (bytes / 1024 / 1024).toFixed(1) + ' MB'; }
+
+    function render() {
+        var files = Array.prototype.slice.call(input.files || []);
+        list.innerHTML = '';
+        if (!files.length) {
+            list.hidden = true;
+            label.textContent = defaultText;
+            return;
+        }
+        label.textContent = files.length + (files.length === 1 ? ' file selected' : ' files selected') + ' — click to change';
+        files.forEach(function (f) {
+            var li = document.createElement('li');
+            li.textContent = f.name;
+            var size = document.createElement('span');
+            size.textContent = kb(f.size);
+            li.appendChild(size);
+            list.appendChild(li);
+        });
+        list.hidden = false;
+    }
+
+    input.addEventListener('change', render);
+
+    ['dragenter', 'dragover'].forEach(function (evt) {
+        zone.addEventListener(evt, function (e) { e.preventDefault(); zone.classList.add('is-dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+        zone.addEventListener(evt, function (e) { e.preventDefault(); zone.classList.remove('is-dragover'); });
+    });
+    zone.addEventListener('drop', function (e) {
+        if (e.dataTransfer && e.dataTransfer.files.length) {
+            input.files = e.dataTransfer.files;
+            render();
+        }
+    });
+})();
+</script>
 {% endblock %}

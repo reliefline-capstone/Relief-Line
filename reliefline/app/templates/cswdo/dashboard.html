@@ -87,7 +87,7 @@
         </section>
 
         <!-- GIS Map + Relief Request Status -->
-        <div class="main-grid">
+        <div class="main-grid dash-grid-even">
 
             <section class="panel map-panel">
                 <div class="panel-header">
@@ -160,16 +160,16 @@
                     {% endif %}
                 </div>
                 {% else %}
-                <p class="empty-note">Walang relief request na naitala ngayon.</p>
+                <p class="empty-note">No relief requests recorded yet.</p>
                 {% endfor %}
 
-                <a href="{{ url_for('cswdo.relief_requests', tab='create') }}" class="btn-approve" style="text-decoration:none; margin-top: 12px;">{{ icon('plus', 14, 'white') }} Submit New Request</a>
+                <a href="{{ url_for('cswdo.relief_requests', tab='create') }}" class="btn-approve dash-panel-cta" style="text-decoration:none;">{{ icon('plus', 14, 'white') }} Submit New Request</a>
             </section>
 
         </div>
 
         <!-- Municipal Inventory + Recent Barangay Reports -->
-        <div class="main-grid" style="margin-top: 16px;">
+        <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
             <section class="panel">
                 <div class="panel-header">
@@ -216,53 +216,30 @@
                     <span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span>
                 </div>
                 {% else %}
-                <p class="empty-note">Walang barangay report ngayon.</p>
+                <p class="empty-note">No barangay reports yet.</p>
                 {% endfor %}
             </section>
 
         </div>
 
-        <!-- Notifications + Recent Activities -->
-        <div class="main-grid" style="margin-top: 16px;">
-
-            <section class="panel">
-                <div class="panel-header">
-                    <h3>Notifications</h3>
-                    {% if notifications|length %}<span class="badge-count">{{ notifications|length }} new</span>{% endif %}
+        <!-- Recent Activities -->
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>Recent Activities</h3>
+                <span class="panel-date">{{ now.strftime('%B') }} {{ now.day }}, {{ now.strftime('%Y') }}</span>
+            </div>
+            {% for act in recent_activities %}
+            <div class="activity-row">
+                <div class="activity-icon">{{ icon('check-circle', 14, '#27ae60') }}</div>
+                <div>
+                    <span class="activity-time">{{ act.created_at.strftime('%H:%M') }}</span>
+                    <span class="activity-desc">{{ act.description }}</span>
                 </div>
-                {% for n in notifications %}
-                <div class="notification-row">
-                    {{ icon('info', 14, '#3867d6') }}
-                    <div>
-                        <strong>{{ n.description }}</strong>
-                        <span>{{ n.created_at.strftime('%H:%M') }}</span>
-                    </div>
-                </div>
-                {% else %}
-                <p class="empty-note">Walang unread notifications.</p>
-                {% endfor %}
-                <a href="{{ url_for('cswdo.notifications') }}" class="btn-view-all">View All →</a>
-            </section>
-
-            <section class="panel">
-                <div class="panel-header">
-                    <h3>Recent Activities</h3>
-                    <span class="panel-date">{{ now.strftime('%B') }} {{ now.day }}, {{ now.strftime('%Y') }}</span>
-                </div>
-                {% for act in recent_activities %}
-                <div class="activity-row">
-                    <div class="activity-icon">{{ icon('check-circle', 14, '#27ae60') }}</div>
-                    <div>
-                        <span class="activity-time">{{ act.created_at.strftime('%H:%M') }}</span>
-                        <span class="activity-desc">{{ act.description }}</span>
-                    </div>
-                </div>
-                {% else %}
-                <p class="empty-note">Wala pang activity.</p>
-                {% endfor %}
-            </section>
-
-        </div>
+            </div>
+            {% else %}
+            <p class="empty-note">No recent activity.</p>
+            {% endfor %}
+        </section>
     </main>
 </div>
 {% endblock %}

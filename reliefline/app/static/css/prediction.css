@@ -8,6 +8,37 @@
 .pa-fill-low { background: #27ae60; }
 .pa-fill-unrated { background: #d8dee8; }
 
+/* Barangay Priority Ranking — collapsed to the top 5 until "View all" */
+.pa-rank-extra { display: none; }
+[data-ranking].is-expanded .pa-rank-extra { display: flex; }
+
+.pa-rank-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 14px;
+    padding: 11px 16px;
+    background: #f4f6fa;
+    border: 1px solid #e5e9f0;
+    border-radius: 8px;
+    color: #0f2547;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.pa-rank-toggle:hover { background: #eaeef4; border-color: #d3dae4; }
+.pa-rank-toggle svg { transition: transform 0.15s ease; }
+[data-ranking].is-expanded .pa-rank-toggle svg { transform: rotate(180deg); }
+
+/* CSWDO scope covers a single municipality, so "Demand Forecast by
+   Municipality" is always one row — pairing it with the long Barangay
+   Priority Ranking in a 2-column grid left a wall of blank space. Stack
+   the panels full-width instead; PSWDO (province-wide, many municipalities)
+   keeps the side-by-side .dash-grid-even layout. */
+.pa-grid-stack { grid-template-columns: 1fr; }
+
 /* Warehouse Stock Forecast cards */
 .pa-wh-cards {
     display: grid;
@@ -49,36 +80,46 @@
     margin-top: 4px;
 }
 
-/* Historical trend — simple bar chart, honest about sparse real data */
-.pa-trend-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    height: 200px;
-    padding: 10px 4px 0;
-}
-
-.pa-trend-bar-wrap {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    height: 100%;
-    gap: 6px;
-}
-
-.pa-trend-bar {
+/* Historical trend — line chart (inline SVG, no chart library) */
+.pa-line-chart {
     width: 100%;
-    max-width: 36px;
-    background: #3867d6;
-    border-radius: 4px 4px 0 0;
-    min-height: 2px;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 6px 2px 0;
 }
 
-.pa-trend-bar-wrap span {
-    font-size: 11px;
-    color: #8a94a6;
+.pa-line-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.pa-line-grid { stroke: #eef1f6; stroke-width: 1; }
+
+.pa-line-area { fill: rgba(56, 103, 214, 0.12); stroke: none; }
+
+.pa-line-path {
+    fill: none;
+    stroke: #3867d6;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.pa-line-dot { fill: #fff; stroke: #3867d6; stroke-width: 2.5; }
+
+.pa-line-value {
+    fill: #1a2233;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+}
+
+.pa-line-label {
+    fill: #8a94a6;
+    font-size: 12.5px;
+    font-family: inherit;
 }
 
 /* Model performance + decision logic */

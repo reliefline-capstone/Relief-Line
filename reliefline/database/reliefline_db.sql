@@ -1,9 +1,8 @@
-/*M!999999\- enable the sandbox mode */ 
--- MariaDB dump 10.19-11.8.6-MariaDB, for debian-linux-gnu (x86_64)
+-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
 --
 -- Host: 127.0.0.1    Database: reliefline_db
 -- ------------------------------------------------------
--- Server version	11.8.6-MariaDB-0+deb13u1 from Debian
+-- Server version	10.4.32-MariaDB
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -14,7 +13,7 @@
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*M!100616 SET @OLD_NOTE_VERBOSITY=@@NOTE_VERBOSITY, NOTE_VERBOSITY=0 */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
 -- Table structure for table `activity_logs`
@@ -22,7 +21,7 @@
 
 DROP TABLE IF EXISTS `activity_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `activity_logs` (
   `log_id` int(11) NOT NULL AUTO_INCREMENT,
   `actor_id` int(11) DEFAULT NULL,
@@ -49,436 +48,18 @@ CREATE TABLE `activity_logs` (
   CONSTRAINT `fk_activity_allocation` FOREIGN KEY (`allocation_id`) REFERENCES `allocation_records` (`allocation_id`),
   CONSTRAINT `fk_activity_batch` FOREIGN KEY (`batch_id`) REFERENCES `relief_request_batches` (`batch_id`),
   CONSTRAINT `fk_activity_distribution` FOREIGN KEY (`distribution_id`) REFERENCES `distribution_records` (`distribution_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=455 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=483 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `activity_logs`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `activity_logs` WRITE;
 /*!40000 ALTER TABLE `activity_logs` DISABLE KEYS */;
-INSERT INTO `activity_logs` VALUES
-(3,2,'allocation_approved','Approved 2,300 food packs for Urdaneta City from PSWDO Warehouse',1,5,1,8,NULL,NULL,'2026-07-19 21:35:28',NULL),
-(4,2,'distribution_delivered','D-2026-005 delivered to Urdaneta City, received by Aivan Flores',1,5,1,NULL,5,NULL,'2026-07-19 21:35:28',NULL),
-(5,2,'allocation_approved','Approved 900 food packs for Santa Barbara from PSWDO Warehouse',1,5,15,10,NULL,NULL,'2026-07-19 21:35:28',NULL),
-(6,2,'distribution_status','Distribution marked In Transit for Bactad East, Urdaneta City',1,5,2,NULL,6,NULL,'2026-07-19 21:35:28',NULL),
-(7,2,'allocation_rejected','Rejected relief request from Urdaneta City: adequate stock on hand',1,5,5,18,NULL,NULL,'2026-07-19 21:35:28',NULL),
-(8,2,'distribution_status','D-2026-009 marked Loaded',1,5,30,NULL,9,NULL,'2026-07-19 21:45:02',NULL),
-(9,2,'distribution_status','D-2026-009 marked Dispatched',1,5,30,NULL,9,NULL,'2026-07-19 21:45:02',NULL),
-(10,2,'distribution_status','D-2026-009 marked In Transit',1,5,30,NULL,9,NULL,'2026-07-19 21:45:02',NULL),
-(11,2,'distribution_delivered','D-2026-009 delivered to Calasiao, received by Test Recipient',1,5,30,NULL,9,NULL,'2026-07-19 21:45:02',NULL),
-(12,2,'allocation_approved','Approved 1,000 food packs for Urdaneta City from Urdaneta City Social Welfare and Development Office',1,2,3,15,NULL,NULL,'2026-07-20 02:52:05',NULL),
-(13,4,'relief_request_submitted','Santa Barbara Municipal Social Welfare and Development Office submitted RR-2026-008 to PSWDO — 400 food packs across 1 barangays',1,3,NULL,NULL,NULL,NULL,'2026-07-20 07:02:35',NULL),
-(14,2,'allocation_approved','Approved 400 food packs for Santa Barbara from PSWDO Warehouse',1,5,16,29,NULL,NULL,'2026-07-20 07:03:37',NULL),
-(15,2,'distribution_status','New distribution scheduled for Bayaoas, Urdaneta City — 1,000 food packs',1,2,3,NULL,19,NULL,'2026-07-21 04:51:01',NULL),
-(22,2,'distribution_status','D-2026-019 marked Loaded',1,2,3,NULL,19,NULL,'2026-07-21 05:12:58',NULL),
-(28,1,'settings_updated','System Administrator updated warehouse stock thresholds',1,NULL,NULL,NULL,NULL,NULL,'2026-07-20 22:23:26',NULL),
-(29,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:23:58','127.0.0.1'),
-(30,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:24:51','127.0.0.1'),
-(33,1,'user_created','System Administrator created CSWDO/MSWDO Administrator account for Test User',1,2,NULL,NULL,NULL,NULL,'2026-07-22 04:26:39','127.0.0.1'),
-(34,1,'user_deactivated','System Administrator deactivated the account for Test User',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:28:24','127.0.0.1'),
-(35,1,'user_password_reset','System Administrator reset the password for Test User',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:28:24','127.0.0.1'),
-(40,1,'user_password_reset','System Administrator reset the password for PSWDO Administrator',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:20','127.0.0.1'),
-(41,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:41','127.0.0.1'),
-(42,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:42','127.0.0.1'),
-(43,1,'user_password_reset','System Administrator reset the password for Urdaneta CSWDO Admin',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:42','127.0.0.1'),
-(44,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:30:27','127.0.0.1'),
-(45,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:42:44','127.0.0.1'),
-(46,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:44:11','127.0.0.1'),
-(47,5,'login','Calasiao MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:44:33','127.0.0.1'),
-(48,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:44:47','127.0.0.1'),
-(49,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:25:49','127.0.0.1'),
-(50,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:30:44','127.0.0.1'),
-(51,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:39:00','127.0.0.1'),
-(52,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:39:13','127.0.0.1'),
-(53,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:39:33','127.0.0.1'),
-(54,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:50:18','127.0.0.1'),
-(55,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:50:37','127.0.0.1'),
-(56,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:51:13','127.0.0.1'),
-(57,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:51:26','127.0.0.1'),
-(58,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:34:04','127.0.0.1'),
-(59,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:34:28','127.0.0.1'),
-(60,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:37:00','127.0.0.1'),
-(61,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:37:36','127.0.0.1'),
-(62,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:38:05','127.0.0.1'),
-(63,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:40:38','127.0.0.1'),
-(64,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:41:32','127.0.0.1'),
-(65,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:41:43','127.0.0.1'),
-(66,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:44:26','127.0.0.1'),
-(67,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:45:55','127.0.0.1'),
-(68,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:46:24','127.0.0.1'),
-(69,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:51:49','127.0.0.1'),
-(70,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:53:21','127.0.0.1'),
-(71,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 03:11:04','127.0.0.1'),
-(72,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 03:11:59','127.0.0.1'),
-(73,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:10:02','127.0.0.1'),
-(75,12,'login','Cecilia Manalo logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:13:36','127.0.0.1'),
-(78,27,'login','Wilfredo Salazar logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:22:11','127.0.0.1'),
-(79,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:23:02','127.0.0.1'),
-(80,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:25:46','127.0.0.1'),
-(81,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:25:58','127.0.0.1'),
-(82,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:05:46','127.0.0.1'),
-(83,33,'damage_report_submitted','DR-2026-028 submitted by Brgy. Banaoang — 30 affected families',0,4,23,NULL,NULL,NULL,'2026-07-23 06:07:34',NULL),
-(84,33,'damage_report_submitted','DR-2026-028 resubmitted by Brgy. Banaoang — 30 affected families',0,4,23,NULL,NULL,NULL,'2026-07-23 06:09:36',NULL),
-(85,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:10:28','127.0.0.1'),
-(86,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:26:29','127.0.0.1'),
-(87,12,'login','Cecilia Manalo logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:27:18','127.0.0.1'),
-(88,16,'login','Rosalinda Aquino logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:27:18','127.0.0.1'),
-(89,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:34:12','127.0.0.1'),
-(90,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:35:12','127.0.0.1'),
-(91,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:35:45','127.0.0.1'),
-(92,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:37:37','127.0.0.1'),
-(93,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:38:30','127.0.0.1'),
-(94,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:39:18','127.0.0.1'),
-(95,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:39:39','127.0.0.1'),
-(96,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:43:41','127.0.0.1'),
-(97,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:44:08','127.0.0.1'),
-(98,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:58:14','127.0.0.1'),
-(99,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:59:16','127.0.0.1'),
-(100,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:59:23','127.0.0.1'),
-(101,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:00:36','127.0.0.1'),
-(102,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:01:23','127.0.0.1'),
-(103,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:01:39','127.0.0.1'),
-(104,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:13:31','127.0.0.1'),
-(105,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:13:50','127.0.0.1'),
-(106,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:18:00','127.0.0.1'),
-(107,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:18:11','127.0.0.1'),
-(108,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:21:07','127.0.0.1'),
-(109,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:22:24','127.0.0.1'),
-(110,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:26:13','127.0.0.1'),
-(111,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:26:27','127.0.0.1'),
-(112,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:26:51','127.0.0.1'),
-(113,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:27:21','127.0.0.1'),
-(114,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:36:36','127.0.0.1'),
-(115,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:39:14','127.0.0.1'),
-(116,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:41:27','127.0.0.1'),
-(117,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:42:32','127.0.0.1'),
-(118,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:45:13','127.0.0.1'),
-(119,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:46:23','127.0.0.1'),
-(120,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:46:34','127.0.0.1'),
-(121,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:03','127.0.0.1'),
-(122,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:09','127.0.0.1'),
-(123,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:21','127.0.0.1'),
-(124,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 12:59:35','127.0.0.1'),
-(125,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:06:18','127.0.0.1'),
-(126,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:45:56','127.0.0.1'),
-(127,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:46:56','127.0.0.1'),
-(128,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:47:33','127.0.0.1'),
-(129,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-020 (880 food packs), received by Jose Reyes',1,NULL,1,NULL,20,NULL,'2026-07-24 13:47:33',NULL),
-(130,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:48:24','127.0.0.1'),
-(131,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:56:00','127.0.0.1'),
-(132,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:56:24','127.0.0.1'),
-(133,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:59:55','127.0.0.1'),
-(134,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:06:10','127.0.0.1'),
-(135,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:07:07','127.0.0.1'),
-(136,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:10:56','127.0.0.1'),
-(137,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:13:02','127.0.0.1'),
-(138,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:13:55','127.0.0.1'),
-(139,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:14:48','127.0.0.1'),
-(140,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-022 (650 food packs), received by Ramon Bautista',1,NULL,1,NULL,22,NULL,'2026-07-24 14:15:06',NULL),
-(141,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:15:19','127.0.0.1'),
-(142,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:15:47','127.0.0.1'),
-(143,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:16:41','127.0.0.1'),
-(144,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:16:52','127.0.0.1'),
-(145,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:16:58','127.0.0.1'),
-(146,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:17:14','127.0.0.1'),
-(147,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:18:46','127.0.0.1'),
-(148,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:19:12','127.0.0.1'),
-(149,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:19:37','127.0.0.1'),
-(150,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:20:15','127.0.0.1'),
-(151,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:20:48','127.0.0.1'),
-(152,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:21:12','127.0.0.1'),
-(153,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:23:03','127.0.0.1'),
-(154,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:26:03','127.0.0.1'),
-(155,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:26:59','127.0.0.1'),
-(156,NULL,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-005 (2,300 food packs), received by Aivan Flores',1,NULL,1,NULL,5,NULL,'2026-07-24 14:30:00',NULL),
-(157,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:38:45','127.0.0.1'),
-(158,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:40:11','127.0.0.1'),
-(159,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:43:09','127.0.0.1'),
-(160,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:53:42','127.0.0.1'),
-(161,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:54:54','127.0.0.1'),
-(162,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 05:48:00','127.0.0.1'),
-(163,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 06:09:00','127.0.0.1'),
-(164,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 06:15:36','127.0.0.1'),
-(165,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:27:48','127.0.0.1'),
-(166,2,'warehouse_transfer_completed','Transferred 500 food packs from PSWDO Warehouse to PSWDO Warehouse - Alaminos',1,6,NULL,NULL,NULL,NULL,'2026-07-29 02:31:11',NULL),
-(167,2,'distribution_status','D-2026-008 marked Dispatched',1,5,18,NULL,8,NULL,'2026-07-29 02:32:03',NULL),
-(168,2,'distribution_status','D-2026-008 marked In Transit',1,5,18,NULL,8,NULL,'2026-07-29 02:32:06',NULL),
-(169,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:35:25','127.0.0.1'),
-(170,11,'damage_report_submitted','DR-2026-029 submitted by Brgy. Anonas — 45 affected families',1,2,1,NULL,NULL,NULL,'2026-07-29 02:36:54',NULL),
-(171,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:37:09','127.0.0.1'),
-(172,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:39:39','127.0.0.1'),
-(173,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:41:30','127.0.0.1'),
-(174,3,'damage_report_verified','Damage report DR-2026-029 was verified by Urdaneta City Social Welfare and Development Office',1,2,1,NULL,NULL,NULL,'2026-07-29 02:42:14',NULL),
-(175,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:45:31','127.0.0.1'),
-(176,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:34:56','127.0.0.1'),
-(177,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:35:46','127.0.0.1'),
-(178,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:36:16','127.0.0.1'),
-(179,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:38:51','127.0.0.1'),
-(180,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:40:27','127.0.0.1'),
-(181,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:41:19','127.0.0.1'),
-(182,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:57:31','127.0.0.1'),
-(183,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:57:58','127.0.0.1'),
-(184,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:58:48','127.0.0.1'),
-(185,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:59:36','127.0.0.1'),
-(186,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:01:38','127.0.0.1'),
-(187,1,'password_reset_request_approved','System Administrator approved a password reset for Ramon Bautista',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:01:39','127.0.0.1'),
-(188,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:01:57','127.0.0.1'),
-(189,1,'password_reset_request_denied','System Administrator denied a password reset request for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:02:08','127.0.0.1'),
-(190,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:04:36','127.0.0.1'),
-(191,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:04:57','127.0.0.1'),
-(192,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:05:29','127.0.0.1'),
-(193,1,'password_reset_request_approved','System Administrator approved a password reset for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:05:38','127.0.0.1'),
-(194,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:05:51','127.0.0.1'),
-(195,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:08:01','127.0.0.1'),
-(196,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:08:10','127.0.0.1'),
-(197,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:14:48','127.0.0.1'),
-(198,1,'password_reset_request_denied','System Administrator denied a password reset request for Ramon Bautista',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:23:06','127.0.0.1'),
-(199,1,'password_reset_request_approved','System Administrator approved a password reset for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:23:12','127.0.0.1'),
-(200,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 12:16:57','127.0.0.1'),
-(201,2,'distribution_status','New distribution scheduled for Carosucan Norte, Santa Barbara — 400 food packs',1,5,16,NULL,24,NULL,'2026-08-14 12:26:34',NULL),
-(202,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 12:56:20','127.0.0.1'),
-(203,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 13:43:40','127.0.0.1'),
-(204,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 13:45:02','127.0.0.1'),
-(205,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:01:23','127.0.0.1'),
-(206,2,'warehouse_transfer_completed','Transferred 2,000 food packs from Provincial Social Welfare and Development Office to Urdaneta City Social Welfare and Development Office',1,2,NULL,NULL,NULL,NULL,'2026-08-14 14:10:57',NULL),
-(207,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:16:56','127.0.0.1'),
-(208,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:23:04','127.0.0.1'),
-(209,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-023 (420 food packs), received by Ramon Bautista',1,NULL,1,NULL,23,NULL,'2026-08-14 14:34:38',NULL),
-(210,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:34:53','127.0.0.1'),
-(211,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:36:03','127.0.0.1'),
-(212,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 07:27:46','127.0.0.1'),
-(213,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 07:41:08','127.0.0.1'),
-(214,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 07:47:11','127.0.0.1'),
-(215,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 08:34:04','127.0.0.1'),
-(216,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-16 15:47:40','127.0.0.1'),
-(217,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-17 04:26:34','127.0.0.1'),
-(218,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-17 04:33:51','127.0.0.1'),
-(219,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-17 04:50:34','127.0.0.1'),
-(220,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-18 01:42:12','127.0.0.1'),
-(221,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-18 01:44:17','127.0.0.1'),
-(222,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 01:26:24','127.0.0.1'),
-(223,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:14:27','127.0.0.1'),
-(224,2,'allocation_rejected','Rejected relief request from Santa Barbara: fsdads',1,3,19,19,NULL,NULL,'2026-08-20 03:28:42',NULL),
-(225,2,'allocation_approved','Approved 700 food packs for Santa Barbara from Santa Barbara Municipal Social Welfare and Development Office',1,3,12,16,NULL,NULL,'2026-08-20 03:31:49',NULL),
-(226,2,'distribution_status','D-2026-019 marked Dispatched',1,2,3,NULL,19,NULL,'2026-08-20 03:33:14',NULL),
-(227,2,'distribution_status','New distribution scheduled for Ban-ao, Santa Barbara — 700 food packs',1,3,12,NULL,25,NULL,'2026-08-20 03:36:04',NULL),
-(228,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:45:07','127.0.0.1'),
-(229,3,'damage_report_verified','Damage report DR-2026-030 was verified by Urdaneta City Social Welfare and Development Office',1,2,2,NULL,NULL,NULL,'2026-08-20 03:49:13',NULL),
-(230,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:54:13','127.0.0.1'),
-(231,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',1,2,1,NULL,NULL,NULL,'2026-08-20 04:00:03',NULL),
-(232,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',1,2,1,NULL,NULL,NULL,'2026-08-20 04:00:47',NULL),
-(233,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:02:13','127.0.0.1'),
-(234,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:07:14','127.0.0.1'),
-(235,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:09:14','127.0.0.1'),
-(236,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:19:23','127.0.0.1'),
-(237,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:20:17','127.0.0.1'),
-(238,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:24:39','127.0.0.1'),
-(239,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:24:48','127.0.0.1'),
-(240,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:29:58','127.0.0.1'),
-(241,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:34:19','127.0.0.1'),
-(242,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:44:14','127.0.0.1'),
-(243,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:48:26','127.0.0.1'),
-(244,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:53:45','127.0.0.1'),
-(245,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:54:35','127.0.0.1'),
-(246,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:55:23','127.0.0.1'),
-(247,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:00:39','127.0.0.1'),
-(248,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:11:34','127.0.0.1'),
-(249,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:15:34','127.0.0.1'),
-(250,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:18:15','127.0.0.1'),
-(251,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:21:27','127.0.0.1'),
-(252,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:25:10','127.0.0.1'),
-(253,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:26:18','127.0.0.1'),
-(254,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:28:14','127.0.0.1'),
-(255,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:37:01','127.0.0.1'),
-(256,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:41:19','127.0.0.1'),
-(257,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:57:13','127.0.0.1'),
-(258,2,'distribution_status','New distribution scheduled for Banaoang, Calasiao — 300 food packs',1,5,23,NULL,26,NULL,'2026-08-23 07:57:55',NULL),
-(259,2,'distribution_status','D-2026-026 marked Loaded',1,5,23,NULL,26,NULL,'2026-08-23 07:58:02',NULL),
-(260,2,'distribution_status','D-2026-026 marked Dispatched',1,5,23,NULL,26,NULL,'2026-08-23 07:58:04',NULL),
-(261,2,'distribution_status','D-2026-026 marked In Transit',1,5,23,NULL,26,NULL,'2026-08-23 07:58:09',NULL),
-(262,2,'allocation_approved','Approved 150 food packs for Urdaneta City from Urdaneta City Social Welfare and Development Office',1,2,1,32,NULL,NULL,'2026-08-23 07:58:51',NULL),
-(263,2,'distribution_status','New distribution scheduled for Anonas, Urdaneta City — 150 food packs',1,2,1,NULL,27,NULL,'2026-08-23 07:59:03',NULL),
-(265,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 08:42:49','127.0.0.1'),
-(266,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 09:16:23','127.0.0.1'),
-(267,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 09:17:23','127.0.0.1'),
-(268,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:08:33','127.0.0.1'),
-(269,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:09:43','127.0.0.1'),
-(270,3,'damage_report_verified','Damage report DR-2026-032 was verified by Urdaneta City Social Welfare and Development Office',1,2,1,NULL,NULL,NULL,'2026-08-23 14:12:05',NULL),
-(271,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:13:05','127.0.0.1'),
-(272,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:13:30','127.0.0.1'),
-(273,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:15:37','127.0.0.1'),
-(274,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:04:36','127.0.0.1'),
-(275,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:13:26','127.0.0.1'),
-(276,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:23:09','127.0.0.1'),
-(277,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:41:37','127.0.0.1'),
-(278,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:44:01','127.0.0.1'),
-(279,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:47:20','127.0.0.1'),
-(280,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:02:32','127.0.0.1'),
-(281,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:24:06','127.0.0.1'),
-(282,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:31:09','127.0.0.1'),
-(283,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:37:47','127.0.0.1'),
-(284,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:42:00','127.0.0.1'),
-(285,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:48:18','127.0.0.1'),
-(286,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:09:39','127.0.0.1'),
-(287,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:14:31','127.0.0.1'),
-(288,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:19:09','127.0.0.1'),
-(289,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:23:11','127.0.0.1'),
-(290,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:23:45','127.0.0.1'),
-(291,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:32:03','127.0.0.1'),
-(292,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:32:44','127.0.0.1'),
-(293,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:46:14','127.0.0.1'),
-(294,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:55:48','127.0.0.1'),
-(295,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:02:28','127.0.0.1'),
-(296,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:05:54','127.0.0.1'),
-(297,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:07:40','127.0.0.1'),
-(298,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:11:41','127.0.0.1'),
-(299,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:17:30','127.0.0.1'),
-(300,2,'warehouse_transfer_completed','Transferred 2,000 food packs from Provincial Social Welfare and Development Office to Urdaneta City Social Welfare and Development Office',1,2,NULL,NULL,NULL,NULL,'2026-08-24 15:34:43',NULL),
-(301,2,'distribution_status','D-2026-027 marked Loaded',1,2,1,NULL,27,NULL,'2026-08-24 15:35:53',NULL),
-(302,2,'distribution_status','D-2026-027 marked Dispatched',1,2,1,NULL,27,NULL,'2026-08-24 15:35:56',NULL),
-(303,2,'distribution_status','D-2026-027 marked In Transit',1,2,1,NULL,27,NULL,'2026-08-24 15:36:02',NULL),
-(304,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-26 09:16:55','127.0.0.1'),
-(305,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 00:36:26','127.0.0.1'),
-(306,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 00:52:13','127.0.0.1'),
-(307,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:10:38','127.0.0.1'),
-(308,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:15:38','127.0.0.1'),
-(309,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:28:01','127.0.0.1'),
-(310,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:28:39','127.0.0.1'),
-(311,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:31:04','127.0.0.1'),
-(312,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:34:12','127.0.0.1'),
-(313,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:45:05','127.0.0.1'),
-(314,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:45:27','127.0.0.1'),
-(315,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:49:42','127.0.0.1'),
-(316,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:55:29','127.0.0.1'),
-(317,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:03:19','127.0.0.1'),
-(318,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:18:13','127.0.0.1'),
-(319,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:22:34','127.0.0.1'),
-(320,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:25:27','127.0.0.1'),
-(321,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:29:38','127.0.0.1'),
-(324,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:38:18','127.0.0.1'),
-(326,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 04:31:42','127.0.0.1'),
-(328,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 04:51:30','127.0.0.1'),
-(333,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 05:04:35','127.0.0.1'),
-(334,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 05:06:07','127.0.0.1'),
-(335,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 06:19:48','127.0.0.1'),
-(336,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:27:06','127.0.0.1'),
-(337,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:30:19','127.0.0.1'),
-(338,15,'login','Edgardo Villanueva logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:31:27','127.0.0.1'),
-(339,15,'damage_report_submitted','DR-2026-035 submitted by Brgy. Cabaruan — 3 affected families',1,2,5,NULL,NULL,NULL,'2026-08-28 07:33:23',NULL),
-(340,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:41:21','127.0.0.1'),
-(349,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:12:19','127.0.0.1'),
-(350,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-027 (207 food packs), received by Ramon Bautista',1,NULL,1,NULL,27,NULL,'2026-08-28 09:13:07',NULL),
-(351,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:16:18','127.0.0.1'),
-(352,4,'relief_request_submitted','Santa Barbara Municipal Social Welfare and Development Office submitted stock request SR-2026-018 to PSWDO — 1,200 food packs',1,3,NULL,NULL,NULL,18,'2026-08-28 09:36:10',NULL),
-(353,2,'allocation_approved','Partially approved stock request SR-2026-018 — 1,000 food packs to Santa Barbara Municipal Social Welfare and Development Office from PSWDO Warehouse',1,3,NULL,NULL,NULL,18,'2026-08-28 09:36:10',NULL),
-(354,2,'distribution_status','TR-2026-004 dispatched — 1,000 food packs en route to Santa Barbara Municipal Social Welfare and Development Office',1,3,NULL,NULL,NULL,18,'2026-08-28 09:36:11',NULL),
-(355,4,'warehouse_transfer_completed','Santa Barbara Municipal Social Welfare and Development Office received 1,000 food packs from PSWDO Warehouse (SR-2026-018)',1,3,NULL,NULL,NULL,18,'2026-08-28 09:36:11',NULL),
-(356,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:44:54','127.0.0.1'),
-(357,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:47:13','127.0.0.1'),
-(358,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:47:25','127.0.0.1'),
-(359,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:48:18','127.0.0.1'),
-(360,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 10:01:29','127.0.0.1'),
-(361,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 10:03:05','127.0.0.1'),
-(362,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 10:13:10','127.0.0.1'),
-(363,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 11:11:32','127.0.0.1'),
-(364,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 14:41:30','127.0.0.1'),
-(365,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 14:48:51','127.0.0.1'),
-(366,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 14:53:14','127.0.0.1'),
-(367,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:01:56','127.0.0.1'),
-(368,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:05:50','127.0.0.1'),
-(369,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:06:58','127.0.0.1'),
-(370,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:14:05','127.0.0.1'),
-(371,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:17:10','127.0.0.1'),
-(372,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:24:30','127.0.0.1'),
-(373,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:27:55','127.0.0.1'),
-(374,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:29:26','127.0.0.1'),
-(375,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:30:29','127.0.0.1'),
-(376,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:34:44','127.0.0.1'),
-(377,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:37:55','127.0.0.1'),
-(378,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:43:23','127.0.0.1'),
-(379,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:46:00','127.0.0.1'),
-(380,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:58:25','127.0.0.1'),
-(381,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:05:05','127.0.0.1'),
-(382,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:15:12','127.0.0.1'),
-(383,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:19:07','127.0.0.1'),
-(384,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:21:23','127.0.0.1'),
-(385,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:24:58','127.0.0.1'),
-(386,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:51:11','127.0.0.1'),
-(387,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:51:57','127.0.0.1'),
-(388,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:55:36','127.0.0.1'),
-(389,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:03:05','127.0.0.1'),
-(390,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:06:57','127.0.0.1'),
-(391,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:07:33','127.0.0.1'),
-(392,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:16:04','127.0.0.1'),
-(393,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:25:10','127.0.0.1'),
-(394,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:28:53','127.0.0.1'),
-(395,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:37:42','127.0.0.1'),
-(396,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:44:56','127.0.0.1'),
-(397,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:50:14','127.0.0.1'),
-(398,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:57:58','127.0.0.1'),
-(399,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 18:00:32','127.0.0.1'),
-(400,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 18:25:53','127.0.0.1'),
-(401,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 18:53:17','127.0.0.1'),
-(402,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 03:46:54','127.0.0.1'),
-(403,2,'disaster_event_ended','Marked Typhoon Inday as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 03:47:28',NULL),
-(404,2,'allocation_approved','Approved stock request SR-2026-019 — 2,500 food packs to Urdaneta City Social Welfare and Development Office from PSWDO Warehouse',1,2,NULL,NULL,NULL,19,'2026-08-29 04:01:46',NULL),
-(405,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:32:15','127.0.0.1'),
-(406,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:44:28','127.0.0.1'),
-(407,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:44:48','127.0.0.1'),
-(408,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:48:55','127.0.0.1'),
-(409,5,'login','Calasiao MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:50:13','127.0.0.1'),
-(410,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:51:03','127.0.0.1'),
-(411,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:51:37','127.0.0.1'),
-(412,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:53:18','127.0.0.1'),
-(413,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:53:39','127.0.0.1'),
-(414,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:54:18','127.0.0.1'),
-(415,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:54:56','127.0.0.1'),
-(416,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:55:22','127.0.0.1'),
-(417,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:14:40','127.0.0.1'),
-(418,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:36:08','127.0.0.1'),
-(419,2,'disaster_event_declared','Declared typhoon isa as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:42:05',NULL),
-(420,2,'disaster_event_ended','Marked typhoon isa as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:42:21',NULL),
-(421,2,'disaster_event_declared','Declared typhoon isaw as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:57:00',NULL),
-(422,2,'disaster_event_ended','Marked typhoon isaw as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:57:12',NULL),
-(423,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:03:10','127.0.0.1'),
-(424,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:07:53','127.0.0.1'),
-(425,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:32:37','127.0.0.1'),
-(426,2,'direct_allocation','Pre-positioned 2,000 food packs to Calasiao Municipal Social Welfare and Development Office from PSWDO Warehouse',0,4,NULL,NULL,NULL,NULL,'2026-08-29 07:33:34',NULL),
-(427,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:40:12','127.0.0.1'),
-(428,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:44:02','127.0.0.1'),
-(429,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:51:05','127.0.0.1'),
-(430,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:55:32','127.0.0.1'),
-(431,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:59:06','127.0.0.1'),
-(432,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:11:50','127.0.0.1'),
-(433,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:19:08','127.0.0.1'),
-(434,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:29:22','127.0.0.1'),
-(435,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:45:02','127.0.0.1'),
-(436,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:53:38','127.0.0.1'),
-(437,2,'direct_allocation','Pre-positioned 2,000 food packs to Urdaneta City Social Welfare and Development Office from PSWDO Warehouse',0,2,NULL,NULL,NULL,NULL,'2026-08-29 08:55:29',NULL),
-(438,2,'direct_allocation','Pre-positioned 100 food packs to Calasiao Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',0,4,NULL,NULL,NULL,NULL,'2026-08-29 09:02:49',NULL),
-(439,2,'direct_allocation','Pre-positioned 50 food packs to Santa Barbara Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',0,3,NULL,NULL,NULL,NULL,'2026-08-29 09:03:26',NULL),
-(440,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:08:26','127.0.0.1'),
-(441,2,'distribution_status','TR-2026-007 dispatched — 2,500 food packs en route to Urdaneta City Social Welfare and Development Office',0,2,NULL,NULL,NULL,19,'2026-08-29 09:08:59',NULL),
-(442,2,'direct_allocation','Pre-positioned 75 food packs to Calasiao Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',0,4,NULL,NULL,NULL,NULL,'2026-08-29 09:20:08',NULL),
-(443,2,'direct_allocation','Pre-positioned 25 food packs to Calasiao Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',0,4,NULL,NULL,NULL,NULL,'2026-08-29 09:20:44',NULL),
-(444,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:22:04','127.0.0.1'),
-(445,2,'disaster_event_declared','Declared swdas as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:22:21',NULL),
-(446,2,'disaster_event_ended','Marked swdas as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:22:34',NULL),
-(447,2,'disaster_event_ended','Marked Toast Scroll Test as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:27:12',NULL),
-(448,2,'disaster_event_ended','Marked Toast Scroll Test as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:42:14',NULL),
-(449,2,'disaster_event_ended','Marked Toast Scroll Test as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:42:45',NULL),
-(450,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:45:45','127.0.0.1'),
-(451,2,'disaster_event_declared','Declared typhoon isa as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:45:55',NULL),
-(452,2,'disaster_event_ended','Marked typhoon isa as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:46:06',NULL),
-(453,2,'disaster_event_declared','Declared swdas as the active disaster event.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:46:19',NULL),
-(454,2,'disaster_event_ended','Marked swdas as ended.',0,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:46:38',NULL);
+INSERT INTO `activity_logs` VALUES (3,2,'allocation_approved','Approved 2,300 food packs for Urdaneta City from PSWDO Warehouse',1,5,1,8,NULL,NULL,'2026-07-19 21:35:28',NULL),(4,2,'distribution_delivered','D-2026-005 delivered to Urdaneta City, received by Aivan Flores',1,5,1,NULL,5,NULL,'2026-07-19 21:35:28',NULL),(5,2,'allocation_approved','Approved 900 food packs for Santa Barbara from PSWDO Warehouse',1,5,15,10,NULL,NULL,'2026-07-19 21:35:28',NULL),(6,2,'distribution_status','Distribution marked In Transit for Bactad East, Urdaneta City',1,5,2,NULL,6,NULL,'2026-07-19 21:35:28',NULL),(7,2,'allocation_rejected','Rejected relief request from Urdaneta City: adequate stock on hand',1,5,5,18,NULL,NULL,'2026-07-19 21:35:28',NULL),(8,2,'distribution_status','D-2026-009 marked Loaded',1,5,30,NULL,9,NULL,'2026-07-19 21:45:02',NULL),(9,2,'distribution_status','D-2026-009 marked Dispatched',1,5,30,NULL,9,NULL,'2026-07-19 21:45:02',NULL),(10,2,'distribution_status','D-2026-009 marked In Transit',1,5,30,NULL,9,NULL,'2026-07-19 21:45:02',NULL),(11,2,'distribution_delivered','D-2026-009 delivered to Calasiao, received by Test Recipient',1,5,30,NULL,9,NULL,'2026-07-19 21:45:02',NULL),(12,2,'allocation_approved','Approved 1,000 food packs for Urdaneta City from Urdaneta City Social Welfare and Development Office',1,2,3,15,NULL,NULL,'2026-07-20 02:52:05',NULL),(13,4,'relief_request_submitted','Santa Barbara Municipal Social Welfare and Development Office submitted RR-2026-008 to PSWDO — 400 food packs across 1 barangays',1,3,NULL,NULL,NULL,NULL,'2026-07-20 07:02:35',NULL),(14,2,'allocation_approved','Approved 400 food packs for Santa Barbara from PSWDO Warehouse',1,5,16,29,NULL,NULL,'2026-07-20 07:03:37',NULL),(15,2,'distribution_status','New distribution scheduled for Bayaoas, Urdaneta City — 1,000 food packs',1,2,3,NULL,19,NULL,'2026-07-21 04:51:01',NULL),(22,2,'distribution_status','D-2026-019 marked Loaded',1,2,3,NULL,19,NULL,'2026-07-21 05:12:58',NULL),(28,1,'settings_updated','System Administrator updated warehouse stock thresholds',1,NULL,NULL,NULL,NULL,NULL,'2026-07-20 22:23:26',NULL),(29,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:23:58','127.0.0.1'),(30,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:24:51','127.0.0.1'),(33,1,'user_created','System Administrator created CSWDO/MSWDO Administrator account for Test User',1,2,NULL,NULL,NULL,NULL,'2026-07-22 04:26:39','127.0.0.1'),(34,1,'user_deactivated','System Administrator deactivated the account for Test User',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:28:24','127.0.0.1'),(35,1,'user_password_reset','System Administrator reset the password for Test User',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:28:24','127.0.0.1'),(40,1,'user_password_reset','System Administrator reset the password for PSWDO Administrator',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:20','127.0.0.1'),(41,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:41','127.0.0.1'),(42,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:42','127.0.0.1'),(43,1,'user_password_reset','System Administrator reset the password for Urdaneta CSWDO Admin',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:29:42','127.0.0.1'),(44,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:30:27','127.0.0.1'),(45,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:42:44','127.0.0.1'),(46,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:44:11','127.0.0.1'),(47,5,'login','Calasiao MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:44:33','127.0.0.1'),(48,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 04:44:47','127.0.0.1'),(49,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:25:49','127.0.0.1'),(50,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:30:44','127.0.0.1'),(51,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:39:00','127.0.0.1'),(52,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:39:13','127.0.0.1'),(53,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:39:33','127.0.0.1'),(54,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:50:18','127.0.0.1'),(55,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:50:37','127.0.0.1'),(56,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:51:13','127.0.0.1'),(57,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 05:51:26','127.0.0.1'),(58,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:34:04','127.0.0.1'),(59,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:34:28','127.0.0.1'),(60,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:37:00','127.0.0.1'),(61,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:37:36','127.0.0.1'),(62,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:38:05','127.0.0.1'),(63,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:40:38','127.0.0.1'),(64,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:41:32','127.0.0.1'),(65,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:41:43','127.0.0.1'),(66,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:44:26','127.0.0.1'),(67,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:45:55','127.0.0.1'),(68,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:46:24','127.0.0.1'),(69,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:51:49','127.0.0.1'),(70,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-22 06:53:21','127.0.0.1'),(71,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 03:11:04','127.0.0.1'),(72,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 03:11:59','127.0.0.1'),(73,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:10:02','127.0.0.1'),(75,12,'login','Cecilia Manalo logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:13:36','127.0.0.1'),(78,27,'login','Wilfredo Salazar logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:22:11','127.0.0.1'),(79,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:23:02','127.0.0.1'),(80,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:25:46','127.0.0.1'),(81,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 05:25:58','127.0.0.1'),(82,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:05:46','127.0.0.1'),(83,33,'damage_report_submitted','DR-2026-028 submitted by Brgy. Banaoang — 30 affected families',0,4,23,NULL,NULL,NULL,'2026-07-23 06:07:34',NULL),(84,33,'damage_report_submitted','DR-2026-028 resubmitted by Brgy. Banaoang — 30 affected families',0,4,23,NULL,NULL,NULL,'2026-07-23 06:09:36',NULL),(85,33,'login','Jose Reyes logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:10:28','127.0.0.1'),(86,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:26:29','127.0.0.1'),(87,12,'login','Cecilia Manalo logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:27:18','127.0.0.1'),(88,16,'login','Rosalinda Aquino logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:27:18','127.0.0.1'),(89,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:34:12','127.0.0.1'),(90,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:35:12','127.0.0.1'),(91,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:35:45','127.0.0.1'),(92,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:37:37','127.0.0.1'),(93,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:38:30','127.0.0.1'),(94,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:39:18','127.0.0.1'),(95,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:39:39','127.0.0.1'),(96,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:43:41','127.0.0.1'),(97,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:44:08','127.0.0.1'),(98,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:58:14','127.0.0.1'),(99,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:59:16','127.0.0.1'),(100,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 06:59:23','127.0.0.1'),(101,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:00:36','127.0.0.1'),(102,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:01:23','127.0.0.1'),(103,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:01:39','127.0.0.1'),(104,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:13:31','127.0.0.1'),(105,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:13:50','127.0.0.1'),(106,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:18:00','127.0.0.1'),(107,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:18:11','127.0.0.1'),(108,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:21:07','127.0.0.1'),(109,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:22:24','127.0.0.1'),(110,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:26:13','127.0.0.1'),(111,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:26:27','127.0.0.1'),(112,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:26:51','127.0.0.1'),(113,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:27:21','127.0.0.1'),(114,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:36:36','127.0.0.1'),(115,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:39:14','127.0.0.1'),(116,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:41:27','127.0.0.1'),(117,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:42:32','127.0.0.1'),(118,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:45:13','127.0.0.1'),(119,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:46:23','127.0.0.1'),(120,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:46:34','127.0.0.1'),(121,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:03','127.0.0.1'),(122,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:09','127.0.0.1'),(123,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-23 07:47:21','127.0.0.1'),(124,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 12:59:35','127.0.0.1'),(125,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:06:18','127.0.0.1'),(126,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:45:56','127.0.0.1'),(127,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:46:56','127.0.0.1'),(128,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:47:33','127.0.0.1'),(129,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-020 (880 food packs), received by Jose Reyes',1,NULL,1,NULL,20,NULL,'2026-07-24 13:47:33',NULL),(130,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:48:24','127.0.0.1'),(131,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:56:00','127.0.0.1'),(132,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:56:24','127.0.0.1'),(133,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 13:59:55','127.0.0.1'),(134,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:06:10','127.0.0.1'),(135,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:07:07','127.0.0.1'),(136,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:10:56','127.0.0.1'),(137,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:13:02','127.0.0.1'),(138,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:13:55','127.0.0.1'),(139,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:14:48','127.0.0.1'),(140,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-022 (650 food packs), received by Ramon Bautista',1,NULL,1,NULL,22,NULL,'2026-07-24 14:15:06',NULL),(141,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:15:19','127.0.0.1'),(142,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:15:47','127.0.0.1'),(143,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:16:41','127.0.0.1'),(144,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:16:52','127.0.0.1'),(145,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:16:58','127.0.0.1'),(146,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:17:14','127.0.0.1'),(147,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:18:46','127.0.0.1'),(148,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:19:12','127.0.0.1'),(149,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:19:37','127.0.0.1'),(150,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:20:15','127.0.0.1'),(151,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:20:48','127.0.0.1'),(152,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:21:12','127.0.0.1'),(153,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:23:03','127.0.0.1'),(154,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:26:03','127.0.0.1'),(155,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-24 14:26:59','127.0.0.1'),(156,NULL,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-005 (2,300 food packs), received by Aivan Flores',1,NULL,1,NULL,5,NULL,'2026-07-24 14:30:00',NULL),(157,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:38:45','127.0.0.1'),(158,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:40:11','127.0.0.1'),(159,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:43:09','127.0.0.1'),(160,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:53:42','127.0.0.1'),(161,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 04:54:54','127.0.0.1'),(162,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 05:48:00','127.0.0.1'),(163,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 06:09:00','127.0.0.1'),(164,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-26 06:15:36','127.0.0.1'),(165,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:27:48','127.0.0.1'),(166,2,'warehouse_transfer_completed','Transferred 500 food packs from PSWDO Warehouse to PSWDO Warehouse - Alaminos',1,6,NULL,NULL,NULL,NULL,'2026-07-29 02:31:11',NULL),(167,2,'distribution_status','D-2026-008 marked Dispatched',1,5,18,NULL,8,NULL,'2026-07-29 02:32:03',NULL),(168,2,'distribution_status','D-2026-008 marked In Transit',1,5,18,NULL,8,NULL,'2026-07-29 02:32:06',NULL),(169,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:35:25','127.0.0.1'),(170,11,'damage_report_submitted','DR-2026-029 submitted by Brgy. Anonas — 45 affected families',1,2,1,NULL,NULL,NULL,'2026-07-29 02:36:54',NULL),(171,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:37:09','127.0.0.1'),(172,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:39:39','127.0.0.1'),(173,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:41:30','127.0.0.1'),(174,3,'damage_report_verified','Damage report DR-2026-029 was verified by Urdaneta City Social Welfare and Development Office',1,2,1,NULL,NULL,NULL,'2026-07-29 02:42:14',NULL),(175,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 02:45:31','127.0.0.1'),(176,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:34:56','127.0.0.1'),(177,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:35:46','127.0.0.1'),(178,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:36:16','127.0.0.1'),(179,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:38:51','127.0.0.1'),(180,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:40:27','127.0.0.1'),(181,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:41:19','127.0.0.1'),(182,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:57:31','127.0.0.1'),(183,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:57:58','127.0.0.1'),(184,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:58:48','127.0.0.1'),(185,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 05:59:36','127.0.0.1'),(186,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:01:38','127.0.0.1'),(187,1,'password_reset_request_approved','System Administrator approved a password reset for Ramon Bautista',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:01:39','127.0.0.1'),(188,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:01:57','127.0.0.1'),(189,1,'password_reset_request_denied','System Administrator denied a password reset request for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:02:08','127.0.0.1'),(190,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:04:36','127.0.0.1'),(191,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:04:57','127.0.0.1'),(192,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:05:29','127.0.0.1'),(193,1,'password_reset_request_approved','System Administrator approved a password reset for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:05:38','127.0.0.1'),(194,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:05:51','127.0.0.1'),(195,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:08:01','127.0.0.1'),(196,28,'login','Adelaida Gonzales logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:08:10','127.0.0.1'),(197,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:14:48','127.0.0.1'),(198,1,'password_reset_request_denied','System Administrator denied a password reset request for Ramon Bautista',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:23:06','127.0.0.1'),(199,1,'password_reset_request_approved','System Administrator approved a password reset for Adelaida Gonzales',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 06:23:12','127.0.0.1'),(200,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 12:16:57','127.0.0.1'),(201,2,'distribution_status','New distribution scheduled for Carosucan Norte, Santa Barbara — 400 food packs',1,5,16,NULL,24,NULL,'2026-08-14 12:26:34',NULL),(202,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 12:56:20','127.0.0.1'),(203,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 13:43:40','127.0.0.1'),(204,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 13:45:02','127.0.0.1'),(205,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:01:23','127.0.0.1'),(206,2,'warehouse_transfer_completed','Transferred 2,000 food packs from Provincial Social Welfare and Development Office to Urdaneta City Social Welfare and Development Office',1,2,NULL,NULL,NULL,NULL,'2026-08-14 14:10:57',NULL),(207,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:16:56','127.0.0.1'),(208,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:23:04','127.0.0.1'),(209,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-023 (420 food packs), received by Ramon Bautista',1,NULL,1,NULL,23,NULL,'2026-08-14 14:34:38',NULL),(210,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:34:53','127.0.0.1'),(211,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-14 14:36:03','127.0.0.1'),(212,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 07:27:46','127.0.0.1'),(213,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 07:41:08','127.0.0.1'),(214,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 07:47:11','127.0.0.1'),(215,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-15 08:34:04','127.0.0.1'),(216,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-16 15:47:40','127.0.0.1'),(217,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-17 04:26:34','127.0.0.1'),(218,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-17 04:33:51','127.0.0.1'),(219,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-17 04:50:34','127.0.0.1'),(220,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-18 01:42:12','127.0.0.1'),(221,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-18 01:44:17','127.0.0.1'),(222,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 01:26:24','127.0.0.1'),(223,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:14:27','127.0.0.1'),(224,2,'allocation_rejected','Rejected relief request from Santa Barbara: fsdads',1,3,19,19,NULL,NULL,'2026-08-20 03:28:42',NULL),(225,2,'allocation_approved','Approved 700 food packs for Santa Barbara from Santa Barbara Municipal Social Welfare and Development Office',1,3,12,16,NULL,NULL,'2026-08-20 03:31:49',NULL),(226,2,'distribution_status','D-2026-019 marked Dispatched',1,2,3,NULL,19,NULL,'2026-08-20 03:33:14',NULL),(227,2,'distribution_status','New distribution scheduled for Ban-ao, Santa Barbara — 700 food packs',1,3,12,NULL,25,NULL,'2026-08-20 03:36:04',NULL),(228,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:45:07','127.0.0.1'),(229,3,'damage_report_verified','Damage report DR-2026-030 was verified by Urdaneta City Social Welfare and Development Office',1,2,2,NULL,NULL,NULL,'2026-08-20 03:49:13',NULL),(230,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 03:54:13','127.0.0.1'),(231,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',1,2,1,NULL,NULL,NULL,'2026-08-20 04:00:03',NULL),(232,11,'damage_report_submitted','DR-2026-032 submitted by Brgy. Anonas — 0 affected families',1,2,1,NULL,NULL,NULL,'2026-08-20 04:00:47',NULL),(233,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:02:13','127.0.0.1'),(234,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:07:14','127.0.0.1'),(235,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-20 04:09:14','127.0.0.1'),(236,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:19:23','127.0.0.1'),(237,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:20:17','127.0.0.1'),(238,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:24:39','127.0.0.1'),(239,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:24:48','127.0.0.1'),(240,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:29:58','127.0.0.1'),(241,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:34:19','127.0.0.1'),(242,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:44:14','127.0.0.1'),(243,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:48:26','127.0.0.1'),(244,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:53:45','127.0.0.1'),(245,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:54:35','127.0.0.1'),(246,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 06:55:23','127.0.0.1'),(247,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:00:39','127.0.0.1'),(248,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:11:34','127.0.0.1'),(249,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:15:34','127.0.0.1'),(250,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:18:15','127.0.0.1'),(251,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:21:27','127.0.0.1'),(252,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:25:10','127.0.0.1'),(253,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:26:18','127.0.0.1'),(254,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:28:14','127.0.0.1'),(255,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:37:01','127.0.0.1'),(256,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:41:19','127.0.0.1'),(257,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 07:57:13','127.0.0.1'),(258,2,'distribution_status','New distribution scheduled for Banaoang, Calasiao — 300 food packs',1,5,23,NULL,26,NULL,'2026-08-23 07:57:55',NULL),(259,2,'distribution_status','D-2026-026 marked Loaded',1,5,23,NULL,26,NULL,'2026-08-23 07:58:02',NULL),(260,2,'distribution_status','D-2026-026 marked Dispatched',1,5,23,NULL,26,NULL,'2026-08-23 07:58:04',NULL),(261,2,'distribution_status','D-2026-026 marked In Transit',1,5,23,NULL,26,NULL,'2026-08-23 07:58:09',NULL),(262,2,'allocation_approved','Approved 150 food packs for Urdaneta City from Urdaneta City Social Welfare and Development Office',1,2,1,32,NULL,NULL,'2026-08-23 07:58:51',NULL),(263,2,'distribution_status','New distribution scheduled for Anonas, Urdaneta City — 150 food packs',1,2,1,NULL,27,NULL,'2026-08-23 07:59:03',NULL),(265,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 08:42:49','127.0.0.1'),(266,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 09:16:23','127.0.0.1'),(267,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 09:17:23','127.0.0.1'),(268,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:08:33','127.0.0.1'),(269,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:09:43','127.0.0.1'),(270,3,'damage_report_verified','Damage report DR-2026-032 was verified by Urdaneta City Social Welfare and Development Office',1,2,1,NULL,NULL,NULL,'2026-08-23 14:12:05',NULL),(271,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:13:05','127.0.0.1'),(272,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:13:30','127.0.0.1'),(273,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-23 14:15:37','127.0.0.1'),(274,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:04:36','127.0.0.1'),(275,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:13:26','127.0.0.1'),(276,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:23:09','127.0.0.1'),(277,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:41:37','127.0.0.1'),(278,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:44:01','127.0.0.1'),(279,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 12:47:20','127.0.0.1'),(280,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:02:32','127.0.0.1'),(281,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:24:06','127.0.0.1'),(282,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:31:09','127.0.0.1'),(283,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:37:47','127.0.0.1'),(284,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:42:00','127.0.0.1'),(285,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 13:48:18','127.0.0.1'),(286,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:09:39','127.0.0.1'),(287,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:14:31','127.0.0.1'),(288,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:19:09','127.0.0.1'),(289,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:23:11','127.0.0.1'),(290,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:23:45','127.0.0.1'),(291,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:32:03','127.0.0.1'),(292,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:32:44','127.0.0.1'),(293,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:46:14','127.0.0.1'),(294,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 14:55:48','127.0.0.1'),(295,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:02:28','127.0.0.1'),(296,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:05:54','127.0.0.1'),(297,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:07:40','127.0.0.1'),(298,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:11:41','127.0.0.1'),(299,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-24 15:17:30','127.0.0.1'),(300,2,'warehouse_transfer_completed','Transferred 2,000 food packs from Provincial Social Welfare and Development Office to Urdaneta City Social Welfare and Development Office',1,2,NULL,NULL,NULL,NULL,'2026-08-24 15:34:43',NULL),(301,2,'distribution_status','D-2026-027 marked Loaded',1,2,1,NULL,27,NULL,'2026-08-24 15:35:53',NULL),(302,2,'distribution_status','D-2026-027 marked Dispatched',1,2,1,NULL,27,NULL,'2026-08-24 15:35:56',NULL),(303,2,'distribution_status','D-2026-027 marked In Transit',1,2,1,NULL,27,NULL,'2026-08-24 15:36:02',NULL),(304,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-26 09:16:55','127.0.0.1'),(305,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 00:36:26','127.0.0.1'),(306,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 00:52:13','127.0.0.1'),(307,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:10:38','127.0.0.1'),(308,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:15:38','127.0.0.1'),(309,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:28:01','127.0.0.1'),(310,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:28:39','127.0.0.1'),(311,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:31:04','127.0.0.1'),(312,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:34:12','127.0.0.1'),(313,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:45:05','127.0.0.1'),(314,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:45:27','127.0.0.1'),(315,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:49:42','127.0.0.1'),(316,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 01:55:29','127.0.0.1'),(317,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:03:19','127.0.0.1'),(318,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:18:13','127.0.0.1'),(319,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:22:34','127.0.0.1'),(320,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:25:27','127.0.0.1'),(321,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:29:38','127.0.0.1'),(324,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 02:38:18','127.0.0.1'),(326,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 04:31:42','127.0.0.1'),(328,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 04:51:30','127.0.0.1'),(333,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 05:04:35','127.0.0.1'),(334,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 05:06:07','127.0.0.1'),(335,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 06:19:48','127.0.0.1'),(336,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:27:06','127.0.0.1'),(337,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:30:19','127.0.0.1'),(338,15,'login','Edgardo Villanueva logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:31:27','127.0.0.1'),(339,15,'damage_report_submitted','DR-2026-035 submitted by Brgy. Cabaruan — 3 affected families',1,2,5,NULL,NULL,NULL,'2026-08-28 07:33:23',NULL),(340,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 07:41:21','127.0.0.1'),(349,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:12:19','127.0.0.1'),(350,11,'distribution_receipt_confirmed','Anonas confirmed receipt of D-2026-027 (207 food packs), received by Ramon Bautista',1,NULL,1,NULL,27,NULL,'2026-08-28 09:13:07',NULL),(351,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:16:18','127.0.0.1'),(352,4,'relief_request_submitted','Santa Barbara Municipal Social Welfare and Development Office submitted stock request SR-2026-018 to PSWDO — 1,200 food packs',1,3,NULL,NULL,NULL,18,'2026-08-28 09:36:10',NULL),(353,2,'allocation_approved','Partially approved stock request SR-2026-018 — 1,000 food packs to Santa Barbara Municipal Social Welfare and Development Office from PSWDO Warehouse',1,3,NULL,NULL,NULL,18,'2026-08-28 09:36:10',NULL),(354,2,'distribution_status','TR-2026-004 dispatched — 1,000 food packs en route to Santa Barbara Municipal Social Welfare and Development Office',1,3,NULL,NULL,NULL,18,'2026-08-28 09:36:11',NULL),(355,4,'warehouse_transfer_completed','Santa Barbara Municipal Social Welfare and Development Office received 1,000 food packs from PSWDO Warehouse (SR-2026-018)',1,3,NULL,NULL,NULL,18,'2026-08-28 09:36:11',NULL),(356,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:44:54','127.0.0.1'),(357,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:47:13','127.0.0.1'),(358,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:47:25','127.0.0.1'),(359,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 09:48:18','127.0.0.1'),(360,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 10:01:29','127.0.0.1'),(361,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 10:03:05','127.0.0.1'),(362,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 10:13:10','127.0.0.1'),(363,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 11:11:32','127.0.0.1'),(364,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 14:41:30','127.0.0.1'),(365,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 14:48:51','127.0.0.1'),(366,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 14:53:14','127.0.0.1'),(367,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:01:56','127.0.0.1'),(368,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:05:50','127.0.0.1'),(369,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:06:58','127.0.0.1'),(370,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:14:05','127.0.0.1'),(371,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:17:10','127.0.0.1'),(372,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:24:30','127.0.0.1'),(373,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:27:55','127.0.0.1'),(374,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:29:26','127.0.0.1'),(375,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:30:29','127.0.0.1'),(376,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:34:44','127.0.0.1'),(377,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:37:55','127.0.0.1'),(378,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:43:23','127.0.0.1'),(379,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:46:00','127.0.0.1'),(380,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 15:58:25','127.0.0.1'),(381,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:05:05','127.0.0.1'),(382,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:15:12','127.0.0.1'),(383,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:19:07','127.0.0.1'),(384,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:21:23','127.0.0.1'),(385,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:24:58','127.0.0.1'),(386,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:51:11','127.0.0.1'),(387,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:51:57','127.0.0.1'),(388,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 16:55:36','127.0.0.1'),(389,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:03:05','127.0.0.1'),(390,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:06:57','127.0.0.1'),(391,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:07:33','127.0.0.1'),(392,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:16:04','127.0.0.1'),(393,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:25:10','127.0.0.1'),(394,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:28:53','127.0.0.1'),(395,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:37:42','127.0.0.1'),(396,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:44:56','127.0.0.1'),(397,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:50:14','127.0.0.1'),(398,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 17:57:58','127.0.0.1'),(399,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 18:00:32','127.0.0.1'),(400,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 18:25:53','127.0.0.1'),(401,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-28 18:53:17','127.0.0.1'),(402,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 03:46:54','127.0.0.1'),(403,2,'disaster_event_ended','Marked Typhoon Inday as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 03:47:28',NULL),(404,2,'allocation_approved','Approved stock request SR-2026-019 — 2,500 food packs to Urdaneta City Social Welfare and Development Office from PSWDO Warehouse',1,2,NULL,NULL,NULL,19,'2026-08-29 04:01:46',NULL),(405,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:32:15','127.0.0.1'),(406,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:44:28','127.0.0.1'),(407,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:44:48','127.0.0.1'),(408,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:48:55','127.0.0.1'),(409,5,'login','Calasiao MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:50:13','127.0.0.1'),(410,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:51:03','127.0.0.1'),(411,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:51:37','127.0.0.1'),(412,1,'login','System Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:53:18','127.0.0.1'),(413,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:53:39','127.0.0.1'),(414,4,'login','Santa Barbara MSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:54:18','127.0.0.1'),(415,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:54:56','127.0.0.1'),(416,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 04:55:22','127.0.0.1'),(417,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:14:40','127.0.0.1'),(418,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:36:08','127.0.0.1'),(419,2,'disaster_event_declared','Declared typhoon isa as the active disaster event.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:42:05',NULL),(420,2,'disaster_event_ended','Marked typhoon isa as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:42:21',NULL),(421,2,'disaster_event_declared','Declared typhoon isaw as the active disaster event.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:57:00',NULL),(422,2,'disaster_event_ended','Marked typhoon isaw as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 06:57:12',NULL),(423,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:03:10','127.0.0.1'),(424,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:07:53','127.0.0.1'),(425,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:32:37','127.0.0.1'),(426,2,'direct_allocation','Pre-positioned 2,000 food packs to Calasiao Municipal Social Welfare and Development Office from PSWDO Warehouse',1,4,NULL,NULL,NULL,NULL,'2026-08-29 07:33:34',NULL),(427,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:40:12','127.0.0.1'),(428,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:44:02','127.0.0.1'),(429,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:51:05','127.0.0.1'),(430,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:55:32','127.0.0.1'),(431,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 07:59:06','127.0.0.1'),(432,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:11:50','127.0.0.1'),(433,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:19:08','127.0.0.1'),(434,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:29:22','127.0.0.1'),(435,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:45:02','127.0.0.1'),(436,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 08:53:38','127.0.0.1'),(437,2,'direct_allocation','Pre-positioned 2,000 food packs to Urdaneta City Social Welfare and Development Office from PSWDO Warehouse',1,2,NULL,NULL,NULL,NULL,'2026-08-29 08:55:29',NULL),(438,2,'direct_allocation','Pre-positioned 100 food packs to Calasiao Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',1,4,NULL,NULL,NULL,NULL,'2026-08-29 09:02:49',NULL),(439,2,'direct_allocation','Pre-positioned 50 food packs to Santa Barbara Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',1,3,NULL,NULL,NULL,NULL,'2026-08-29 09:03:26',NULL),(440,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:08:26','127.0.0.1'),(441,2,'distribution_status','TR-2026-007 dispatched — 2,500 food packs en route to Urdaneta City Social Welfare and Development Office',1,2,NULL,NULL,NULL,19,'2026-08-29 09:08:59',NULL),(442,2,'direct_allocation','Pre-positioned 75 food packs to Calasiao Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',1,4,NULL,NULL,NULL,NULL,'2026-08-29 09:20:08',NULL),(443,2,'direct_allocation','Pre-positioned 25 food packs to Calasiao Municipal Social Welfare and Development Office from Provincial Social Welfare and Development Office',1,4,NULL,NULL,NULL,NULL,'2026-08-29 09:20:44',NULL),(444,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:22:04','127.0.0.1'),(445,2,'disaster_event_declared','Declared swdas as the active disaster event.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:22:21',NULL),(446,2,'disaster_event_ended','Marked swdas as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:22:34',NULL),(447,2,'disaster_event_ended','Marked Toast Scroll Test as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:27:12',NULL),(448,2,'disaster_event_ended','Marked Toast Scroll Test as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:42:14',NULL),(449,2,'disaster_event_ended','Marked Toast Scroll Test as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:42:45',NULL),(450,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:45:45','127.0.0.1'),(451,2,'disaster_event_declared','Declared typhoon isa as the active disaster event.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:45:55',NULL),(452,2,'disaster_event_ended','Marked typhoon isa as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:46:06',NULL),(453,2,'disaster_event_declared','Declared swdas as the active disaster event.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:46:19',NULL),(454,2,'disaster_event_ended','Marked swdas as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-29 09:46:38',NULL),(455,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 03:35:16','127.0.0.1'),(456,2,'disaster_event_declared','Declared typhoon isa as the active disaster event.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 03:47:31',NULL),(457,2,'disaster_event_ended','Marked typhoon isa as ended.',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 03:47:37',NULL),(458,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 03:52:30','127.0.0.1'),(459,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 04:12:01','127.0.0.1'),(460,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 04:15:00','127.0.0.1'),(461,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 04:31:45','127.0.0.1'),(462,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 04:34:12','127.0.0.1'),(463,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 04:34:38','127.0.0.1'),(464,3,'relief_request_submitted','Urdaneta City Social Welfare and Development Office submitted stock request SR-2026-023 to PSWDO — 5,971 food packs',1,2,NULL,NULL,NULL,23,'2026-08-30 05:27:26',NULL),(465,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 05:27:48','127.0.0.1'),(466,2,'allocation_approved','Approved stock request SR-2026-023 — 5,971 food packs to Urdaneta City Social Welfare and Development Office from PSWDO Warehouse',1,2,NULL,NULL,NULL,23,'2026-08-30 05:28:04',NULL),(467,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 05:28:12','127.0.0.1'),(468,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 05:28:32','127.0.0.1'),(469,2,'distribution_status','TR-2026-014 dispatched — 5,971 food packs en route to Urdaneta City Social Welfare and Development Office',1,2,NULL,NULL,NULL,23,'2026-08-30 05:28:43',NULL),(470,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 05:28:49','127.0.0.1'),(471,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 05:33:09','127.0.0.1'),(472,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 05:33:21','127.0.0.1'),(473,3,'distribution_status','D-2026-030 marked In Transit (Brgy. Nancayasan)',1,2,43,NULL,30,NULL,'2026-08-30 05:33:34',NULL),(474,3,'warehouse_transfer_completed','Urdaneta City Social Welfare and Development Office received 5,971 food packs from PSWDO Warehouse (SR-2026-023)',1,2,NULL,NULL,NULL,23,'2026-08-30 05:46:25',NULL),(475,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 06:30:45','127.0.0.1'),(476,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 07:10:57','127.0.0.1'),(477,3,'login','Urdaneta CSWDO Admin logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 07:15:48','127.0.0.1'),(478,3,'warehouse_transfer_completed','Urdaneta City Social Welfare and Development Office received 2,000 food packs from PSWDO Warehouse (TR-2026-009)',1,2,NULL,NULL,NULL,NULL,'2026-08-30 07:16:20',NULL),(479,3,'warehouse_transfer_completed','Urdaneta City Social Welfare and Development Office received 2,500 food packs from PSWDO Warehouse (SR-2026-019)',1,2,NULL,NULL,NULL,19,'2026-08-30 07:16:23',NULL),(480,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 07:16:53','127.0.0.1'),(481,2,'login','PSWDO Administrator logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 07:25:30','127.0.0.1'),(482,11,'login','Ramon Bautista logged in',1,NULL,NULL,NULL,NULL,NULL,'2026-08-30 07:26:57','127.0.0.1');
 /*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `allocation_records`
@@ -486,7 +67,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `allocation_records`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `allocation_records` (
   `allocation_id` int(11) NOT NULL AUTO_INCREMENT,
   `barangay_id` int(11) NOT NULL,
@@ -532,432 +113,11 @@ CREATE TABLE `allocation_records` (
 -- Dumping data for table `allocation_records`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `allocation_records` WRITE;
 /*!40000 ALTER TABLE `allocation_records` DISABLE KEYS */;
-INSERT INTO `allocation_records` VALUES
-(8,1,2,197,197,206,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),
-(9,2,2,163,163,126,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),
-(10,15,3,302,302,213,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),
-(11,18,3,59,59,49,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),
-(12,30,4,80,80,66,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),
-(13,26,4,486,486,385,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),
-(14,28,4,207,207,180,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),
-(15,3,2,209,209,241,'2026-07-19',NULL,1,'approved',NULL,'2026-07-17 13:35:28',NULL,2,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(16,12,3,334,334,240,'2026-07-19',NULL,1,'approved',NULL,'2026-07-17 13:35:28',NULL,3,'2026-08-27',NULL,2,NULL,'pswdo_batch',NULL),
-(17,23,4,140,140,100,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-21',NULL,2,NULL,'pswdo_batch',NULL),
-(18,5,2,185,0,169,'2026-07-19',NULL,1,'pending',NULL,'2026-07-17 13:35:28','Municipal warehouse already has adequate stock for this barangay; redirected to Bayaoas instead.',NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(19,19,3,430,0,404,'2026-07-19',NULL,1,'pending',4,'2026-07-20 06:52:00','fsdads',NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(20,20,3,63,63,55,'2026-07-17',NULL,1,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-07-19',NULL,2,NULL,'pswdo_batch',NULL),
-(21,11,3,342,342,300,'2026-07-17',NULL,1,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-07-19',NULL,2,NULL,'pswdo_batch',NULL),
-(22,14,3,118,0,104,'2026-07-16',NULL,1,'pending',4,'2026-07-20 06:52:00','Insufficient damage report documentation. Please resubmit with complete barangay verification.',NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(23,17,3,353,0,339,'2026-07-16',NULL,1,'pending',4,'2026-07-20 06:52:00','Insufficient damage report documentation. Please resubmit with complete barangay verification.',NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(24,13,3,374,374,396,'2026-02-08',NULL,2,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-02-10',NULL,2,NULL,'pswdo_batch',NULL),
-(25,16,3,192,192,203,'2026-02-08',NULL,2,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-02-10',NULL,2,NULL,'pswdo_batch',NULL),
-(26,12,3,240,240,283,'2026-01-19',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-01-21',NULL,2,NULL,'pswdo_batch',NULL),
-(27,18,3,49,49,67,'2026-01-19',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-01-21',NULL,2,NULL,'pswdo_batch',NULL),
-(28,15,3,213,213,284,'2026-01-19',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-01-21',NULL,2,NULL,'pswdo_batch',NULL),
-(29,16,3,230,230,192,'2026-07-20',NULL,1,'approved',4,'2026-07-20 07:02:35',NULL,5,NULL,'Approved via test',2,NULL,'pswdo_batch',NULL),
-(30,1,2,205,205,206,'2026-07-21',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),
-(31,1,2,200,200,206,'2026-07-20',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),
-(32,1,2,207,207,206,'2026-07-23',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,2,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(33,1,2,210,0,206,'2026-07-18',NULL,1,'pending',NULL,'2026-07-24 13:45:43','Duplicate request — already covered under RR-2026-008.',NULL,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),
-(34,1,2,212,212,206,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 13:59:40',NULL,5,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),
-(35,1,2,212,212,206,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 14:18:13',NULL,5,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),
-(2743,43,2,45,45,46,'2026-08-28',NULL,1,'approved',3,'2026-08-28 09:01:55',NULL,2,NULL,NULL,3,NULL,'barangay_request',39),
-(2744,50,2,286,286,251,'2026-08-28',NULL,1,'approved',3,'2026-08-28 09:01:55',NULL,2,NULL,NULL,3,NULL,'barangay_request',40),
-(2745,58,3,259,259,236,'2026-08-28',NULL,1,'approved',4,'2026-08-28 09:01:55',NULL,3,NULL,NULL,4,NULL,'barangay_request',41),
-(2746,81,4,104,104,95,'2026-08-28',NULL,1,'approved',5,'2026-08-28 09:01:55',NULL,4,NULL,NULL,5,NULL,'barangay_request',42),
-(3905,1,2,111,111,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3906,2,2,90,90,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3907,3,2,136,136,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3908,4,2,99,99,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3909,6,2,47,47,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3910,7,2,127,127,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3911,8,2,174,174,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3912,9,2,203,203,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3913,10,2,194,194,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3914,33,2,120,120,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3915,34,2,32,32,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3916,35,2,125,125,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3917,38,2,21,21,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3918,39,2,111,111,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3919,40,2,100,100,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3920,41,2,69,69,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3921,42,2,21,21,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3922,44,2,75,75,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3923,45,2,67,67,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3924,46,2,44,44,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3925,47,2,270,270,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3926,50,2,165,165,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3927,54,2,103,103,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3928,55,2,85,85,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3929,12,3,171,171,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3930,13,3,296,296,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3931,14,3,68,68,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3932,15,3,188,188,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3933,16,3,143,143,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3934,17,3,199,199,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3935,18,3,36,36,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3936,19,3,215,215,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3937,20,3,33,33,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3938,56,3,178,178,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3939,57,3,140,140,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3940,58,3,134,134,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3941,59,3,140,140,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3942,61,3,80,80,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3943,62,3,159,159,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3944,63,3,138,138,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3945,64,3,70,70,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3946,65,3,83,83,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3947,66,3,171,171,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3948,67,3,228,228,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3949,68,3,74,74,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3950,69,3,56,56,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3951,70,3,207,207,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3952,71,3,191,191,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3953,72,3,52,52,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3954,22,4,163,163,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3955,23,4,73,73,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3956,24,4,223,223,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3957,25,4,144,144,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3958,26,4,284,284,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3959,27,4,193,193,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3960,28,4,118,118,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3961,29,4,150,150,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3962,30,4,44,44,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3963,75,4,90,90,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3964,76,4,56,56,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3965,78,4,138,138,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3966,80,4,72,72,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3967,81,4,56,56,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3968,82,4,65,65,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3969,83,4,152,152,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3970,84,4,90,90,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3971,85,4,166,166,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3972,86,4,164,164,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3973,88,4,109,109,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3974,1,2,160,160,111,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3975,2,2,119,119,90,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3976,3,2,178,178,136,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3977,4,2,130,130,99,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3978,5,2,118,118,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3979,6,2,60,60,47,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3980,7,2,166,166,127,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3981,8,2,225,225,174,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3982,9,2,263,263,203,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3983,10,2,281,281,194,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3984,35,2,166,166,125,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3985,36,2,120,120,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3986,37,2,75,75,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3987,38,2,30,30,21,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3988,39,2,155,155,111,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3989,41,2,90,90,69,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3990,45,2,87,87,67,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3991,47,2,362,362,270,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3992,48,2,286,286,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3993,49,2,123,123,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3994,52,2,258,258,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3995,53,2,153,153,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3996,54,2,138,138,103,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3997,55,2,120,120,85,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3998,11,3,220,220,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(3999,12,3,241,241,171,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4000,14,3,90,90,68,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4001,15,3,233,233,188,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4002,16,3,183,183,143,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4003,17,3,269,269,199,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4004,18,3,47,47,36,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4005,19,3,323,323,215,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4006,56,3,221,221,178,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4007,57,3,170,170,140,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4008,60,3,144,144,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4009,61,3,113,113,80,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4010,62,3,196,196,159,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4011,66,3,221,221,171,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4012,67,3,301,301,228,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4013,68,3,99,99,74,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4014,69,3,74,74,56,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4015,71,3,234,234,191,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4016,72,3,68,68,52,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4017,73,3,122,122,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4018,21,4,71,71,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4019,22,4,256,256,163,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4020,23,4,103,103,73,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4021,24,4,281,281,223,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4022,25,4,182,182,144,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4023,26,4,348,348,284,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4024,27,4,260,260,193,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4025,29,4,249,249,150,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4026,30,4,57,57,44,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4027,76,4,68,68,56,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4028,79,4,266,266,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4029,80,4,96,96,72,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4030,81,4,78,78,56,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4031,82,4,87,87,65,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4032,83,4,168,168,152,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4033,84,4,128,128,90,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4034,85,4,203,203,166,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4035,86,4,213,213,164,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4036,87,4,91,91,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4037,1,2,206,206,160,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4038,2,2,154,154,119,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4039,5,2,194,194,118,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4040,6,2,75,75,60,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4041,32,2,208,208,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4042,7,2,220,220,166,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4043,8,2,260,260,225,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4044,9,2,325,325,263,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4045,33,2,206,206,120,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4046,34,2,50,50,32,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4047,35,2,212,212,166,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4048,38,2,36,36,30,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4049,39,2,195,195,155,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4050,40,2,160,160,100,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4051,41,2,110,110,90,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4052,42,2,35,35,21,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4053,43,2,33,33,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4054,48,2,373,373,286,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4055,51,2,80,80,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4056,52,2,376,376,258,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4057,54,2,179,179,138,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4058,55,2,142,142,120,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4059,11,3,308,308,220,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4060,12,3,297,297,241,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4061,13,3,459,459,296,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4062,14,3,115,115,90,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4063,15,3,280,280,233,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4064,16,3,229,229,183,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4065,17,3,339,339,269,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4066,56,3,278,278,221,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4067,57,3,203,203,170,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4068,58,3,264,264,134,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4069,59,3,194,194,140,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4070,60,3,223,223,144,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4071,62,3,248,248,196,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4072,63,3,202,202,138,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4073,64,3,113,113,70,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4074,65,3,131,131,83,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4075,66,3,290,290,221,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4076,67,3,365,365,301,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4077,69,3,85,85,74,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4078,70,3,351,351,207,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4079,72,3,87,87,68,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4080,73,3,161,161,122,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4081,74,3,130,130,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4082,24,4,396,396,281,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4083,25,4,234,234,182,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4084,28,4,183,183,118,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4085,29,4,270,270,249,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4086,30,4,72,72,57,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4087,75,4,139,139,90,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4088,76,4,89,89,68,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4089,77,4,220,220,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4090,78,4,220,220,138,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4091,79,4,377,377,266,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4092,80,4,112,112,96,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4093,81,4,96,96,78,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4094,82,4,101,101,87,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4095,84,4,153,153,128,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4096,87,4,119,119,91,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4097,2,2,177,177,154,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4098,3,2,241,241,178,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4099,4,2,189,189,130,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4100,5,2,196,196,194,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4101,6,2,83,83,75,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4102,32,2,263,263,208,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4103,34,2,56,56,50,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4104,35,2,246,246,212,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4105,37,2,106,106,75,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4106,38,2,42,42,36,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4107,39,2,213,213,195,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4108,40,2,151,151,160,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4109,41,2,120,120,110,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4110,42,2,38,38,35,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4111,43,2,47,47,33,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4112,44,2,121,121,75,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4113,45,2,115,115,87,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4114,46,2,78,78,44,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4115,49,2,205,205,123,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4116,50,2,301,301,165,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4117,51,2,107,107,80,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4118,52,2,424,424,376,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4119,53,2,228,228,153,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4120,54,2,179,179,179,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4121,11,3,355,355,308,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4122,12,3,356,356,297,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4123,13,3,515,515,459,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4124,15,3,322,322,280,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4125,16,3,267,267,229,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4126,18,3,67,67,47,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4127,19,3,457,457,323,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4128,20,3,62,62,33,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4129,56,3,329,329,278,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4130,57,3,247,247,203,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4131,59,3,253,253,194,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4132,60,3,239,239,223,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4133,62,3,261,261,248,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4134,63,3,232,232,202,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4135,64,3,122,122,113,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4136,65,3,160,160,131,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4137,66,3,316,316,290,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4138,68,3,144,144,99,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4139,70,3,448,448,351,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4140,71,3,313,313,234,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4141,72,3,93,93,87,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4142,73,3,195,195,161,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4143,74,3,181,181,130,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4144,21,4,100,100,71,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4145,22,4,298,298,256,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4146,24,4,412,412,396,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4147,25,4,253,253,234,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4148,26,4,538,538,348,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4149,28,4,209,209,183,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4150,29,4,318,318,270,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4151,75,4,154,154,139,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4152,76,4,95,95,89,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4153,77,4,306,306,220,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4154,79,4,467,467,377,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4155,80,4,113,113,112,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4156,81,4,103,103,96,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4157,82,4,126,126,101,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4158,83,4,229,229,168,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4159,86,4,269,269,213,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4160,87,4,141,141,119,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4161,2,2,126,126,177,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4162,4,2,138,138,189,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4163,5,2,149,149,196,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4164,32,2,190,190,263,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4165,7,2,148,148,220,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4166,8,2,229,229,260,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4167,10,2,263,263,281,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4168,34,2,44,44,56,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4169,36,2,124,124,120,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4170,37,2,84,84,106,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4171,38,2,29,29,42,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4172,39,2,163,163,213,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4173,40,2,125,125,151,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4174,41,2,85,85,120,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4175,42,2,27,27,38,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4176,44,2,88,88,121,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4177,45,2,81,81,115,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4178,46,2,57,57,78,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4179,47,2,346,346,362,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4180,48,2,278,278,373,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4181,50,2,213,213,301,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4182,51,2,80,80,107,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4183,52,2,308,308,424,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4184,53,2,179,179,228,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4185,54,2,142,142,179,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4186,11,3,274,274,355,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4187,12,3,236,236,356,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4188,13,3,396,396,515,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4189,14,3,89,89,115,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4190,15,3,238,238,322,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4191,16,3,199,199,267,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4192,20,3,48,48,62,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4193,56,3,246,246,329,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4194,57,3,162,162,247,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4195,58,3,204,204,264,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4196,59,3,196,196,253,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4197,61,3,100,100,113,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4198,63,3,165,165,232,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4199,65,3,112,112,160,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4200,66,3,248,248,316,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4201,67,3,261,261,365,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4202,68,3,100,100,144,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4203,69,3,72,72,85,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4204,70,3,305,305,448,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4205,71,3,226,226,313,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4206,72,3,69,69,93,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4207,73,3,137,137,195,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4208,74,3,129,129,181,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4209,21,4,88,88,100,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4210,22,4,237,237,298,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4211,23,4,100,100,103,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4212,24,4,278,278,412,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4213,25,4,183,183,253,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4214,26,4,385,385,538,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4215,27,4,241,241,260,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4216,28,4,149,149,209,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4217,30,4,59,59,72,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4218,75,4,125,125,154,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4219,76,4,69,69,95,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4220,77,4,232,232,306,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4221,78,4,191,191,220,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4222,79,4,351,351,467,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4223,80,4,89,89,113,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4224,82,4,93,93,126,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4225,84,4,118,118,153,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4226,85,4,206,206,203,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4227,87,4,96,96,141,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4228,88,4,124,124,109,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4229,4,2,148,148,138,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4230,5,2,169,169,149,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4231,32,2,222,222,190,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4232,7,2,188,188,148,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4233,8,2,273,273,229,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4234,9,2,318,318,325,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4235,33,2,215,215,206,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4236,34,2,57,57,44,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4237,35,2,216,216,246,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4238,36,2,149,149,124,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4239,38,2,33,33,29,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4240,39,2,166,166,163,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4241,40,2,144,144,125,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4242,41,2,96,96,85,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4243,43,2,46,46,47,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4244,45,2,99,99,81,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4245,46,2,71,71,57,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4246,48,2,319,319,278,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4247,49,2,191,191,205,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4248,50,2,251,251,213,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4249,51,2,90,90,80,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4250,53,2,220,220,179,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4251,54,2,157,157,142,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4252,11,3,300,300,274,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4253,12,3,283,283,236,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4254,14,3,104,104,89,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4255,15,3,284,284,238,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4256,16,3,203,203,199,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4257,19,3,404,404,457,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4258,20,3,55,55,48,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4259,56,3,256,256,246,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4260,57,3,198,198,162,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4261,58,3,236,236,204,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4262,59,3,209,209,196,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4263,60,3,227,227,239,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4264,61,3,116,116,100,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4265,62,3,222,222,261,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4266,63,3,158,158,165,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4267,65,3,132,132,112,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4268,67,3,334,334,261,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4269,68,3,108,108,100,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4270,69,3,86,86,72,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4271,70,3,351,351,305,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4272,71,3,256,256,226,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4273,72,3,71,71,69,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4274,74,3,158,158,129,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4275,21,4,94,94,88,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4276,22,4,288,288,237,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4277,25,4,227,227,183,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4278,27,4,288,288,241,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4279,28,4,180,180,149,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4280,29,4,273,273,318,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4281,30,4,66,66,59,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4282,75,4,120,120,125,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4283,76,4,79,79,69,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4284,78,4,243,243,191,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4285,79,4,365,365,351,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4286,80,4,97,97,89,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4287,81,4,95,95,103,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4288,86,4,245,245,269,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4289,87,4,114,114,96,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),
-(4290,88,4,154,154,124,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL);
+INSERT INTO `allocation_records` VALUES (8,1,2,197,197,206,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),(9,2,2,163,163,126,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),(10,15,3,302,302,213,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),(11,18,3,59,59,49,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),(12,30,4,80,80,66,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),(13,26,4,486,486,385,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),(14,28,4,207,207,180,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-22',NULL,2,NULL,'pswdo_batch',NULL),(15,3,2,209,209,241,'2026-07-19',NULL,1,'approved',NULL,'2026-07-17 13:35:28',NULL,2,NULL,NULL,2,NULL,'pswdo_batch',NULL),(16,12,3,334,334,240,'2026-07-19',NULL,1,'approved',NULL,'2026-07-17 13:35:28',NULL,3,'2026-08-27',NULL,2,NULL,'pswdo_batch',NULL),(17,23,4,140,140,100,'2026-07-19',NULL,1,'approved',2,'2026-07-17 13:35:28',NULL,5,'2026-07-21',NULL,2,NULL,'pswdo_batch',NULL),(18,5,2,185,0,169,'2026-07-19',NULL,1,'pending',NULL,'2026-07-17 13:35:28','Municipal warehouse already has adequate stock for this barangay; redirected to Bayaoas instead.',NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(19,19,3,430,0,404,'2026-07-19',NULL,1,'pending',4,'2026-07-20 06:52:00','fsdads',NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(20,20,3,63,63,55,'2026-07-17',NULL,1,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-07-19',NULL,2,NULL,'pswdo_batch',NULL),(21,11,3,342,342,300,'2026-07-17',NULL,1,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-07-19',NULL,2,NULL,'pswdo_batch',NULL),(22,14,3,118,0,104,'2026-07-16',NULL,1,'pending',4,'2026-07-20 06:52:00','Insufficient damage report documentation. Please resubmit with complete barangay verification.',NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(23,17,3,353,0,339,'2026-07-16',NULL,1,'pending',4,'2026-07-20 06:52:00','Insufficient damage report documentation. Please resubmit with complete barangay verification.',NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(24,13,3,374,374,396,'2026-02-08',NULL,2,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-02-10',NULL,2,NULL,'pswdo_batch',NULL),(25,16,3,192,192,203,'2026-02-08',NULL,2,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-02-10',NULL,2,NULL,'pswdo_batch',NULL),(26,12,3,240,240,283,'2026-01-19',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-01-21',NULL,2,NULL,'pswdo_batch',NULL),(27,18,3,49,49,67,'2026-01-19',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-01-21',NULL,2,NULL,'pswdo_batch',NULL),(28,15,3,213,213,284,'2026-01-19',NULL,3,'approved',4,'2026-07-20 06:52:00',NULL,5,'2026-01-21',NULL,2,NULL,'pswdo_batch',NULL),(29,16,3,230,230,192,'2026-07-20',NULL,1,'approved',4,'2026-07-20 07:02:35',NULL,5,NULL,'Approved via test',2,NULL,'pswdo_batch',NULL),(30,1,2,205,205,206,'2026-07-21',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),(31,1,2,200,200,206,'2026-07-20',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,5,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),(32,1,2,207,207,206,'2026-07-23',NULL,1,'approved',NULL,'2026-07-24 13:45:43',NULL,2,NULL,NULL,2,NULL,'pswdo_batch',NULL),(33,1,2,210,0,206,'2026-07-18',NULL,1,'pending',NULL,'2026-07-24 13:45:43','Duplicate request — already covered under RR-2026-008.',NULL,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),(34,1,2,212,212,206,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 13:59:40',NULL,5,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),(35,1,2,212,212,206,'2026-07-24',NULL,1,'approved',NULL,'2026-07-24 14:18:13',NULL,5,NULL,NULL,NULL,NULL,'pswdo_batch',NULL),(2743,43,2,45,45,46,'2026-08-28',NULL,1,'approved',3,'2026-08-28 09:01:55',NULL,2,NULL,NULL,3,NULL,'barangay_request',39),(2744,50,2,286,286,251,'2026-08-28',NULL,1,'approved',3,'2026-08-28 09:01:55',NULL,2,NULL,NULL,3,NULL,'barangay_request',40),(2745,58,3,259,259,236,'2026-08-28',NULL,1,'approved',4,'2026-08-28 09:01:55',NULL,3,NULL,NULL,4,NULL,'barangay_request',41),(2746,81,4,104,104,95,'2026-08-28',NULL,1,'approved',5,'2026-08-28 09:01:55',NULL,4,NULL,NULL,5,NULL,'barangay_request',42),(3905,1,2,111,111,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3906,2,2,90,90,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3907,3,2,136,136,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3908,4,2,99,99,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3909,6,2,47,47,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3910,7,2,127,127,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3911,8,2,174,174,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3912,9,2,203,203,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3913,10,2,194,194,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3914,33,2,120,120,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3915,34,2,32,32,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3916,35,2,125,125,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3917,38,2,21,21,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3918,39,2,111,111,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3919,40,2,100,100,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3920,41,2,69,69,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3921,42,2,21,21,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3922,44,2,75,75,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3923,45,2,67,67,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3924,46,2,44,44,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3925,47,2,270,270,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3926,50,2,165,165,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3927,54,2,103,103,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3928,55,2,85,85,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3929,12,3,171,171,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3930,13,3,296,296,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3931,14,3,68,68,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3932,15,3,188,188,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3933,16,3,143,143,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3934,17,3,199,199,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3935,18,3,36,36,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3936,19,3,215,215,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3937,20,3,33,33,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3938,56,3,178,178,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3939,57,3,140,140,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3940,58,3,134,134,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3941,59,3,140,140,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3942,61,3,80,80,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3943,62,3,159,159,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3944,63,3,138,138,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3945,64,3,70,70,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3946,65,3,83,83,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3947,66,3,171,171,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3948,67,3,228,228,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3949,68,3,74,74,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3950,69,3,56,56,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3951,70,3,207,207,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3952,71,3,191,191,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3953,72,3,52,52,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3954,22,4,163,163,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3955,23,4,73,73,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3956,24,4,223,223,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3957,25,4,144,144,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3958,26,4,284,284,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3959,27,4,193,193,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3960,28,4,118,118,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3961,29,4,150,150,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3962,30,4,44,44,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3963,75,4,90,90,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3964,76,4,56,56,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3965,78,4,138,138,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3966,80,4,72,72,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3967,81,4,56,56,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3968,82,4,65,65,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3969,83,4,152,152,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3970,84,4,90,90,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3971,85,4,166,166,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3972,86,4,164,164,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3973,88,4,109,109,0,'2023-08-19','Typhoon Egay (2023)',7,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3974,1,2,160,160,111,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3975,2,2,119,119,90,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3976,3,2,178,178,136,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3977,4,2,130,130,99,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3978,5,2,118,118,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3979,6,2,60,60,47,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3980,7,2,166,166,127,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3981,8,2,225,225,174,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3982,9,2,263,263,203,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3983,10,2,281,281,194,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3984,35,2,166,166,125,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3985,36,2,120,120,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3986,37,2,75,75,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3987,38,2,30,30,21,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3988,39,2,155,155,111,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3989,41,2,90,90,69,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3990,45,2,87,87,67,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3991,47,2,362,362,270,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3992,48,2,286,286,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3993,49,2,123,123,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3994,52,2,258,258,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3995,53,2,153,153,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3996,54,2,138,138,103,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3997,55,2,120,120,85,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3998,11,3,220,220,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(3999,12,3,241,241,171,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4000,14,3,90,90,68,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4001,15,3,233,233,188,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4002,16,3,183,183,143,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4003,17,3,269,269,199,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4004,18,3,47,47,36,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4005,19,3,323,323,215,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4006,56,3,221,221,178,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4007,57,3,170,170,140,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4008,60,3,144,144,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4009,61,3,113,113,80,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4010,62,3,196,196,159,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4011,66,3,221,221,171,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4012,67,3,301,301,228,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4013,68,3,99,99,74,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4014,69,3,74,74,56,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4015,71,3,234,234,191,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4016,72,3,68,68,52,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4017,73,3,122,122,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4018,21,4,71,71,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4019,22,4,256,256,163,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4020,23,4,103,103,73,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4021,24,4,281,281,223,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4022,25,4,182,182,144,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4023,26,4,348,348,284,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4024,27,4,260,260,193,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4025,29,4,249,249,150,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4026,30,4,57,57,44,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4027,76,4,68,68,56,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4028,79,4,266,266,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:13',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4029,80,4,96,96,72,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4030,81,4,78,78,56,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4031,82,4,87,87,65,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4032,83,4,168,168,152,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4033,84,4,128,128,90,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4034,85,4,203,203,166,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4035,86,4,213,213,164,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4036,87,4,91,91,0,'2023-11-04','Typhoon Kabayan (2023)',8,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4037,1,2,206,206,160,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4038,2,2,154,154,119,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4039,5,2,194,194,118,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4040,6,2,75,75,60,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4041,32,2,208,208,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4042,7,2,220,220,166,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4043,8,2,260,260,225,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4044,9,2,325,325,263,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4045,33,2,206,206,120,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4046,34,2,50,50,32,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4047,35,2,212,212,166,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4048,38,2,36,36,30,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4049,39,2,195,195,155,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4050,40,2,160,160,100,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4051,41,2,110,110,90,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4052,42,2,35,35,21,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4053,43,2,33,33,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4054,48,2,373,373,286,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4055,51,2,80,80,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4056,52,2,376,376,258,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4057,54,2,179,179,138,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4058,55,2,142,142,120,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4059,11,3,308,308,220,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4060,12,3,297,297,241,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4061,13,3,459,459,296,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4062,14,3,115,115,90,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4063,15,3,280,280,233,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4064,16,3,229,229,183,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4065,17,3,339,339,269,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4066,56,3,278,278,221,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4067,57,3,203,203,170,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4068,58,3,264,264,134,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4069,59,3,194,194,140,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4070,60,3,223,223,144,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4071,62,3,248,248,196,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4072,63,3,202,202,138,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4073,64,3,113,113,70,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4074,65,3,131,131,83,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4075,66,3,290,290,221,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4076,67,3,365,365,301,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4077,69,3,85,85,74,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4078,70,3,351,351,207,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4079,72,3,87,87,68,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4080,73,3,161,161,122,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4081,74,3,130,130,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4082,24,4,396,396,281,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4083,25,4,234,234,182,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4084,28,4,183,183,118,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4085,29,4,270,270,249,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4086,30,4,72,72,57,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4087,75,4,139,139,90,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4088,76,4,89,89,68,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4089,77,4,220,220,0,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4090,78,4,220,220,138,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4091,79,4,377,377,266,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4092,80,4,112,112,96,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4093,81,4,96,96,78,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4094,82,4,101,101,87,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4095,84,4,153,153,128,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4096,87,4,119,119,91,'2024-07-23','Typhoon Carina (2024)',9,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4097,2,2,177,177,154,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4098,3,2,241,241,178,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4099,4,2,189,189,130,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4100,5,2,196,196,194,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4101,6,2,83,83,75,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4102,32,2,263,263,208,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4103,34,2,56,56,50,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4104,35,2,246,246,212,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4105,37,2,106,106,75,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4106,38,2,42,42,36,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4107,39,2,213,213,195,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4108,40,2,151,151,160,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4109,41,2,120,120,110,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4110,42,2,38,38,35,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4111,43,2,47,47,33,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4112,44,2,121,121,75,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4113,45,2,115,115,87,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4114,46,2,78,78,44,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4115,49,2,205,205,123,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4116,50,2,301,301,165,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4117,51,2,107,107,80,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4118,52,2,424,424,376,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4119,53,2,228,228,153,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4120,54,2,179,179,179,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4121,11,3,355,355,308,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4122,12,3,356,356,297,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4123,13,3,515,515,459,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4124,15,3,322,322,280,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4125,16,3,267,267,229,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4126,18,3,67,67,47,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4127,19,3,457,457,323,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4128,20,3,62,62,33,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4129,56,3,329,329,278,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4130,57,3,247,247,203,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4131,59,3,253,253,194,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4132,60,3,239,239,223,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4133,62,3,261,261,248,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4134,63,3,232,232,202,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4135,64,3,122,122,113,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4136,65,3,160,160,131,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4137,66,3,316,316,290,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4138,68,3,144,144,99,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4139,70,3,448,448,351,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4140,71,3,313,313,234,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4141,72,3,93,93,87,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4142,73,3,195,195,161,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4143,74,3,181,181,130,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4144,21,4,100,100,71,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4145,22,4,298,298,256,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4146,24,4,412,412,396,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4147,25,4,253,253,234,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4148,26,4,538,538,348,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4149,28,4,209,209,183,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4150,29,4,318,318,270,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4151,75,4,154,154,139,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4152,76,4,95,95,89,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4153,77,4,306,306,220,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4154,79,4,467,467,377,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4155,80,4,113,113,112,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4156,81,4,103,103,96,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4157,82,4,126,126,101,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4158,83,4,229,229,168,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4159,86,4,269,269,213,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4160,87,4,141,141,119,'2024-09-13','Super Typhoon Julian (2024)',10,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4161,2,2,126,126,177,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4162,4,2,138,138,189,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4163,5,2,149,149,196,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4164,32,2,190,190,263,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4165,7,2,148,148,220,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4166,8,2,229,229,260,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4167,10,2,263,263,281,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4168,34,2,44,44,56,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4169,36,2,124,124,120,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4170,37,2,84,84,106,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4171,38,2,29,29,42,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4172,39,2,163,163,213,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4173,40,2,125,125,151,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4174,41,2,85,85,120,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4175,42,2,27,27,38,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4176,44,2,88,88,121,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4177,45,2,81,81,115,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4178,46,2,57,57,78,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4179,47,2,346,346,362,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4180,48,2,278,278,373,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4181,50,2,213,213,301,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4182,51,2,80,80,107,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4183,52,2,308,308,424,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4184,53,2,179,179,228,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4185,54,2,142,142,179,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4186,11,3,274,274,355,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4187,12,3,236,236,356,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4188,13,3,396,396,515,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4189,14,3,89,89,115,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4190,15,3,238,238,322,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4191,16,3,199,199,267,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4192,20,3,48,48,62,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4193,56,3,246,246,329,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4194,57,3,162,162,247,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4195,58,3,204,204,264,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4196,59,3,196,196,253,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4197,61,3,100,100,113,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4198,63,3,165,165,232,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4199,65,3,112,112,160,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4200,66,3,248,248,316,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4201,67,3,261,261,365,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4202,68,3,100,100,144,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4203,69,3,72,72,85,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4204,70,3,305,305,448,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4205,71,3,226,226,313,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4206,72,3,69,69,93,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4207,73,3,137,137,195,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4208,74,3,129,129,181,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4209,21,4,88,88,100,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4210,22,4,237,237,298,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4211,23,4,100,100,103,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4212,24,4,278,278,412,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4213,25,4,183,183,253,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4214,26,4,385,385,538,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4215,27,4,241,241,260,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4216,28,4,149,149,209,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4217,30,4,59,59,72,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4218,75,4,125,125,154,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4219,76,4,69,69,95,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4220,77,4,232,232,306,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4221,78,4,191,191,220,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4222,79,4,351,351,467,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4223,80,4,89,89,113,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4224,82,4,93,93,126,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4225,84,4,118,118,153,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4226,85,4,206,206,203,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4227,87,4,96,96,141,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4228,88,4,124,124,109,'2025-06-17','Tropical Storm Dante (2025)',11,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4229,4,2,148,148,138,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4230,5,2,169,169,149,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4231,32,2,222,222,190,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4232,7,2,188,188,148,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4233,8,2,273,273,229,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4234,9,2,318,318,325,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4235,33,2,215,215,206,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4236,34,2,57,57,44,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4237,35,2,216,216,246,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4238,36,2,149,149,124,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4239,38,2,33,33,29,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4240,39,2,166,166,163,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4241,40,2,144,144,125,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4242,41,2,96,96,85,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4243,43,2,46,46,47,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4244,45,2,99,99,81,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4245,46,2,71,71,57,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4246,48,2,319,319,278,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4247,49,2,191,191,205,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4248,50,2,251,251,213,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4249,51,2,90,90,80,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4250,53,2,220,220,179,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4251,54,2,157,157,142,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4252,11,3,300,300,274,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4253,12,3,283,283,236,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4254,14,3,104,104,89,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4255,15,3,284,284,238,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4256,16,3,203,203,199,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4257,19,3,404,404,457,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4258,20,3,55,55,48,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4259,56,3,256,256,246,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4260,57,3,198,198,162,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4261,58,3,236,236,204,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4262,59,3,209,209,196,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4263,60,3,227,227,239,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4264,61,3,116,116,100,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4265,62,3,222,222,261,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4266,63,3,158,158,165,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4267,65,3,132,132,112,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4268,67,3,334,334,261,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4269,68,3,108,108,100,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4270,69,3,86,86,72,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4271,70,3,351,351,305,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4272,71,3,256,256,226,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4273,72,3,71,71,69,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4274,74,3,158,158,129,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4275,21,4,94,94,88,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4276,22,4,288,288,237,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4277,25,4,227,227,183,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4278,27,4,288,288,241,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4279,28,4,180,180,149,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4280,29,4,273,273,318,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4281,30,4,66,66,59,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4282,75,4,120,120,125,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4283,76,4,79,79,69,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4284,78,4,243,243,191,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4285,79,4,365,365,351,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4286,80,4,97,97,89,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4287,81,4,95,95,103,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4288,86,4,245,245,269,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4289,87,4,114,114,96,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL),(4290,88,4,154,154,124,'2025-10-01','Typhoon Ramil (2025)',12,'released',2,'2026-08-28 09:40:14',NULL,NULL,NULL,NULL,2,NULL,'pswdo_batch',NULL);
 /*!40000 ALTER TABLE `allocation_records` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `barangay_disaster_status`
@@ -965,7 +125,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `barangay_disaster_status`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `barangay_disaster_status` (
   `status_id` int(11) NOT NULL AUTO_INCREMENT,
   `event_id` int(11) NOT NULL,
@@ -988,418 +148,11 @@ CREATE TABLE `barangay_disaster_status` (
 -- Dumping data for table `barangay_disaster_status`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `barangay_disaster_status` WRITE;
 /*!40000 ALTER TABLE `barangay_disaster_status` DISABLE KEYS */;
-INSERT INTO `barangay_disaster_status` VALUES
-(1,1,1,'high_priority',284,3,'2026-08-28 09:40:14'),
-(2,1,2,'needs_assistance',209,3,'2026-08-28 07:58:52'),
-(3,1,3,'needs_assistance',380,2,'2026-08-28 07:58:52'),
-(4,1,5,'needs_assistance',305,2,'2026-08-28 07:58:52'),
-(5,1,15,'high_priority',402,2,'2026-08-28 07:58:52'),
-(6,1,18,'needs_assistance',88,2,'2026-08-28 07:58:52'),
-(7,1,12,'needs_assistance',440,2,'2026-08-28 07:58:52'),
-(8,1,30,'needs_assistance',127,2,'2026-08-28 07:58:52'),
-(9,1,26,'high_priority',712,2,'2026-08-28 07:58:52'),
-(10,1,28,'needs_assistance',309,2,'2026-08-28 07:58:52'),
-(11,1,23,'needs_assistance',217,2,'2026-08-28 07:58:52'),
-(12,1,20,'monitoring',121,4,'2026-08-28 07:58:52'),
-(13,1,11,'needs_assistance',412,4,'2026-08-28 07:58:52'),
-(14,1,19,'high_priority',556,4,'2026-08-28 07:58:52'),
-(15,1,14,'needs_assistance',198,4,'2026-08-28 07:58:52'),
-(16,1,17,'needs_assistance',497,4,'2026-08-28 07:58:52'),
-(17,1,16,'needs_assistance',351,4,'2026-08-28 07:58:52'),
-(1948,1,9,'needs_assistance',423,3,'2026-08-28 09:01:25'),
-(3879,7,1,'needs_assistance',216,2,'2026-08-28 09:40:13'),
-(3880,7,2,'needs_assistance',209,2,'2026-08-28 09:40:13'),
-(3881,7,3,'needs_assistance',344,2,'2026-08-28 09:40:13'),
-(3882,7,4,'monitoring',258,2,'2026-08-28 09:40:13'),
-(3883,7,6,'needs_assistance',108,2,'2026-08-28 09:40:13'),
-(3884,7,7,'needs_assistance',249,2,'2026-08-28 09:40:13'),
-(3885,7,8,'needs_assistance',386,2,'2026-08-28 09:40:13'),
-(3886,7,9,'needs_assistance',433,2,'2026-08-28 09:40:13'),
-(3887,7,10,'needs_assistance',472,2,'2026-08-28 09:40:13'),
-(3888,7,33,'needs_assistance',257,2,'2026-08-28 09:40:13'),
-(3889,7,34,'needs_assistance',84,2,'2026-08-28 09:40:13'),
-(3890,7,35,'needs_assistance',336,2,'2026-08-28 09:40:13'),
-(3891,7,38,'needs_assistance',57,2,'2026-08-28 09:40:13'),
-(3892,7,39,'monitoring',325,2,'2026-08-28 09:40:13'),
-(3893,7,40,'needs_assistance',254,2,'2026-08-28 09:40:13'),
-(3894,7,41,'needs_assistance',149,2,'2026-08-28 09:40:13'),
-(3895,7,42,'monitoring',55,2,'2026-08-28 09:40:13'),
-(3896,7,44,'needs_assistance',204,2,'2026-08-28 09:40:13'),
-(3897,7,45,'monitoring',176,2,'2026-08-28 09:40:13'),
-(3898,7,46,'needs_assistance',96,2,'2026-08-28 09:40:13'),
-(3899,7,47,'needs_assistance',531,2,'2026-08-28 09:40:13'),
-(3900,7,50,'needs_assistance',335,2,'2026-08-28 09:40:13'),
-(3901,7,54,'needs_assistance',190,2,'2026-08-28 09:40:13'),
-(3902,7,55,'monitoring',255,2,'2026-08-28 09:40:13'),
-(3903,7,12,'needs_assistance',391,2,'2026-08-28 09:40:13'),
-(3904,7,13,'needs_assistance',580,2,'2026-08-28 09:40:13'),
-(3905,7,14,'needs_assistance',183,2,'2026-08-28 09:40:13'),
-(3906,7,15,'needs_assistance',348,2,'2026-08-28 09:40:13'),
-(3907,7,16,'needs_assistance',285,2,'2026-08-28 09:40:13'),
-(3908,7,17,'needs_assistance',508,2,'2026-08-28 09:40:13'),
-(3909,7,18,'needs_assistance',84,2,'2026-08-28 09:40:13'),
-(3910,7,19,'needs_assistance',455,2,'2026-08-28 09:40:13'),
-(3911,7,20,'monitoring',103,2,'2026-08-28 09:40:13'),
-(3912,7,56,'high_priority',418,2,'2026-08-28 09:40:13'),
-(3913,7,57,'needs_assistance',292,2,'2026-08-28 09:40:13'),
-(3914,7,58,'needs_assistance',394,2,'2026-08-28 09:40:13'),
-(3915,7,59,'needs_assistance',371,2,'2026-08-28 09:40:13'),
-(3916,7,61,'needs_assistance',188,2,'2026-08-28 09:40:13'),
-(3917,7,62,'needs_assistance',313,2,'2026-08-28 09:40:13'),
-(3918,7,63,'monitoring',324,2,'2026-08-28 09:40:13'),
-(3919,7,64,'needs_assistance',149,2,'2026-08-28 09:40:13'),
-(3920,7,65,'needs_assistance',218,2,'2026-08-28 09:40:13'),
-(3921,7,66,'needs_assistance',337,2,'2026-08-28 09:40:13'),
-(3922,7,67,'needs_assistance',512,2,'2026-08-28 09:40:13'),
-(3923,7,68,'needs_assistance',208,2,'2026-08-28 09:40:13'),
-(3924,7,69,'needs_assistance',116,2,'2026-08-28 09:40:13'),
-(3925,7,70,'needs_assistance',471,2,'2026-08-28 09:40:13'),
-(3926,7,71,'needs_assistance',380,2,'2026-08-28 09:40:13'),
-(3927,7,72,'needs_assistance',143,2,'2026-08-28 09:40:13'),
-(3928,7,22,'needs_assistance',354,2,'2026-08-28 09:40:13'),
-(3929,7,23,'needs_assistance',189,2,'2026-08-28 09:40:13'),
-(3930,7,24,'needs_assistance',419,2,'2026-08-28 09:40:13'),
-(3931,7,25,'monitoring',354,2,'2026-08-28 09:40:13'),
-(3932,7,26,'needs_assistance',594,2,'2026-08-28 09:40:13'),
-(3933,7,27,'needs_assistance',387,2,'2026-08-28 09:40:13'),
-(3934,7,28,'needs_assistance',247,2,'2026-08-28 09:40:13'),
-(3935,7,29,'needs_assistance',369,2,'2026-08-28 09:40:13'),
-(3936,7,30,'needs_assistance',110,2,'2026-08-28 09:40:13'),
-(3937,7,75,'needs_assistance',184,2,'2026-08-28 09:40:13'),
-(3938,7,76,'needs_assistance',134,2,'2026-08-28 09:40:13'),
-(3939,7,78,'needs_assistance',397,2,'2026-08-28 09:40:13'),
-(3940,7,80,'needs_assistance',144,2,'2026-08-28 09:40:13'),
-(3941,7,81,'needs_assistance',123,2,'2026-08-28 09:40:13'),
-(3942,7,82,'needs_assistance',137,2,'2026-08-28 09:40:13'),
-(3943,7,83,'needs_assistance',260,2,'2026-08-28 09:40:13'),
-(3944,7,84,'needs_assistance',227,2,'2026-08-28 09:40:13'),
-(3945,7,85,'needs_assistance',384,2,'2026-08-28 09:40:13'),
-(3946,7,86,'needs_assistance',341,2,'2026-08-28 09:40:13'),
-(3947,7,88,'monitoring',268,2,'2026-08-28 09:40:13'),
-(3948,8,1,'needs_assistance',238,2,'2026-08-28 09:40:13'),
-(3949,8,2,'needs_assistance',201,2,'2026-08-28 09:40:13'),
-(3950,8,3,'needs_assistance',380,2,'2026-08-28 09:40:13'),
-(3951,8,4,'monitoring',276,2,'2026-08-28 09:40:13'),
-(3952,8,5,'needs_assistance',302,2,'2026-08-28 09:40:13'),
-(3953,8,6,'needs_assistance',116,2,'2026-08-28 09:40:13'),
-(3954,8,7,'needs_assistance',270,2,'2026-08-28 09:40:13'),
-(3955,8,8,'needs_assistance',454,2,'2026-08-28 09:40:13'),
-(3956,8,9,'needs_assistance',448,2,'2026-08-28 09:40:13'),
-(3957,8,10,'needs_assistance',528,2,'2026-08-28 09:40:13'),
-(3958,8,35,'needs_assistance',358,2,'2026-08-28 09:40:13'),
-(3959,8,36,'needs_assistance',210,2,'2026-08-28 09:40:13'),
-(3960,8,37,'needs_assistance',139,2,'2026-08-28 09:40:13'),
-(3961,8,38,'monitoring',49,2,'2026-08-28 09:40:13'),
-(3962,8,39,'monitoring',296,2,'2026-08-28 09:40:13'),
-(3963,8,41,'needs_assistance',160,2,'2026-08-28 09:40:13'),
-(3964,8,45,'needs_assistance',187,2,'2026-08-28 09:40:13'),
-(3965,8,47,'high_priority',581,2,'2026-08-28 09:40:13'),
-(3966,8,48,'needs_assistance',452,2,'2026-08-28 09:40:13'),
-(3967,8,49,'needs_assistance',314,2,'2026-08-28 09:40:13'),
-(3968,8,52,'needs_assistance',515,2,'2026-08-28 09:40:13'),
-(3969,8,53,'needs_assistance',377,2,'2026-08-28 09:40:13'),
-(3970,8,54,'high_priority',208,2,'2026-08-28 09:40:13'),
-(3971,8,55,'monitoring',265,2,'2026-08-28 09:40:13'),
-(3972,8,11,'needs_assistance',453,2,'2026-08-28 09:40:13'),
-(3973,8,12,'needs_assistance',413,2,'2026-08-28 09:40:13'),
-(3974,8,14,'needs_assistance',182,2,'2026-08-28 09:40:13'),
-(3975,8,15,'needs_assistance',326,2,'2026-08-28 09:40:13'),
-(3976,8,16,'needs_assistance',325,2,'2026-08-28 09:40:13'),
-(3977,8,17,'needs_assistance',476,2,'2026-08-28 09:40:13'),
-(3978,8,18,'needs_assistance',96,2,'2026-08-28 09:40:13'),
-(3979,8,19,'high_priority',537,2,'2026-08-28 09:40:13'),
-(3980,8,56,'needs_assistance',376,2,'2026-08-28 09:40:13'),
-(3981,8,57,'needs_assistance',330,2,'2026-08-28 09:40:13'),
-(3982,8,60,'high_priority',258,2,'2026-08-28 09:40:13'),
-(3983,8,61,'needs_assistance',199,2,'2026-08-28 09:40:13'),
-(3984,8,62,'needs_assistance',289,2,'2026-08-28 09:40:13'),
-(3985,8,66,'needs_assistance',413,2,'2026-08-28 09:40:13'),
-(3986,8,67,'needs_assistance',516,2,'2026-08-28 09:40:13'),
-(3987,8,68,'needs_assistance',202,2,'2026-08-28 09:40:13'),
-(3988,8,69,'needs_assistance',115,2,'2026-08-28 09:40:13'),
-(3989,8,71,'needs_assistance',381,2,'2026-08-28 09:40:13'),
-(3990,8,72,'needs_assistance',139,2,'2026-08-28 09:40:13'),
-(3991,8,73,'needs_assistance',249,2,'2026-08-28 09:40:13'),
-(3992,8,21,'needs_assistance',165,2,'2026-08-28 09:40:13'),
-(3993,8,22,'needs_assistance',414,2,'2026-08-28 09:40:13'),
-(3994,8,23,'needs_assistance',198,2,'2026-08-28 09:40:13'),
-(3995,8,24,'high_priority',475,2,'2026-08-28 09:40:13'),
-(3996,8,25,'needs_assistance',368,2,'2026-08-28 09:40:13'),
-(3997,8,26,'needs_assistance',584,2,'2026-08-28 09:40:13'),
-(3998,8,27,'needs_assistance',429,2,'2026-08-28 09:40:13'),
-(3999,8,29,'needs_assistance',360,2,'2026-08-28 09:40:13'),
-(4000,8,30,'needs_assistance',126,2,'2026-08-28 09:40:13'),
-(4001,8,76,'needs_assistance',131,2,'2026-08-28 09:40:13'),
-(4002,8,79,'needs_assistance',443,2,'2026-08-28 09:40:13'),
-(4003,8,80,'needs_assistance',138,2,'2026-08-28 09:40:14'),
-(4004,8,81,'needs_assistance',121,2,'2026-08-28 09:40:14'),
-(4005,8,82,'needs_assistance',150,2,'2026-08-28 09:40:14'),
-(4006,8,83,'needs_assistance',275,2,'2026-08-28 09:40:14'),
-(4007,8,84,'needs_assistance',232,2,'2026-08-28 09:40:14'),
-(4008,8,85,'needs_assistance',354,2,'2026-08-28 09:40:14'),
-(4009,8,86,'needs_assistance',379,2,'2026-08-28 09:40:14'),
-(4010,8,87,'needs_assistance',190,2,'2026-08-28 09:40:14'),
-(4011,9,1,'needs_assistance',240,2,'2026-08-28 09:40:14'),
-(4012,9,2,'needs_assistance',208,2,'2026-08-28 09:40:14'),
-(4013,9,5,'needs_assistance',321,2,'2026-08-28 09:40:14'),
-(4014,9,6,'monitoring',102,2,'2026-08-28 09:40:14'),
-(4015,9,32,'high_priority',331,2,'2026-08-28 09:40:14'),
-(4016,9,7,'high_priority',294,2,'2026-08-28 09:40:14'),
-(4017,9,8,'needs_assistance',449,2,'2026-08-28 09:40:14'),
-(4018,9,9,'needs_assistance',428,2,'2026-08-28 09:40:14'),
-(4019,9,33,'needs_assistance',288,2,'2026-08-28 09:40:14'),
-(4020,9,34,'needs_assistance',104,2,'2026-08-28 09:40:14'),
-(4021,9,35,'needs_assistance',360,2,'2026-08-28 09:40:14'),
-(4022,9,38,'needs_assistance',56,2,'2026-08-28 09:40:14'),
-(4023,9,39,'monitoring',305,2,'2026-08-28 09:40:14'),
-(4024,9,40,'needs_assistance',256,2,'2026-08-28 09:40:14'),
-(4025,9,41,'needs_assistance',155,2,'2026-08-28 09:40:14'),
-(4026,9,42,'monitoring',60,2,'2026-08-28 09:40:14'),
-(4027,9,43,'monitoring',75,2,'2026-08-28 09:40:14'),
-(4028,9,48,'needs_assistance',480,2,'2026-08-28 09:40:14'),
-(4029,9,51,'monitoring',173,2,'2026-08-28 09:40:14'),
-(4030,9,52,'needs_assistance',561,2,'2026-08-28 09:40:14'),
-(4031,9,54,'high_priority',222,2,'2026-08-28 09:40:14'),
-(4032,9,55,'monitoring',234,2,'2026-08-28 09:40:14'),
-(4033,9,11,'needs_assistance',404,2,'2026-08-28 09:40:14'),
-(4034,9,12,'needs_assistance',415,2,'2026-08-28 09:40:14'),
-(4035,9,13,'high_priority',596,2,'2026-08-28 09:40:14'),
-(4036,9,14,'needs_assistance',197,2,'2026-08-28 09:40:14'),
-(4037,9,15,'needs_assistance',385,2,'2026-08-28 09:40:14'),
-(4038,9,16,'needs_assistance',331,2,'2026-08-28 09:40:14'),
-(4039,9,17,'needs_assistance',523,2,'2026-08-28 09:40:14'),
-(4040,9,56,'high_priority',419,2,'2026-08-28 09:40:14'),
-(4041,9,57,'needs_assistance',315,2,'2026-08-28 09:40:14'),
-(4042,9,58,'needs_assistance',360,2,'2026-08-28 09:40:14'),
-(4043,9,59,'needs_assistance',380,2,'2026-08-28 09:40:14'),
-(4044,9,60,'high_priority',289,2,'2026-08-28 09:40:14'),
-(4045,9,62,'needs_assistance',314,2,'2026-08-28 09:40:14'),
-(4046,9,63,'monitoring',340,2,'2026-08-28 09:40:14'),
-(4047,9,64,'needs_assistance',147,2,'2026-08-28 09:40:14'),
-(4048,9,65,'needs_assistance',256,2,'2026-08-28 09:40:14'),
-(4049,9,66,'needs_assistance',396,2,'2026-08-28 09:40:14'),
-(4050,9,67,'needs_assistance',592,2,'2026-08-28 09:40:14'),
-(4051,9,69,'needs_assistance',124,2,'2026-08-28 09:40:14'),
-(4052,9,70,'needs_assistance',576,2,'2026-08-28 09:40:14'),
-(4053,9,72,'monitoring',132,2,'2026-08-28 09:40:14'),
-(4054,9,73,'needs_assistance',248,2,'2026-08-28 09:40:14'),
-(4055,9,74,'needs_assistance',252,2,'2026-08-28 09:40:14'),
-(4056,9,24,'high_priority',474,2,'2026-08-28 09:40:14'),
-(4057,9,25,'needs_assistance',394,2,'2026-08-28 09:40:14'),
-(4058,9,28,'needs_assistance',288,2,'2026-08-28 09:40:14'),
-(4059,9,29,'needs_assistance',380,2,'2026-08-28 09:40:14'),
-(4060,9,30,'needs_assistance',117,2,'2026-08-28 09:40:14'),
-(4061,9,75,'needs_assistance',234,2,'2026-08-28 09:40:14'),
-(4062,9,76,'needs_assistance',145,2,'2026-08-28 09:40:14'),
-(4063,9,77,'needs_assistance',426,2,'2026-08-28 09:40:14'),
-(4064,9,78,'needs_assistance',365,2,'2026-08-28 09:40:14'),
-(4065,9,79,'high_priority',548,2,'2026-08-28 09:40:14'),
-(4066,9,80,'needs_assistance',151,2,'2026-08-28 09:40:14'),
-(4067,9,81,'needs_assistance',145,2,'2026-08-28 09:40:14'),
-(4068,9,82,'needs_assistance',164,2,'2026-08-28 09:40:14'),
-(4069,9,84,'needs_assistance',225,2,'2026-08-28 09:40:14'),
-(4070,9,87,'needs_assistance',210,2,'2026-08-28 09:40:14'),
-(4071,10,2,'needs_assistance',210,2,'2026-08-28 09:40:14'),
-(4072,10,3,'needs_assistance',341,2,'2026-08-28 09:40:14'),
-(4073,10,4,'needs_assistance',329,2,'2026-08-28 09:40:14'),
-(4074,10,5,'needs_assistance',281,2,'2026-08-28 09:40:14'),
-(4075,10,6,'needs_assistance',108,2,'2026-08-28 09:40:14'),
-(4076,10,32,'high_priority',378,2,'2026-08-28 09:40:14'),
-(4077,10,34,'needs_assistance',106,2,'2026-08-28 09:40:14'),
-(4078,10,35,'needs_assistance',379,2,'2026-08-28 09:40:14'),
-(4079,10,37,'needs_assistance',144,2,'2026-08-28 09:40:14'),
-(4080,10,38,'needs_assistance',58,2,'2026-08-28 09:40:14'),
-(4081,10,39,'needs_assistance',360,2,'2026-08-28 09:40:14'),
-(4082,10,40,'needs_assistance',257,2,'2026-08-28 09:40:14'),
-(4083,10,41,'needs_assistance',162,2,'2026-08-28 09:40:14'),
-(4084,10,42,'monitoring',57,2,'2026-08-28 09:40:14'),
-(4085,10,43,'needs_assistance',90,2,'2026-08-28 09:40:14'),
-(4086,10,44,'needs_assistance',196,2,'2026-08-28 09:40:14'),
-(4087,10,45,'monitoring',168,2,'2026-08-28 09:40:14'),
-(4088,10,46,'needs_assistance',123,2,'2026-08-28 09:40:14'),
-(4089,10,49,'needs_assistance',359,2,'2026-08-28 09:40:14'),
-(4090,10,50,'needs_assistance',367,2,'2026-08-28 09:40:14'),
-(4091,10,51,'needs_assistance',200,2,'2026-08-28 09:40:14'),
-(4092,10,52,'needs_assistance',624,2,'2026-08-28 09:40:14'),
-(4093,10,53,'needs_assistance',405,2,'2026-08-28 09:40:14'),
-(4094,10,54,'high_priority',230,2,'2026-08-28 09:40:14'),
-(4095,10,11,'needs_assistance',484,2,'2026-08-28 09:40:14'),
-(4096,10,12,'needs_assistance',482,2,'2026-08-28 09:40:14'),
-(4097,10,13,'high_priority',595,2,'2026-08-28 09:40:14'),
-(4098,10,15,'high_priority',394,2,'2026-08-28 09:40:14'),
-(4099,10,16,'needs_assistance',322,2,'2026-08-28 09:40:14'),
-(4100,10,18,'needs_assistance',100,2,'2026-08-28 09:40:14'),
-(4101,10,19,'needs_assistance',505,2,'2026-08-28 09:40:14'),
-(4102,10,20,'monitoring',119,2,'2026-08-28 09:40:14'),
-(4103,10,56,'high_priority',435,2,'2026-08-28 09:40:14'),
-(4104,10,57,'needs_assistance',335,2,'2026-08-28 09:40:14'),
-(4105,10,59,'needs_assistance',380,2,'2026-08-28 09:40:14'),
-(4106,10,60,'high_priority',278,2,'2026-08-28 09:40:14'),
-(4107,10,62,'needs_assistance',359,2,'2026-08-28 09:40:14'),
-(4108,10,63,'needs_assistance',393,2,'2026-08-28 09:40:14'),
-(4109,10,64,'needs_assistance',153,2,'2026-08-28 09:40:14'),
-(4110,10,65,'needs_assistance',258,2,'2026-08-28 09:40:14'),
-(4111,10,66,'high_priority',441,2,'2026-08-28 09:40:14'),
-(4112,10,68,'needs_assistance',234,2,'2026-08-28 09:40:14'),
-(4113,10,70,'needs_assistance',524,2,'2026-08-28 09:40:14'),
-(4114,10,71,'needs_assistance',378,2,'2026-08-28 09:40:14'),
-(4115,10,72,'needs_assistance',144,2,'2026-08-28 09:40:14'),
-(4116,10,73,'needs_assistance',282,2,'2026-08-28 09:40:14'),
-(4117,10,74,'needs_assistance',247,2,'2026-08-28 09:40:14'),
-(4118,10,21,'needs_assistance',158,2,'2026-08-28 09:40:14'),
-(4119,10,22,'needs_assistance',474,2,'2026-08-28 09:40:14'),
-(4120,10,24,'high_priority',429,2,'2026-08-28 09:40:14'),
-(4121,10,25,'monitoring',347,2,'2026-08-28 09:40:14'),
-(4122,10,26,'high_priority',735,2,'2026-08-28 09:40:14'),
-(4123,10,28,'needs_assistance',285,2,'2026-08-28 09:40:14'),
-(4124,10,29,'needs_assistance',372,2,'2026-08-28 09:40:14'),
-(4125,10,75,'needs_assistance',237,2,'2026-08-28 09:40:14'),
-(4126,10,76,'needs_assistance',153,2,'2026-08-28 09:40:14'),
-(4127,10,77,'needs_assistance',487,2,'2026-08-28 09:40:14'),
-(4128,10,79,'high_priority',509,2,'2026-08-28 09:40:14'),
-(4129,10,80,'needs_assistance',166,2,'2026-08-28 09:40:14'),
-(4130,10,81,'needs_assistance',133,2,'2026-08-28 09:40:14'),
-(4131,10,82,'needs_assistance',162,2,'2026-08-28 09:40:14'),
-(4132,10,83,'needs_assistance',279,2,'2026-08-28 09:40:14'),
-(4133,10,86,'needs_assistance',440,2,'2026-08-28 09:40:14'),
-(4134,10,87,'needs_assistance',190,2,'2026-08-28 09:40:14'),
-(4135,11,2,'needs_assistance',205,2,'2026-08-28 09:40:14'),
-(4136,11,4,'monitoring',279,2,'2026-08-28 09:40:14'),
-(4137,11,5,'needs_assistance',301,2,'2026-08-28 09:40:14'),
-(4138,11,32,'high_priority',336,2,'2026-08-28 09:40:14'),
-(4139,11,7,'needs_assistance',262,2,'2026-08-28 09:40:14'),
-(4140,11,8,'needs_assistance',366,2,'2026-08-28 09:40:14'),
-(4141,11,10,'needs_assistance',444,2,'2026-08-28 09:40:14'),
-(4142,11,34,'needs_assistance',91,2,'2026-08-28 09:40:14'),
-(4143,11,36,'needs_assistance',205,2,'2026-08-28 09:40:14'),
-(4144,11,37,'needs_assistance',132,2,'2026-08-28 09:40:14'),
-(4145,11,38,'needs_assistance',53,2,'2026-08-28 09:40:14'),
-(4146,11,39,'monitoring',296,2,'2026-08-28 09:40:14'),
-(4147,11,40,'needs_assistance',261,2,'2026-08-28 09:40:14'),
-(4148,11,41,'needs_assistance',151,2,'2026-08-28 09:40:14'),
-(4149,11,42,'monitoring',60,2,'2026-08-28 09:40:14'),
-(4150,11,44,'needs_assistance',191,2,'2026-08-28 09:40:14'),
-(4151,11,45,'monitoring',150,2,'2026-08-28 09:40:14'),
-(4152,11,46,'needs_assistance',103,2,'2026-08-28 09:40:14'),
-(4153,11,47,'high_priority',564,2,'2026-08-28 09:40:14'),
-(4154,11,48,'needs_assistance',479,2,'2026-08-28 09:40:14'),
-(4155,11,50,'needs_assistance',344,2,'2026-08-28 09:40:14'),
-(4156,11,51,'monitoring',166,2,'2026-08-28 09:40:14'),
-(4157,11,52,'needs_assistance',547,2,'2026-08-28 09:40:14'),
-(4158,11,53,'needs_assistance',328,2,'2026-08-28 09:40:14'),
-(4159,11,54,'needs_assistance',182,2,'2026-08-28 09:40:14'),
-(4160,11,11,'needs_assistance',438,2,'2026-08-28 09:40:14'),
-(4161,11,12,'needs_assistance',421,2,'2026-08-28 09:40:14'),
-(4162,11,13,'high_priority',586,2,'2026-08-28 09:40:14'),
-(4163,11,14,'needs_assistance',178,2,'2026-08-28 09:40:14'),
-(4164,11,15,'needs_assistance',373,2,'2026-08-28 09:40:14'),
-(4165,11,16,'needs_assistance',310,2,'2026-08-28 09:40:14'),
-(4166,11,20,'monitoring',101,2,'2026-08-28 09:40:14'),
-(4167,11,56,'high_priority',421,2,'2026-08-28 09:40:14'),
-(4168,11,57,'needs_assistance',291,2,'2026-08-28 09:40:14'),
-(4169,11,58,'needs_assistance',364,2,'2026-08-28 09:40:14'),
-(4170,11,59,'needs_assistance',382,2,'2026-08-28 09:40:14'),
-(4171,11,61,'needs_assistance',183,2,'2026-08-28 09:40:14'),
-(4172,11,63,'monitoring',331,2,'2026-08-28 09:40:14'),
-(4173,11,65,'needs_assistance',198,2,'2026-08-28 09:40:14'),
-(4174,11,66,'needs_assistance',386,2,'2026-08-28 09:40:14'),
-(4175,11,67,'needs_assistance',494,2,'2026-08-28 09:40:14'),
-(4176,11,68,'needs_assistance',215,2,'2026-08-28 09:40:14'),
-(4177,11,69,'needs_assistance',114,2,'2026-08-28 09:40:14'),
-(4178,11,70,'needs_assistance',502,2,'2026-08-28 09:40:14'),
-(4179,11,71,'needs_assistance',374,2,'2026-08-28 09:40:14'),
-(4180,11,72,'needs_assistance',145,2,'2026-08-28 09:40:14'),
-(4181,11,73,'needs_assistance',235,2,'2026-08-28 09:40:14'),
-(4182,11,74,'monitoring',233,2,'2026-08-28 09:40:14'),
-(4183,11,21,'needs_assistance',152,2,'2026-08-28 09:40:14'),
-(4184,11,22,'needs_assistance',356,2,'2026-08-28 09:40:14'),
-(4185,11,23,'needs_assistance',196,2,'2026-08-28 09:40:14'),
-(4186,11,24,'needs_assistance',409,2,'2026-08-28 09:40:14'),
-(4187,11,25,'monitoring',330,2,'2026-08-28 09:40:14'),
-(4188,11,26,'needs_assistance',581,2,'2026-08-28 09:40:14'),
-(4189,11,27,'needs_assistance',389,2,'2026-08-28 09:40:14'),
-(4190,11,28,'needs_assistance',255,2,'2026-08-28 09:40:14'),
-(4191,11,30,'needs_assistance',113,2,'2026-08-28 09:40:14'),
-(4192,11,75,'needs_assistance',200,2,'2026-08-28 09:40:14'),
-(4193,11,76,'needs_assistance',142,2,'2026-08-28 09:40:14'),
-(4194,11,77,'needs_assistance',378,2,'2026-08-28 09:40:14'),
-(4195,11,78,'needs_assistance',347,2,'2026-08-28 09:40:14'),
-(4196,11,79,'needs_assistance',485,2,'2026-08-28 09:40:14'),
-(4197,11,80,'needs_assistance',140,2,'2026-08-28 09:40:14'),
-(4198,11,82,'needs_assistance',139,2,'2026-08-28 09:40:14'),
-(4199,11,84,'needs_assistance',189,2,'2026-08-28 09:40:14'),
-(4200,11,85,'needs_assistance',382,2,'2026-08-28 09:40:14'),
-(4201,11,87,'needs_assistance',197,2,'2026-08-28 09:40:14'),
-(4202,11,88,'monitoring',299,2,'2026-08-28 09:40:14'),
-(4203,12,4,'monitoring',285,2,'2026-08-28 09:40:14'),
-(4204,12,5,'needs_assistance',281,2,'2026-08-28 09:40:14'),
-(4205,12,32,'needs_assistance',302,2,'2026-08-28 09:40:14'),
-(4206,12,7,'high_priority',291,2,'2026-08-28 09:40:14'),
-(4207,12,8,'needs_assistance',397,2,'2026-08-28 09:40:14'),
-(4208,12,9,'needs_assistance',450,2,'2026-08-28 09:40:14'),
-(4209,12,33,'needs_assistance',300,2,'2026-08-28 09:40:14'),
-(4210,12,34,'needs_assistance',92,2,'2026-08-28 09:40:14'),
-(4211,12,35,'needs_assistance',357,2,'2026-08-28 09:40:14'),
-(4212,12,36,'needs_assistance',201,2,'2026-08-28 09:40:14'),
-(4213,12,38,'needs_assistance',50,2,'2026-08-28 09:40:14'),
-(4214,12,39,'monitoring',321,2,'2026-08-28 09:40:14'),
-(4215,12,40,'needs_assistance',268,2,'2026-08-28 09:40:14'),
-(4216,12,41,'needs_assistance',146,2,'2026-08-28 09:40:14'),
-(4217,12,43,'monitoring',75,2,'2026-08-28 09:40:14'),
-(4218,12,45,'needs_assistance',182,2,'2026-08-28 09:40:14'),
-(4219,12,46,'needs_assistance',123,2,'2026-08-28 09:40:14'),
-(4220,12,48,'needs_assistance',472,2,'2026-08-28 09:40:14'),
-(4221,12,49,'needs_assistance',342,2,'2026-08-28 09:40:14'),
-(4222,12,50,'needs_assistance',388,2,'2026-08-28 09:40:14'),
-(4223,12,51,'monitoring',194,2,'2026-08-28 09:40:14'),
-(4224,12,53,'needs_assistance',390,2,'2026-08-28 09:40:14'),
-(4225,12,54,'needs_assistance',203,2,'2026-08-28 09:40:14'),
-(4226,12,11,'needs_assistance',466,2,'2026-08-28 09:40:14'),
-(4227,12,12,'needs_assistance',418,2,'2026-08-28 09:40:14'),
-(4228,12,14,'needs_assistance',163,2,'2026-08-28 09:40:14'),
-(4229,12,15,'needs_assistance',331,2,'2026-08-28 09:40:14'),
-(4230,12,16,'needs_assistance',361,2,'2026-08-28 09:40:14'),
-(4231,12,19,'needs_assistance',467,2,'2026-08-28 09:40:14'),
-(4232,12,20,'monitoring',118,2,'2026-08-28 09:40:14'),
-(4233,12,56,'high_priority',422,2,'2026-08-28 09:40:14'),
-(4234,12,57,'needs_assistance',328,2,'2026-08-28 09:40:14'),
-(4235,12,58,'needs_assistance',372,2,'2026-08-28 09:40:14'),
-(4236,12,59,'needs_assistance',419,2,'2026-08-28 09:40:14'),
-(4237,12,60,'high_priority',282,2,'2026-08-28 09:40:14'),
-(4238,12,61,'needs_assistance',196,2,'2026-08-28 09:40:14'),
-(4239,12,62,'needs_assistance',315,2,'2026-08-28 09:40:14'),
-(4240,12,63,'needs_assistance',392,2,'2026-08-28 09:40:14'),
-(4241,12,65,'needs_assistance',234,2,'2026-08-28 09:40:14'),
-(4242,12,67,'needs_assistance',578,2,'2026-08-28 09:40:14'),
-(4243,12,68,'needs_assistance',222,2,'2026-08-28 09:40:14'),
-(4244,12,69,'needs_assistance',136,2,'2026-08-28 09:40:14'),
-(4245,12,70,'needs_assistance',532,2,'2026-08-28 09:40:14'),
-(4246,12,71,'needs_assistance',379,2,'2026-08-28 09:40:14'),
-(4247,12,72,'needs_assistance',145,2,'2026-08-28 09:40:14'),
-(4248,12,74,'needs_assistance',270,2,'2026-08-28 09:40:14'),
-(4249,12,21,'needs_assistance',160,2,'2026-08-28 09:40:14'),
-(4250,12,22,'needs_assistance',426,2,'2026-08-28 09:40:14'),
-(4251,12,25,'needs_assistance',361,2,'2026-08-28 09:40:14'),
-(4252,12,27,'needs_assistance',444,2,'2026-08-28 09:40:14'),
-(4253,12,28,'needs_assistance',250,2,'2026-08-28 09:40:14'),
-(4254,12,29,'needs_assistance',368,2,'2026-08-28 09:40:14'),
-(4255,12,30,'needs_assistance',123,2,'2026-08-28 09:40:14'),
-(4256,12,75,'needs_assistance',198,2,'2026-08-28 09:40:14'),
-(4257,12,76,'needs_assistance',132,2,'2026-08-28 09:40:14'),
-(4258,12,78,'needs_assistance',398,2,'2026-08-28 09:40:14'),
-(4259,12,79,'high_priority',543,2,'2026-08-28 09:40:14'),
-(4260,12,80,'needs_assistance',140,2,'2026-08-28 09:40:14'),
-(4261,12,81,'needs_assistance',132,2,'2026-08-28 09:40:14'),
-(4262,12,86,'needs_assistance',385,2,'2026-08-28 09:40:14'),
-(4263,12,87,'needs_assistance',199,2,'2026-08-28 09:40:14'),
-(4264,12,88,'monitoring',306,2,'2026-08-28 09:40:14');
+INSERT INTO `barangay_disaster_status` VALUES (1,1,1,'high_priority',284,3,'2026-08-28 09:40:14'),(2,1,2,'needs_assistance',209,3,'2026-08-28 07:58:52'),(3,1,3,'needs_assistance',380,2,'2026-08-28 07:58:52'),(4,1,5,'needs_assistance',305,2,'2026-08-28 07:58:52'),(5,1,15,'high_priority',402,2,'2026-08-28 07:58:52'),(6,1,18,'needs_assistance',88,2,'2026-08-28 07:58:52'),(7,1,12,'needs_assistance',440,2,'2026-08-28 07:58:52'),(8,1,30,'needs_assistance',127,2,'2026-08-28 07:58:52'),(9,1,26,'high_priority',712,2,'2026-08-28 07:58:52'),(10,1,28,'needs_assistance',309,2,'2026-08-28 07:58:52'),(11,1,23,'needs_assistance',217,2,'2026-08-28 07:58:52'),(12,1,20,'monitoring',121,4,'2026-08-28 07:58:52'),(13,1,11,'needs_assistance',412,4,'2026-08-28 07:58:52'),(14,1,19,'high_priority',556,4,'2026-08-28 07:58:52'),(15,1,14,'needs_assistance',198,4,'2026-08-28 07:58:52'),(16,1,17,'needs_assistance',497,4,'2026-08-28 07:58:52'),(17,1,16,'needs_assistance',351,4,'2026-08-28 07:58:52'),(1948,1,9,'needs_assistance',423,3,'2026-08-28 09:01:25'),(3879,7,1,'needs_assistance',216,2,'2026-08-28 09:40:13'),(3880,7,2,'needs_assistance',209,2,'2026-08-28 09:40:13'),(3881,7,3,'needs_assistance',344,2,'2026-08-28 09:40:13'),(3882,7,4,'monitoring',258,2,'2026-08-28 09:40:13'),(3883,7,6,'needs_assistance',108,2,'2026-08-28 09:40:13'),(3884,7,7,'needs_assistance',249,2,'2026-08-28 09:40:13'),(3885,7,8,'needs_assistance',386,2,'2026-08-28 09:40:13'),(3886,7,9,'needs_assistance',433,2,'2026-08-28 09:40:13'),(3887,7,10,'needs_assistance',472,2,'2026-08-28 09:40:13'),(3888,7,33,'needs_assistance',257,2,'2026-08-28 09:40:13'),(3889,7,34,'needs_assistance',84,2,'2026-08-28 09:40:13'),(3890,7,35,'needs_assistance',336,2,'2026-08-28 09:40:13'),(3891,7,38,'needs_assistance',57,2,'2026-08-28 09:40:13'),(3892,7,39,'monitoring',325,2,'2026-08-28 09:40:13'),(3893,7,40,'needs_assistance',254,2,'2026-08-28 09:40:13'),(3894,7,41,'needs_assistance',149,2,'2026-08-28 09:40:13'),(3895,7,42,'monitoring',55,2,'2026-08-28 09:40:13'),(3896,7,44,'needs_assistance',204,2,'2026-08-28 09:40:13'),(3897,7,45,'monitoring',176,2,'2026-08-28 09:40:13'),(3898,7,46,'needs_assistance',96,2,'2026-08-28 09:40:13'),(3899,7,47,'needs_assistance',531,2,'2026-08-28 09:40:13'),(3900,7,50,'needs_assistance',335,2,'2026-08-28 09:40:13'),(3901,7,54,'needs_assistance',190,2,'2026-08-28 09:40:13'),(3902,7,55,'monitoring',255,2,'2026-08-28 09:40:13'),(3903,7,12,'needs_assistance',391,2,'2026-08-28 09:40:13'),(3904,7,13,'needs_assistance',580,2,'2026-08-28 09:40:13'),(3905,7,14,'needs_assistance',183,2,'2026-08-28 09:40:13'),(3906,7,15,'needs_assistance',348,2,'2026-08-28 09:40:13'),(3907,7,16,'needs_assistance',285,2,'2026-08-28 09:40:13'),(3908,7,17,'needs_assistance',508,2,'2026-08-28 09:40:13'),(3909,7,18,'needs_assistance',84,2,'2026-08-28 09:40:13'),(3910,7,19,'needs_assistance',455,2,'2026-08-28 09:40:13'),(3911,7,20,'monitoring',103,2,'2026-08-28 09:40:13'),(3912,7,56,'high_priority',418,2,'2026-08-28 09:40:13'),(3913,7,57,'needs_assistance',292,2,'2026-08-28 09:40:13'),(3914,7,58,'needs_assistance',394,2,'2026-08-28 09:40:13'),(3915,7,59,'needs_assistance',371,2,'2026-08-28 09:40:13'),(3916,7,61,'needs_assistance',188,2,'2026-08-28 09:40:13'),(3917,7,62,'needs_assistance',313,2,'2026-08-28 09:40:13'),(3918,7,63,'monitoring',324,2,'2026-08-28 09:40:13'),(3919,7,64,'needs_assistance',149,2,'2026-08-28 09:40:13'),(3920,7,65,'needs_assistance',218,2,'2026-08-28 09:40:13'),(3921,7,66,'needs_assistance',337,2,'2026-08-28 09:40:13'),(3922,7,67,'needs_assistance',512,2,'2026-08-28 09:40:13'),(3923,7,68,'needs_assistance',208,2,'2026-08-28 09:40:13'),(3924,7,69,'needs_assistance',116,2,'2026-08-28 09:40:13'),(3925,7,70,'needs_assistance',471,2,'2026-08-28 09:40:13'),(3926,7,71,'needs_assistance',380,2,'2026-08-28 09:40:13'),(3927,7,72,'needs_assistance',143,2,'2026-08-28 09:40:13'),(3928,7,22,'needs_assistance',354,2,'2026-08-28 09:40:13'),(3929,7,23,'needs_assistance',189,2,'2026-08-28 09:40:13'),(3930,7,24,'needs_assistance',419,2,'2026-08-28 09:40:13'),(3931,7,25,'monitoring',354,2,'2026-08-28 09:40:13'),(3932,7,26,'needs_assistance',594,2,'2026-08-28 09:40:13'),(3933,7,27,'needs_assistance',387,2,'2026-08-28 09:40:13'),(3934,7,28,'needs_assistance',247,2,'2026-08-28 09:40:13'),(3935,7,29,'needs_assistance',369,2,'2026-08-28 09:40:13'),(3936,7,30,'needs_assistance',110,2,'2026-08-28 09:40:13'),(3937,7,75,'needs_assistance',184,2,'2026-08-28 09:40:13'),(3938,7,76,'needs_assistance',134,2,'2026-08-28 09:40:13'),(3939,7,78,'needs_assistance',397,2,'2026-08-28 09:40:13'),(3940,7,80,'needs_assistance',144,2,'2026-08-28 09:40:13'),(3941,7,81,'needs_assistance',123,2,'2026-08-28 09:40:13'),(3942,7,82,'needs_assistance',137,2,'2026-08-28 09:40:13'),(3943,7,83,'needs_assistance',260,2,'2026-08-28 09:40:13'),(3944,7,84,'needs_assistance',227,2,'2026-08-28 09:40:13'),(3945,7,85,'needs_assistance',384,2,'2026-08-28 09:40:13'),(3946,7,86,'needs_assistance',341,2,'2026-08-28 09:40:13'),(3947,7,88,'monitoring',268,2,'2026-08-28 09:40:13'),(3948,8,1,'needs_assistance',238,2,'2026-08-28 09:40:13'),(3949,8,2,'needs_assistance',201,2,'2026-08-28 09:40:13'),(3950,8,3,'needs_assistance',380,2,'2026-08-28 09:40:13'),(3951,8,4,'monitoring',276,2,'2026-08-28 09:40:13'),(3952,8,5,'needs_assistance',302,2,'2026-08-28 09:40:13'),(3953,8,6,'needs_assistance',116,2,'2026-08-28 09:40:13'),(3954,8,7,'needs_assistance',270,2,'2026-08-28 09:40:13'),(3955,8,8,'needs_assistance',454,2,'2026-08-28 09:40:13'),(3956,8,9,'needs_assistance',448,2,'2026-08-28 09:40:13'),(3957,8,10,'needs_assistance',528,2,'2026-08-28 09:40:13'),(3958,8,35,'needs_assistance',358,2,'2026-08-28 09:40:13'),(3959,8,36,'needs_assistance',210,2,'2026-08-28 09:40:13'),(3960,8,37,'needs_assistance',139,2,'2026-08-28 09:40:13'),(3961,8,38,'monitoring',49,2,'2026-08-28 09:40:13'),(3962,8,39,'monitoring',296,2,'2026-08-28 09:40:13'),(3963,8,41,'needs_assistance',160,2,'2026-08-28 09:40:13'),(3964,8,45,'needs_assistance',187,2,'2026-08-28 09:40:13'),(3965,8,47,'high_priority',581,2,'2026-08-28 09:40:13'),(3966,8,48,'needs_assistance',452,2,'2026-08-28 09:40:13'),(3967,8,49,'needs_assistance',314,2,'2026-08-28 09:40:13'),(3968,8,52,'needs_assistance',515,2,'2026-08-28 09:40:13'),(3969,8,53,'needs_assistance',377,2,'2026-08-28 09:40:13'),(3970,8,54,'high_priority',208,2,'2026-08-28 09:40:13'),(3971,8,55,'monitoring',265,2,'2026-08-28 09:40:13'),(3972,8,11,'needs_assistance',453,2,'2026-08-28 09:40:13'),(3973,8,12,'needs_assistance',413,2,'2026-08-28 09:40:13'),(3974,8,14,'needs_assistance',182,2,'2026-08-28 09:40:13'),(3975,8,15,'needs_assistance',326,2,'2026-08-28 09:40:13'),(3976,8,16,'needs_assistance',325,2,'2026-08-28 09:40:13'),(3977,8,17,'needs_assistance',476,2,'2026-08-28 09:40:13'),(3978,8,18,'needs_assistance',96,2,'2026-08-28 09:40:13'),(3979,8,19,'high_priority',537,2,'2026-08-28 09:40:13'),(3980,8,56,'needs_assistance',376,2,'2026-08-28 09:40:13'),(3981,8,57,'needs_assistance',330,2,'2026-08-28 09:40:13'),(3982,8,60,'high_priority',258,2,'2026-08-28 09:40:13'),(3983,8,61,'needs_assistance',199,2,'2026-08-28 09:40:13'),(3984,8,62,'needs_assistance',289,2,'2026-08-28 09:40:13'),(3985,8,66,'needs_assistance',413,2,'2026-08-28 09:40:13'),(3986,8,67,'needs_assistance',516,2,'2026-08-28 09:40:13'),(3987,8,68,'needs_assistance',202,2,'2026-08-28 09:40:13'),(3988,8,69,'needs_assistance',115,2,'2026-08-28 09:40:13'),(3989,8,71,'needs_assistance',381,2,'2026-08-28 09:40:13'),(3990,8,72,'needs_assistance',139,2,'2026-08-28 09:40:13'),(3991,8,73,'needs_assistance',249,2,'2026-08-28 09:40:13'),(3992,8,21,'needs_assistance',165,2,'2026-08-28 09:40:13'),(3993,8,22,'needs_assistance',414,2,'2026-08-28 09:40:13'),(3994,8,23,'needs_assistance',198,2,'2026-08-28 09:40:13'),(3995,8,24,'high_priority',475,2,'2026-08-28 09:40:13'),(3996,8,25,'needs_assistance',368,2,'2026-08-28 09:40:13'),(3997,8,26,'needs_assistance',584,2,'2026-08-28 09:40:13'),(3998,8,27,'needs_assistance',429,2,'2026-08-28 09:40:13'),(3999,8,29,'needs_assistance',360,2,'2026-08-28 09:40:13'),(4000,8,30,'needs_assistance',126,2,'2026-08-28 09:40:13'),(4001,8,76,'needs_assistance',131,2,'2026-08-28 09:40:13'),(4002,8,79,'needs_assistance',443,2,'2026-08-28 09:40:13'),(4003,8,80,'needs_assistance',138,2,'2026-08-28 09:40:14'),(4004,8,81,'needs_assistance',121,2,'2026-08-28 09:40:14'),(4005,8,82,'needs_assistance',150,2,'2026-08-28 09:40:14'),(4006,8,83,'needs_assistance',275,2,'2026-08-28 09:40:14'),(4007,8,84,'needs_assistance',232,2,'2026-08-28 09:40:14'),(4008,8,85,'needs_assistance',354,2,'2026-08-28 09:40:14'),(4009,8,86,'needs_assistance',379,2,'2026-08-28 09:40:14'),(4010,8,87,'needs_assistance',190,2,'2026-08-28 09:40:14'),(4011,9,1,'needs_assistance',240,2,'2026-08-28 09:40:14'),(4012,9,2,'needs_assistance',208,2,'2026-08-28 09:40:14'),(4013,9,5,'needs_assistance',321,2,'2026-08-28 09:40:14'),(4014,9,6,'monitoring',102,2,'2026-08-28 09:40:14'),(4015,9,32,'high_priority',331,2,'2026-08-28 09:40:14'),(4016,9,7,'high_priority',294,2,'2026-08-28 09:40:14'),(4017,9,8,'needs_assistance',449,2,'2026-08-28 09:40:14'),(4018,9,9,'needs_assistance',428,2,'2026-08-28 09:40:14'),(4019,9,33,'needs_assistance',288,2,'2026-08-28 09:40:14'),(4020,9,34,'needs_assistance',104,2,'2026-08-28 09:40:14'),(4021,9,35,'needs_assistance',360,2,'2026-08-28 09:40:14'),(4022,9,38,'needs_assistance',56,2,'2026-08-28 09:40:14'),(4023,9,39,'monitoring',305,2,'2026-08-28 09:40:14'),(4024,9,40,'needs_assistance',256,2,'2026-08-28 09:40:14'),(4025,9,41,'needs_assistance',155,2,'2026-08-28 09:40:14'),(4026,9,42,'monitoring',60,2,'2026-08-28 09:40:14'),(4027,9,43,'monitoring',75,2,'2026-08-28 09:40:14'),(4028,9,48,'needs_assistance',480,2,'2026-08-28 09:40:14'),(4029,9,51,'monitoring',173,2,'2026-08-28 09:40:14'),(4030,9,52,'needs_assistance',561,2,'2026-08-28 09:40:14'),(4031,9,54,'high_priority',222,2,'2026-08-28 09:40:14'),(4032,9,55,'monitoring',234,2,'2026-08-28 09:40:14'),(4033,9,11,'needs_assistance',404,2,'2026-08-28 09:40:14'),(4034,9,12,'needs_assistance',415,2,'2026-08-28 09:40:14'),(4035,9,13,'high_priority',596,2,'2026-08-28 09:40:14'),(4036,9,14,'needs_assistance',197,2,'2026-08-28 09:40:14'),(4037,9,15,'needs_assistance',385,2,'2026-08-28 09:40:14'),(4038,9,16,'needs_assistance',331,2,'2026-08-28 09:40:14'),(4039,9,17,'needs_assistance',523,2,'2026-08-28 09:40:14'),(4040,9,56,'high_priority',419,2,'2026-08-28 09:40:14'),(4041,9,57,'needs_assistance',315,2,'2026-08-28 09:40:14'),(4042,9,58,'needs_assistance',360,2,'2026-08-28 09:40:14'),(4043,9,59,'needs_assistance',380,2,'2026-08-28 09:40:14'),(4044,9,60,'high_priority',289,2,'2026-08-28 09:40:14'),(4045,9,62,'needs_assistance',314,2,'2026-08-28 09:40:14'),(4046,9,63,'monitoring',340,2,'2026-08-28 09:40:14'),(4047,9,64,'needs_assistance',147,2,'2026-08-28 09:40:14'),(4048,9,65,'needs_assistance',256,2,'2026-08-28 09:40:14'),(4049,9,66,'needs_assistance',396,2,'2026-08-28 09:40:14'),(4050,9,67,'needs_assistance',592,2,'2026-08-28 09:40:14'),(4051,9,69,'needs_assistance',124,2,'2026-08-28 09:40:14'),(4052,9,70,'needs_assistance',576,2,'2026-08-28 09:40:14'),(4053,9,72,'monitoring',132,2,'2026-08-28 09:40:14'),(4054,9,73,'needs_assistance',248,2,'2026-08-28 09:40:14'),(4055,9,74,'needs_assistance',252,2,'2026-08-28 09:40:14'),(4056,9,24,'high_priority',474,2,'2026-08-28 09:40:14'),(4057,9,25,'needs_assistance',394,2,'2026-08-28 09:40:14'),(4058,9,28,'needs_assistance',288,2,'2026-08-28 09:40:14'),(4059,9,29,'needs_assistance',380,2,'2026-08-28 09:40:14'),(4060,9,30,'needs_assistance',117,2,'2026-08-28 09:40:14'),(4061,9,75,'needs_assistance',234,2,'2026-08-28 09:40:14'),(4062,9,76,'needs_assistance',145,2,'2026-08-28 09:40:14'),(4063,9,77,'needs_assistance',426,2,'2026-08-28 09:40:14'),(4064,9,78,'needs_assistance',365,2,'2026-08-28 09:40:14'),(4065,9,79,'high_priority',548,2,'2026-08-28 09:40:14'),(4066,9,80,'needs_assistance',151,2,'2026-08-28 09:40:14'),(4067,9,81,'needs_assistance',145,2,'2026-08-28 09:40:14'),(4068,9,82,'needs_assistance',164,2,'2026-08-28 09:40:14'),(4069,9,84,'needs_assistance',225,2,'2026-08-28 09:40:14'),(4070,9,87,'needs_assistance',210,2,'2026-08-28 09:40:14'),(4071,10,2,'needs_assistance',210,2,'2026-08-28 09:40:14'),(4072,10,3,'needs_assistance',341,2,'2026-08-28 09:40:14'),(4073,10,4,'needs_assistance',329,2,'2026-08-28 09:40:14'),(4074,10,5,'needs_assistance',281,2,'2026-08-28 09:40:14'),(4075,10,6,'needs_assistance',108,2,'2026-08-28 09:40:14'),(4076,10,32,'high_priority',378,2,'2026-08-28 09:40:14'),(4077,10,34,'needs_assistance',106,2,'2026-08-28 09:40:14'),(4078,10,35,'needs_assistance',379,2,'2026-08-28 09:40:14'),(4079,10,37,'needs_assistance',144,2,'2026-08-28 09:40:14'),(4080,10,38,'needs_assistance',58,2,'2026-08-28 09:40:14'),(4081,10,39,'needs_assistance',360,2,'2026-08-28 09:40:14'),(4082,10,40,'needs_assistance',257,2,'2026-08-28 09:40:14'),(4083,10,41,'needs_assistance',162,2,'2026-08-28 09:40:14'),(4084,10,42,'monitoring',57,2,'2026-08-28 09:40:14'),(4085,10,43,'needs_assistance',90,2,'2026-08-28 09:40:14'),(4086,10,44,'needs_assistance',196,2,'2026-08-28 09:40:14'),(4087,10,45,'monitoring',168,2,'2026-08-28 09:40:14'),(4088,10,46,'needs_assistance',123,2,'2026-08-28 09:40:14'),(4089,10,49,'needs_assistance',359,2,'2026-08-28 09:40:14'),(4090,10,50,'needs_assistance',367,2,'2026-08-28 09:40:14'),(4091,10,51,'needs_assistance',200,2,'2026-08-28 09:40:14'),(4092,10,52,'needs_assistance',624,2,'2026-08-28 09:40:14'),(4093,10,53,'needs_assistance',405,2,'2026-08-28 09:40:14'),(4094,10,54,'high_priority',230,2,'2026-08-28 09:40:14'),(4095,10,11,'needs_assistance',484,2,'2026-08-28 09:40:14'),(4096,10,12,'needs_assistance',482,2,'2026-08-28 09:40:14'),(4097,10,13,'high_priority',595,2,'2026-08-28 09:40:14'),(4098,10,15,'high_priority',394,2,'2026-08-28 09:40:14'),(4099,10,16,'needs_assistance',322,2,'2026-08-28 09:40:14'),(4100,10,18,'needs_assistance',100,2,'2026-08-28 09:40:14'),(4101,10,19,'needs_assistance',505,2,'2026-08-28 09:40:14'),(4102,10,20,'monitoring',119,2,'2026-08-28 09:40:14'),(4103,10,56,'high_priority',435,2,'2026-08-28 09:40:14'),(4104,10,57,'needs_assistance',335,2,'2026-08-28 09:40:14'),(4105,10,59,'needs_assistance',380,2,'2026-08-28 09:40:14'),(4106,10,60,'high_priority',278,2,'2026-08-28 09:40:14'),(4107,10,62,'needs_assistance',359,2,'2026-08-28 09:40:14'),(4108,10,63,'needs_assistance',393,2,'2026-08-28 09:40:14'),(4109,10,64,'needs_assistance',153,2,'2026-08-28 09:40:14'),(4110,10,65,'needs_assistance',258,2,'2026-08-28 09:40:14'),(4111,10,66,'high_priority',441,2,'2026-08-28 09:40:14'),(4112,10,68,'needs_assistance',234,2,'2026-08-28 09:40:14'),(4113,10,70,'needs_assistance',524,2,'2026-08-28 09:40:14'),(4114,10,71,'needs_assistance',378,2,'2026-08-28 09:40:14'),(4115,10,72,'needs_assistance',144,2,'2026-08-28 09:40:14'),(4116,10,73,'needs_assistance',282,2,'2026-08-28 09:40:14'),(4117,10,74,'needs_assistance',247,2,'2026-08-28 09:40:14'),(4118,10,21,'needs_assistance',158,2,'2026-08-28 09:40:14'),(4119,10,22,'needs_assistance',474,2,'2026-08-28 09:40:14'),(4120,10,24,'high_priority',429,2,'2026-08-28 09:40:14'),(4121,10,25,'monitoring',347,2,'2026-08-28 09:40:14'),(4122,10,26,'high_priority',735,2,'2026-08-28 09:40:14'),(4123,10,28,'needs_assistance',285,2,'2026-08-28 09:40:14'),(4124,10,29,'needs_assistance',372,2,'2026-08-28 09:40:14'),(4125,10,75,'needs_assistance',237,2,'2026-08-28 09:40:14'),(4126,10,76,'needs_assistance',153,2,'2026-08-28 09:40:14'),(4127,10,77,'needs_assistance',487,2,'2026-08-28 09:40:14'),(4128,10,79,'high_priority',509,2,'2026-08-28 09:40:14'),(4129,10,80,'needs_assistance',166,2,'2026-08-28 09:40:14'),(4130,10,81,'needs_assistance',133,2,'2026-08-28 09:40:14'),(4131,10,82,'needs_assistance',162,2,'2026-08-28 09:40:14'),(4132,10,83,'needs_assistance',279,2,'2026-08-28 09:40:14'),(4133,10,86,'needs_assistance',440,2,'2026-08-28 09:40:14'),(4134,10,87,'needs_assistance',190,2,'2026-08-28 09:40:14'),(4135,11,2,'needs_assistance',205,2,'2026-08-28 09:40:14'),(4136,11,4,'monitoring',279,2,'2026-08-28 09:40:14'),(4137,11,5,'needs_assistance',301,2,'2026-08-28 09:40:14'),(4138,11,32,'high_priority',336,2,'2026-08-28 09:40:14'),(4139,11,7,'needs_assistance',262,2,'2026-08-28 09:40:14'),(4140,11,8,'needs_assistance',366,2,'2026-08-28 09:40:14'),(4141,11,10,'needs_assistance',444,2,'2026-08-28 09:40:14'),(4142,11,34,'needs_assistance',91,2,'2026-08-28 09:40:14'),(4143,11,36,'needs_assistance',205,2,'2026-08-28 09:40:14'),(4144,11,37,'needs_assistance',132,2,'2026-08-28 09:40:14'),(4145,11,38,'needs_assistance',53,2,'2026-08-28 09:40:14'),(4146,11,39,'monitoring',296,2,'2026-08-28 09:40:14'),(4147,11,40,'needs_assistance',261,2,'2026-08-28 09:40:14'),(4148,11,41,'needs_assistance',151,2,'2026-08-28 09:40:14'),(4149,11,42,'monitoring',60,2,'2026-08-28 09:40:14'),(4150,11,44,'needs_assistance',191,2,'2026-08-28 09:40:14'),(4151,11,45,'monitoring',150,2,'2026-08-28 09:40:14'),(4152,11,46,'needs_assistance',103,2,'2026-08-28 09:40:14'),(4153,11,47,'high_priority',564,2,'2026-08-28 09:40:14'),(4154,11,48,'needs_assistance',479,2,'2026-08-28 09:40:14'),(4155,11,50,'needs_assistance',344,2,'2026-08-28 09:40:14'),(4156,11,51,'monitoring',166,2,'2026-08-28 09:40:14'),(4157,11,52,'needs_assistance',547,2,'2026-08-28 09:40:14'),(4158,11,53,'needs_assistance',328,2,'2026-08-28 09:40:14'),(4159,11,54,'needs_assistance',182,2,'2026-08-28 09:40:14'),(4160,11,11,'needs_assistance',438,2,'2026-08-28 09:40:14'),(4161,11,12,'needs_assistance',421,2,'2026-08-28 09:40:14'),(4162,11,13,'high_priority',586,2,'2026-08-28 09:40:14'),(4163,11,14,'needs_assistance',178,2,'2026-08-28 09:40:14'),(4164,11,15,'needs_assistance',373,2,'2026-08-28 09:40:14'),(4165,11,16,'needs_assistance',310,2,'2026-08-28 09:40:14'),(4166,11,20,'monitoring',101,2,'2026-08-28 09:40:14'),(4167,11,56,'high_priority',421,2,'2026-08-28 09:40:14'),(4168,11,57,'needs_assistance',291,2,'2026-08-28 09:40:14'),(4169,11,58,'needs_assistance',364,2,'2026-08-28 09:40:14'),(4170,11,59,'needs_assistance',382,2,'2026-08-28 09:40:14'),(4171,11,61,'needs_assistance',183,2,'2026-08-28 09:40:14'),(4172,11,63,'monitoring',331,2,'2026-08-28 09:40:14'),(4173,11,65,'needs_assistance',198,2,'2026-08-28 09:40:14'),(4174,11,66,'needs_assistance',386,2,'2026-08-28 09:40:14'),(4175,11,67,'needs_assistance',494,2,'2026-08-28 09:40:14'),(4176,11,68,'needs_assistance',215,2,'2026-08-28 09:40:14'),(4177,11,69,'needs_assistance',114,2,'2026-08-28 09:40:14'),(4178,11,70,'needs_assistance',502,2,'2026-08-28 09:40:14'),(4179,11,71,'needs_assistance',374,2,'2026-08-28 09:40:14'),(4180,11,72,'needs_assistance',145,2,'2026-08-28 09:40:14'),(4181,11,73,'needs_assistance',235,2,'2026-08-28 09:40:14'),(4182,11,74,'monitoring',233,2,'2026-08-28 09:40:14'),(4183,11,21,'needs_assistance',152,2,'2026-08-28 09:40:14'),(4184,11,22,'needs_assistance',356,2,'2026-08-28 09:40:14'),(4185,11,23,'needs_assistance',196,2,'2026-08-28 09:40:14'),(4186,11,24,'needs_assistance',409,2,'2026-08-28 09:40:14'),(4187,11,25,'monitoring',330,2,'2026-08-28 09:40:14'),(4188,11,26,'needs_assistance',581,2,'2026-08-28 09:40:14'),(4189,11,27,'needs_assistance',389,2,'2026-08-28 09:40:14'),(4190,11,28,'needs_assistance',255,2,'2026-08-28 09:40:14'),(4191,11,30,'needs_assistance',113,2,'2026-08-28 09:40:14'),(4192,11,75,'needs_assistance',200,2,'2026-08-28 09:40:14'),(4193,11,76,'needs_assistance',142,2,'2026-08-28 09:40:14'),(4194,11,77,'needs_assistance',378,2,'2026-08-28 09:40:14'),(4195,11,78,'needs_assistance',347,2,'2026-08-28 09:40:14'),(4196,11,79,'needs_assistance',485,2,'2026-08-28 09:40:14'),(4197,11,80,'needs_assistance',140,2,'2026-08-28 09:40:14'),(4198,11,82,'needs_assistance',139,2,'2026-08-28 09:40:14'),(4199,11,84,'needs_assistance',189,2,'2026-08-28 09:40:14'),(4200,11,85,'needs_assistance',382,2,'2026-08-28 09:40:14'),(4201,11,87,'needs_assistance',197,2,'2026-08-28 09:40:14'),(4202,11,88,'monitoring',299,2,'2026-08-28 09:40:14'),(4203,12,4,'monitoring',285,2,'2026-08-28 09:40:14'),(4204,12,5,'needs_assistance',281,2,'2026-08-28 09:40:14'),(4205,12,32,'needs_assistance',302,2,'2026-08-28 09:40:14'),(4206,12,7,'high_priority',291,2,'2026-08-28 09:40:14'),(4207,12,8,'needs_assistance',397,2,'2026-08-28 09:40:14'),(4208,12,9,'needs_assistance',450,2,'2026-08-28 09:40:14'),(4209,12,33,'needs_assistance',300,2,'2026-08-28 09:40:14'),(4210,12,34,'needs_assistance',92,2,'2026-08-28 09:40:14'),(4211,12,35,'needs_assistance',357,2,'2026-08-28 09:40:14'),(4212,12,36,'needs_assistance',201,2,'2026-08-28 09:40:14'),(4213,12,38,'needs_assistance',50,2,'2026-08-28 09:40:14'),(4214,12,39,'monitoring',321,2,'2026-08-28 09:40:14'),(4215,12,40,'needs_assistance',268,2,'2026-08-28 09:40:14'),(4216,12,41,'needs_assistance',146,2,'2026-08-28 09:40:14'),(4217,12,43,'monitoring',75,2,'2026-08-28 09:40:14'),(4218,12,45,'needs_assistance',182,2,'2026-08-28 09:40:14'),(4219,12,46,'needs_assistance',123,2,'2026-08-28 09:40:14'),(4220,12,48,'needs_assistance',472,2,'2026-08-28 09:40:14'),(4221,12,49,'needs_assistance',342,2,'2026-08-28 09:40:14'),(4222,12,50,'needs_assistance',388,2,'2026-08-28 09:40:14'),(4223,12,51,'monitoring',194,2,'2026-08-28 09:40:14'),(4224,12,53,'needs_assistance',390,2,'2026-08-28 09:40:14'),(4225,12,54,'needs_assistance',203,2,'2026-08-28 09:40:14'),(4226,12,11,'needs_assistance',466,2,'2026-08-28 09:40:14'),(4227,12,12,'needs_assistance',418,2,'2026-08-28 09:40:14'),(4228,12,14,'needs_assistance',163,2,'2026-08-28 09:40:14'),(4229,12,15,'needs_assistance',331,2,'2026-08-28 09:40:14'),(4230,12,16,'needs_assistance',361,2,'2026-08-28 09:40:14'),(4231,12,19,'needs_assistance',467,2,'2026-08-28 09:40:14'),(4232,12,20,'monitoring',118,2,'2026-08-28 09:40:14'),(4233,12,56,'high_priority',422,2,'2026-08-28 09:40:14'),(4234,12,57,'needs_assistance',328,2,'2026-08-28 09:40:14'),(4235,12,58,'needs_assistance',372,2,'2026-08-28 09:40:14'),(4236,12,59,'needs_assistance',419,2,'2026-08-28 09:40:14'),(4237,12,60,'high_priority',282,2,'2026-08-28 09:40:14'),(4238,12,61,'needs_assistance',196,2,'2026-08-28 09:40:14'),(4239,12,62,'needs_assistance',315,2,'2026-08-28 09:40:14'),(4240,12,63,'needs_assistance',392,2,'2026-08-28 09:40:14'),(4241,12,65,'needs_assistance',234,2,'2026-08-28 09:40:14'),(4242,12,67,'needs_assistance',578,2,'2026-08-28 09:40:14'),(4243,12,68,'needs_assistance',222,2,'2026-08-28 09:40:14'),(4244,12,69,'needs_assistance',136,2,'2026-08-28 09:40:14'),(4245,12,70,'needs_assistance',532,2,'2026-08-28 09:40:14'),(4246,12,71,'needs_assistance',379,2,'2026-08-28 09:40:14'),(4247,12,72,'needs_assistance',145,2,'2026-08-28 09:40:14'),(4248,12,74,'needs_assistance',270,2,'2026-08-28 09:40:14'),(4249,12,21,'needs_assistance',160,2,'2026-08-28 09:40:14'),(4250,12,22,'needs_assistance',426,2,'2026-08-28 09:40:14'),(4251,12,25,'needs_assistance',361,2,'2026-08-28 09:40:14'),(4252,12,27,'needs_assistance',444,2,'2026-08-28 09:40:14'),(4253,12,28,'needs_assistance',250,2,'2026-08-28 09:40:14'),(4254,12,29,'needs_assistance',368,2,'2026-08-28 09:40:14'),(4255,12,30,'needs_assistance',123,2,'2026-08-28 09:40:14'),(4256,12,75,'needs_assistance',198,2,'2026-08-28 09:40:14'),(4257,12,76,'needs_assistance',132,2,'2026-08-28 09:40:14'),(4258,12,78,'needs_assistance',398,2,'2026-08-28 09:40:14'),(4259,12,79,'high_priority',543,2,'2026-08-28 09:40:14'),(4260,12,80,'needs_assistance',140,2,'2026-08-28 09:40:14'),(4261,12,81,'needs_assistance',132,2,'2026-08-28 09:40:14'),(4262,12,86,'needs_assistance',385,2,'2026-08-28 09:40:14'),(4263,12,87,'needs_assistance',199,2,'2026-08-28 09:40:14'),(4264,12,88,'monitoring',306,2,'2026-08-28 09:40:14');
 /*!40000 ALTER TABLE `barangay_disaster_status` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `barangay_inventory`
@@ -1407,7 +160,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `barangay_inventory`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `barangay_inventory` (
   `inventory_id` int(11) NOT NULL AUTO_INCREMENT,
   `barangay_id` int(11) NOT NULL,
@@ -1431,101 +184,11 @@ CREATE TABLE `barangay_inventory` (
 -- Dumping data for table `barangay_inventory`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `barangay_inventory` WRITE;
 /*!40000 ALTER TABLE `barangay_inventory` DISABLE KEYS */;
-INSERT INTO `barangay_inventory` VALUES
-(1,1,'food_pack','Food Packs','packs',183,0,'2026-08-28 09:13:24',11),
-(2,2,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(3,3,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(4,4,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(5,5,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(6,6,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(7,7,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(8,8,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(9,9,'food_pack','Food Packs','packs',0,0,'2026-08-28 09:06:40',19),
-(10,10,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(11,11,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(12,12,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(13,13,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(14,14,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(15,15,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(16,16,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(17,17,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(18,18,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(19,19,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(20,20,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(21,21,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(22,22,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(23,23,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(24,24,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(25,25,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(26,26,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(27,27,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(28,28,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(29,29,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(30,30,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(31,32,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(32,33,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(33,34,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(34,35,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(35,36,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(36,37,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(37,38,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(38,39,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(39,40,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(40,41,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(41,42,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(42,43,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(43,44,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(44,45,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(45,46,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(46,47,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(47,48,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(48,49,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(49,50,'food_pack','Food Packs','packs',153,0,'2026-08-28 09:01:55',NULL),
-(50,51,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(51,52,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(52,53,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(53,54,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(54,55,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(55,56,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(56,57,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(57,58,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(58,59,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(59,60,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(60,61,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(61,62,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(62,63,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(63,64,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(64,65,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(65,66,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(66,67,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(67,68,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(68,69,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(69,70,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(70,71,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(71,72,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(72,73,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(73,74,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(74,75,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(75,76,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(76,77,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(77,78,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(78,79,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(79,80,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(80,81,'food_pack','Food Packs','packs',170,0,'2026-08-28 09:01:55',NULL),
-(81,82,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(82,83,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(83,84,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(84,85,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(85,86,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(86,87,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),
-(87,88,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL);
+INSERT INTO `barangay_inventory` VALUES (1,1,'food_pack','Food Packs','packs',149,0,'2026-08-30 23:18:17',11),(2,2,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(3,3,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(4,4,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(5,5,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(6,6,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(7,7,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(8,8,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(9,9,'food_pack','Food Packs','packs',0,0,'2026-08-28 09:06:40',19),(10,10,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(11,11,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(12,12,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(13,13,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(14,14,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(15,15,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(16,16,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(17,17,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(18,18,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(19,19,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(20,20,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(21,21,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(22,22,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(23,23,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(24,24,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(25,25,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(26,26,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(27,27,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(28,28,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(29,29,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(30,30,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(31,32,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(32,33,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(33,34,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(34,35,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(35,36,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(36,37,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(37,38,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(38,39,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(39,40,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(40,41,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(41,42,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(42,43,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(43,44,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(44,45,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(45,46,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(46,47,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(47,48,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(48,49,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(49,50,'food_pack','Food Packs','packs',153,0,'2026-08-28 09:01:55',NULL),(50,51,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(51,52,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(52,53,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(53,54,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(54,55,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(55,56,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(56,57,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(57,58,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(58,59,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(59,60,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(60,61,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(61,62,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(62,63,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(63,64,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(64,65,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(65,66,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(66,67,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(67,68,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(68,69,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(69,70,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(70,71,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(71,72,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(72,73,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(73,74,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(74,75,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(75,76,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(76,77,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(77,78,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(78,79,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(79,80,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(80,81,'food_pack','Food Packs','packs',170,0,'2026-08-28 09:01:55',NULL),(81,82,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(82,83,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(83,84,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(84,85,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(85,86,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(86,87,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL),(87,88,'food_pack','Food Packs','packs',0,0,'2026-08-28 08:11:04',NULL);
 /*!40000 ALTER TABLE `barangay_inventory` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `barangay_reports`
@@ -1533,7 +196,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `barangay_reports`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `barangay_reports` (
   `report_id` int(11) NOT NULL AUTO_INCREMENT,
   `barangay_id` int(11) NOT NULL,
@@ -1573,58 +236,18 @@ CREATE TABLE `barangay_reports` (
   CONSTRAINT `barangay_reports_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`),
   CONSTRAINT `barangay_reports_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `barangay_reports_ibfk_3` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `barangay_reports`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `barangay_reports` WRITE;
 /*!40000 ALTER TABLE `barangay_reports` DISABLE KEYS */;
-INSERT INTO `barangay_reports` VALUES
-(1,11,1,'Combined',NULL,NULL,'Ricardo Manalo','Barangay Captain','2026-07-23 05:53:01','2026-07-20 03:22:18',150,600,2,5,0,NULL,NULL,0,0,0,0,0,1518,'monitoring',0.30,'Light flooding along the creek. Monitoring water level.','photo_abot_1.jpg','approved','Verified via automated test.',4,'2026-07-20 06:30:25'),
-(2,12,1,'Combined',NULL,NULL,'Corazon Dizon','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 00:22:18',300,1200,4,9,0,NULL,NULL,0,0,0,0,0,1537,'monitoring',0.40,'Flooding receding. Residents advised to stay alert.','photo_ban-ao_1.jpg','approved','Consistent with barangay visit.',4,'2026-07-20 01:22:18'),
-(3,13,1,'Combined',NULL,NULL,'Ernesto Villar','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 04:22:18',220,880,9,14,0,NULL,NULL,0,0,0,0,0,1749,'needs_assistance',0.60,'Several households still without power.','photo_batayang_1.jpg','returned','Please double-check the family count.',4,'2026-07-20 06:30:47'),
-(4,15,1,'Combined',NULL,NULL,'Marissa Ocampo','Barangay Captain','2026-07-23 05:53:01','2026-07-19 22:22:18',900,3600,22,31,0,NULL,NULL,0,0,0,0,0,1701,'high_priority',1.10,'Critical flooding, main road impassable.','photo_calepaan_1.jpg','approved','Verified on-site. Matches CDRRMO advisory.',4,'2026-07-19 23:22:18'),
-(5,16,1,'Combined',NULL,NULL,'Danilo Ferrer','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 01:22:18',80,320,0,3,0,NULL,NULL,0,0,0,0,0,1262,'normal',0.10,'Minor debris on roadside only.','photo_carosucan_norte_1.jpg','approved','Re-verified for relief request test.',4,'2026-07-20 07:02:16'),
-(6,18,1,'Combined',NULL,NULL,'Teresita Bautista','Barangay Captain','2026-07-23 05:53:01','2026-07-19 23:22:18',600,2400,11,19,0,NULL,NULL,0,0,0,0,0,809,'needs_assistance',0.70,'Several families relocated to higher ground.','photo_coliling_1.jpg','approved','Verified. Data consistent with field visit.',4,'2026-07-20 00:22:18'),
-(7,19,1,'Combined',NULL,NULL,'Romeo Castillo','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 05:22:18',340,1360,15,20,0,NULL,NULL,0,0,0,0,0,1559,'needs_assistance',0.90,'Rising water level near the irrigation canal.','photo_hacienda_1.jpg','approved','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
-(8,20,1,'Combined',NULL,NULL,'Luz Aquino','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 21:22:18',40,160,0,1,0,NULL,NULL,0,0,0,0,0,940,'normal',0.00,'No significant impact observed.','photo_mapolopolo_1.jpg','approved','Verified.',4,'2026-07-19 22:22:18'),
-(9,1,1,'Combined',NULL,NULL,'Julieta Reyes','Barangay Captain','2026-07-23 05:53:01','2026-07-19 20:22:18',1200,4800,28,40,0,NULL,NULL,0,0,0,0,0,1205,'high_priority',1.30,'Critical flooding, evacuation ongoing.','photo_anonas_1.jpg','approved','Verified on-site — matches CDRRMO report.',3,'2026-07-19 21:22:18'),
-(10,2,1,'Combined',NULL,NULL,'Mario Corpuz','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 21:22:18',800,3200,14,22,0,NULL,NULL,0,0,0,0,0,1345,'needs_assistance',0.80,'Flood waters entering low-lying homes.','photo_bactad_east_1.jpg','approved','Consistent with field visit.',3,'2026-07-19 22:22:18'),
-(11,3,1,'Combined',NULL,NULL,'Angelita Ramos','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 04:22:18',180,720,3,6,0,NULL,NULL,0,0,0,0,0,1574,'monitoring',0.30,'Water level rising slowly, monitoring situation.','photo_bayaoas_1.jpg','pending',NULL,NULL,NULL),
-(12,4,1,'Combined',NULL,NULL,'Feliciano Domingo','Barangay Captain','2026-07-23 05:53:01','2026-07-20 02:22:18',60,240,0,2,0,NULL,NULL,0,0,0,0,0,1312,'normal',0.00,'No flooding reported, strong winds only.','photo_bolaoen_1.jpg','pending',NULL,NULL,NULL),
-(13,5,1,'Combined',NULL,NULL,'Yolanda Santiago','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 19:22:18',600,2400,10,18,0,NULL,NULL,0,0,0,0,0,1059,'needs_assistance',0.60,'Several roads temporarily flooded.','photo_cabaruan_1.jpg','approved','Verified. Redirect relief coordination noted.',3,'2026-07-19 20:22:18'),
-(14,7,1,'Combined',NULL,NULL,'Arnel Pascual','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 03:22:18',95,380,1,3,0,NULL,NULL,0,0,0,0,0,1190,'monitoring',0.20,'Minor flooding near the barangay hall.','photo_camantiles_1.jpg','returned','Photo evidence unclear — please resubmit with a clearer shot.',3,'2026-07-20 04:22:18'),
-(15,8,1,'Combined',NULL,NULL,'Remedios Torres','Barangay Captain','2026-07-23 05:53:01','2026-07-20 05:22:18',260,1040,8,13,0,NULL,NULL,0,0,0,0,0,1777,'needs_assistance',0.70,'Creek overflowed near residential area.','photo_casantaan_1.jpg','pending',NULL,NULL,NULL),
-(16,10,1,'Combined',NULL,NULL,'Benjamin Aguilar','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 01:22:18',130,520,2,5,0,NULL,NULL,0,0,0,0,0,1623,'monitoring',0.30,'Light flooding, situation stable.','photo_cayambanan_1.jpg','pending',NULL,NULL,NULL),
-(17,21,1,'Combined',NULL,NULL,'Perlita Navarro','Barangay Captain','2026-07-23 05:53:01','2026-07-20 04:22:18',140,560,2,4,0,NULL,NULL,0,0,0,0,0,1088,'monitoring',0.30,'Light flooding along the main road.','photo_ambonao_1.jpg','pending',NULL,NULL,NULL),
-(18,22,1,'Combined',NULL,NULL,'Josefina Mendoza','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 02:22:18',50,200,0,1,0,NULL,NULL,0,0,0,0,0,1303,'normal',0.00,'No significant damage observed.','photo_ambuetel_1.jpg','returned','Report is missing barangay captain\'s signature — please resubmit.',5,'2026-07-20 03:22:18'),
-(19,23,1,'Combined',NULL,NULL,'Ramon Salvador','Barangay Kagawad','2026-07-23 05:53:01','2026-07-19 22:22:18',250,1000,3,7,0,NULL,NULL,0,0,0,0,0,1114,'monitoring',0.30,'Flooding receding along riverside homes.','photo_banaoang_1.jpg','approved','Verified. Matches previous advisory.',5,'2026-07-19 23:22:18'),
-(20,24,1,'Combined',NULL,NULL,'Cristina Lopez','Barangay Captain','2026-07-23 05:53:01','2026-07-20 05:22:18',210,840,7,12,0,NULL,NULL,0,0,0,0,0,1549,'needs_assistance',0.60,'Rising water level near the river bank.','photo_bued_1.jpg','pending',NULL,NULL,NULL),
-(21,25,1,'Combined',NULL,NULL,'Fernando Garcia','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 00:22:18',70,280,0,2,0,NULL,NULL,0,0,0,0,0,1590,'normal',0.00,'Strong winds, no flooding reported.','photo_buenlag_1.jpg','pending',NULL,NULL,NULL),
-(22,26,1,'Combined',NULL,NULL,'Aurora Ramirez','Barangay Kagawad','2026-07-23 05:53:01','2026-07-19 21:22:18',500,2000,9,16,0,NULL,NULL,0,0,0,0,0,2131,'needs_assistance',0.60,'Several families temporarily relocated.','photo_cabilocaan_1.jpg','approved','Verified on-site.',5,'2026-07-19 22:22:18'),
-(23,28,1,'Combined',NULL,NULL,'Salvador Cruz','Barangay Captain','2026-07-23 05:53:01','2026-07-19 20:22:18',350,1400,4,8,0,NULL,NULL,0,0,0,0,0,1036,'monitoring',0.40,'Water receding, roads passable.','photo_doyong_1.jpg','approved','Verified.',5,'2026-07-19 21:22:18'),
-(24,30,1,'Combined',NULL,NULL,'Herminia Flores','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 18:22:18',700,2800,18,25,0,NULL,NULL,0,0,0,0,0,765,'needs_assistance',1.00,'Critical flooding, several households isolated.','photo_lasip_1.jpg','approved','Verified — matches CDRRMO advisory.',5,'2026-07-19 19:22:18'),
-(25,14,1,'Combined',NULL,NULL,'Barangay Office','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 06:52:00',210,840,10,17,0,NULL,NULL,0,0,0,0,0,1086,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_bungallon_1.jpg','approved','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
-(26,17,1,'Combined',NULL,NULL,'Barangay Office','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 06:52:00',175,700,8,14,0,NULL,NULL,0,0,0,0,0,1747,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_carosucan_sur_1.jpg','approved','Verified for relief request demo.',4,'2026-07-20 06:52:00'),
-(29,1,1,'Combined','2026-07-20','06:00:00','Ramon Bautista','Barangay Captain','2026-07-23 06:24:07','2026-07-29 02:36:54',45,180,5,10,0,NULL,NULL,0,0,10,15,10,1544,'needs_assistance',1.10,'Initial report — data still being collected. Situation rapidly changing.',NULL,'approved',NULL,3,'2026-07-29 02:42:14'),
-(30,2,1,'Flooding','2026-07-21','14:30:00','Cecilia Manalo','Barangay Captain','2026-07-23 06:24:07','2026-07-23 06:24:07',28,112,1,6,0,NULL,NULL,0,0,6,8,5,1122,'monitoring',0.80,'Water level rising slowly along the creek. Monitoring the situation.',NULL,'approved',NULL,3,'2026-08-20 03:49:13'),
-(31,6,1,'Combined','2026-07-21',NULL,'Rosalinda Aquino','Barangay Captain','2026-07-23 06:25:48',NULL,12,48,0,2,0,NULL,NULL,0,0,0,0,0,753,'normal',0.40,'Still gathering exact numbers from purok leaders.',NULL,'draft',NULL,NULL,NULL),
-(32,1,1,'Combined','2026-02-27',NULL,'Ramon Bautista','Barangay Captain','2026-08-20 04:00:03','2026-08-20 04:00:47',0,0,0,0,0,NULL,NULL,0,0,0,0,0,1037,'monitoring',2.00,'None',NULL,'approved',NULL,3,'2026-08-23 14:12:05'),
-(35,5,1,'Combined','2026-08-28','15:32:00','Edgardo Villanueva','Barangay Captain','2026-08-28 07:33:23','2026-08-28 07:33:23',3,50,0,0,0,NULL,NULL,0,0,0,0,0,1373,'normal',1.00,NULL,NULL,'pending',NULL,NULL,NULL),
-(38,48,1,'Flooding','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',210,840,7,26,0,NULL,NULL,0,0,0,0,0,260,'needs_assistance',1.20,NULL,NULL,'pending',NULL,NULL,NULL),
-(39,43,1,'Strong Winds','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',90,360,3,11,15,NULL,NULL,0,0,0,0,0,120,'normal',NULL,NULL,NULL,'pending',NULL,NULL,NULL),
-(40,50,1,'Combined','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',140,560,4,17,23,NULL,NULL,0,0,0,0,0,180,'needs_assistance',1.20,NULL,NULL,'fulfilled',NULL,NULL,NULL),
-(41,58,1,'Flooding','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',120,480,4,15,0,NULL,NULL,0,0,0,0,0,150,'needs_assistance',1.20,NULL,NULL,'pending',NULL,NULL,NULL),
-(42,81,1,'Storm Surge','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',160,640,5,20,0,NULL,NULL,0,0,0,0,0,200,'needs_assistance',1.20,NULL,NULL,'fulfilled',NULL,NULL,NULL),
-(43,75,1,'Strong Winds','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',70,280,2,8,11,NULL,NULL,0,0,0,0,0,90,'normal',NULL,NULL,NULL,'declined','Barangay stock still adequate from a prior delivery.',NULL,NULL);
+INSERT INTO `barangay_reports` VALUES (1,11,1,'Combined',NULL,NULL,'Ricardo Manalo','Barangay Captain','2026-07-23 05:53:01','2026-07-20 03:22:18',150,600,2,5,0,NULL,NULL,0,0,0,0,0,1518,'monitoring',0.30,'Light flooding along the creek. Monitoring water level.','photo_abot_1.jpg','approved','Verified via automated test.',4,'2026-07-20 06:30:25'),(2,12,1,'Combined',NULL,NULL,'Corazon Dizon','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 00:22:18',300,1200,4,9,0,NULL,NULL,0,0,0,0,0,1537,'monitoring',0.40,'Flooding receding. Residents advised to stay alert.','photo_ban-ao_1.jpg','approved','Consistent with barangay visit.',4,'2026-07-20 01:22:18'),(3,13,1,'Combined',NULL,NULL,'Ernesto Villar','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 04:22:18',220,880,9,14,0,NULL,NULL,0,0,0,0,0,1749,'needs_assistance',0.60,'Several households still without power.','photo_batayang_1.jpg','returned','Please double-check the family count.',4,'2026-07-20 06:30:47'),(4,15,1,'Combined',NULL,NULL,'Marissa Ocampo','Barangay Captain','2026-07-23 05:53:01','2026-07-19 22:22:18',900,3600,22,31,0,NULL,NULL,0,0,0,0,0,1701,'high_priority',1.10,'Critical flooding, main road impassable.','photo_calepaan_1.jpg','approved','Verified on-site. Matches CDRRMO advisory.',4,'2026-07-19 23:22:18'),(5,16,1,'Combined',NULL,NULL,'Danilo Ferrer','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 01:22:18',80,320,0,3,0,NULL,NULL,0,0,0,0,0,1262,'normal',0.10,'Minor debris on roadside only.','photo_carosucan_norte_1.jpg','approved','Re-verified for relief request test.',4,'2026-07-20 07:02:16'),(6,18,1,'Combined',NULL,NULL,'Teresita Bautista','Barangay Captain','2026-07-23 05:53:01','2026-07-19 23:22:18',600,2400,11,19,0,NULL,NULL,0,0,0,0,0,809,'needs_assistance',0.70,'Several families relocated to higher ground.','photo_coliling_1.jpg','approved','Verified. Data consistent with field visit.',4,'2026-07-20 00:22:18'),(7,19,1,'Combined',NULL,NULL,'Romeo Castillo','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 05:22:18',340,1360,15,20,0,NULL,NULL,0,0,0,0,0,1559,'needs_assistance',0.90,'Rising water level near the irrigation canal.','photo_hacienda_1.jpg','approved','Verified for relief request demo.',4,'2026-07-20 06:52:00'),(8,20,1,'Combined',NULL,NULL,'Luz Aquino','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 21:22:18',40,160,0,1,0,NULL,NULL,0,0,0,0,0,940,'normal',0.00,'No significant impact observed.','photo_mapolopolo_1.jpg','approved','Verified.',4,'2026-07-19 22:22:18'),(9,1,1,'Combined',NULL,NULL,'Julieta Reyes','Barangay Captain','2026-07-23 05:53:01','2026-07-19 20:22:18',1200,4800,28,40,0,NULL,NULL,0,0,0,0,0,1205,'high_priority',1.30,'Critical flooding, evacuation ongoing.','photo_anonas_1.jpg','approved','Verified on-site — matches CDRRMO report.',3,'2026-07-19 21:22:18'),(10,2,1,'Combined',NULL,NULL,'Mario Corpuz','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 21:22:18',800,3200,14,22,0,NULL,NULL,0,0,0,0,0,1345,'needs_assistance',0.80,'Flood waters entering low-lying homes.','photo_bactad_east_1.jpg','approved','Consistent with field visit.',3,'2026-07-19 22:22:18'),(11,3,1,'Combined',NULL,NULL,'Angelita Ramos','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 04:22:18',180,720,3,6,0,NULL,NULL,0,0,0,0,0,1574,'monitoring',0.30,'Water level rising slowly, monitoring situation.','photo_bayaoas_1.jpg','pending',NULL,NULL,NULL),(12,4,1,'Combined',NULL,NULL,'Feliciano Domingo','Barangay Captain','2026-07-23 05:53:01','2026-07-20 02:22:18',60,240,0,2,0,NULL,NULL,0,0,0,0,0,1312,'normal',0.00,'No flooding reported, strong winds only.','photo_bolaoen_1.jpg','pending',NULL,NULL,NULL),(13,5,1,'Combined',NULL,NULL,'Yolanda Santiago','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 19:22:18',600,2400,10,18,0,NULL,NULL,0,0,0,0,0,1059,'needs_assistance',0.60,'Several roads temporarily flooded.','photo_cabaruan_1.jpg','approved','Verified. Redirect relief coordination noted.',3,'2026-07-19 20:22:18'),(14,7,1,'Combined',NULL,NULL,'Arnel Pascual','Barangay Kagawad','2026-07-23 05:53:01','2026-07-20 03:22:18',95,380,1,3,0,NULL,NULL,0,0,0,0,0,1190,'monitoring',0.20,'Minor flooding near the barangay hall.','photo_camantiles_1.jpg','returned','Photo evidence unclear — please resubmit with a clearer shot.',3,'2026-07-20 04:22:18'),(15,8,1,'Combined',NULL,NULL,'Remedios Torres','Barangay Captain','2026-07-23 05:53:01','2026-07-20 05:22:18',260,1040,8,13,0,NULL,NULL,0,0,0,0,0,1777,'needs_assistance',0.70,'Creek overflowed near residential area.','photo_casantaan_1.jpg','pending',NULL,NULL,NULL),(16,10,1,'Combined',NULL,NULL,'Benjamin Aguilar','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 01:22:18',130,520,2,5,0,NULL,NULL,0,0,0,0,0,1623,'monitoring',0.30,'Light flooding, situation stable.','photo_cayambanan_1.jpg','pending',NULL,NULL,NULL),(17,21,1,'Combined',NULL,NULL,'Perlita Navarro','Barangay Captain','2026-07-23 05:53:01','2026-07-20 04:22:18',140,560,2,4,0,NULL,NULL,0,0,0,0,0,1088,'monitoring',0.30,'Light flooding along the main road.','photo_ambonao_1.jpg','pending',NULL,NULL,NULL),(18,22,1,'Combined',NULL,NULL,'Josefina Mendoza','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 02:22:18',50,200,0,1,0,NULL,NULL,0,0,0,0,0,1303,'normal',0.00,'No significant damage observed.','photo_ambuetel_1.jpg','returned','Report is missing barangay captain\'s signature — please resubmit.',5,'2026-07-20 03:22:18'),(19,23,1,'Combined',NULL,NULL,'Ramon Salvador','Barangay Kagawad','2026-07-23 05:53:01','2026-07-19 22:22:18',250,1000,3,7,0,NULL,NULL,0,0,0,0,0,1114,'monitoring',0.30,'Flooding receding along riverside homes.','photo_banaoang_1.jpg','approved','Verified. Matches previous advisory.',5,'2026-07-19 23:22:18'),(20,24,1,'Combined',NULL,NULL,'Cristina Lopez','Barangay Captain','2026-07-23 05:53:01','2026-07-20 05:22:18',210,840,7,12,0,NULL,NULL,0,0,0,0,0,1549,'needs_assistance',0.60,'Rising water level near the river bank.','photo_bued_1.jpg','pending',NULL,NULL,NULL),(21,25,1,'Combined',NULL,NULL,'Fernando Garcia','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 00:22:18',70,280,0,2,0,NULL,NULL,0,0,0,0,0,1590,'normal',0.00,'Strong winds, no flooding reported.','photo_buenlag_1.jpg','pending',NULL,NULL,NULL),(22,26,1,'Combined',NULL,NULL,'Aurora Ramirez','Barangay Kagawad','2026-07-23 05:53:01','2026-07-19 21:22:18',500,2000,9,16,0,NULL,NULL,0,0,0,0,0,2131,'needs_assistance',0.60,'Several families temporarily relocated.','photo_cabilocaan_1.jpg','approved','Verified on-site.',5,'2026-07-19 22:22:18'),(23,28,1,'Combined',NULL,NULL,'Salvador Cruz','Barangay Captain','2026-07-23 05:53:01','2026-07-19 20:22:18',350,1400,4,8,0,NULL,NULL,0,0,0,0,0,1036,'monitoring',0.40,'Water receding, roads passable.','photo_doyong_1.jpg','approved','Verified.',5,'2026-07-19 21:22:18'),(24,30,1,'Combined',NULL,NULL,'Herminia Flores','Barangay Secretary','2026-07-23 05:53:01','2026-07-19 18:22:18',700,2800,18,25,0,NULL,NULL,0,0,0,0,0,765,'needs_assistance',1.00,'Critical flooding, several households isolated.','photo_lasip_1.jpg','approved','Verified — matches CDRRMO advisory.',5,'2026-07-19 19:22:18'),(25,14,1,'Combined',NULL,NULL,'Barangay Office','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 06:52:00',210,840,10,17,0,NULL,NULL,0,0,0,0,0,1086,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_bungallon_1.jpg','approved','Verified for relief request demo.',4,'2026-07-20 06:52:00'),(26,17,1,'Combined',NULL,NULL,'Barangay Office','Barangay Secretary','2026-07-23 05:53:01','2026-07-20 06:52:00',175,700,8,14,0,NULL,NULL,0,0,0,0,0,1747,'needs_assistance',0.50,'Seeded for Relief Requests demo.','photo_carosucan_sur_1.jpg','approved','Verified for relief request demo.',4,'2026-07-20 06:52:00'),(29,1,1,'Combined','2026-07-20','06:00:00','Ramon Bautista','Barangay Captain','2026-07-23 06:24:07','2026-07-29 02:36:54',45,180,5,10,0,NULL,NULL,0,0,10,15,10,1544,'needs_assistance',1.10,'Initial report — data still being collected. Situation rapidly changing.',NULL,'approved',NULL,3,'2026-07-29 02:42:14'),(30,2,1,'Flooding','2026-07-21','14:30:00','Cecilia Manalo','Barangay Captain','2026-07-23 06:24:07','2026-07-23 06:24:07',28,112,1,6,0,NULL,NULL,0,0,6,8,5,1122,'monitoring',0.80,'Water level rising slowly along the creek. Monitoring the situation.',NULL,'approved',NULL,3,'2026-08-20 03:49:13'),(31,6,1,'Combined','2026-07-21',NULL,'Rosalinda Aquino','Barangay Captain','2026-07-23 06:25:48',NULL,12,48,0,2,0,NULL,NULL,0,0,0,0,0,753,'normal',0.40,'Still gathering exact numbers from purok leaders.',NULL,'draft',NULL,NULL,NULL),(32,1,1,'Combined','2026-02-27',NULL,'Ramon Bautista','Barangay Captain','2026-08-20 04:00:03','2026-08-20 04:00:47',0,0,0,0,0,NULL,NULL,0,0,0,0,0,1037,'monitoring',2.00,'None',NULL,'approved',NULL,3,'2026-08-23 14:12:05'),(35,5,1,'Combined','2026-08-28','15:32:00','Edgardo Villanueva','Barangay Captain','2026-08-28 07:33:23','2026-08-28 07:33:23',3,50,0,0,0,NULL,NULL,0,0,0,0,0,1373,'normal',1.00,NULL,NULL,'pending',NULL,NULL,NULL),(38,48,1,'Flooding','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',210,840,7,26,0,NULL,NULL,0,0,0,0,0,260,'needs_assistance',1.20,NULL,NULL,'pending',NULL,NULL,NULL),(39,43,1,'Strong Winds','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',90,360,3,11,15,NULL,NULL,0,0,0,0,0,120,'normal',NULL,NULL,NULL,'pending',NULL,NULL,NULL),(40,50,1,'Combined','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',140,560,4,17,23,NULL,NULL,0,0,0,0,0,180,'needs_assistance',1.20,NULL,NULL,'fulfilled',NULL,NULL,NULL),(41,58,1,'Flooding','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',120,480,4,15,0,NULL,NULL,0,0,0,0,0,150,'needs_assistance',1.20,NULL,NULL,'pending',NULL,NULL,NULL),(42,81,1,'Storm Surge','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',160,640,5,20,0,NULL,NULL,0,0,0,0,0,200,'needs_assistance',1.20,NULL,NULL,'fulfilled',NULL,NULL,NULL),(43,75,1,'Strong Winds','2026-07-13',NULL,'Barangay Captain','Barangay Captain','2026-08-28 09:01:55','2026-08-28 09:01:55',70,280,2,8,11,NULL,NULL,0,0,0,0,0,90,'normal',NULL,NULL,NULL,'declined','Barangay stock still adequate from a prior delivery.',NULL,NULL),(44,1,NULL,'Combined','2026-08-03',NULL,'Ramon Bautista','Barangay Captain','2026-08-30 22:38:41',NULL,0,0,0,0,0,NULL,NULL,0,0,0,0,0,213,'normal',NULL,'None',NULL,'draft',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `barangay_reports` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `barangay_stock_logs`
@@ -1632,7 +255,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `barangay_stock_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `barangay_stock_logs` (
   `log_id` int(11) NOT NULL AUTO_INCREMENT,
   `barangay_id` int(11) NOT NULL,
@@ -1651,25 +274,18 @@ CREATE TABLE `barangay_stock_logs` (
   CONSTRAINT `fk_brgylog_barangay` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_brgylog_dist` FOREIGN KEY (`distribution_id`) REFERENCES `distribution_records` (`distribution_id`) ON DELETE SET NULL,
   CONSTRAINT `fk_brgylog_user` FOREIGN KEY (`updated_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `barangay_stock_logs`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `barangay_stock_logs` WRITE;
 /*!40000 ALTER TABLE `barangay_stock_logs` DISABLE KEYS */;
-INSERT INTO `barangay_stock_logs` VALUES
-(2,50,'food_pack','Food Packs',153,'Received relief delivery','delivery',NULL,NULL,'2026-08-28 09:01:55'),
-(3,81,'food_pack','Food Packs',170,'Received relief delivery','delivery',NULL,NULL,'2026-08-28 09:01:55'),
-(4,1,'food_pack','Food Packs',207,'Received delivery D-2026-027','delivery',27,11,'2026-08-28 09:13:07'),
-(5,1,'food_pack','Food Packs',-24,'Distributed to residents','distribution',NULL,11,'2026-08-28 09:13:24');
+INSERT INTO `barangay_stock_logs` VALUES (2,50,'food_pack','Food Packs',153,'Received relief delivery','delivery',NULL,NULL,'2026-08-28 09:01:55'),(3,81,'food_pack','Food Packs',170,'Received relief delivery','delivery',NULL,NULL,'2026-08-28 09:01:55'),(4,1,'food_pack','Food Packs',207,'Received delivery D-2026-027','delivery',27,11,'2026-08-28 09:13:07'),(5,1,'food_pack','Food Packs',-24,'Distributed to residents','distribution',NULL,11,'2026-08-28 09:13:24'),(6,1,'food_pack','Food Packs',-34,'Distributed to residents','distribution',NULL,11,'2026-08-30 23:18:17');
 /*!40000 ALTER TABLE `barangay_stock_logs` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `barangays`
@@ -1677,7 +293,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `barangays`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `barangays` (
   `barangay_id` int(11) NOT NULL AUTO_INCREMENT,
   `barangay_name` varchar(100) NOT NULL,
@@ -1695,101 +311,11 @@ CREATE TABLE `barangays` (
 -- Dumping data for table `barangays`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `barangays` WRITE;
 /*!40000 ALTER TABLE `barangays` DISABLE KEYS */;
-INSERT INTO `barangays` VALUES
-(1,'Anonas','Urdaneta City',2039,614,24.77,8.43,5),
-(2,'Bactad East','Urdaneta City',2914,580,27.61,7.10,5),
-(3,'Bayaoas','Urdaneta City',4512,970,44.33,4.49,8),
-(4,'Bolaoen','Urdaneta City',4702,1166,15.26,4.45,3),
-(5,'Cabaruan','Urdaneta City',5575,964,37.89,5.10,2),
-(6,'Cabuloan','Urdaneta City',1739,369,33.51,5.73,1),
-(7,'Camantiles','Urdaneta City',2911,631,15.90,8.05,8),
-(8,'Casantaan','Urdaneta City',6110,1161,30.03,6.14,6),
-(9,'Catablan','Urdaneta City',4983,1204,28.06,7.78,1),
-(10,'Cayambanan','Urdaneta City',5450,1278,32.91,6.81,7),
-(11,'Alibago','Santa Barbara',4893,1086,21.28,8.37,5),
-(12,'Balingueo','Santa Barbara',5054,1119,12.81,7.91,6),
-(13,'Banaoang','Santa Barbara',5425,1292,40.03,8.50,7),
-(14,'Banzal','Santa Barbara',2360,467,23.10,5.63,9),
-(15,'Botao','Santa Barbara',3863,874,43.70,8.21,3),
-(16,'Cablong','Santa Barbara',3441,882,36.49,6.44,5),
-(17,'Carusocan','Santa Barbara',6198,1272,26.32,6.17,8),
-(18,'Dalongue','Santa Barbara',1269,262,35.31,5.79,4),
-(19,'Erfe','Santa Barbara',4756,1169,31.54,8.57,5),
-(20,'Gueguesangen','Santa Barbara',2277,442,21.03,3.82,3),
-(21,'Ambonao','Calasiao',1744,423,28.51,5.87,8),
-(22,'Ambuetel','Calasiao',4617,1089,17.68,8.18,4),
-(23,'Banaoang','Calasiao',2632,517,18.57,6.62,9),
-(24,'Bued','Calasiao',4036,933,26.85,9.03,9),
-(25,'Buenlag','Calasiao',5097,1279,30.80,5.00,2),
-(26,'Cabilocaan','Calasiao',5766,1573,34.36,7.27,7),
-(27,'Dinalaoan','Calasiao',5706,1125,23.25,8.24,4),
-(28,'Doyong','Calasiao',3739,812,24.14,7.62,1),
-(29,'Gabon','Calasiao',4120,919,23.56,8.54,4),
-(30,'Lasip','Calasiao',1635,378,12.04,4.84,9),
-(32,'Camanang','Urdaneta City',3118,731,35.52,7.46,9),
-(33,'Consolacion','Urdaneta City',3506,847,12.72,7.79,3),
-(34,'Dilan Paurido','Urdaneta City',1280,286,16.25,4.94,8),
-(35,'Dr. Pedro T. Orata','Urdaneta City',5811,1143,20.50,5.68,3),
-(36,'Labit Proper','Urdaneta City',2606,612,40.07,7.07,2),
-(37,'Labit West','Urdaneta City',1701,387,30.71,7.72,3),
-(38,'Mabanogbog','Urdaneta City',1037,178,26.07,5.68,3),
-(39,'Macalong','Urdaneta City',4990,1182,38.63,4.21,2),
-(40,'Nancalobasaan','Urdaneta City',3162,902,31.42,5.23,1),
-(41,'Nancamaliran East','Urdaneta City',2926,445,25.97,6.61,4),
-(42,'Nancamaliran West','Urdaneta City',1091,226,25.01,4.50,2),
-(43,'Nancayasan','Urdaneta City',1502,321,29.96,3.69,2),
-(44,'Oltama','Urdaneta City',3387,663,33.53,3.76,6),
-(45,'Palina East','Urdaneta City',2946,641,19.85,4.81,3),
-(46,'Palina West','Urdaneta City',1262,331,28.17,6.12,4),
-(47,'Pinmaludpod','Urdaneta City',5107,1245,41.78,8.96,5),
-(48,'Poblacion','Urdaneta City',5575,1255,31.27,8.62,1),
-(49,'San Jose','Urdaneta City',4512,944,15.70,5.76,6),
-(50,'San Vicente','Urdaneta City',3257,934,32.06,7.58,6),
-(51,'Santa Lucia','Urdaneta City',2683,712,15.95,4.60,2),
-(52,'Santo Domingo','Urdaneta City',5555,1414,27.31,7.33,5),
-(53,'Sugcong','Urdaneta City',5530,1137,16.88,4.83,8),
-(54,'Tipuso','Urdaneta City',2255,456,42.18,8.86,5),
-(55,'Tulong','Urdaneta City',4139,982,33.23,3.80,2),
-(56,'Leet','Santa Barbara',4246,924,30.56,7.72,9),
-(57,'Malanay','Santa Barbara',5020,849,46.92,5.11,7),
-(58,'Maningding','Santa Barbara',5457,1149,40.71,6.44,1),
-(59,'Maronong','Santa Barbara',4583,1246,41.01,3.89,5),
-(60,'Maticmatic','Santa Barbara',2685,556,46.15,9.07,7),
-(61,'Minien East','Santa Barbara',3016,498,19.54,6.99,6),
-(62,'Minien West','Santa Barbara',3927,826,31.52,8.11,3),
-(63,'Nilombot','Santa Barbara',5868,1337,19.23,4.01,5),
-(64,'Patayac','Santa Barbara',1295,359,40.76,8.92,4),
-(65,'Payas','Santa Barbara',4036,704,45.87,4.60,4),
-(66,'Poblacion Norte','Santa Barbara',4231,968,17.77,8.50,5),
-(67,'Poblacion Sur','Santa Barbara',5333,1467,17.73,6.15,9),
-(68,'Primicias','Santa Barbara',3745,644,20.93,4.23,9),
-(69,'Sapang','Santa Barbara',2044,310,42.88,6.30,8),
-(70,'Sonquil','Santa Barbara',5718,1609,32.53,6.87,1),
-(71,'Tebag East','Santa Barbara',5779,944,25.03,7.82,7),
-(72,'Tebag West','Santa Barbara',2846,489,30.06,4.26,4),
-(73,'Tuliao','Santa Barbara',3195,798,17.22,6.06,4),
-(74,'Ventinilla','Santa Barbara',4725,840,13.00,6.23,3),
-(75,'Longos','Calasiao',3059,606,15.99,6.75,5),
-(76,'Lumbang','Calasiao',1983,433,24.99,5.39,5),
-(77,'Macabito','Calasiao',5255,1268,38.89,5.58,4),
-(78,'Malabago','Calasiao',5029,982,41.64,5.44,8),
-(79,'Mancup','Calasiao',4290,1089,35.58,9.06,6),
-(80,'Nagsaing','Calasiao',1892,460,15.01,7.21,3),
-(81,'Nalsian','Calasiao',1384,343,23.57,7.52,5),
-(82,'Poblacion East','Calasiao',2171,463,34.61,6.09,3),
-(83,'Poblacion West','Calasiao',2697,815,13.75,8.38,2),
-(84,'Quesban','Calasiao',3072,628,26.68,6.66,4),
-(85,'San Miguel','Calasiao',4313,934,19.29,7.45,8),
-(86,'San Vicente','Calasiao',6064,1130,45.90,5.27,4),
-(87,'Songkoy','Calasiao',2750,564,31.87,5.68,5),
-(88,'Talibaew','Calasiao',5368,1247,21.52,4.41,1);
+INSERT INTO `barangays` VALUES (1,'Anonas','Urdaneta City',2039,614,24.77,8.43,5),(2,'Bactad East','Urdaneta City',2914,580,27.61,7.10,5),(3,'Bayaoas','Urdaneta City',4512,970,44.33,4.49,8),(4,'Bolaoen','Urdaneta City',4702,1166,15.26,4.45,3),(5,'Cabaruan','Urdaneta City',5575,964,37.89,5.10,2),(6,'Cabuloan','Urdaneta City',1739,369,33.51,5.73,1),(7,'Camantiles','Urdaneta City',2911,631,15.90,8.05,8),(8,'Casantaan','Urdaneta City',6110,1161,30.03,6.14,6),(9,'Catablan','Urdaneta City',4983,1204,28.06,7.78,1),(10,'Cayambanan','Urdaneta City',5450,1278,32.91,6.81,7),(11,'Alibago','Santa Barbara',4893,1086,21.28,8.37,5),(12,'Balingueo','Santa Barbara',5054,1119,12.81,7.91,6),(13,'Banaoang','Santa Barbara',5425,1292,40.03,8.50,7),(14,'Banzal','Santa Barbara',2360,467,23.10,5.63,9),(15,'Botao','Santa Barbara',3863,874,43.70,8.21,3),(16,'Cablong','Santa Barbara',3441,882,36.49,6.44,5),(17,'Carusocan','Santa Barbara',6198,1272,26.32,6.17,8),(18,'Dalongue','Santa Barbara',1269,262,35.31,5.79,4),(19,'Erfe','Santa Barbara',4756,1169,31.54,8.57,5),(20,'Gueguesangen','Santa Barbara',2277,442,21.03,3.82,3),(21,'Ambonao','Calasiao',1744,423,28.51,5.87,8),(22,'Ambuetel','Calasiao',4617,1089,17.68,8.18,4),(23,'Banaoang','Calasiao',2632,517,18.57,6.62,9),(24,'Bued','Calasiao',4036,933,26.85,9.03,9),(25,'Buenlag','Calasiao',5097,1279,30.80,5.00,2),(26,'Cabilocaan','Calasiao',5766,1573,34.36,7.27,7),(27,'Dinalaoan','Calasiao',5706,1125,23.25,8.24,4),(28,'Doyong','Calasiao',3739,812,24.14,7.62,1),(29,'Gabon','Calasiao',4120,919,23.56,8.54,4),(30,'Lasip','Calasiao',1635,378,12.04,4.84,9),(32,'Camanang','Urdaneta City',3118,731,35.52,7.46,9),(33,'Consolacion','Urdaneta City',3506,847,12.72,7.79,3),(34,'Dilan Paurido','Urdaneta City',1280,286,16.25,4.94,8),(35,'Dr. Pedro T. Orata','Urdaneta City',5811,1143,20.50,5.68,3),(36,'Labit Proper','Urdaneta City',2606,612,40.07,7.07,2),(37,'Labit West','Urdaneta City',1701,387,30.71,7.72,3),(38,'Mabanogbog','Urdaneta City',1037,178,26.07,5.68,3),(39,'Macalong','Urdaneta City',4990,1182,38.63,4.21,2),(40,'Nancalobasaan','Urdaneta City',3162,902,31.42,5.23,1),(41,'Nancamaliran East','Urdaneta City',2926,445,25.97,6.61,4),(42,'Nancamaliran West','Urdaneta City',1091,226,25.01,4.50,2),(43,'Nancayasan','Urdaneta City',1502,321,29.96,3.69,2),(44,'Oltama','Urdaneta City',3387,663,33.53,3.76,6),(45,'Palina East','Urdaneta City',2946,641,19.85,4.81,3),(46,'Palina West','Urdaneta City',1262,331,28.17,6.12,4),(47,'Pinmaludpod','Urdaneta City',5107,1245,41.78,8.96,5),(48,'Poblacion','Urdaneta City',5575,1255,31.27,8.62,1),(49,'San Jose','Urdaneta City',4512,944,15.70,5.76,6),(50,'San Vicente','Urdaneta City',3257,934,32.06,7.58,6),(51,'Santa Lucia','Urdaneta City',2683,712,15.95,4.60,2),(52,'Santo Domingo','Urdaneta City',5555,1414,27.31,7.33,5),(53,'Sugcong','Urdaneta City',5530,1137,16.88,4.83,8),(54,'Tipuso','Urdaneta City',2255,456,42.18,8.86,5),(55,'Tulong','Urdaneta City',4139,982,33.23,3.80,2),(56,'Leet','Santa Barbara',4246,924,30.56,7.72,9),(57,'Malanay','Santa Barbara',5020,849,46.92,5.11,7),(58,'Maningding','Santa Barbara',5457,1149,40.71,6.44,1),(59,'Maronong','Santa Barbara',4583,1246,41.01,3.89,5),(60,'Maticmatic','Santa Barbara',2685,556,46.15,9.07,7),(61,'Minien East','Santa Barbara',3016,498,19.54,6.99,6),(62,'Minien West','Santa Barbara',3927,826,31.52,8.11,3),(63,'Nilombot','Santa Barbara',5868,1337,19.23,4.01,5),(64,'Patayac','Santa Barbara',1295,359,40.76,8.92,4),(65,'Payas','Santa Barbara',4036,704,45.87,4.60,4),(66,'Poblacion Norte','Santa Barbara',4231,968,17.77,8.50,5),(67,'Poblacion Sur','Santa Barbara',5333,1467,17.73,6.15,9),(68,'Primicias','Santa Barbara',3745,644,20.93,4.23,9),(69,'Sapang','Santa Barbara',2044,310,42.88,6.30,8),(70,'Sonquil','Santa Barbara',5718,1609,32.53,6.87,1),(71,'Tebag East','Santa Barbara',5779,944,25.03,7.82,7),(72,'Tebag West','Santa Barbara',2846,489,30.06,4.26,4),(73,'Tuliao','Santa Barbara',3195,798,17.22,6.06,4),(74,'Ventinilla','Santa Barbara',4725,840,13.00,6.23,3),(75,'Longos','Calasiao',3059,606,15.99,6.75,5),(76,'Lumbang','Calasiao',1983,433,24.99,5.39,5),(77,'Macabito','Calasiao',5255,1268,38.89,5.58,4),(78,'Malabago','Calasiao',5029,982,41.64,5.44,8),(79,'Mancup','Calasiao',4290,1089,35.58,9.06,6),(80,'Nagsaing','Calasiao',1892,460,15.01,7.21,3),(81,'Nalsian','Calasiao',1384,343,23.57,7.52,5),(82,'Poblacion East','Calasiao',2171,463,34.61,6.09,3),(83,'Poblacion West','Calasiao',2697,815,13.75,8.38,2),(84,'Quesban','Calasiao',3072,628,26.68,6.66,4),(85,'San Miguel','Calasiao',4313,934,19.29,7.45,8),(86,'San Vicente','Calasiao',6064,1130,45.90,5.27,4),(87,'Songkoy','Calasiao',2750,564,31.87,5.68,5),(88,'Talibaew','Calasiao',5368,1247,21.52,4.41,1);
 /*!40000 ALTER TABLE `barangays` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `daily_ops_stats`
@@ -1797,7 +323,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `daily_ops_stats`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `daily_ops_stats` (
   `stat_id` int(11) NOT NULL AUTO_INCREMENT,
   `office_id` int(11) NOT NULL,
@@ -1816,17 +342,11 @@ CREATE TABLE `daily_ops_stats` (
 -- Dumping data for table `daily_ops_stats`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `daily_ops_stats` WRITE;
 /*!40000 ALTER TABLE `daily_ops_stats` DISABLE KEYS */;
-INSERT INTO `daily_ops_stats` VALUES
-(1,2,'2026-07-20',1,2),
-(2,3,'2026-07-20',1,2),
-(3,4,'2026-07-20',1,2);
+INSERT INTO `daily_ops_stats` VALUES (1,2,'2026-07-20',1,2),(2,3,'2026-07-20',1,2),(3,4,'2026-07-20',1,2);
 /*!40000 ALTER TABLE `daily_ops_stats` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `disaster_events`
@@ -1834,7 +354,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `disaster_events`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `disaster_events` (
   `event_id` int(11) NOT NULL AUTO_INCREMENT,
   `event_name` varchar(150) NOT NULL,
@@ -1848,35 +368,18 @@ CREATE TABLE `disaster_events` (
   PRIMARY KEY (`event_id`),
   KEY `created_by` (`created_by`),
   CONSTRAINT `disaster_events_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `disaster_events`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `disaster_events` WRITE;
 /*!40000 ALTER TABLE `disaster_events` DISABLE KEYS */;
-INSERT INTO `disaster_events` VALUES
-(1,'Typhoon Inday','typhoon','ended','Super Typhoon','2026-07-13','2026-08-29',1,'2026-07-10 05:08:52'),
-(2,'Tropical Storm Basyang','typhoon','ended','Tropical Storm / Heavy Rains','2026-02-03','2026-02-07',2,'2026-07-20 06:52:00'),
-(3,'Tropical Storm Ada','typhoon','ended','Tropical Storm / Heavy Rains','2026-01-14','2026-01-21',2,'2026-07-20 06:52:00'),
-(7,'Typhoon Egay (2023)','typhoon','ended','Typhoon','2023-08-19','2023-08-26',2,'2026-08-28 07:06:09'),
-(8,'Typhoon Kabayan (2023)','typhoon','ended','Severe Tropical Storm','2023-11-04','2023-11-10',2,'2026-08-28 07:06:10'),
-(9,'Typhoon Carina (2024)','typhoon','ended','Typhoon','2024-07-23','2024-07-30',2,'2026-08-28 07:06:10'),
-(10,'Super Typhoon Julian (2024)','typhoon','ended','Super Typhoon','2024-09-13','2024-09-22',2,'2026-08-28 07:06:10'),
-(11,'Tropical Storm Dante (2025)','typhoon','ended','Tropical Storm','2025-06-17','2025-06-21',2,'2026-08-28 07:06:11'),
-(12,'Typhoon Ramil (2025)','typhoon','ended','Typhoon','2025-10-01','2025-10-08',2,'2026-08-28 07:06:11'),
-(13,'typhoon isa','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 06:42:05'),
-(15,'typhoon isaw','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 06:57:00'),
-(16,'swdas','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 09:22:21'),
-(18,'typhoon isa','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 09:45:55'),
-(19,'swdas','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 09:46:19');
+INSERT INTO `disaster_events` VALUES (1,'Typhoon Inday','typhoon','ended','Super Typhoon','2026-07-13','2026-08-29',1,'2026-07-10 05:08:52'),(2,'Tropical Storm Basyang','typhoon','ended','Tropical Storm / Heavy Rains','2026-02-03','2026-02-07',2,'2026-07-20 06:52:00'),(3,'Tropical Storm Ada','typhoon','ended','Tropical Storm / Heavy Rains','2026-01-14','2026-01-21',2,'2026-07-20 06:52:00'),(7,'Typhoon Egay (2023)','typhoon','ended','Typhoon','2023-08-19','2023-08-26',2,'2026-08-28 07:06:09'),(8,'Typhoon Kabayan (2023)','typhoon','ended','Severe Tropical Storm','2023-11-04','2023-11-10',2,'2026-08-28 07:06:10'),(9,'Typhoon Carina (2024)','typhoon','ended','Typhoon','2024-07-23','2024-07-30',2,'2026-08-28 07:06:10'),(10,'Super Typhoon Julian (2024)','typhoon','ended','Super Typhoon','2024-09-13','2024-09-22',2,'2026-08-28 07:06:10'),(11,'Tropical Storm Dante (2025)','typhoon','ended','Tropical Storm','2025-06-17','2025-06-21',2,'2026-08-28 07:06:11'),(12,'Typhoon Ramil (2025)','typhoon','ended','Typhoon','2025-10-01','2025-10-08',2,'2026-08-28 07:06:11'),(13,'typhoon isa','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 06:42:05'),(15,'typhoon isaw','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 06:57:00'),(16,'swdas','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 09:22:21'),(18,'typhoon isa','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 09:45:55'),(19,'swdas','typhoon','ended',NULL,'2026-08-29','2026-08-29',2,'2026-08-29 09:46:19'),(20,'typhoon isa','typhoon','ended',NULL,'2026-08-30','2026-08-30',2,'2026-08-30 11:47:31');
 /*!40000 ALTER TABLE `disaster_events` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `distribution_records`
@@ -1884,7 +387,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `distribution_records`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `distribution_records` (
   `distribution_id` int(11) NOT NULL AUTO_INCREMENT,
   `barangay_id` int(11) NOT NULL,
@@ -1922,41 +425,11 @@ CREATE TABLE `distribution_records` (
 -- Dumping data for table `distribution_records`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `distribution_records` WRITE;
 /*!40000 ALTER TABLE `distribution_records` DISABLE KEYS */;
-INSERT INTO `distribution_records` VALUES
-(5,1,8,197,'2026-07-20','photo','proof_photo_1.jpg',2,NULL,NULL,NULL,'confirmed','2026-07-17 13:35:28','delivered','08:00:00','10:30:00','Aivan Flores',NULL,'complete','2 hrs 30 mins'),
-(6,2,9,163,'2026-07-20',NULL,NULL,NULL,NULL,NULL,NULL,'pending','2026-07-17 13:35:28','in_transit','07:30:00','09:45:00',NULL,NULL,NULL,NULL),
-(7,15,10,302,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-17 13:35:28','dispatched','09:00:00','11:15:00',NULL,NULL,NULL,NULL),
-(8,18,11,59,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-17 13:35:28','in_transit','02:32:03',NULL,NULL,NULL,NULL,NULL),
-(9,30,12,80,'2026-07-20','photo','delivery_receipt_test.pdf',2,NULL,NULL,NULL,'confirmed','2026-07-17 13:35:28','delivered','13:45:02',NULL,'Test Recipient','15:15:00','complete','1 hr 45 mins'),
-(10,26,13,486,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-17 13:35:28','delayed',NULL,NULL,NULL,NULL,NULL,NULL),
-(11,28,14,207,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-17 13:35:28','delivered','06:45:00','09:00:00','Maria Santos',NULL,'complete','2 hrs 15 mins'),
-(12,20,20,63,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-20 06:52:00','preparing','08:00:00','11:00:00',NULL,NULL,NULL,NULL),
-(13,11,21,342,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-20 06:52:00','preparing','08:00:00','11:00:00',NULL,NULL,NULL,NULL),
-(14,13,24,374,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
-(15,16,25,192,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
-(16,12,26,240,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
-(17,18,27,49,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
-(18,15,28,213,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),
-(19,3,15,209,'2026-07-21',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-21 04:51:01','dispatched','03:33:14',NULL,NULL,NULL,NULL,NULL),
-(20,1,30,205,'2026-07-23','signature',NULL,11,NULL,NULL,NULL,'confirmed','2026-07-24 13:45:43','delivered',NULL,'15:30:00','Jose Reyes','13:47:33','complete',NULL),
-(21,1,31,200,'2026-07-22',NULL,NULL,NULL,NULL,NULL,NULL,'pending','2026-07-24 13:45:43','delayed',NULL,'11:00:00',NULL,NULL,NULL,NULL),
-(22,1,34,212,'2026-07-24','photo','image_1.png',11,NULL,NULL,NULL,'confirmed','2026-07-24 13:59:40','delivered',NULL,'16:00:00','Ramon Bautista','14:15:06','complete',NULL),
-(23,1,35,212,'2026-07-24','photo','frieren-8k-wallpaper-uhdpaper.com-2655k.jpg',11,NULL,NULL,NULL,'confirmed','2026-07-24 14:18:13','delivered',NULL,'17:00:00','Ramon Bautista','14:34:38','complete',NULL),
-(24,16,29,230,'2026-02-27',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-08-14 12:26:34','preparing',NULL,NULL,NULL,NULL,NULL,NULL),
-(25,12,16,334,'2026-08-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-08-20 03:36:04','preparing',NULL,NULL,NULL,NULL,NULL,NULL),
-(26,23,17,140,'2026-08-23',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-08-23 07:57:55','in_transit','07:58:04',NULL,NULL,NULL,NULL,NULL),
-(27,1,32,207,'2026-08-23','signature',NULL,11,NULL,NULL,NULL,'confirmed','2026-08-23 07:59:03','delivered','15:35:56',NULL,'Ramon Bautista','09:13:07','complete',NULL),
-(30,43,2743,45,'2026-08-28',NULL,NULL,3,3,'2026-08-28 09:01:55',NULL,'pending','2026-08-28 09:01:55','dispatched',NULL,NULL,NULL,NULL,NULL,NULL),
-(31,50,2744,286,'2026-08-28','signature',NULL,3,3,'2026-08-28 09:01:55',NULL,'confirmed','2026-08-28 09:01:55','delivered',NULL,NULL,'Barangay Captain',NULL,'complete',NULL),
-(32,58,2745,259,'2026-08-28',NULL,NULL,4,4,'2026-08-28 09:01:55',NULL,'pending','2026-08-28 09:01:55','dispatched',NULL,NULL,NULL,NULL,NULL,NULL),
-(33,81,2746,104,'2026-08-28','signature',NULL,5,5,'2026-08-28 09:01:55',NULL,'confirmed','2026-08-28 09:01:55','delivered',NULL,NULL,'Barangay Captain',NULL,'complete',NULL);
+INSERT INTO `distribution_records` VALUES (5,1,8,197,'2026-07-20','photo','proof_photo_1.jpg',2,NULL,NULL,NULL,'confirmed','2026-07-17 13:35:28','delivered','08:00:00','10:30:00','Aivan Flores',NULL,'complete','2 hrs 30 mins'),(6,2,9,163,'2026-07-20',NULL,NULL,NULL,NULL,NULL,NULL,'pending','2026-07-17 13:35:28','in_transit','07:30:00','09:45:00',NULL,NULL,NULL,NULL),(7,15,10,302,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-17 13:35:28','dispatched','09:00:00','11:15:00',NULL,NULL,NULL,NULL),(8,18,11,59,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-17 13:35:28','in_transit','02:32:03',NULL,NULL,NULL,NULL,NULL),(9,30,12,80,'2026-07-20','photo','delivery_receipt_test.pdf',2,NULL,NULL,NULL,'confirmed','2026-07-17 13:35:28','delivered','13:45:02',NULL,'Test Recipient','15:15:00','complete','1 hr 45 mins'),(10,26,13,486,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-17 13:35:28','delayed',NULL,NULL,NULL,NULL,NULL,NULL),(11,28,14,207,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-17 13:35:28','delivered','06:45:00','09:00:00','Maria Santos',NULL,'complete','2 hrs 15 mins'),(12,20,20,63,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-20 06:52:00','preparing','08:00:00','11:00:00',NULL,NULL,NULL,NULL),(13,11,21,342,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-20 06:52:00','preparing','08:00:00','11:00:00',NULL,NULL,NULL,NULL),(14,13,24,374,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),(15,16,25,192,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),(16,12,26,240,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),(17,18,27,49,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),(18,15,28,213,'2026-07-20',NULL,NULL,2,NULL,NULL,NULL,'confirmed','2026-07-20 06:52:00','delivered','08:00:00','11:00:00','Barangay Officer',NULL,'complete',NULL),(19,3,15,209,'2026-07-21',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-07-21 04:51:01','dispatched','03:33:14',NULL,NULL,NULL,NULL,NULL),(20,1,30,205,'2026-07-23','signature',NULL,11,NULL,NULL,NULL,'confirmed','2026-07-24 13:45:43','delivered',NULL,'15:30:00','Jose Reyes','13:47:33','complete',NULL),(21,1,31,200,'2026-07-22',NULL,NULL,NULL,NULL,NULL,NULL,'pending','2026-07-24 13:45:43','delayed',NULL,'11:00:00',NULL,NULL,NULL,NULL),(22,1,34,212,'2026-07-24','photo','image_1.png',11,NULL,NULL,NULL,'confirmed','2026-07-24 13:59:40','delivered',NULL,'16:00:00','Ramon Bautista','14:15:06','complete',NULL),(23,1,35,212,'2026-07-24','photo','frieren-8k-wallpaper-uhdpaper.com-2655k.jpg',11,NULL,NULL,NULL,'confirmed','2026-07-24 14:18:13','delivered',NULL,'17:00:00','Ramon Bautista','14:34:38','complete',NULL),(24,16,29,230,'2026-02-27',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-08-14 12:26:34','preparing',NULL,NULL,NULL,NULL,NULL,NULL),(25,12,16,334,'2026-08-20',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-08-20 03:36:04','preparing',NULL,NULL,NULL,NULL,NULL,NULL),(26,23,17,140,'2026-08-23',NULL,NULL,2,NULL,NULL,NULL,'pending','2026-08-23 07:57:55','in_transit','07:58:04',NULL,NULL,NULL,NULL,NULL),(27,1,32,207,'2026-08-23','signature',NULL,11,NULL,NULL,NULL,'confirmed','2026-08-23 07:59:03','delivered','15:35:56',NULL,'Ramon Bautista','09:13:07','complete',NULL),(30,43,2743,45,'2026-08-28',NULL,NULL,3,3,'2026-08-28 09:01:55',NULL,'pending','2026-08-28 09:01:55','in_transit',NULL,NULL,NULL,NULL,NULL,NULL),(31,50,2744,286,'2026-08-28','signature',NULL,3,3,'2026-08-28 09:01:55',NULL,'confirmed','2026-08-28 09:01:55','delivered',NULL,NULL,'Barangay Captain',NULL,'complete',NULL),(32,58,2745,259,'2026-08-28',NULL,NULL,4,4,'2026-08-28 09:01:55',NULL,'pending','2026-08-28 09:01:55','dispatched',NULL,NULL,NULL,NULL,NULL,NULL),(33,81,2746,104,'2026-08-28','signature',NULL,5,5,'2026-08-28 09:01:55',NULL,'confirmed','2026-08-28 09:01:55','delivered',NULL,NULL,'Barangay Captain',NULL,'complete',NULL);
 /*!40000 ALTER TABLE `distribution_records` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `model_metrics`
@@ -1964,7 +437,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `model_metrics`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `model_metrics` (
   `metric_id` int(11) NOT NULL AUTO_INCREMENT,
   `model_version` varchar(50) NOT NULL DEFAULT 'v1.0',
@@ -1982,17 +455,11 @@ CREATE TABLE `model_metrics` (
 -- Dumping data for table `model_metrics`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `model_metrics` WRITE;
 /*!40000 ALTER TABLE `model_metrics` DISABLE KEYS */;
-INSERT INTO `model_metrics` VALUES
-(1,'v3.0-linreg',699.2642,837.2097,68.3782,-1.5685,11,'2026-07-20 03:11:41'),
-(3,'v4.0-linreg-6f',440.2889,571.2500,108.9330,-0.2281,28,'2026-08-28 01:17:28'),
-(14,'v5.0-linreg-6f',23.8824,32.0777,16.1425,0.8934,408,'2026-08-28 09:41:54');
+INSERT INTO `model_metrics` VALUES (1,'v3.0-linreg',699.2642,837.2097,68.3782,-1.5685,11,'2026-07-20 03:11:41'),(3,'v4.0-linreg-6f',440.2889,571.2500,108.9330,-0.2281,28,'2026-08-28 01:17:28'),(14,'v5.0-linreg-6f',23.8824,32.0777,16.1425,0.8934,408,'2026-08-28 09:41:54');
 /*!40000 ALTER TABLE `model_metrics` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `offices`
@@ -2000,7 +467,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `offices`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `offices` (
   `office_id` int(11) NOT NULL AUTO_INCREMENT,
   `office_name` varchar(100) NOT NULL,
@@ -2020,20 +487,11 @@ CREATE TABLE `offices` (
 -- Dumping data for table `offices`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `offices` WRITE;
 /*!40000 ALTER TABLE `offices` DISABLE KEYS */;
-INSERT INTO `offices` VALUES
-(1,'Provincial Social Welfare and Development Office','pswdo','Province of Pangasinan',20000,NULL,NULL,NULL,NULL,1),
-(2,'Urdaneta City Social Welfare and Development Office','cswdo','Urdaneta City',22000,NULL,NULL,NULL,NULL,1),
-(3,'Santa Barbara Municipal Social Welfare and Development Office','cswdo','Santa Barbara',20000,NULL,NULL,NULL,NULL,1),
-(4,'Calasiao Municipal Social Welfare and Development Office','cswdo','Calasiao',18000,NULL,NULL,NULL,NULL,1),
-(5,'PSWDO Warehouse','pswdo','Lingayen',22000,'PSWDO Compound, Capitol Grounds, Lingayen, Pangasinan','Warehouse Officer','075-542-6100','pswdo.warehouse@pangasinan.gov.ph',1),
-(6,'PSWDO Warehouse - Alaminos','pswdo','Alaminos',18000,NULL,NULL,NULL,NULL,1);
+INSERT INTO `offices` VALUES (1,'Provincial Social Welfare and Development Office','pswdo','Province of Pangasinan',20000,NULL,NULL,NULL,NULL,1),(2,'Urdaneta City Social Welfare and Development Office','cswdo','Urdaneta City',22000,NULL,NULL,NULL,NULL,1),(3,'Santa Barbara Municipal Social Welfare and Development Office','cswdo','Santa Barbara',20000,NULL,NULL,NULL,NULL,1),(4,'Calasiao Municipal Social Welfare and Development Office','cswdo','Calasiao',18000,NULL,NULL,NULL,NULL,1),(5,'PSWDO Warehouse','pswdo','Lingayen',22000,'PSWDO Compound, Capitol Grounds, Lingayen, Pangasinan','Warehouse Officer','075-542-6100','pswdo.warehouse@pangasinan.gov.ph',1),(6,'PSWDO Warehouse - Alaminos','pswdo','Alaminos',18000,NULL,NULL,NULL,NULL,1);
 /*!40000 ALTER TABLE `offices` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `password_reset_requests`
@@ -2041,7 +499,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `password_reset_requests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `password_reset_requests` (
   `request_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -2062,19 +520,11 @@ CREATE TABLE `password_reset_requests` (
 -- Dumping data for table `password_reset_requests`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `password_reset_requests` WRITE;
 /*!40000 ALTER TABLE `password_reset_requests` DISABLE KEYS */;
-INSERT INTO `password_reset_requests` VALUES
-(1,28,'denied','2026-08-14 05:59:13',1,'2026-08-14 06:02:08',0),
-(2,11,'approved','2026-08-14 06:00:07',1,'2026-08-14 06:01:39',0),
-(3,28,'approved','2026-08-14 06:05:15',1,'2026-08-14 06:05:38',0),
-(4,11,'denied','2026-08-14 06:11:37',1,'2026-08-14 06:23:06',1),
-(5,28,'approved','2026-08-14 06:14:35',1,'2026-08-14 06:23:12',1);
+INSERT INTO `password_reset_requests` VALUES (1,28,'denied','2026-08-14 05:59:13',1,'2026-08-14 06:02:08',0),(2,11,'approved','2026-08-14 06:00:07',1,'2026-08-14 06:01:39',0),(3,28,'approved','2026-08-14 06:05:15',1,'2026-08-14 06:05:38',0),(4,11,'denied','2026-08-14 06:11:37',1,'2026-08-14 06:23:06',1),(5,28,'approved','2026-08-14 06:14:35',1,'2026-08-14 06:23:12',1);
 /*!40000 ALTER TABLE `password_reset_requests` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `prediction_logs`
@@ -2082,7 +532,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `prediction_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `prediction_logs` (
   `log_id` int(11) NOT NULL AUTO_INCREMENT,
   `barangay_id` int(11) NOT NULL,
@@ -2093,121 +543,18 @@ CREATE TABLE `prediction_logs` (
   PRIMARY KEY (`log_id`),
   KEY `barangay_id` (`barangay_id`),
   CONSTRAINT `prediction_logs_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1906 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1940 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `prediction_logs`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `prediction_logs` WRITE;
 /*!40000 ALTER TABLE `prediction_logs` DISABLE KEYS */;
-INSERT INTO `prediction_logs` VALUES
-(1806,21,106,'{\"population\": 1744, \"num_households\": 423, \"poverty_incidence\": 28.51, \"disaster_risk_index\": 5.87, \"past_calamity_freq\": 8, \"historical_allocation\": 94}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1807,22,288,'{\"population\": 4617, \"num_households\": 1089, \"poverty_incidence\": 17.68, \"disaster_risk_index\": 8.18, \"past_calamity_freq\": 4, \"historical_allocation\": 288}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1808,24,306,'{\"population\": 4036, \"num_households\": 933, \"poverty_incidence\": 26.85, \"disaster_risk_index\": 9.03, \"past_calamity_freq\": 9, \"historical_allocation\": 278}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1809,25,239,'{\"population\": 5097, \"num_households\": 1279, \"poverty_incidence\": 30.8, \"disaster_risk_index\": 5.0, \"past_calamity_freq\": 2, \"historical_allocation\": 227}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1810,27,296,'{\"population\": 5706, \"num_households\": 1125, \"poverty_incidence\": 23.25, \"disaster_risk_index\": 8.24, \"past_calamity_freq\": 4, \"historical_allocation\": 288}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1811,29,269,'{\"population\": 4120, \"num_households\": 919, \"poverty_incidence\": 23.56, \"disaster_risk_index\": 8.54, \"past_calamity_freq\": 4, \"historical_allocation\": 273}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1812,75,134,'{\"population\": 3059, \"num_households\": 606, \"poverty_incidence\": 15.99, \"disaster_risk_index\": 6.75, \"past_calamity_freq\": 5, \"historical_allocation\": 120}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1813,76,78,'{\"population\": 1983, \"num_households\": 433, \"poverty_incidence\": 24.99, \"disaster_risk_index\": 5.39, \"past_calamity_freq\": 5, \"historical_allocation\": 79}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1814,77,265,'{\"population\": 5255, \"num_households\": 1268, \"poverty_incidence\": 38.89, \"disaster_risk_index\": 5.58, \"past_calamity_freq\": 4, \"historical_allocation\": 232}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1815,78,239,'{\"population\": 5029, \"num_households\": 982, \"poverty_incidence\": 41.64, \"disaster_risk_index\": 5.44, \"past_calamity_freq\": 8, \"historical_allocation\": 243}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1816,79,355,'{\"population\": 4290, \"num_households\": 1089, \"poverty_incidence\": 35.58, \"disaster_risk_index\": 9.06, \"past_calamity_freq\": 6, \"historical_allocation\": 365}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1817,80,107,'{\"population\": 1892, \"num_households\": 460, \"poverty_incidence\": 15.01, \"disaster_risk_index\": 7.21, \"past_calamity_freq\": 3, \"historical_allocation\": 97}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1818,82,100,'{\"population\": 2171, \"num_households\": 463, \"poverty_incidence\": 34.61, \"disaster_risk_index\": 6.09, \"past_calamity_freq\": 3, \"historical_allocation\": 93}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1819,83,223,'{\"population\": 2697, \"num_households\": 815, \"poverty_incidence\": 13.75, \"disaster_risk_index\": 8.38, \"past_calamity_freq\": 2, \"historical_allocation\": 229}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1820,84,141,'{\"population\": 3072, \"num_households\": 628, \"poverty_incidence\": 26.68, \"disaster_risk_index\": 6.66, \"past_calamity_freq\": 4, \"historical_allocation\": 118}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1821,85,241,'{\"population\": 4313, \"num_households\": 934, \"poverty_incidence\": 19.29, \"disaster_risk_index\": 7.45, \"past_calamity_freq\": 8, \"historical_allocation\": 206}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1822,86,244,'{\"population\": 6064, \"num_households\": 1130, \"poverty_incidence\": 45.9, \"disaster_risk_index\": 5.27, \"past_calamity_freq\": 4, \"historical_allocation\": 245}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1823,87,120,'{\"population\": 2750, \"num_households\": 564, \"poverty_incidence\": 31.87, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 5, \"historical_allocation\": 114}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1824,88,185,'{\"population\": 5368, \"num_households\": 1247, \"poverty_incidence\": 21.52, \"disaster_risk_index\": 4.41, \"past_calamity_freq\": 1, \"historical_allocation\": 154}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1825,13,385,'{\"population\": 5425, \"num_households\": 1292, \"poverty_incidence\": 40.03, \"disaster_risk_index\": 8.5, \"past_calamity_freq\": 7, \"historical_allocation\": 374}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1826,56,275,'{\"population\": 4246, \"num_households\": 924, \"poverty_incidence\": 30.56, \"disaster_risk_index\": 7.72, \"past_calamity_freq\": 9, \"historical_allocation\": 256}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1827,57,196,'{\"population\": 5020, \"num_households\": 849, \"poverty_incidence\": 46.92, \"disaster_risk_index\": 5.11, \"past_calamity_freq\": 7, \"historical_allocation\": 198}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1828,59,229,'{\"population\": 4583, \"num_households\": 1246, \"poverty_incidence\": 41.01, \"disaster_risk_index\": 3.89, \"past_calamity_freq\": 5, \"historical_allocation\": 209}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1829,60,242,'{\"population\": 2685, \"num_households\": 556, \"poverty_incidence\": 46.15, \"disaster_risk_index\": 9.07, \"past_calamity_freq\": 7, \"historical_allocation\": 227}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1830,61,128,'{\"population\": 3016, \"num_households\": 498, \"poverty_incidence\": 19.54, \"disaster_risk_index\": 6.99, \"past_calamity_freq\": 6, \"historical_allocation\": 116}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1831,62,232,'{\"population\": 3927, \"num_households\": 826, \"poverty_incidence\": 31.52, \"disaster_risk_index\": 8.11, \"past_calamity_freq\": 3, \"historical_allocation\": 222}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1832,63,206,'{\"population\": 5868, \"num_households\": 1337, \"poverty_incidence\": 19.23, \"disaster_risk_index\": 4.01, \"past_calamity_freq\": 5, \"historical_allocation\": 158}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1833,64,160,'{\"population\": 1295, \"num_households\": 359, \"poverty_incidence\": 40.76, \"disaster_risk_index\": 8.92, \"past_calamity_freq\": 4, \"historical_allocation\": 122}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1834,65,131,'{\"population\": 4036, \"num_households\": 704, \"poverty_incidence\": 45.87, \"disaster_risk_index\": 4.6, \"past_calamity_freq\": 4, \"historical_allocation\": 132}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1835,66,267,'{\"population\": 4231, \"num_households\": 968, \"poverty_incidence\": 17.77, \"disaster_risk_index\": 8.5, \"past_calamity_freq\": 5, \"historical_allocation\": 248}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1836,67,344,'{\"population\": 5333, \"num_households\": 1467, \"poverty_incidence\": 17.73, \"disaster_risk_index\": 6.15, \"past_calamity_freq\": 9, \"historical_allocation\": 334}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1837,68,106,'{\"population\": 3745, \"num_households\": 644, \"poverty_incidence\": 20.93, \"disaster_risk_index\": 4.23, \"past_calamity_freq\": 9, \"historical_allocation\": 108}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1838,69,105,'{\"population\": 2044, \"num_households\": 310, \"poverty_incidence\": 42.88, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 8, \"historical_allocation\": 86}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1839,70,365,'{\"population\": 5718, \"num_households\": 1609, \"poverty_incidence\": 32.53, \"disaster_risk_index\": 6.87, \"past_calamity_freq\": 1, \"historical_allocation\": 351}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1840,71,262,'{\"population\": 5779, \"num_households\": 944, \"poverty_incidence\": 25.03, \"disaster_risk_index\": 7.82, \"past_calamity_freq\": 7, \"historical_allocation\": 256}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1841,72,60,'{\"population\": 2846, \"num_households\": 489, \"poverty_incidence\": 30.06, \"disaster_risk_index\": 4.26, \"past_calamity_freq\": 4, \"historical_allocation\": 71}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1842,73,154,'{\"population\": 3195, \"num_households\": 798, \"poverty_incidence\": 17.22, \"disaster_risk_index\": 6.06, \"past_calamity_freq\": 4, \"historical_allocation\": 137}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1843,74,159,'{\"population\": 4725, \"num_households\": 840, \"poverty_incidence\": 13.0, \"disaster_risk_index\": 6.23, \"past_calamity_freq\": 3, \"historical_allocation\": 158}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1844,4,176,'{\"population\": 4702, \"num_households\": 1166, \"poverty_incidence\": 15.26, \"disaster_risk_index\": 4.45, \"past_calamity_freq\": 3, \"historical_allocation\": 148}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1845,6,67,'{\"population\": 1739, \"num_households\": 369, \"poverty_incidence\": 33.51, \"disaster_risk_index\": 5.73, \"past_calamity_freq\": 1, \"historical_allocation\": 83}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1846,32,235,'{\"population\": 3118, \"num_households\": 731, \"poverty_incidence\": 35.52, \"disaster_risk_index\": 7.46, \"past_calamity_freq\": 9, \"historical_allocation\": 222}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1847,7,199,'{\"population\": 2911, \"num_households\": 631, \"poverty_incidence\": 15.9, \"disaster_risk_index\": 8.05, \"past_calamity_freq\": 8, \"historical_allocation\": 188}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1848,8,269,'{\"population\": 6110, \"num_households\": 1161, \"poverty_incidence\": 30.03, \"disaster_risk_index\": 6.14, \"past_calamity_freq\": 6, \"historical_allocation\": 273}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1849,9,304,'{\"population\": 4983, \"num_households\": 1204, \"poverty_incidence\": 28.06, \"disaster_risk_index\": 7.78, \"past_calamity_freq\": 1, \"historical_allocation\": 318}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1850,10,307,'{\"population\": 5450, \"num_households\": 1278, \"poverty_incidence\": 32.91, \"disaster_risk_index\": 6.81, \"past_calamity_freq\": 7, \"historical_allocation\": 263}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1851,33,212,'{\"population\": 3506, \"num_households\": 847, \"poverty_incidence\": 12.72, \"disaster_risk_index\": 7.79, \"past_calamity_freq\": 3, \"historical_allocation\": 215}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1852,34,45,'{\"population\": 1280, \"num_households\": 286, \"poverty_incidence\": 16.25, \"disaster_risk_index\": 4.94, \"past_calamity_freq\": 8, \"historical_allocation\": 57}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1853,35,219,'{\"population\": 5811, \"num_households\": 1143, \"poverty_incidence\": 20.5, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 216}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1854,36,161,'{\"population\": 2606, \"num_households\": 612, \"poverty_incidence\": 40.07, \"disaster_risk_index\": 7.07, \"past_calamity_freq\": 2, \"historical_allocation\": 149}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1855,37,115,'{\"population\": 1701, \"num_households\": 387, \"poverty_incidence\": 30.71, \"disaster_risk_index\": 7.72, \"past_calamity_freq\": 3, \"historical_allocation\": 84}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1856,38,23,'{\"population\": 1037, \"num_households\": 178, \"poverty_incidence\": 26.07, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 33}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1857,39,195,'{\"population\": 4990, \"num_households\": 1182, \"poverty_incidence\": 38.63, \"disaster_risk_index\": 4.21, \"past_calamity_freq\": 2, \"historical_allocation\": 166}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1858,40,158,'{\"population\": 3162, \"num_households\": 902, \"poverty_incidence\": 31.42, \"disaster_risk_index\": 5.23, \"past_calamity_freq\": 1, \"historical_allocation\": 144}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1859,41,103,'{\"population\": 2926, \"num_households\": 445, \"poverty_incidence\": 25.97, \"disaster_risk_index\": 6.61, \"past_calamity_freq\": 4, \"historical_allocation\": 96}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1860,42,0,'{\"population\": 1091, \"num_households\": 226, \"poverty_incidence\": 25.01, \"disaster_risk_index\": 4.5, \"past_calamity_freq\": 2, \"historical_allocation\": 27}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1861,44,93,'{\"population\": 3387, \"num_households\": 663, \"poverty_incidence\": 33.53, \"disaster_risk_index\": 3.76, \"past_calamity_freq\": 6, \"historical_allocation\": 88}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1862,45,91,'{\"population\": 2946, \"num_households\": 641, \"poverty_incidence\": 19.85, \"disaster_risk_index\": 4.81, \"past_calamity_freq\": 3, \"historical_allocation\": 99}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1863,46,74,'{\"population\": 1262, \"num_households\": 331, \"poverty_incidence\": 28.17, \"disaster_risk_index\": 6.12, \"past_calamity_freq\": 4, \"historical_allocation\": 71}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1864,47,371,'{\"population\": 5107, \"num_households\": 1245, \"poverty_incidence\": 41.78, \"disaster_risk_index\": 8.96, \"past_calamity_freq\": 5, \"historical_allocation\": 346}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1865,48,330,'{\"population\": 5575, \"num_households\": 1255, \"poverty_incidence\": 31.27, \"disaster_risk_index\": 8.62, \"past_calamity_freq\": 1, \"historical_allocation\": 319}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1866,49,193,'{\"population\": 4512, \"num_households\": 944, \"poverty_incidence\": 15.7, \"disaster_risk_index\": 5.76, \"past_calamity_freq\": 6, \"historical_allocation\": 191}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1867,51,89,'{\"population\": 2683, \"num_households\": 712, \"poverty_incidence\": 15.95, \"disaster_risk_index\": 4.6, \"past_calamity_freq\": 2, \"historical_allocation\": 90}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1868,52,341,'{\"population\": 5555, \"num_households\": 1414, \"poverty_incidence\": 27.31, \"disaster_risk_index\": 7.33, \"past_calamity_freq\": 5, \"historical_allocation\": 308}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1869,53,221,'{\"population\": 5530, \"num_households\": 1137, \"poverty_incidence\": 16.88, \"disaster_risk_index\": 4.83, \"past_calamity_freq\": 8, \"historical_allocation\": 220}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1870,54,188,'{\"population\": 2255, \"num_households\": 456, \"poverty_incidence\": 42.18, \"disaster_risk_index\": 8.86, \"past_calamity_freq\": 5, \"historical_allocation\": 157}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1871,55,145,'{\"population\": 4139, \"num_households\": 982, \"poverty_incidence\": 33.23, \"disaster_risk_index\": 3.8, \"past_calamity_freq\": 2, \"historical_allocation\": 142}','2026-08-28 09:42:18','v5.0-linreg-6f'),
-(1872,1,209,'{\"population\": 2039, \"num_households\": 614, \"poverty_incidence\": 24.77, \"disaster_risk_index\": 8.43, \"past_calamity_freq\": 5, \"historical_allocation\": 212}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1873,2,162,'{\"population\": 2914, \"num_households\": 580, \"poverty_incidence\": 27.61, \"disaster_risk_index\": 7.1, \"past_calamity_freq\": 5, \"historical_allocation\": 163}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1874,3,211,'{\"population\": 4512, \"num_households\": 970, \"poverty_incidence\": 44.33, \"disaster_risk_index\": 4.49, \"past_calamity_freq\": 8, \"historical_allocation\": 209}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1875,4,176,'{\"population\": 4702, \"num_households\": 1166, \"poverty_incidence\": 15.26, \"disaster_risk_index\": 4.45, \"past_calamity_freq\": 3, \"historical_allocation\": 148}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1876,5,180,'{\"population\": 5575, \"num_households\": 964, \"poverty_incidence\": 37.89, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 2, \"historical_allocation\": 185}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1877,6,67,'{\"population\": 1739, \"num_households\": 369, \"poverty_incidence\": 33.51, \"disaster_risk_index\": 5.73, \"past_calamity_freq\": 1, \"historical_allocation\": 83}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1878,32,235,'{\"population\": 3118, \"num_households\": 731, \"poverty_incidence\": 35.52, \"disaster_risk_index\": 7.46, \"past_calamity_freq\": 9, \"historical_allocation\": 222}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1879,7,199,'{\"population\": 2911, \"num_households\": 631, \"poverty_incidence\": 15.9, \"disaster_risk_index\": 8.05, \"past_calamity_freq\": 8, \"historical_allocation\": 188}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1880,8,269,'{\"population\": 6110, \"num_households\": 1161, \"poverty_incidence\": 30.03, \"disaster_risk_index\": 6.14, \"past_calamity_freq\": 6, \"historical_allocation\": 273}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1881,9,304,'{\"population\": 4983, \"num_households\": 1204, \"poverty_incidence\": 28.06, \"disaster_risk_index\": 7.78, \"past_calamity_freq\": 1, \"historical_allocation\": 318}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1882,10,307,'{\"population\": 5450, \"num_households\": 1278, \"poverty_incidence\": 32.91, \"disaster_risk_index\": 6.81, \"past_calamity_freq\": 7, \"historical_allocation\": 263}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1883,33,212,'{\"population\": 3506, \"num_households\": 847, \"poverty_incidence\": 12.72, \"disaster_risk_index\": 7.79, \"past_calamity_freq\": 3, \"historical_allocation\": 215}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1884,34,45,'{\"population\": 1280, \"num_households\": 286, \"poverty_incidence\": 16.25, \"disaster_risk_index\": 4.94, \"past_calamity_freq\": 8, \"historical_allocation\": 57}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1885,35,219,'{\"population\": 5811, \"num_households\": 1143, \"poverty_incidence\": 20.5, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 216}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1886,36,161,'{\"population\": 2606, \"num_households\": 612, \"poverty_incidence\": 40.07, \"disaster_risk_index\": 7.07, \"past_calamity_freq\": 2, \"historical_allocation\": 149}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1887,37,115,'{\"population\": 1701, \"num_households\": 387, \"poverty_incidence\": 30.71, \"disaster_risk_index\": 7.72, \"past_calamity_freq\": 3, \"historical_allocation\": 84}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1888,38,23,'{\"population\": 1037, \"num_households\": 178, \"poverty_incidence\": 26.07, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 33}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1889,39,195,'{\"population\": 4990, \"num_households\": 1182, \"poverty_incidence\": 38.63, \"disaster_risk_index\": 4.21, \"past_calamity_freq\": 2, \"historical_allocation\": 166}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1890,40,158,'{\"population\": 3162, \"num_households\": 902, \"poverty_incidence\": 31.42, \"disaster_risk_index\": 5.23, \"past_calamity_freq\": 1, \"historical_allocation\": 144}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1891,41,103,'{\"population\": 2926, \"num_households\": 445, \"poverty_incidence\": 25.97, \"disaster_risk_index\": 6.61, \"past_calamity_freq\": 4, \"historical_allocation\": 96}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1892,42,0,'{\"population\": 1091, \"num_households\": 226, \"poverty_incidence\": 25.01, \"disaster_risk_index\": 4.5, \"past_calamity_freq\": 2, \"historical_allocation\": 27}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1893,43,9,'{\"population\": 1502, \"num_households\": 321, \"poverty_incidence\": 29.96, \"disaster_risk_index\": 3.69, \"past_calamity_freq\": 2, \"historical_allocation\": 45}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1894,44,93,'{\"population\": 3387, \"num_households\": 663, \"poverty_incidence\": 33.53, \"disaster_risk_index\": 3.76, \"past_calamity_freq\": 6, \"historical_allocation\": 88}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1895,45,91,'{\"population\": 2946, \"num_households\": 641, \"poverty_incidence\": 19.85, \"disaster_risk_index\": 4.81, \"past_calamity_freq\": 3, \"historical_allocation\": 99}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1896,46,74,'{\"population\": 1262, \"num_households\": 331, \"poverty_incidence\": 28.17, \"disaster_risk_index\": 6.12, \"past_calamity_freq\": 4, \"historical_allocation\": 71}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1897,47,371,'{\"population\": 5107, \"num_households\": 1245, \"poverty_incidence\": 41.78, \"disaster_risk_index\": 8.96, \"past_calamity_freq\": 5, \"historical_allocation\": 346}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1898,48,330,'{\"population\": 5575, \"num_households\": 1255, \"poverty_incidence\": 31.27, \"disaster_risk_index\": 8.62, \"past_calamity_freq\": 1, \"historical_allocation\": 319}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1899,49,193,'{\"population\": 4512, \"num_households\": 944, \"poverty_incidence\": 15.7, \"disaster_risk_index\": 5.76, \"past_calamity_freq\": 6, \"historical_allocation\": 191}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1900,50,276,'{\"population\": 3257, \"num_households\": 934, \"poverty_incidence\": 32.06, \"disaster_risk_index\": 7.58, \"past_calamity_freq\": 6, \"historical_allocation\": 286}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1901,51,89,'{\"population\": 2683, \"num_households\": 712, \"poverty_incidence\": 15.95, \"disaster_risk_index\": 4.6, \"past_calamity_freq\": 2, \"historical_allocation\": 90}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1902,52,341,'{\"population\": 5555, \"num_households\": 1414, \"poverty_incidence\": 27.31, \"disaster_risk_index\": 7.33, \"past_calamity_freq\": 5, \"historical_allocation\": 308}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1903,53,221,'{\"population\": 5530, \"num_households\": 1137, \"poverty_incidence\": 16.88, \"disaster_risk_index\": 4.83, \"past_calamity_freq\": 8, \"historical_allocation\": 220}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1904,54,188,'{\"population\": 2255, \"num_households\": 456, \"poverty_incidence\": 42.18, \"disaster_risk_index\": 8.86, \"past_calamity_freq\": 5, \"historical_allocation\": 157}','2026-08-29 04:55:53','v5.0-linreg-6f'),
-(1905,55,145,'{\"population\": 4139, \"num_households\": 982, \"poverty_incidence\": 33.23, \"disaster_risk_index\": 3.8, \"past_calamity_freq\": 2, \"historical_allocation\": 142}','2026-08-29 04:55:53','v5.0-linreg-6f');
+INSERT INTO `prediction_logs` VALUES (1806,21,106,'{\"population\": 1744, \"num_households\": 423, \"poverty_incidence\": 28.51, \"disaster_risk_index\": 5.87, \"past_calamity_freq\": 8, \"historical_allocation\": 94}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1807,22,288,'{\"population\": 4617, \"num_households\": 1089, \"poverty_incidence\": 17.68, \"disaster_risk_index\": 8.18, \"past_calamity_freq\": 4, \"historical_allocation\": 288}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1808,24,306,'{\"population\": 4036, \"num_households\": 933, \"poverty_incidence\": 26.85, \"disaster_risk_index\": 9.03, \"past_calamity_freq\": 9, \"historical_allocation\": 278}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1809,25,239,'{\"population\": 5097, \"num_households\": 1279, \"poverty_incidence\": 30.8, \"disaster_risk_index\": 5.0, \"past_calamity_freq\": 2, \"historical_allocation\": 227}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1810,27,296,'{\"population\": 5706, \"num_households\": 1125, \"poverty_incidence\": 23.25, \"disaster_risk_index\": 8.24, \"past_calamity_freq\": 4, \"historical_allocation\": 288}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1811,29,269,'{\"population\": 4120, \"num_households\": 919, \"poverty_incidence\": 23.56, \"disaster_risk_index\": 8.54, \"past_calamity_freq\": 4, \"historical_allocation\": 273}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1812,75,134,'{\"population\": 3059, \"num_households\": 606, \"poverty_incidence\": 15.99, \"disaster_risk_index\": 6.75, \"past_calamity_freq\": 5, \"historical_allocation\": 120}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1813,76,78,'{\"population\": 1983, \"num_households\": 433, \"poverty_incidence\": 24.99, \"disaster_risk_index\": 5.39, \"past_calamity_freq\": 5, \"historical_allocation\": 79}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1814,77,265,'{\"population\": 5255, \"num_households\": 1268, \"poverty_incidence\": 38.89, \"disaster_risk_index\": 5.58, \"past_calamity_freq\": 4, \"historical_allocation\": 232}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1815,78,239,'{\"population\": 5029, \"num_households\": 982, \"poverty_incidence\": 41.64, \"disaster_risk_index\": 5.44, \"past_calamity_freq\": 8, \"historical_allocation\": 243}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1816,79,355,'{\"population\": 4290, \"num_households\": 1089, \"poverty_incidence\": 35.58, \"disaster_risk_index\": 9.06, \"past_calamity_freq\": 6, \"historical_allocation\": 365}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1817,80,107,'{\"population\": 1892, \"num_households\": 460, \"poverty_incidence\": 15.01, \"disaster_risk_index\": 7.21, \"past_calamity_freq\": 3, \"historical_allocation\": 97}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1818,82,100,'{\"population\": 2171, \"num_households\": 463, \"poverty_incidence\": 34.61, \"disaster_risk_index\": 6.09, \"past_calamity_freq\": 3, \"historical_allocation\": 93}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1819,83,223,'{\"population\": 2697, \"num_households\": 815, \"poverty_incidence\": 13.75, \"disaster_risk_index\": 8.38, \"past_calamity_freq\": 2, \"historical_allocation\": 229}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1820,84,141,'{\"population\": 3072, \"num_households\": 628, \"poverty_incidence\": 26.68, \"disaster_risk_index\": 6.66, \"past_calamity_freq\": 4, \"historical_allocation\": 118}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1821,85,241,'{\"population\": 4313, \"num_households\": 934, \"poverty_incidence\": 19.29, \"disaster_risk_index\": 7.45, \"past_calamity_freq\": 8, \"historical_allocation\": 206}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1822,86,244,'{\"population\": 6064, \"num_households\": 1130, \"poverty_incidence\": 45.9, \"disaster_risk_index\": 5.27, \"past_calamity_freq\": 4, \"historical_allocation\": 245}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1823,87,120,'{\"population\": 2750, \"num_households\": 564, \"poverty_incidence\": 31.87, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 5, \"historical_allocation\": 114}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1824,88,185,'{\"population\": 5368, \"num_households\": 1247, \"poverty_incidence\": 21.52, \"disaster_risk_index\": 4.41, \"past_calamity_freq\": 1, \"historical_allocation\": 154}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1825,13,385,'{\"population\": 5425, \"num_households\": 1292, \"poverty_incidence\": 40.03, \"disaster_risk_index\": 8.5, \"past_calamity_freq\": 7, \"historical_allocation\": 374}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1826,56,275,'{\"population\": 4246, \"num_households\": 924, \"poverty_incidence\": 30.56, \"disaster_risk_index\": 7.72, \"past_calamity_freq\": 9, \"historical_allocation\": 256}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1827,57,196,'{\"population\": 5020, \"num_households\": 849, \"poverty_incidence\": 46.92, \"disaster_risk_index\": 5.11, \"past_calamity_freq\": 7, \"historical_allocation\": 198}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1828,59,229,'{\"population\": 4583, \"num_households\": 1246, \"poverty_incidence\": 41.01, \"disaster_risk_index\": 3.89, \"past_calamity_freq\": 5, \"historical_allocation\": 209}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1829,60,242,'{\"population\": 2685, \"num_households\": 556, \"poverty_incidence\": 46.15, \"disaster_risk_index\": 9.07, \"past_calamity_freq\": 7, \"historical_allocation\": 227}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1830,61,128,'{\"population\": 3016, \"num_households\": 498, \"poverty_incidence\": 19.54, \"disaster_risk_index\": 6.99, \"past_calamity_freq\": 6, \"historical_allocation\": 116}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1831,62,232,'{\"population\": 3927, \"num_households\": 826, \"poverty_incidence\": 31.52, \"disaster_risk_index\": 8.11, \"past_calamity_freq\": 3, \"historical_allocation\": 222}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1832,63,206,'{\"population\": 5868, \"num_households\": 1337, \"poverty_incidence\": 19.23, \"disaster_risk_index\": 4.01, \"past_calamity_freq\": 5, \"historical_allocation\": 158}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1833,64,160,'{\"population\": 1295, \"num_households\": 359, \"poverty_incidence\": 40.76, \"disaster_risk_index\": 8.92, \"past_calamity_freq\": 4, \"historical_allocation\": 122}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1834,65,131,'{\"population\": 4036, \"num_households\": 704, \"poverty_incidence\": 45.87, \"disaster_risk_index\": 4.6, \"past_calamity_freq\": 4, \"historical_allocation\": 132}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1835,66,267,'{\"population\": 4231, \"num_households\": 968, \"poverty_incidence\": 17.77, \"disaster_risk_index\": 8.5, \"past_calamity_freq\": 5, \"historical_allocation\": 248}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1836,67,344,'{\"population\": 5333, \"num_households\": 1467, \"poverty_incidence\": 17.73, \"disaster_risk_index\": 6.15, \"past_calamity_freq\": 9, \"historical_allocation\": 334}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1837,68,106,'{\"population\": 3745, \"num_households\": 644, \"poverty_incidence\": 20.93, \"disaster_risk_index\": 4.23, \"past_calamity_freq\": 9, \"historical_allocation\": 108}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1838,69,105,'{\"population\": 2044, \"num_households\": 310, \"poverty_incidence\": 42.88, \"disaster_risk_index\": 6.3, \"past_calamity_freq\": 8, \"historical_allocation\": 86}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1839,70,365,'{\"population\": 5718, \"num_households\": 1609, \"poverty_incidence\": 32.53, \"disaster_risk_index\": 6.87, \"past_calamity_freq\": 1, \"historical_allocation\": 351}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1840,71,262,'{\"population\": 5779, \"num_households\": 944, \"poverty_incidence\": 25.03, \"disaster_risk_index\": 7.82, \"past_calamity_freq\": 7, \"historical_allocation\": 256}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1841,72,60,'{\"population\": 2846, \"num_households\": 489, \"poverty_incidence\": 30.06, \"disaster_risk_index\": 4.26, \"past_calamity_freq\": 4, \"historical_allocation\": 71}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1842,73,154,'{\"population\": 3195, \"num_households\": 798, \"poverty_incidence\": 17.22, \"disaster_risk_index\": 6.06, \"past_calamity_freq\": 4, \"historical_allocation\": 137}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1843,74,159,'{\"population\": 4725, \"num_households\": 840, \"poverty_incidence\": 13.0, \"disaster_risk_index\": 6.23, \"past_calamity_freq\": 3, \"historical_allocation\": 158}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1844,4,176,'{\"population\": 4702, \"num_households\": 1166, \"poverty_incidence\": 15.26, \"disaster_risk_index\": 4.45, \"past_calamity_freq\": 3, \"historical_allocation\": 148}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1845,6,67,'{\"population\": 1739, \"num_households\": 369, \"poverty_incidence\": 33.51, \"disaster_risk_index\": 5.73, \"past_calamity_freq\": 1, \"historical_allocation\": 83}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1846,32,235,'{\"population\": 3118, \"num_households\": 731, \"poverty_incidence\": 35.52, \"disaster_risk_index\": 7.46, \"past_calamity_freq\": 9, \"historical_allocation\": 222}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1847,7,199,'{\"population\": 2911, \"num_households\": 631, \"poverty_incidence\": 15.9, \"disaster_risk_index\": 8.05, \"past_calamity_freq\": 8, \"historical_allocation\": 188}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1848,8,269,'{\"population\": 6110, \"num_households\": 1161, \"poverty_incidence\": 30.03, \"disaster_risk_index\": 6.14, \"past_calamity_freq\": 6, \"historical_allocation\": 273}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1849,9,304,'{\"population\": 4983, \"num_households\": 1204, \"poverty_incidence\": 28.06, \"disaster_risk_index\": 7.78, \"past_calamity_freq\": 1, \"historical_allocation\": 318}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1850,10,307,'{\"population\": 5450, \"num_households\": 1278, \"poverty_incidence\": 32.91, \"disaster_risk_index\": 6.81, \"past_calamity_freq\": 7, \"historical_allocation\": 263}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1851,33,212,'{\"population\": 3506, \"num_households\": 847, \"poverty_incidence\": 12.72, \"disaster_risk_index\": 7.79, \"past_calamity_freq\": 3, \"historical_allocation\": 215}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1852,34,45,'{\"population\": 1280, \"num_households\": 286, \"poverty_incidence\": 16.25, \"disaster_risk_index\": 4.94, \"past_calamity_freq\": 8, \"historical_allocation\": 57}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1853,35,219,'{\"population\": 5811, \"num_households\": 1143, \"poverty_incidence\": 20.5, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 216}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1854,36,161,'{\"population\": 2606, \"num_households\": 612, \"poverty_incidence\": 40.07, \"disaster_risk_index\": 7.07, \"past_calamity_freq\": 2, \"historical_allocation\": 149}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1855,37,115,'{\"population\": 1701, \"num_households\": 387, \"poverty_incidence\": 30.71, \"disaster_risk_index\": 7.72, \"past_calamity_freq\": 3, \"historical_allocation\": 84}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1856,38,23,'{\"population\": 1037, \"num_households\": 178, \"poverty_incidence\": 26.07, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 33}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1857,39,195,'{\"population\": 4990, \"num_households\": 1182, \"poverty_incidence\": 38.63, \"disaster_risk_index\": 4.21, \"past_calamity_freq\": 2, \"historical_allocation\": 166}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1858,40,158,'{\"population\": 3162, \"num_households\": 902, \"poverty_incidence\": 31.42, \"disaster_risk_index\": 5.23, \"past_calamity_freq\": 1, \"historical_allocation\": 144}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1859,41,103,'{\"population\": 2926, \"num_households\": 445, \"poverty_incidence\": 25.97, \"disaster_risk_index\": 6.61, \"past_calamity_freq\": 4, \"historical_allocation\": 96}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1860,42,0,'{\"population\": 1091, \"num_households\": 226, \"poverty_incidence\": 25.01, \"disaster_risk_index\": 4.5, \"past_calamity_freq\": 2, \"historical_allocation\": 27}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1861,44,93,'{\"population\": 3387, \"num_households\": 663, \"poverty_incidence\": 33.53, \"disaster_risk_index\": 3.76, \"past_calamity_freq\": 6, \"historical_allocation\": 88}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1862,45,91,'{\"population\": 2946, \"num_households\": 641, \"poverty_incidence\": 19.85, \"disaster_risk_index\": 4.81, \"past_calamity_freq\": 3, \"historical_allocation\": 99}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1863,46,74,'{\"population\": 1262, \"num_households\": 331, \"poverty_incidence\": 28.17, \"disaster_risk_index\": 6.12, \"past_calamity_freq\": 4, \"historical_allocation\": 71}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1864,47,371,'{\"population\": 5107, \"num_households\": 1245, \"poverty_incidence\": 41.78, \"disaster_risk_index\": 8.96, \"past_calamity_freq\": 5, \"historical_allocation\": 346}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1865,48,330,'{\"population\": 5575, \"num_households\": 1255, \"poverty_incidence\": 31.27, \"disaster_risk_index\": 8.62, \"past_calamity_freq\": 1, \"historical_allocation\": 319}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1866,49,193,'{\"population\": 4512, \"num_households\": 944, \"poverty_incidence\": 15.7, \"disaster_risk_index\": 5.76, \"past_calamity_freq\": 6, \"historical_allocation\": 191}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1867,51,89,'{\"population\": 2683, \"num_households\": 712, \"poverty_incidence\": 15.95, \"disaster_risk_index\": 4.6, \"past_calamity_freq\": 2, \"historical_allocation\": 90}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1868,52,341,'{\"population\": 5555, \"num_households\": 1414, \"poverty_incidence\": 27.31, \"disaster_risk_index\": 7.33, \"past_calamity_freq\": 5, \"historical_allocation\": 308}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1869,53,221,'{\"population\": 5530, \"num_households\": 1137, \"poverty_incidence\": 16.88, \"disaster_risk_index\": 4.83, \"past_calamity_freq\": 8, \"historical_allocation\": 220}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1870,54,188,'{\"population\": 2255, \"num_households\": 456, \"poverty_incidence\": 42.18, \"disaster_risk_index\": 8.86, \"past_calamity_freq\": 5, \"historical_allocation\": 157}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1871,55,145,'{\"population\": 4139, \"num_households\": 982, \"poverty_incidence\": 33.23, \"disaster_risk_index\": 3.8, \"past_calamity_freq\": 2, \"historical_allocation\": 142}','2026-08-28 09:42:18','v5.0-linreg-6f'),(1872,1,209,'{\"population\": 2039, \"num_households\": 614, \"poverty_incidence\": 24.77, \"disaster_risk_index\": 8.43, \"past_calamity_freq\": 5, \"historical_allocation\": 212}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1873,2,162,'{\"population\": 2914, \"num_households\": 580, \"poverty_incidence\": 27.61, \"disaster_risk_index\": 7.1, \"past_calamity_freq\": 5, \"historical_allocation\": 163}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1874,3,211,'{\"population\": 4512, \"num_households\": 970, \"poverty_incidence\": 44.33, \"disaster_risk_index\": 4.49, \"past_calamity_freq\": 8, \"historical_allocation\": 209}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1875,4,176,'{\"population\": 4702, \"num_households\": 1166, \"poverty_incidence\": 15.26, \"disaster_risk_index\": 4.45, \"past_calamity_freq\": 3, \"historical_allocation\": 148}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1876,5,180,'{\"population\": 5575, \"num_households\": 964, \"poverty_incidence\": 37.89, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 2, \"historical_allocation\": 185}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1877,6,67,'{\"population\": 1739, \"num_households\": 369, \"poverty_incidence\": 33.51, \"disaster_risk_index\": 5.73, \"past_calamity_freq\": 1, \"historical_allocation\": 83}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1878,32,235,'{\"population\": 3118, \"num_households\": 731, \"poverty_incidence\": 35.52, \"disaster_risk_index\": 7.46, \"past_calamity_freq\": 9, \"historical_allocation\": 222}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1879,7,199,'{\"population\": 2911, \"num_households\": 631, \"poverty_incidence\": 15.9, \"disaster_risk_index\": 8.05, \"past_calamity_freq\": 8, \"historical_allocation\": 188}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1880,8,269,'{\"population\": 6110, \"num_households\": 1161, \"poverty_incidence\": 30.03, \"disaster_risk_index\": 6.14, \"past_calamity_freq\": 6, \"historical_allocation\": 273}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1881,9,304,'{\"population\": 4983, \"num_households\": 1204, \"poverty_incidence\": 28.06, \"disaster_risk_index\": 7.78, \"past_calamity_freq\": 1, \"historical_allocation\": 318}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1882,10,307,'{\"population\": 5450, \"num_households\": 1278, \"poverty_incidence\": 32.91, \"disaster_risk_index\": 6.81, \"past_calamity_freq\": 7, \"historical_allocation\": 263}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1883,33,212,'{\"population\": 3506, \"num_households\": 847, \"poverty_incidence\": 12.72, \"disaster_risk_index\": 7.79, \"past_calamity_freq\": 3, \"historical_allocation\": 215}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1884,34,45,'{\"population\": 1280, \"num_households\": 286, \"poverty_incidence\": 16.25, \"disaster_risk_index\": 4.94, \"past_calamity_freq\": 8, \"historical_allocation\": 57}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1885,35,219,'{\"population\": 5811, \"num_households\": 1143, \"poverty_incidence\": 20.5, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 216}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1886,36,161,'{\"population\": 2606, \"num_households\": 612, \"poverty_incidence\": 40.07, \"disaster_risk_index\": 7.07, \"past_calamity_freq\": 2, \"historical_allocation\": 149}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1887,37,115,'{\"population\": 1701, \"num_households\": 387, \"poverty_incidence\": 30.71, \"disaster_risk_index\": 7.72, \"past_calamity_freq\": 3, \"historical_allocation\": 84}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1888,38,23,'{\"population\": 1037, \"num_households\": 178, \"poverty_incidence\": 26.07, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 33}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1889,39,195,'{\"population\": 4990, \"num_households\": 1182, \"poverty_incidence\": 38.63, \"disaster_risk_index\": 4.21, \"past_calamity_freq\": 2, \"historical_allocation\": 166}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1890,40,158,'{\"population\": 3162, \"num_households\": 902, \"poverty_incidence\": 31.42, \"disaster_risk_index\": 5.23, \"past_calamity_freq\": 1, \"historical_allocation\": 144}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1891,41,103,'{\"population\": 2926, \"num_households\": 445, \"poverty_incidence\": 25.97, \"disaster_risk_index\": 6.61, \"past_calamity_freq\": 4, \"historical_allocation\": 96}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1892,42,0,'{\"population\": 1091, \"num_households\": 226, \"poverty_incidence\": 25.01, \"disaster_risk_index\": 4.5, \"past_calamity_freq\": 2, \"historical_allocation\": 27}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1893,43,9,'{\"population\": 1502, \"num_households\": 321, \"poverty_incidence\": 29.96, \"disaster_risk_index\": 3.69, \"past_calamity_freq\": 2, \"historical_allocation\": 45}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1894,44,93,'{\"population\": 3387, \"num_households\": 663, \"poverty_incidence\": 33.53, \"disaster_risk_index\": 3.76, \"past_calamity_freq\": 6, \"historical_allocation\": 88}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1895,45,91,'{\"population\": 2946, \"num_households\": 641, \"poverty_incidence\": 19.85, \"disaster_risk_index\": 4.81, \"past_calamity_freq\": 3, \"historical_allocation\": 99}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1896,46,74,'{\"population\": 1262, \"num_households\": 331, \"poverty_incidence\": 28.17, \"disaster_risk_index\": 6.12, \"past_calamity_freq\": 4, \"historical_allocation\": 71}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1897,47,371,'{\"population\": 5107, \"num_households\": 1245, \"poverty_incidence\": 41.78, \"disaster_risk_index\": 8.96, \"past_calamity_freq\": 5, \"historical_allocation\": 346}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1898,48,330,'{\"population\": 5575, \"num_households\": 1255, \"poverty_incidence\": 31.27, \"disaster_risk_index\": 8.62, \"past_calamity_freq\": 1, \"historical_allocation\": 319}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1899,49,193,'{\"population\": 4512, \"num_households\": 944, \"poverty_incidence\": 15.7, \"disaster_risk_index\": 5.76, \"past_calamity_freq\": 6, \"historical_allocation\": 191}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1900,50,276,'{\"population\": 3257, \"num_households\": 934, \"poverty_incidence\": 32.06, \"disaster_risk_index\": 7.58, \"past_calamity_freq\": 6, \"historical_allocation\": 286}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1901,51,89,'{\"population\": 2683, \"num_households\": 712, \"poverty_incidence\": 15.95, \"disaster_risk_index\": 4.6, \"past_calamity_freq\": 2, \"historical_allocation\": 90}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1902,52,341,'{\"population\": 5555, \"num_households\": 1414, \"poverty_incidence\": 27.31, \"disaster_risk_index\": 7.33, \"past_calamity_freq\": 5, \"historical_allocation\": 308}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1903,53,221,'{\"population\": 5530, \"num_households\": 1137, \"poverty_incidence\": 16.88, \"disaster_risk_index\": 4.83, \"past_calamity_freq\": 8, \"historical_allocation\": 220}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1904,54,188,'{\"population\": 2255, \"num_households\": 456, \"poverty_incidence\": 42.18, \"disaster_risk_index\": 8.86, \"past_calamity_freq\": 5, \"historical_allocation\": 157}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1905,55,145,'{\"population\": 4139, \"num_households\": 982, \"poverty_incidence\": 33.23, \"disaster_risk_index\": 3.8, \"past_calamity_freq\": 2, \"historical_allocation\": 142}','2026-08-29 04:55:53','v5.0-linreg-6f'),(1906,1,209,'{\"population\": 2039, \"num_households\": 614, \"poverty_incidence\": 24.77, \"disaster_risk_index\": 8.43, \"past_calamity_freq\": 5, \"historical_allocation\": 212}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1907,2,162,'{\"population\": 2914, \"num_households\": 580, \"poverty_incidence\": 27.61, \"disaster_risk_index\": 7.1, \"past_calamity_freq\": 5, \"historical_allocation\": 163}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1908,3,211,'{\"population\": 4512, \"num_households\": 970, \"poverty_incidence\": 44.33, \"disaster_risk_index\": 4.49, \"past_calamity_freq\": 8, \"historical_allocation\": 209}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1909,4,176,'{\"population\": 4702, \"num_households\": 1166, \"poverty_incidence\": 15.26, \"disaster_risk_index\": 4.45, \"past_calamity_freq\": 3, \"historical_allocation\": 148}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1910,5,180,'{\"population\": 5575, \"num_households\": 964, \"poverty_incidence\": 37.89, \"disaster_risk_index\": 5.1, \"past_calamity_freq\": 2, \"historical_allocation\": 185}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1911,6,67,'{\"population\": 1739, \"num_households\": 369, \"poverty_incidence\": 33.51, \"disaster_risk_index\": 5.73, \"past_calamity_freq\": 1, \"historical_allocation\": 83}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1912,32,235,'{\"population\": 3118, \"num_households\": 731, \"poverty_incidence\": 35.52, \"disaster_risk_index\": 7.46, \"past_calamity_freq\": 9, \"historical_allocation\": 222}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1913,7,199,'{\"population\": 2911, \"num_households\": 631, \"poverty_incidence\": 15.9, \"disaster_risk_index\": 8.05, \"past_calamity_freq\": 8, \"historical_allocation\": 188}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1914,8,269,'{\"population\": 6110, \"num_households\": 1161, \"poverty_incidence\": 30.03, \"disaster_risk_index\": 6.14, \"past_calamity_freq\": 6, \"historical_allocation\": 273}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1915,9,304,'{\"population\": 4983, \"num_households\": 1204, \"poverty_incidence\": 28.06, \"disaster_risk_index\": 7.78, \"past_calamity_freq\": 1, \"historical_allocation\": 318}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1916,10,307,'{\"population\": 5450, \"num_households\": 1278, \"poverty_incidence\": 32.91, \"disaster_risk_index\": 6.81, \"past_calamity_freq\": 7, \"historical_allocation\": 263}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1917,33,212,'{\"population\": 3506, \"num_households\": 847, \"poverty_incidence\": 12.72, \"disaster_risk_index\": 7.79, \"past_calamity_freq\": 3, \"historical_allocation\": 215}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1918,34,45,'{\"population\": 1280, \"num_households\": 286, \"poverty_incidence\": 16.25, \"disaster_risk_index\": 4.94, \"past_calamity_freq\": 8, \"historical_allocation\": 57}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1919,35,219,'{\"population\": 5811, \"num_households\": 1143, \"poverty_incidence\": 20.5, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 216}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1920,36,161,'{\"population\": 2606, \"num_households\": 612, \"poverty_incidence\": 40.07, \"disaster_risk_index\": 7.07, \"past_calamity_freq\": 2, \"historical_allocation\": 149}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1921,37,115,'{\"population\": 1701, \"num_households\": 387, \"poverty_incidence\": 30.71, \"disaster_risk_index\": 7.72, \"past_calamity_freq\": 3, \"historical_allocation\": 84}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1922,38,23,'{\"population\": 1037, \"num_households\": 178, \"poverty_incidence\": 26.07, \"disaster_risk_index\": 5.68, \"past_calamity_freq\": 3, \"historical_allocation\": 33}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1923,39,195,'{\"population\": 4990, \"num_households\": 1182, \"poverty_incidence\": 38.63, \"disaster_risk_index\": 4.21, \"past_calamity_freq\": 2, \"historical_allocation\": 166}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1924,40,158,'{\"population\": 3162, \"num_households\": 902, \"poverty_incidence\": 31.42, \"disaster_risk_index\": 5.23, \"past_calamity_freq\": 1, \"historical_allocation\": 144}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1925,41,103,'{\"population\": 2926, \"num_households\": 445, \"poverty_incidence\": 25.97, \"disaster_risk_index\": 6.61, \"past_calamity_freq\": 4, \"historical_allocation\": 96}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1926,42,0,'{\"population\": 1091, \"num_households\": 226, \"poverty_incidence\": 25.01, \"disaster_risk_index\": 4.5, \"past_calamity_freq\": 2, \"historical_allocation\": 27}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1927,43,9,'{\"population\": 1502, \"num_households\": 321, \"poverty_incidence\": 29.96, \"disaster_risk_index\": 3.69, \"past_calamity_freq\": 2, \"historical_allocation\": 45}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1928,44,93,'{\"population\": 3387, \"num_households\": 663, \"poverty_incidence\": 33.53, \"disaster_risk_index\": 3.76, \"past_calamity_freq\": 6, \"historical_allocation\": 88}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1929,45,91,'{\"population\": 2946, \"num_households\": 641, \"poverty_incidence\": 19.85, \"disaster_risk_index\": 4.81, \"past_calamity_freq\": 3, \"historical_allocation\": 99}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1930,46,74,'{\"population\": 1262, \"num_households\": 331, \"poverty_incidence\": 28.17, \"disaster_risk_index\": 6.12, \"past_calamity_freq\": 4, \"historical_allocation\": 71}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1931,47,371,'{\"population\": 5107, \"num_households\": 1245, \"poverty_incidence\": 41.78, \"disaster_risk_index\": 8.96, \"past_calamity_freq\": 5, \"historical_allocation\": 346}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1932,48,330,'{\"population\": 5575, \"num_households\": 1255, \"poverty_incidence\": 31.27, \"disaster_risk_index\": 8.62, \"past_calamity_freq\": 1, \"historical_allocation\": 319}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1933,49,193,'{\"population\": 4512, \"num_households\": 944, \"poverty_incidence\": 15.7, \"disaster_risk_index\": 5.76, \"past_calamity_freq\": 6, \"historical_allocation\": 191}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1934,50,276,'{\"population\": 3257, \"num_households\": 934, \"poverty_incidence\": 32.06, \"disaster_risk_index\": 7.58, \"past_calamity_freq\": 6, \"historical_allocation\": 286}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1935,51,89,'{\"population\": 2683, \"num_households\": 712, \"poverty_incidence\": 15.95, \"disaster_risk_index\": 4.6, \"past_calamity_freq\": 2, \"historical_allocation\": 90}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1936,52,341,'{\"population\": 5555, \"num_households\": 1414, \"poverty_incidence\": 27.31, \"disaster_risk_index\": 7.33, \"past_calamity_freq\": 5, \"historical_allocation\": 308}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1937,53,221,'{\"population\": 5530, \"num_households\": 1137, \"poverty_incidence\": 16.88, \"disaster_risk_index\": 4.83, \"past_calamity_freq\": 8, \"historical_allocation\": 220}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1938,54,188,'{\"population\": 2255, \"num_households\": 456, \"poverty_incidence\": 42.18, \"disaster_risk_index\": 8.86, \"past_calamity_freq\": 5, \"historical_allocation\": 157}','2026-08-30 20:12:57','v5.0-linreg-6f'),(1939,55,145,'{\"population\": 4139, \"num_households\": 982, \"poverty_incidence\": 33.23, \"disaster_risk_index\": 3.8, \"past_calamity_freq\": 2, \"historical_allocation\": 142}','2026-08-30 20:12:57','v5.0-linreg-6f');
 /*!40000 ALTER TABLE `prediction_logs` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `preposition_records`
@@ -2215,7 +562,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `preposition_records`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `preposition_records` (
   `preposition_id` int(11) NOT NULL AUTO_INCREMENT,
   `from_office_id` int(11) NOT NULL,
@@ -2244,13 +591,10 @@ CREATE TABLE `preposition_records` (
 -- Dumping data for table `preposition_records`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `preposition_records` WRITE;
 /*!40000 ALTER TABLE `preposition_records` DISABLE KEYS */;
 /*!40000 ALTER TABLE `preposition_records` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `relief_request_batches`
@@ -2258,7 +602,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `relief_request_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `relief_request_batches` (
   `batch_id` int(11) NOT NULL AUTO_INCREMENT,
   `office_id` int(11) NOT NULL,
@@ -2290,26 +634,18 @@ CREATE TABLE `relief_request_batches` (
   CONSTRAINT `relief_request_batches_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`),
   CONSTRAINT `relief_request_batches_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `relief_request_batches_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `relief_request_batches`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `relief_request_batches` WRITE;
 /*!40000 ALTER TABLE `relief_request_batches` DISABLE KEYS */;
-INSERT INTO `relief_request_batches` VALUES
-(1,3,1,600,'medium','','','draft',0,NULL,NULL,NULL,NULL,4,'2026-07-20 06:52:00',NULL,NULL,NULL,NULL),
-(7,3,1,750,'high','updated reason','updated remarks','draft',0,NULL,NULL,NULL,NULL,4,'2026-07-20 07:01:32',NULL,NULL,NULL,NULL),
-(18,3,1,1200,'high','warehouse drawn down by barangay requests',NULL,'fulfilled',1000,5,NULL,NULL,NULL,4,'2026-08-28 09:36:10','2026-08-28 09:36:10',2,'2026-08-28 09:36:10','partial - keep reserve'),
-(19,2,1,2500,'high','Barangay relief requests this week have drawn the municipal warehouse below projected demand.',NULL,'approved',2500,5,NULL,NULL,NULL,3,'2026-08-28 09:39:49','2026-08-28 09:39:49',2,'2026-08-29 04:01:46',NULL),
-(20,4,1,1800,'high','Barangay relief requests this week have drawn the municipal warehouse below projected demand.',NULL,'pending',1500,5,NULL,NULL,NULL,5,'2026-08-28 09:39:49','2026-08-28 09:39:49',2,'2026-08-28 09:39:49',NULL);
+INSERT INTO `relief_request_batches` VALUES (1,3,1,600,'medium','','','draft',0,NULL,NULL,NULL,NULL,4,'2026-07-20 06:52:00',NULL,NULL,NULL,NULL),(7,3,1,750,'high','updated reason','updated remarks','draft',0,NULL,NULL,NULL,NULL,4,'2026-07-20 07:01:32',NULL,NULL,NULL,NULL),(18,3,1,1200,'high','warehouse drawn down by barangay requests',NULL,'fulfilled',1000,5,NULL,NULL,NULL,4,'2026-08-28 09:36:10','2026-08-28 09:36:10',2,'2026-08-28 09:36:10','partial - keep reserve'),(19,2,1,2500,'high','Barangay relief requests this week have drawn the municipal warehouse below projected demand.',NULL,'fulfilled',2500,5,NULL,NULL,NULL,3,'2026-08-28 09:39:49','2026-08-28 09:39:49',2,'2026-08-29 04:01:46',NULL),(20,4,1,1800,'high','Barangay relief requests this week have drawn the municipal warehouse below projected demand.',NULL,'pending',1500,5,NULL,NULL,NULL,5,'2026-08-28 09:39:49','2026-08-28 09:39:49',2,'2026-08-28 09:39:49',NULL),(23,2,NULL,5971,'medium','sad',NULL,'fulfilled',5971,5,NULL,'a6aedeb5cae41862287994bb3b2d82bc.jpg',NULL,3,'2026-08-30 21:27:26','2026-08-30 13:27:26',2,'2026-08-30 13:28:04',NULL);
 /*!40000 ALTER TABLE `relief_request_batches` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `report_logs`
@@ -2317,7 +653,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `report_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `report_logs` (
   `report_id` int(11) NOT NULL AUTO_INCREMENT,
   `report_type` varchar(50) NOT NULL,
@@ -2336,62 +672,11 @@ CREATE TABLE `report_logs` (
 -- Dumping data for table `report_logs`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `report_logs` WRITE;
 /*!40000 ALTER TABLE `report_logs` DISABLE KEYS */;
-INSERT INTO `report_logs` VALUES
-(1,'relief_requests','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),
-(2,'relief_requests','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),
-(3,'distribution','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),
-(4,'distribution','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),
-(5,'warehouse_inventory','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),
-(6,'warehouse_inventory','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),
-(7,'stock_movement','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),
-(8,'stock_movement','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),
-(9,'municipality_summary','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),
-(10,'municipality_summary','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),
-(11,'typhoon_summary','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),
-(12,'typhoon_summary','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),
-(13,'analytics','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),
-(14,'analytics','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),
-(15,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:28:23'),
-(16,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:35:47'),
-(17,'relief_requests','excel',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:35:47'),
-(18,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:40:20'),
-(19,'relief_requests','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(20,'relief_requests','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(21,'distribution','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(22,'distribution','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(23,'warehouse_inventory','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(24,'warehouse_inventory','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(25,'stock_movement','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(26,'stock_movement','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(27,'municipality_summary','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(28,'municipality_summary','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(29,'typhoon_summary','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(30,'typhoon_summary','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(31,'analytics','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(32,'analytics','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),
-(33,'damage_reports','pdf',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:13'),
-(34,'damage_reports','excel',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:13'),
-(35,'relief_deliveries','pdf',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:13'),
-(36,'relief_deliveries','excel',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:14'),
-(37,'damage_reports','pdf',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:27'),
-(38,'relief_deliveries','excel',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:27'),
-(39,'damage_reports','pdf',1,'{\"event_id\": 1, \"days\": \"all\"}',11,'2026-07-23 07:36:36'),
-(40,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": \"all\"}',2,'2026-07-23 07:37:55'),
-(41,'relief_requests','excel',1,'{\"event_id\": 1, \"days\": \"all\"}',3,'2026-07-23 07:37:56'),
-(42,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),
-(43,'distribution','pdf',2,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),
-(44,'warehouse_inventory','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),
-(45,'stock_movement','pdf',3,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),
-(46,'municipality_summary','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),
-(47,'typhoon_summary','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),
-(48,'analytics','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:37:00');
+INSERT INTO `report_logs` VALUES (1,'relief_requests','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),(2,'relief_requests','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),(3,'distribution','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),(4,'distribution','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),(5,'warehouse_inventory','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),(6,'warehouse_inventory','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:19'),(7,'stock_movement','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),(8,'stock_movement','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),(9,'municipality_summary','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),(10,'municipality_summary','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),(11,'typhoon_summary','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),(12,'typhoon_summary','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),(13,'analytics','pdf',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),(14,'analytics','excel',1,'{\"event_id\": null, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:26:20'),(15,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:28:23'),(16,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:35:47'),(17,'relief_requests','excel',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:35:47'),(18,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-07-20 03:40:20'),(19,'relief_requests','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(20,'relief_requests','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(21,'distribution','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(22,'distribution','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(23,'warehouse_inventory','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(24,'warehouse_inventory','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(25,'stock_movement','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(26,'stock_movement','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(27,'municipality_summary','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(28,'municipality_summary','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(29,'typhoon_summary','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(30,'typhoon_summary','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(31,'analytics','pdf',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(32,'analytics','excel',1,'{\"event_id\": 1, \"days\": 30}',3,'2026-07-21 04:36:05'),(33,'damage_reports','pdf',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:13'),(34,'damage_reports','excel',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:13'),(35,'relief_deliveries','pdf',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:13'),(36,'relief_deliveries','excel',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:14'),(37,'damage_reports','pdf',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:27'),(38,'relief_deliveries','excel',1,'{\"event_id\": 1, \"days\": 30}',11,'2026-07-23 07:26:27'),(39,'damage_reports','pdf',1,'{\"event_id\": 1, \"days\": \"all\"}',11,'2026-07-23 07:36:36'),(40,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": \"all\"}',2,'2026-07-23 07:37:55'),(41,'relief_requests','excel',1,'{\"event_id\": 1, \"days\": \"all\"}',3,'2026-07-23 07:37:56'),(42,'relief_requests','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),(43,'distribution','pdf',2,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),(44,'warehouse_inventory','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),(45,'stock_movement','pdf',3,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),(46,'municipality_summary','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),(47,'typhoon_summary','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:36:59'),(48,'analytics','pdf',1,'{\"event_id\": 1, \"municipality\": \"all\", \"days\": 30}',2,'2026-08-28 09:37:00');
 /*!40000 ALTER TABLE `report_logs` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `system_settings`
@@ -2399,7 +684,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `system_settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `system_settings` (
   `setting_key` varchar(50) NOT NULL,
   `setting_value` varchar(255) NOT NULL,
@@ -2415,17 +700,11 @@ CREATE TABLE `system_settings` (
 -- Dumping data for table `system_settings`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `system_settings` WRITE;
 /*!40000 ALTER TABLE `system_settings` DISABLE KEYS */;
-INSERT INTO `system_settings` VALUES
-('low_stock_alert_enabled','1',1,'2026-07-22 04:29:04'),
-('warehouse_healthy_threshold','0.75',1,'2026-07-22 04:29:04'),
-('warehouse_moderate_threshold','0.35',1,'2026-07-22 04:29:04');
+INSERT INTO `system_settings` VALUES ('low_stock_alert_enabled','1',1,'2026-07-22 04:29:04'),('warehouse_healthy_threshold','0.75',1,'2026-07-22 04:29:04'),('warehouse_moderate_threshold','0.35',1,'2026-07-22 04:29:04');
 /*!40000 ALTER TABLE `system_settings` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `users`
@@ -2433,7 +712,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `users` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
@@ -2461,106 +740,11 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES
-(1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:53:18','2026-08-29 04:54:40'),
-(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 09:45:45','2026-08-29 09:45:58'),
-(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:55:22','2026-08-29 09:45:01'),
-(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:54:18','2026-08-29 04:54:19'),
-(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:50:13','2026-08-29 04:50:14'),
-(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$hCcKMg13rKLOH9xY$f2105adfe2ca9210b04ea778dfffc96f177066a49a54ab8bb330e87c1649bed47608adfc91eda0880b050776ee56e1d2113c160e0e79a505597b8906bbb9868d','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-08-29 04:51:03','2026-08-29 04:54:40'),
-(12,'Cecilia Manalo','bactadeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Kfio6bqQW9wDGBco$2acd213abfc0e108d5e4e41fb706cfbd829bd8c8048f622813b72df4795532092147a761a8241354afbd5d7ed364860a92dccd11d14ee13a8481c969b877c246','barangay_user',NULL,2,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:27:18','2026-07-23 06:27:18'),
-(13,'Ferdinand Cruz','bayaoas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$QwNXrI3vmjalmxYe$b42811b74e3a36c1ede2b478e54d853b0bc94da0878169a658010c8665fe1a6d82b6b989d026280555cf6928279e5dd4358509399e545cf151595f362c122516','barangay_user',NULL,3,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(14,'Marilou Santos','bolaoen.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$2zsdzaaE93XM5qXZ$c24179079505bfe8221a8ac18a226d76fe59059f3105a3e6690973142c08ed11d854fd67e652a961d62bd1b844ecfcb39a72c35df5ca8efeea342acb7cc02de9','barangay_user',NULL,4,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(15,'Edgardo Villanueva','cabaruan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$YwaBV6BDYb32qki6$a29f379021fb516c58e13dde2902c82278114f0639e2771a10f70514054723fdb167898feada08c334b5cea8aeced4409377041498482eff57f2f72450c8b840','barangay_user',NULL,5,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-08-28 07:31:27','2026-08-28 07:41:04'),
-(16,'Rosalinda Aquino','cabuloan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$mTXXGY5sNNnzZucy$e7511497836ee07d7678d3c41534c73d61a5559385a1ddb6497c287627eeefcd2441e7d7b91a78e3b0d5794402a170b1e88489fbbaede583da6ea66c1f13a631','barangay_user',NULL,6,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:27:18','2026-07-23 06:29:51'),
-(17,'Danilo Mendoza','camantiles.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$L81ZWS1ayKE8mIsM$41e21a429254b6b7794f4cfeef5b2db8b68e9c2692462e40b6beb42d32a38e4126879d13dd3782caa65761bc765d31dde5ab6d0aa9e998e43e12b3ccfabe938a','barangay_user',NULL,7,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(18,'Teresita Ramos','casantaan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$amtqwfsek3Jtnjm0$ab33655a6d77b14a0f36c42e52fd35acc925c499e06fe29e68b596851850921cdbcf2867ad01e4f4857128ccc6774c7d22466e74202290022682e714dc0dcb98','barangay_user',NULL,8,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(19,'Rogelio Domingo','catablan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$9w1ttG1Y0HwQgZY7$2bc665900c21f184dc37592c7d145f409824d355a49c84b196a7495e167ed5c5209d3d7444b20ea6ea50f2338a89ac43758caeaa7403a910257932d58a15e30b','barangay_user',NULL,9,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,'2026-08-28 08:58:09'),
-(20,'Corazon Fernandez','cayambanan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$yzkCRZ7HMLoGVQ3t$129c5a4d3eb778e4fee20c93afb6d89ab0c203051e0527d503cc63eb553036c73dedef4c0a70db28b26925cec681bf86ab7420aee6116ec4f56b79316d4534c3','barangay_user',NULL,10,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(21,'Alberto Garcia','abot.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$D1CBugYk6TVGTZlD$a1d7fa065e63c7e8643f717e5aa35ebcb710dcb17082239b89271a608fd48495456d7471d3b25cced7e9ffa4029732792f6fed7ee1980f2a7fcb7ec843793dc6','barangay_user',NULL,11,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(22,'Leonora Torres','banao.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$vtVncBlWCagHfruS$4d62b454f34b68ecaba5b644b55dc0881403edb0b742b5e10cc96cabcf5685dc9b19e4adcf160ed8dab2995abafb05b5c031512ef37be5c10e4f81f5f79bec23','barangay_user',NULL,12,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(23,'Rodrigo Castillo','batayang.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bz0M9xcEE6nPgAKG$ca5df47b9449687103a689cc26de6ce2ce60369d2ea5784984c2390ade872e10a3f3b79eb5f864ea69dd34b2da69f6a50d1c1683778fae031b2ea16ae16a92d2','barangay_user',NULL,13,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(24,'Imelda Navarro','bungallon.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$SqMHJswOxfoLl3h1$120b9159d7947f71a4b57195c17df496b4cc01d80f536668711bb276cbb69c525e0c7f40dc44e8b5700e9634308604ad79fcb249234ead6d55b98dd7939dada8','barangay_user',NULL,14,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(25,'Bienvenido Pascual','calepaan.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bQ75NS3Lme7vxjWN$c03248699c538c950f3deaeed737366098c2383c6ce9648b740a85c22b599eda76de6f3b64d4f3367e7e72f5aa0b572398ace7baa1bd146fb48a6074a2696593','barangay_user',NULL,15,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(26,'Nenita Ocampo','carosucannorte.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$awpylHt4QUkieEUX$de0bb1be5427e9807f0d5e39e2990406d8ef47ca1b12c8ab99f9f496c9a386556b4b3949e49b55ef49ccccdb7092f725bdfef60995148bbc9dfd2117b84015bb','barangay_user',NULL,16,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(27,'Wilfredo Salazar','carosucansur.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$PbINXkDwpM4o1ofa$50007d9b23e65a428cc96183ecf6c6d2bb0f9233e08722c71c709fe6bb93734401d580d6eb37b353b80a0c7a6bf9b92d07d8e0a26f080489a33c901699849424','barangay_user',NULL,17,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 05:22:11','2026-07-23 05:22:11'),
-(28,'Adelaida Gonzales','coliling.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$dO4z4oDWBW9ovcyt$acfbad4f823b866d848cba2959476b50789a9d394444f5682fc896de987dde118094c89e4a8bf9ac51544a3b8cb87950bac933589aa2c82ef741031be0de6c87','barangay_user',NULL,18,'Barangay Captain','2026-07-23 04:36:56',1,1,'2026-08-14 06:08:10','2026-08-14 06:07:55'),
-(29,'Rustico Del Rosario','hacienda.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$OcnNyuwuWadZfTkJ$fde2dca3935704f0d712f78eb1ba23c584f7d4f68e6e1fb3f2701a9577f6e955a16f97019e81bd33d6b53b64923ff5f472ee482044d06f8d252d976e3e72273d','barangay_user',NULL,19,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(30,'Herminia Flores','mapolopolo.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$ZWdNC65VnilRbPfm$1fdc51b74b82d70f607992e22fd010fa8f73b5df035cc7c9efe090997ab4518fd3ea9bcf914e1bc55f7684a46e2ca0efa3150b0989686c40aba64a59970f3be5','barangay_user',NULL,20,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(31,'Renato Marquez','ambonao.calasiao@reliefline.gov.ph','scrypt:32768:8:1$jE7FaRabd0KYYvFR$90384bf78927019175780537b8497b0ee7f96083413df22a33121c21067d78e259d7749c5f4344494f4ce9b41836fc195f45bae7652c64ebff59e21ce836b833','barangay_user',NULL,21,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(32,'Purificacion Ignacio','ambuetel.calasiao@reliefline.gov.ph','scrypt:32768:8:1$EHE90htnCSoHZ4Qm$983234cd7f30bd38ad8516c31c53c7b0d2cedb448a107206f5357fcd41714d257f6283b640ca81a6baf38a7336661ddafa79c220a2c47c1d1ffa0ddaecb97abd','barangay_user',NULL,22,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(33,'Jose Reyes','banaoang.calasiao@reliefline.gov.ph','scrypt:32768:8:1$av0BXelksBW841He$9f0dfe5394bc8ef8501a616cf22802839b0424c558113209c7acba5a49d36b18db256147e169016d54b3bf03872110aac161d08334ce6508019dd84640d37692','barangay_user',NULL,23,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:10:28','2026-07-23 06:10:28'),
-(34,'Esperanza Rivera','bued.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mnBTOaysNoBYqvXI$b557ef44e439d96b4fab661e5cd26f72c96964051c6eb74948643a2c79617e33dec22d185bba3b9b77663beda676f3d4f82bee4464d39038b0c16fe97040711c','barangay_user',NULL,24,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(35,'Nestor Agustin','buenlag.calasiao@reliefline.gov.ph','scrypt:32768:8:1$MNxFcFoKNyhpyIqs$175622ecd2f60f45bdbca2c968a7319548b3b1b1fca9a856d481ddc51f54c3a459766e72606617d3e5ab087e104238709eb53933c8edda177736074b960ebf7b','barangay_user',NULL,25,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(36,'Lourdes Panganiban','cabilocaan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$cZGGpe2sMbFrmDib$220cfc0f2fc2964b2c217ab96dfbcbd186b33e8667e2af8a8cff3ddd4a99067ae32e01645e6b3eb9c49627ee173f06197b0fd6f20ee1e57dc245c2fe1ee000c9','barangay_user',NULL,26,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(37,'Cirilo Bernardo','dinalaoan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mc85Dtx7ldVdBQ1X$8a3337491083a92084a8c787891d481c2a79715e2c464282a4b9a2fbceb8912dfba7c01a2fe4b13416c3edb71484edb5927b34917122d0813d6b8e142eaeb4d8','barangay_user',NULL,27,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(38,'Julieta Enriquez','doyong.calasiao@reliefline.gov.ph','scrypt:32768:8:1$SKO0jXiQWnPrLBQ9$e5c4c76eb200b963dde29a21a0edf863f1b3a5750a6122239b1a3f01d3222d1ca247af9d835e613c7d861b40ecc0fa344868c9032d70d6aee264971d279b9524','barangay_user',NULL,28,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(39,'Bonifacio Lazaro','gabon.calasiao@reliefline.gov.ph','scrypt:32768:8:1$NQCEw9ZVNjHrqYdJ$fc0eb088aaddd126c055ce620770f4996fb56fdb552cb8fa964584cb3eabdea4124f929500626051c06bc4e2a6146934ea47a956bed2c52a12a14153c496538d','barangay_user',NULL,29,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(40,'Remedios Corpuz','lasip.calasiao@reliefline.gov.ph','scrypt:32768:8:1$hyCPITc545JSxO1x$719cb05c28fedbedbde1880e2d0e984444b07779f72127c4d5ffb0de5c52c0014de6424444b0e474cb73e54d0a332e99e6a73cb7b99070af399f8b70adb5733f','barangay_user',NULL,30,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),
-(41,'Ramon Bautista','camanang.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$gm3DxtsBtpRTpsVP$7e7089a95cc575e812c2746e07d58c966159aba149e1fd4558a49c21ebe7856cb6fcca344e251ea346d60ded7eea2a5e832982c5cb8cdf2cfec2630ea400cc54','barangay_user',NULL,32,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(42,'Cecilia Manalo','consolacion.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Qq8z6VrK5uRLBSNE$b25a6b42b582c3c5459ebbc7449d3d7949492a2d76a0a6ad546d7f348260f5ec1e634bfaf54f07927372400b06253d201b7e103293795bb5358b440a9d0f0d7a','barangay_user',NULL,33,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(43,'Ferdinand Cruz','dilanpaurido.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$qBKWbWi63j56JqiJ$fe8e32cd053c21477bd90af435b7e8192c8d31b80e4a39d06b1eb57fc7aa5949aededc9f3b0c2b645a83eb6da4ff973d9aa3d972f301c14c53702c9c6de8584f','barangay_user',NULL,34,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(44,'Marilou Santos','drpedrotorata.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Bb73IGaeCqnSK5I8$f82b9092efa41fcb5021eb74ef6197176baa3259e272c144b7416deea51bb365938ed2e3ba25d6a0e0145c65eabb1a907dfd899c89c5720873fabe6623a36dbb','barangay_user',NULL,35,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(45,'Edgardo Villanueva','labitproper.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$70Ym3DIxTCUQjtse$98e8acee58c8567793eafb68ac0cc0914f6b7dd2da8caf1e34a0866f7740e57178e7ca143150e6d4d38950c4fc12441fc3e2092b116b83a7bc2ef4e6da139d9d','barangay_user',NULL,36,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(46,'Rosalinda Aquino','labitwest.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$SYwvIdZgMTdABRgk$2080681d8aa86e53407d8e0c9bb1e52c7d0e8cfbf9f555fa642d0a77abce93f5b8b1dff57439eb130833cdf274def0eaf8272cf5ec145df3249fdd1b910639f6','barangay_user',NULL,37,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(47,'Danilo Mendoza','mabanogbog.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Zzjw1784NCJQ2JNu$de5c3cba61cde115b9fff5e0d114fd0984e971163d1d6ed246129b8b504d4ede616ca8d32de178c4f0a16a4f41dc75835a917f0e9c5faedd64eaf8eba20c478b','barangay_user',NULL,38,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(48,'Teresita Ramos','macalong.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$fOgwr1XCNh0JLRnt$d58ed82d37f687a4f7ce2e1403d946389598663a954d886a0f6838b5e1330cf48a999f1596509dbfcca2048968d45d8ad1edc14d0f685bdd7c24dd436793c64a','barangay_user',NULL,39,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(49,'Rogelio Domingo','nancalobasaan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$ceVUxKjfS6ujTjy9$4fc54e8b3302e4b00d8609f3e572a7669c1c3b2404e2f023f8e49ec8742f1ae83fc8c188ef617e5e1c50712e9573e6545c6832e97b5a2abade1ebe6d636ef6e4','barangay_user',NULL,40,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(50,'Corazon Fernandez','nancamaliraneast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Ny9o8ssEQKiSOX7w$14e2c7f27c323aaba97f86253574924f49351f0aebf62efb04b6895e3749a26304a037cc707e5a89f76b4563e56e73ffbd503e2104d5ba2d743a715dd95fe72f','barangay_user',NULL,41,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(51,'Alberto Garcia','nancamaliranwest.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$fUcgMRG0TbNtrSqp$bcc9bd9bb60bdd4f9131f2b47bac67fabec5f3936f6a5d83d50d85c2b862c7e8913d5057911657e7bed8f3e4a56aab71578b499d0b3bc6d0304521b9c518fba3','barangay_user',NULL,42,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(52,'Leonora Torres','nancayasan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$hjr0moCubiKzgRhy$4b6d2f0d8dfc1073b8120b765285e2751ac8dc0629ebeba8c3a5cb12709987a1777f9e1c178c010fd40606bf4dc0bcd2f5177a0717c3a3a463b89fa3e00752ab','barangay_user',NULL,43,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(53,'Rodrigo Castillo','oltama.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$0onTkcbVC49r8yLy$a12f5361fca3d030a829b49d8dc1339e4b1f77cc10a312d1700cc8ce93e4f5a7b251b5a848021b302fea4489f76f1800e5f6c705dc3d445ae5b1aa96f84fdb80','barangay_user',NULL,44,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(54,'Imelda Navarro','palinaeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$oIZj3urRzSH4abH9$1424605461b4a1a7cf0a4469722b8c9df192ee0f258c30f7071c2167d79474a4525760e54fc535f6eba2ad9a95d3e8b6c0c0fb7d9a75ad7fd6ced9881d1a7adb','barangay_user',NULL,45,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(55,'Bienvenido Pascual','palinawest.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$7XgKryS9tR4zZD90$cb80104472a16d16c6156724cc02dc025d758a4abf314e1acce05b90f43c78ad8294d8add08f680110d817e223b84af807e2c08875a2d7f3f2f3c31adbc7c6f5','barangay_user',NULL,46,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(56,'Nenita Ocampo','pinmaludpod.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$8tz9Ju12w34po3cG$110fae12ba21c2d18c8654863832b29c999de4d594f621ed906fb870f5a1596c753fd04787a955017a05a333a64d7a62844d7ee143e46145d1718f315616ad2d','barangay_user',NULL,47,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(57,'Wilfredo Salazar','poblacion.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$CaqpsdajYijUZu6M$cdadd56a407d7e87a7307f99a7259eb40af640464ed814875fd275f4059c32c78e8bf5cb58066a4be8886ffcdb3a22f5ad7fee9eefc84b8d9c9fb59eefe50ef5','barangay_user',NULL,48,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(58,'Adelaida Gonzales','sanjose.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$aQWQqrY6q3i2JvSI$00c0eb6e3297a0559e5594fffaa293b613f2a8ffbe1da71976c6dd128be872df4b4e8d2e412515be297d16b0cfe53ba05d60876b389db2e716663a68705a767c','barangay_user',NULL,49,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(59,'Rustico Del Rosario','sanvicente.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$GDW04pK5Ux9585BS$98a010b6b02eaf6ae7fe8bfe5c4a8fb75178c508dabc02b6bbc798daa29164e37d2c4cec39a99894005dceb0c45c2b85dc0bf75e69a471f1a0f39daef5d977ea','barangay_user',NULL,50,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(60,'Herminia Flores','santalucia.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$N8TOe2x6khOtGg4G$474d2ed9a94229d55dc23a067dff5f69d862481006f3552aa30c9cebf178f0ae8cdbfb1315cbd14b8535ff75af00e894fc3222f86b021c93465bf5292eebbe25','barangay_user',NULL,51,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(61,'Renato Marquez','santodomingo.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$CZrLtizqq37QLapD$b89722712b058a8a9e6e66abc09bde407eaa363c6181a15844eaeb5dcb10d5104abc2778d847caecfac644c708a5c63aa02a5c8396fb3be7544108519a3d668f','barangay_user',NULL,52,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(62,'Purificacion Ignacio','sugcong.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$8GPyzGwbBgCYLlX0$73a67eeedae4915b92a0974ae08a57dce9f8919155975e338f990048bc5d46a043e9524134e24d0002610b8d95750c9e6494840a746f2748cebcdda78be91252','barangay_user',NULL,53,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(63,'Armando Velasco','tipuso.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$gs08ETypn4Bwld4f$8ac50817a4e00b6583bcf97e2b78cdcaadade1437341db487b53b84b5220d607010a265a94d6cc499f9b4a40ab438d3ac794f9360ba2ac5b5cf292b2c52cd4e2','barangay_user',NULL,54,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(64,'Esperanza Rivera','tulong.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$ZcWEklCiwXG3qCHm$4a979fc1c3b0ac2829217477983aa68ac7975df90e08f94ea0cd35e579bf673d579fb08d39da3a09dad2566745b6083d6fe18bf11a5323e5ac4613c1b868e0d0','barangay_user',NULL,55,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(65,'Nestor Agustin','leet.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$INsLjEt7xEhdR3B3$4ae4db28c7c05683d38f91558d046056d747e7fbe5d974f9043d551e66d52c6e9ec38a1349badb050735de65f0a27f4120614b464cbf2094d7ba0047dd65180e','barangay_user',NULL,56,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(66,'Lourdes Panganiban','malanay.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$H9VVVqYyW8isnPbh$4f4def8abf43e63e7e78ef2551e4542b6822ecdf6a9c8b1e9a655778fe1cd550478cbe6199565175f9886d33c167dc76a0f3c8dba222ae1fddd41eabbda4868c','barangay_user',NULL,57,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(67,'Cirilo Bernardo','maningding.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$0x3N2UjF5Mq9PDA0$6ac8ca5534a402ea6ff52827d00f168110c4a02c48a8d07b38832f8fc09272b858ac004158291934c07aabcea20c8c04dbaae72729a2f823b88de8d1f7851840','barangay_user',NULL,58,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(68,'Julieta Enriquez','maronong.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$pk9CaQIdd2BIfaiB$1bb8fa17c54bab2df5b954037509652e31ba4944134c656462b9d65eec92d3a2e3a434107770567faccec7ec475455fa26d6b056ffe2824b53f1df7f7e3a6a7e','barangay_user',NULL,59,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(69,'Bonifacio Lazaro','maticmatic.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$97lSKcWRyW5kd34A$23e41457955f53233ed142373c5e017e5e722c97f38adf2d992bf2bb323ec82f3ea5cc2e2b6f3842f9796251126aaa29fbfedc147e761281c6fd4fbbb87dc805','barangay_user',NULL,60,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(70,'Remedios Corpuz','minieneast.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$317vpiIaE7yqsGkm$7bbcd5a73c0686dd64f6fb2ab552d1e876ac147309076468418681c9111d5b717c8c41063cfebc2342e2ca05cc7e42e63e1899ce8a8d0ead4bc0a9c827ff08db','barangay_user',NULL,61,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(71,'Ramon Bautista','minienwest.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$wXjC9tazHFaqADk0$d31904c3f8f6b8ea09dc8bc2c810335b427b56a4f6f3d299e55646a07722d1cf72dbf115ac65acf66885c0ac4b1aa76d4b0dca3606372add66a3834c2271b979','barangay_user',NULL,62,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(72,'Cecilia Manalo','nilombot.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$CyzQ9hYjsikURugD$18dd0d4de4b677117f851872f8c5963133eb33614583c1a3fe9eff6183647820f8ed2567ce2761576e11a0f31e38dea6f2c19f6752bd30d0b456dd5caecd87c2','barangay_user',NULL,63,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(73,'Ferdinand Cruz','patayac.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$EKggozDu4dKftGrg$85ba1aac9f579c4f4c1f8bccbf041d3f0714e0acee362e512439bf605be9734919602ff6fd44160d6b4d3999322d1fb12cc150a16ff44944e9e935600eb0da26','barangay_user',NULL,64,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(74,'Marilou Santos','payas.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$tRFaem10J0rma7yx$e446ebc4e37d073ccde00f39e4c0f7ea9c20af793c6a6fe2993d9c6e864581e6181b0766fc863af811d3e875434b1f24d417bf231cff5dd058024cf007f8d40d','barangay_user',NULL,65,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(75,'Edgardo Villanueva','poblacionnorte.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$iR2jdaiiKykTsfFi$3503c2019e89320cfffede3aa3d1ea3807560ec44d95cafcbcc988dd6037d3ebd64022c5ae3b44561af59b8022c45888e2a11fe558186401fae0803031b7bee8','barangay_user',NULL,66,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(76,'Rosalinda Aquino','poblacionsur.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$JagBCbI1vPmMDWAr$f0da84b46a2289e5aea05eb7313f55588ce85258bfc99cb3fd008eb8ddff26d3ca0ab72cf43b98386eb95387e016287e7e6a1484274b391c95e39762730b0bcb','barangay_user',NULL,67,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(77,'Danilo Mendoza','primicias.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$gz6yvvSJgPWHFmsA$7ececf16769f642ff58be4fe9a1a7dac67736bcae257f728ce0d10536194202b0de070d3815c6a53994bb2e507b623f5771308bbc0b021637bce959723ca77d2','barangay_user',NULL,68,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(78,'Teresita Ramos','sapang.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$Wihb48sipXGvHAdm$87a62a4e985bedcd4034725f03f241f6dc6fe4ec6ca5a319e7b5adb7ddd7d5daeacc961c0dfd7ffa8209cb265b07c90b3dd6400fd03abd2e676a36a0f13e090a','barangay_user',NULL,69,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(79,'Rogelio Domingo','sonquil.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$T0tIPzCM9JyAmj1f$9704c039236df38672ac6f1563907e0c15d5c9e71370e9d7c996fbd83ed96b32cc4e7b6e467865be0accaf8e50f68ac4d301ad873fedfbb54acce575be15d311','barangay_user',NULL,70,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(80,'Corazon Fernandez','tebageast.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$CX6TGu94Am7E0vLA$5569978dcdf196c97600fc4a01db6a0a4051bdca1e529798fe082ec1fe2c1ae7706b04ccd26a0ed7e03e21bee0338b7ee625b362cb230fa451e4540097d7288f','barangay_user',NULL,71,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(81,'Alberto Garcia','tebagwest.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$voMX2AXU3WHWLLte$65ce2647bae1637e4cd203f39650134c616cf2831b990620375ffab099623463df9b1aa15f12987aa75aa70aae79d055c8853ce3385c55343f3fe476f664002d','barangay_user',NULL,72,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(82,'Leonora Torres','tuliao.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$5xIvN5MzKe8xaald$85fefa5a8cfa4c653e07e417a1f4d6710bfffcb4075f784dc52162d2447577e5a69f40d0e64d943eaeeca8f96c0c661bc60dd6e85e2460199643e1745f4386b3','barangay_user',NULL,73,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(83,'Rodrigo Castillo','ventinilla.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$RfX0iC5MzFNlxFv1$26c8ca8a29a4bbe9cdbd1c223ead61f36b01f4acd95e9110d956cfdd304ff8a1f1028c3d7d7d171f7c77dbbe5b96cc33a367bfd5d5ab105a7ab4d5df90af1243','barangay_user',NULL,74,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(84,'Imelda Navarro','longos.calasiao@reliefline.gov.ph','scrypt:32768:8:1$5adVfWpl3TQJGgbz$4d57b5caff71377eac33d7bb9b8e2d6be35ec702fb4add281f728f224c7f7a067d6645fd97cc185001f40122041a143cce3a5252d13cf06810eba290b1b2d422','barangay_user',NULL,75,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(85,'Bienvenido Pascual','lumbang.calasiao@reliefline.gov.ph','scrypt:32768:8:1$ShOboabTJ3SkaQt2$24212be124fc0c3760d1de8ff4abd30a3882c1f61006ed07a530547438fe10bc3dc82c254177d3021efa8fab3d24255b3ce831211605fbc84c42044f821206d7','barangay_user',NULL,76,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(86,'Nenita Ocampo','macabito.calasiao@reliefline.gov.ph','scrypt:32768:8:1$B4o0y1xtRU1VyrU0$7cb6657aa7bf74eb7d7e40300da1e914951c28769a0e2daae72d37e08ec1b3d97fbd6c17c4bad94c5b5625bfa22ba82774f7c10f279286c9c6fa0353074e465b','barangay_user',NULL,77,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(87,'Wilfredo Salazar','malabago.calasiao@reliefline.gov.ph','scrypt:32768:8:1$GtkvoNlA4QRsqAxO$997633dc04bcac98cda1632ead9759f033cd75001227e51fec8bf3d698131acb1cc05fc2a00cd48c3e77efc29056d18e59429e8df4675166f507247079de351f','barangay_user',NULL,78,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(88,'Adelaida Gonzales','mancup.calasiao@reliefline.gov.ph','scrypt:32768:8:1$khnXOe8mW7SQMPcv$3fa35a3233f32ac7807abb0cd8e8f0dd51f8d0b1ea1b3ebdaac998db45420e44cf0016e8b7e488d6ec462617055d1e66182b58dbad5f07b708401189aa1619d9','barangay_user',NULL,79,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(89,'Rustico Del Rosario','nagsaing.calasiao@reliefline.gov.ph','scrypt:32768:8:1$1azRGHxBg2vih862$f5294433ab55267c179d1d7b4cb2ee4f3496cb363ec742628c9f09e7f389576fe9dab9229853a24f3723181c01a0fc7732f7b00bdff4eb4db266942b8af8f854','barangay_user',NULL,80,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(90,'Herminia Flores','nalsian.calasiao@reliefline.gov.ph','scrypt:32768:8:1$TFLjzWjF4G2MV7bv$c6fe99f9a79fa9eefe8bb7379ad463c87d721d6580e759e6c343eba9a4904e616bf14eef0988d3e73e4a468e57312945852a6c4c8726d7e0efd5c9ddae67d763','barangay_user',NULL,81,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(91,'Renato Marquez','poblacioneast.calasiao@reliefline.gov.ph','scrypt:32768:8:1$YwsrODeH4hFCCfCG$8c9ce8158c42167f1c3a5ee00d6b7673548155b58e0603106477cfbdda2bc5ef36d81d309390e72410ed2541d08b08ef7e3f01df59aebf0f90b0b475096aa8d3','barangay_user',NULL,82,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(92,'Purificacion Ignacio','poblacionwest.calasiao@reliefline.gov.ph','scrypt:32768:8:1$WYrrt58OYwIPpODB$114565d696d66b5987c37d34d927215891d0d008820da71eb3958fd29ab0af8adc922585b48e785895ba9d31db91826f17fb42d27d9b030f4d57d1e617462db5','barangay_user',NULL,83,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(93,'Armando Velasco','quesban.calasiao@reliefline.gov.ph','scrypt:32768:8:1$6IvgnMGIOMfhXTuv$bc9f42bc3ee403de29c98cd25cdc683c7a3bc013bc9625b3e17db72c69478aa111aa3bf8c78268166603e5e020050859845b37c012a58413b4d01fc8dc48d64f','barangay_user',NULL,84,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(94,'Esperanza Rivera','sanmiguel.calasiao@reliefline.gov.ph','scrypt:32768:8:1$hIBb6lVpvu2d2Qtv$cf1ed84e4698a3da5bc7d37777fc2a7848c62662981a9b16b736846a8e3a00d4a40167fb76f108dae0b8d0f19900c8cf0ad60b867a2c43b1ff662043f83c0bfa','barangay_user',NULL,85,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(95,'Nestor Agustin','sanvicente.calasiao@reliefline.gov.ph','scrypt:32768:8:1$9k8iYaMLSIfcswFs$575ced673d11e0971fc9c9e952076778d94cb02ab4f43a70856dbb93c9944554e0a359047ae9917386c1f0523cc3a05f76e14e679b3564a5e3a27a57934f4723','barangay_user',NULL,86,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(96,'Lourdes Panganiban','songkoy.calasiao@reliefline.gov.ph','scrypt:32768:8:1$w1j2oMfja6y1fopu$736c4483a5db0ca009e28bec2a292ddd7809233f6957ee4dd53968eefb923a04ceee5de19e25681adf610d68c8a664cbc3215ae67e735a2878f27899836f949c','barangay_user',NULL,87,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),
-(97,'Cirilo Bernardo','talibaew.calasiao@reliefline.gov.ph','scrypt:32768:8:1$OjWDf6Z0oreQNd6U$a92fe87fe0d20e9817a97e2f01580bbe10cec70fc9a927462cb970dba1734912ccfff5a189fe53ddd1597d8e766e27f588f30df0c6ae476bff474ed2e95ed29a','barangay_user',NULL,88,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,'2026-08-28 07:20:21');
+INSERT INTO `users` VALUES (1,'System Administrator','sysadmin@reliefline.gov.ph','scrypt:32768:8:1$ACWFzaLGy9heyhXz$fb98ee72820adb627fcedd46fc7575eb6191e91565ba4c33b8f9ac73c4920b13e2b7a1294e50bb2795bbf60d443179676a03cba6dd1b67ba20267dea3f2b2b60','system_admin',NULL,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:53:18','2026-08-29 04:54:40'),(2,'PSWDO Administrator','pswdo@reliefline.gov.ph','scrypt:32768:8:1$6TKHiPTTe8cNW2G9$489aa75bdbeb97d32a1854fac246977b379b30d8430abc884c4213dfa4aef475fb32fe0af6a399c54f5d5614d0e929b691bb3d939954e05738d49c68d7e28747','pswdo_admin',1,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-30 15:25:30','2026-08-30 15:26:53'),(3,'Urdaneta CSWDO Admin','urdaneta@reliefline.gov.ph','scrypt:32768:8:1$3XpPWB2j3U6cFEzt$11cfc1508ba0ea780607ac904e1af7cad0b2f81480173bd897d859e86be85f98b4434d9fc072ff21c5c2a7cc9f285a67e72f59347c0ed8b74568dceab25e28bf','cswdo_admin',2,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-30 15:15:48','2026-08-30 15:16:48'),(4,'Santa Barbara MSWDO Admin','santabarbara@reliefline.gov.ph','scrypt:32768:8:1$UpNPKFY5PCbB9wFL$4806ee7e20ba4583748074d364f7c27e3d314c755cd82a4ff7df618515e6af9266c13c39fd53515c759c6b24f644cdd26299f1ddcc07965750fbbadb2cc7fca0','cswdo_admin',3,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:54:18','2026-08-29 04:54:19'),(5,'Calasiao MSWDO Admin','calasiao@reliefline.gov.ph','scrypt:32768:8:1$snI4mqxzFZtzg1kf$ce648ebad02a52f42aa4aa9f9359c8adc2eb5976dccddb80dfc3a50eead60feafc5557767a42489f273620b76014b41d0eb92496443a9023251e6dda8bc631e9','cswdo_admin',4,NULL,NULL,'2026-06-25 10:39:03',1,0,'2026-08-29 04:50:13','2026-08-29 04:50:14'),(11,'Ramon Bautista','anonas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$hCcKMg13rKLOH9xY$f2105adfe2ca9210b04ea778dfffc96f177066a49a54ab8bb330e87c1649bed47608adfc91eda0880b050776ee56e1d2113c160e0e79a505597b8906bbb9868d','barangay_user',NULL,1,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-08-30 15:26:57','2026-08-30 16:15:34'),(12,'Cecilia Manalo','bactadeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Kfio6bqQW9wDGBco$2acd213abfc0e108d5e4e41fb706cfbd829bd8c8048f622813b72df4795532092147a761a8241354afbd5d7ed364860a92dccd11d14ee13a8481c969b877c246','barangay_user',NULL,2,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:27:18','2026-07-23 06:27:18'),(13,'Ferdinand Cruz','bayaoas.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$QwNXrI3vmjalmxYe$b42811b74e3a36c1ede2b478e54d853b0bc94da0878169a658010c8665fe1a6d82b6b989d026280555cf6928279e5dd4358509399e545cf151595f362c122516','barangay_user',NULL,3,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(14,'Marilou Santos','bolaoen.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$2zsdzaaE93XM5qXZ$c24179079505bfe8221a8ac18a226d76fe59059f3105a3e6690973142c08ed11d854fd67e652a961d62bd1b844ecfcb39a72c35df5ca8efeea342acb7cc02de9','barangay_user',NULL,4,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(15,'Edgardo Villanueva','cabaruan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$YwaBV6BDYb32qki6$a29f379021fb516c58e13dde2902c82278114f0639e2771a10f70514054723fdb167898feada08c334b5cea8aeced4409377041498482eff57f2f72450c8b840','barangay_user',NULL,5,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-08-28 07:31:27','2026-08-28 07:41:04'),(16,'Rosalinda Aquino','cabuloan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$mTXXGY5sNNnzZucy$e7511497836ee07d7678d3c41534c73d61a5559385a1ddb6497c287627eeefcd2441e7d7b91a78e3b0d5794402a170b1e88489fbbaede583da6ea66c1f13a631','barangay_user',NULL,6,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:27:18','2026-07-23 06:29:51'),(17,'Danilo Mendoza','camantiles.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$L81ZWS1ayKE8mIsM$41e21a429254b6b7794f4cfeef5b2db8b68e9c2692462e40b6beb42d32a38e4126879d13dd3782caa65761bc765d31dde5ab6d0aa9e998e43e12b3ccfabe938a','barangay_user',NULL,7,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(18,'Teresita Ramos','casantaan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$amtqwfsek3Jtnjm0$ab33655a6d77b14a0f36c42e52fd35acc925c499e06fe29e68b596851850921cdbcf2867ad01e4f4857128ccc6774c7d22466e74202290022682e714dc0dcb98','barangay_user',NULL,8,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(19,'Rogelio Domingo','catablan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$9w1ttG1Y0HwQgZY7$2bc665900c21f184dc37592c7d145f409824d355a49c84b196a7495e167ed5c5209d3d7444b20ea6ea50f2338a89ac43758caeaa7403a910257932d58a15e30b','barangay_user',NULL,9,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,'2026-08-28 08:58:09'),(20,'Corazon Fernandez','cayambanan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$yzkCRZ7HMLoGVQ3t$129c5a4d3eb778e4fee20c93afb6d89ab0c203051e0527d503cc63eb553036c73dedef4c0a70db28b26925cec681bf86ab7420aee6116ec4f56b79316d4534c3','barangay_user',NULL,10,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(21,'Alberto Garcia','abot.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$D1CBugYk6TVGTZlD$a1d7fa065e63c7e8643f717e5aa35ebcb710dcb17082239b89271a608fd48495456d7471d3b25cced7e9ffa4029732792f6fed7ee1980f2a7fcb7ec843793dc6','barangay_user',NULL,11,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(22,'Leonora Torres','banao.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$vtVncBlWCagHfruS$4d62b454f34b68ecaba5b644b55dc0881403edb0b742b5e10cc96cabcf5685dc9b19e4adcf160ed8dab2995abafb05b5c031512ef37be5c10e4f81f5f79bec23','barangay_user',NULL,12,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(23,'Rodrigo Castillo','batayang.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bz0M9xcEE6nPgAKG$ca5df47b9449687103a689cc26de6ce2ce60369d2ea5784984c2390ade872e10a3f3b79eb5f864ea69dd34b2da69f6a50d1c1683778fae031b2ea16ae16a92d2','barangay_user',NULL,13,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(24,'Imelda Navarro','bungallon.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$SqMHJswOxfoLl3h1$120b9159d7947f71a4b57195c17df496b4cc01d80f536668711bb276cbb69c525e0c7f40dc44e8b5700e9634308604ad79fcb249234ead6d55b98dd7939dada8','barangay_user',NULL,14,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(25,'Bienvenido Pascual','calepaan.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$bQ75NS3Lme7vxjWN$c03248699c538c950f3deaeed737366098c2383c6ce9648b740a85c22b599eda76de6f3b64d4f3367e7e72f5aa0b572398ace7baa1bd146fb48a6074a2696593','barangay_user',NULL,15,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(26,'Nenita Ocampo','carosucannorte.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$awpylHt4QUkieEUX$de0bb1be5427e9807f0d5e39e2990406d8ef47ca1b12c8ab99f9f496c9a386556b4b3949e49b55ef49ccccdb7092f725bdfef60995148bbc9dfd2117b84015bb','barangay_user',NULL,16,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(27,'Wilfredo Salazar','carosucansur.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$PbINXkDwpM4o1ofa$50007d9b23e65a428cc96183ecf6c6d2bb0f9233e08722c71c709fe6bb93734401d580d6eb37b353b80a0c7a6bf9b92d07d8e0a26f080489a33c901699849424','barangay_user',NULL,17,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 05:22:11','2026-07-23 05:22:11'),(28,'Adelaida Gonzales','coliling.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$dO4z4oDWBW9ovcyt$acfbad4f823b866d848cba2959476b50789a9d394444f5682fc896de987dde118094c89e4a8bf9ac51544a3b8cb87950bac933589aa2c82ef741031be0de6c87','barangay_user',NULL,18,'Barangay Captain','2026-07-23 04:36:56',1,1,'2026-08-14 06:08:10','2026-08-14 06:07:55'),(29,'Rustico Del Rosario','hacienda.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$OcnNyuwuWadZfTkJ$fde2dca3935704f0d712f78eb1ba23c584f7d4f68e6e1fb3f2701a9577f6e955a16f97019e81bd33d6b53b64923ff5f472ee482044d06f8d252d976e3e72273d','barangay_user',NULL,19,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(30,'Herminia Flores','mapolopolo.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$ZWdNC65VnilRbPfm$1fdc51b74b82d70f607992e22fd010fa8f73b5df035cc7c9efe090997ab4518fd3ea9bcf914e1bc55f7684a46e2ca0efa3150b0989686c40aba64a59970f3be5','barangay_user',NULL,20,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(31,'Renato Marquez','ambonao.calasiao@reliefline.gov.ph','scrypt:32768:8:1$jE7FaRabd0KYYvFR$90384bf78927019175780537b8497b0ee7f96083413df22a33121c21067d78e259d7749c5f4344494f4ce9b41836fc195f45bae7652c64ebff59e21ce836b833','barangay_user',NULL,21,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(32,'Purificacion Ignacio','ambuetel.calasiao@reliefline.gov.ph','scrypt:32768:8:1$EHE90htnCSoHZ4Qm$983234cd7f30bd38ad8516c31c53c7b0d2cedb448a107206f5357fcd41714d257f6283b640ca81a6baf38a7336661ddafa79c220a2c47c1d1ffa0ddaecb97abd','barangay_user',NULL,22,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(33,'Jose Reyes','banaoang.calasiao@reliefline.gov.ph','scrypt:32768:8:1$av0BXelksBW841He$9f0dfe5394bc8ef8501a616cf22802839b0424c558113209c7acba5a49d36b18db256147e169016d54b3bf03872110aac161d08334ce6508019dd84640d37692','barangay_user',NULL,23,'Barangay Captain','2026-07-23 04:36:56',1,0,'2026-07-23 06:10:28','2026-07-23 06:10:28'),(34,'Esperanza Rivera','bued.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mnBTOaysNoBYqvXI$b557ef44e439d96b4fab661e5cd26f72c96964051c6eb74948643a2c79617e33dec22d185bba3b9b77663beda676f3d4f82bee4464d39038b0c16fe97040711c','barangay_user',NULL,24,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(35,'Nestor Agustin','buenlag.calasiao@reliefline.gov.ph','scrypt:32768:8:1$MNxFcFoKNyhpyIqs$175622ecd2f60f45bdbca2c968a7319548b3b1b1fca9a856d481ddc51f54c3a459766e72606617d3e5ab087e104238709eb53933c8edda177736074b960ebf7b','barangay_user',NULL,25,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(36,'Lourdes Panganiban','cabilocaan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$cZGGpe2sMbFrmDib$220cfc0f2fc2964b2c217ab96dfbcbd186b33e8667e2af8a8cff3ddd4a99067ae32e01645e6b3eb9c49627ee173f06197b0fd6f20ee1e57dc245c2fe1ee000c9','barangay_user',NULL,26,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(37,'Cirilo Bernardo','dinalaoan.calasiao@reliefline.gov.ph','scrypt:32768:8:1$mc85Dtx7ldVdBQ1X$8a3337491083a92084a8c787891d481c2a79715e2c464282a4b9a2fbceb8912dfba7c01a2fe4b13416c3edb71484edb5927b34917122d0813d6b8e142eaeb4d8','barangay_user',NULL,27,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(38,'Julieta Enriquez','doyong.calasiao@reliefline.gov.ph','scrypt:32768:8:1$SKO0jXiQWnPrLBQ9$e5c4c76eb200b963dde29a21a0edf863f1b3a5750a6122239b1a3f01d3222d1ca247af9d835e613c7d861b40ecc0fa344868c9032d70d6aee264971d279b9524','barangay_user',NULL,28,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(39,'Bonifacio Lazaro','gabon.calasiao@reliefline.gov.ph','scrypt:32768:8:1$NQCEw9ZVNjHrqYdJ$fc0eb088aaddd126c055ce620770f4996fb56fdb552cb8fa964584cb3eabdea4124f929500626051c06bc4e2a6146934ea47a956bed2c52a12a14153c496538d','barangay_user',NULL,29,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(40,'Remedios Corpuz','lasip.calasiao@reliefline.gov.ph','scrypt:32768:8:1$hyCPITc545JSxO1x$719cb05c28fedbedbde1880e2d0e984444b07779f72127c4d5ffb0de5c52c0014de6424444b0e474cb73e54d0a332e99e6a73cb7b99070af399f8b70adb5733f','barangay_user',NULL,30,'Barangay Captain','2026-07-23 04:36:56',1,0,NULL,NULL),(41,'Ramon Bautista','camanang.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$gm3DxtsBtpRTpsVP$7e7089a95cc575e812c2746e07d58c966159aba149e1fd4558a49c21ebe7856cb6fcca344e251ea346d60ded7eea2a5e832982c5cb8cdf2cfec2630ea400cc54','barangay_user',NULL,32,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(42,'Cecilia Manalo','consolacion.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Qq8z6VrK5uRLBSNE$b25a6b42b582c3c5459ebbc7449d3d7949492a2d76a0a6ad546d7f348260f5ec1e634bfaf54f07927372400b06253d201b7e103293795bb5358b440a9d0f0d7a','barangay_user',NULL,33,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(43,'Ferdinand Cruz','dilanpaurido.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$qBKWbWi63j56JqiJ$fe8e32cd053c21477bd90af435b7e8192c8d31b80e4a39d06b1eb57fc7aa5949aededc9f3b0c2b645a83eb6da4ff973d9aa3d972f301c14c53702c9c6de8584f','barangay_user',NULL,34,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(44,'Marilou Santos','drpedrotorata.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Bb73IGaeCqnSK5I8$f82b9092efa41fcb5021eb74ef6197176baa3259e272c144b7416deea51bb365938ed2e3ba25d6a0e0145c65eabb1a907dfd899c89c5720873fabe6623a36dbb','barangay_user',NULL,35,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(45,'Edgardo Villanueva','labitproper.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$70Ym3DIxTCUQjtse$98e8acee58c8567793eafb68ac0cc0914f6b7dd2da8caf1e34a0866f7740e57178e7ca143150e6d4d38950c4fc12441fc3e2092b116b83a7bc2ef4e6da139d9d','barangay_user',NULL,36,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(46,'Rosalinda Aquino','labitwest.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$SYwvIdZgMTdABRgk$2080681d8aa86e53407d8e0c9bb1e52c7d0e8cfbf9f555fa642d0a77abce93f5b8b1dff57439eb130833cdf274def0eaf8272cf5ec145df3249fdd1b910639f6','barangay_user',NULL,37,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(47,'Danilo Mendoza','mabanogbog.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Zzjw1784NCJQ2JNu$de5c3cba61cde115b9fff5e0d114fd0984e971163d1d6ed246129b8b504d4ede616ca8d32de178c4f0a16a4f41dc75835a917f0e9c5faedd64eaf8eba20c478b','barangay_user',NULL,38,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(48,'Teresita Ramos','macalong.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$fOgwr1XCNh0JLRnt$d58ed82d37f687a4f7ce2e1403d946389598663a954d886a0f6838b5e1330cf48a999f1596509dbfcca2048968d45d8ad1edc14d0f685bdd7c24dd436793c64a','barangay_user',NULL,39,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(49,'Rogelio Domingo','nancalobasaan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$ceVUxKjfS6ujTjy9$4fc54e8b3302e4b00d8609f3e572a7669c1c3b2404e2f023f8e49ec8742f1ae83fc8c188ef617e5e1c50712e9573e6545c6832e97b5a2abade1ebe6d636ef6e4','barangay_user',NULL,40,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(50,'Corazon Fernandez','nancamaliraneast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$Ny9o8ssEQKiSOX7w$14e2c7f27c323aaba97f86253574924f49351f0aebf62efb04b6895e3749a26304a037cc707e5a89f76b4563e56e73ffbd503e2104d5ba2d743a715dd95fe72f','barangay_user',NULL,41,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(51,'Alberto Garcia','nancamaliranwest.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$fUcgMRG0TbNtrSqp$bcc9bd9bb60bdd4f9131f2b47bac67fabec5f3936f6a5d83d50d85c2b862c7e8913d5057911657e7bed8f3e4a56aab71578b499d0b3bc6d0304521b9c518fba3','barangay_user',NULL,42,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(52,'Leonora Torres','nancayasan.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$hjr0moCubiKzgRhy$4b6d2f0d8dfc1073b8120b765285e2751ac8dc0629ebeba8c3a5cb12709987a1777f9e1c178c010fd40606bf4dc0bcd2f5177a0717c3a3a463b89fa3e00752ab','barangay_user',NULL,43,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(53,'Rodrigo Castillo','oltama.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$0onTkcbVC49r8yLy$a12f5361fca3d030a829b49d8dc1339e4b1f77cc10a312d1700cc8ce93e4f5a7b251b5a848021b302fea4489f76f1800e5f6c705dc3d445ae5b1aa96f84fdb80','barangay_user',NULL,44,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(54,'Imelda Navarro','palinaeast.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$oIZj3urRzSH4abH9$1424605461b4a1a7cf0a4469722b8c9df192ee0f258c30f7071c2167d79474a4525760e54fc535f6eba2ad9a95d3e8b6c0c0fb7d9a75ad7fd6ced9881d1a7adb','barangay_user',NULL,45,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(55,'Bienvenido Pascual','palinawest.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$7XgKryS9tR4zZD90$cb80104472a16d16c6156724cc02dc025d758a4abf314e1acce05b90f43c78ad8294d8add08f680110d817e223b84af807e2c08875a2d7f3f2f3c31adbc7c6f5','barangay_user',NULL,46,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(56,'Nenita Ocampo','pinmaludpod.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$8tz9Ju12w34po3cG$110fae12ba21c2d18c8654863832b29c999de4d594f621ed906fb870f5a1596c753fd04787a955017a05a333a64d7a62844d7ee143e46145d1718f315616ad2d','barangay_user',NULL,47,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(57,'Wilfredo Salazar','poblacion.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$CaqpsdajYijUZu6M$cdadd56a407d7e87a7307f99a7259eb40af640464ed814875fd275f4059c32c78e8bf5cb58066a4be8886ffcdb3a22f5ad7fee9eefc84b8d9c9fb59eefe50ef5','barangay_user',NULL,48,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(58,'Adelaida Gonzales','sanjose.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$aQWQqrY6q3i2JvSI$00c0eb6e3297a0559e5594fffaa293b613f2a8ffbe1da71976c6dd128be872df4b4e8d2e412515be297d16b0cfe53ba05d60876b389db2e716663a68705a767c','barangay_user',NULL,49,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(59,'Rustico Del Rosario','sanvicente.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$GDW04pK5Ux9585BS$98a010b6b02eaf6ae7fe8bfe5c4a8fb75178c508dabc02b6bbc798daa29164e37d2c4cec39a99894005dceb0c45c2b85dc0bf75e69a471f1a0f39daef5d977ea','barangay_user',NULL,50,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(60,'Herminia Flores','santalucia.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$N8TOe2x6khOtGg4G$474d2ed9a94229d55dc23a067dff5f69d862481006f3552aa30c9cebf178f0ae8cdbfb1315cbd14b8535ff75af00e894fc3222f86b021c93465bf5292eebbe25','barangay_user',NULL,51,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(61,'Renato Marquez','santodomingo.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$CZrLtizqq37QLapD$b89722712b058a8a9e6e66abc09bde407eaa363c6181a15844eaeb5dcb10d5104abc2778d847caecfac644c708a5c63aa02a5c8396fb3be7544108519a3d668f','barangay_user',NULL,52,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(62,'Purificacion Ignacio','sugcong.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$8GPyzGwbBgCYLlX0$73a67eeedae4915b92a0974ae08a57dce9f8919155975e338f990048bc5d46a043e9524134e24d0002610b8d95750c9e6494840a746f2748cebcdda78be91252','barangay_user',NULL,53,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(63,'Armando Velasco','tipuso.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$gs08ETypn4Bwld4f$8ac50817a4e00b6583bcf97e2b78cdcaadade1437341db487b53b84b5220d607010a265a94d6cc499f9b4a40ab438d3ac794f9360ba2ac5b5cf292b2c52cd4e2','barangay_user',NULL,54,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(64,'Esperanza Rivera','tulong.urdaneta@reliefline.gov.ph','scrypt:32768:8:1$ZcWEklCiwXG3qCHm$4a979fc1c3b0ac2829217477983aa68ac7975df90e08f94ea0cd35e579bf673d579fb08d39da3a09dad2566745b6083d6fe18bf11a5323e5ac4613c1b868e0d0','barangay_user',NULL,55,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(65,'Nestor Agustin','leet.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$INsLjEt7xEhdR3B3$4ae4db28c7c05683d38f91558d046056d747e7fbe5d974f9043d551e66d52c6e9ec38a1349badb050735de65f0a27f4120614b464cbf2094d7ba0047dd65180e','barangay_user',NULL,56,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(66,'Lourdes Panganiban','malanay.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$H9VVVqYyW8isnPbh$4f4def8abf43e63e7e78ef2551e4542b6822ecdf6a9c8b1e9a655778fe1cd550478cbe6199565175f9886d33c167dc76a0f3c8dba222ae1fddd41eabbda4868c','barangay_user',NULL,57,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(67,'Cirilo Bernardo','maningding.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$0x3N2UjF5Mq9PDA0$6ac8ca5534a402ea6ff52827d00f168110c4a02c48a8d07b38832f8fc09272b858ac004158291934c07aabcea20c8c04dbaae72729a2f823b88de8d1f7851840','barangay_user',NULL,58,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(68,'Julieta Enriquez','maronong.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$pk9CaQIdd2BIfaiB$1bb8fa17c54bab2df5b954037509652e31ba4944134c656462b9d65eec92d3a2e3a434107770567faccec7ec475455fa26d6b056ffe2824b53f1df7f7e3a6a7e','barangay_user',NULL,59,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(69,'Bonifacio Lazaro','maticmatic.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$97lSKcWRyW5kd34A$23e41457955f53233ed142373c5e017e5e722c97f38adf2d992bf2bb323ec82f3ea5cc2e2b6f3842f9796251126aaa29fbfedc147e761281c6fd4fbbb87dc805','barangay_user',NULL,60,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(70,'Remedios Corpuz','minieneast.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$317vpiIaE7yqsGkm$7bbcd5a73c0686dd64f6fb2ab552d1e876ac147309076468418681c9111d5b717c8c41063cfebc2342e2ca05cc7e42e63e1899ce8a8d0ead4bc0a9c827ff08db','barangay_user',NULL,61,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(71,'Ramon Bautista','minienwest.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$wXjC9tazHFaqADk0$d31904c3f8f6b8ea09dc8bc2c810335b427b56a4f6f3d299e55646a07722d1cf72dbf115ac65acf66885c0ac4b1aa76d4b0dca3606372add66a3834c2271b979','barangay_user',NULL,62,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(72,'Cecilia Manalo','nilombot.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$CyzQ9hYjsikURugD$18dd0d4de4b677117f851872f8c5963133eb33614583c1a3fe9eff6183647820f8ed2567ce2761576e11a0f31e38dea6f2c19f6752bd30d0b456dd5caecd87c2','barangay_user',NULL,63,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(73,'Ferdinand Cruz','patayac.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$EKggozDu4dKftGrg$85ba1aac9f579c4f4c1f8bccbf041d3f0714e0acee362e512439bf605be9734919602ff6fd44160d6b4d3999322d1fb12cc150a16ff44944e9e935600eb0da26','barangay_user',NULL,64,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(74,'Marilou Santos','payas.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$tRFaem10J0rma7yx$e446ebc4e37d073ccde00f39e4c0f7ea9c20af793c6a6fe2993d9c6e864581e6181b0766fc863af811d3e875434b1f24d417bf231cff5dd058024cf007f8d40d','barangay_user',NULL,65,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(75,'Edgardo Villanueva','poblacionnorte.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$iR2jdaiiKykTsfFi$3503c2019e89320cfffede3aa3d1ea3807560ec44d95cafcbcc988dd6037d3ebd64022c5ae3b44561af59b8022c45888e2a11fe558186401fae0803031b7bee8','barangay_user',NULL,66,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(76,'Rosalinda Aquino','poblacionsur.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$JagBCbI1vPmMDWAr$f0da84b46a2289e5aea05eb7313f55588ce85258bfc99cb3fd008eb8ddff26d3ca0ab72cf43b98386eb95387e016287e7e6a1484274b391c95e39762730b0bcb','barangay_user',NULL,67,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(77,'Danilo Mendoza','primicias.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$gz6yvvSJgPWHFmsA$7ececf16769f642ff58be4fe9a1a7dac67736bcae257f728ce0d10536194202b0de070d3815c6a53994bb2e507b623f5771308bbc0b021637bce959723ca77d2','barangay_user',NULL,68,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(78,'Teresita Ramos','sapang.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$Wihb48sipXGvHAdm$87a62a4e985bedcd4034725f03f241f6dc6fe4ec6ca5a319e7b5adb7ddd7d5daeacc961c0dfd7ffa8209cb265b07c90b3dd6400fd03abd2e676a36a0f13e090a','barangay_user',NULL,69,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(79,'Rogelio Domingo','sonquil.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$T0tIPzCM9JyAmj1f$9704c039236df38672ac6f1563907e0c15d5c9e71370e9d7c996fbd83ed96b32cc4e7b6e467865be0accaf8e50f68ac4d301ad873fedfbb54acce575be15d311','barangay_user',NULL,70,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(80,'Corazon Fernandez','tebageast.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$CX6TGu94Am7E0vLA$5569978dcdf196c97600fc4a01db6a0a4051bdca1e529798fe082ec1fe2c1ae7706b04ccd26a0ed7e03e21bee0338b7ee625b362cb230fa451e4540097d7288f','barangay_user',NULL,71,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(81,'Alberto Garcia','tebagwest.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$voMX2AXU3WHWLLte$65ce2647bae1637e4cd203f39650134c616cf2831b990620375ffab099623463df9b1aa15f12987aa75aa70aae79d055c8853ce3385c55343f3fe476f664002d','barangay_user',NULL,72,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(82,'Leonora Torres','tuliao.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$5xIvN5MzKe8xaald$85fefa5a8cfa4c653e07e417a1f4d6710bfffcb4075f784dc52162d2447577e5a69f40d0e64d943eaeeca8f96c0c661bc60dd6e85e2460199643e1745f4386b3','barangay_user',NULL,73,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(83,'Rodrigo Castillo','ventinilla.santabarbara@reliefline.gov.ph','scrypt:32768:8:1$RfX0iC5MzFNlxFv1$26c8ca8a29a4bbe9cdbd1c223ead61f36b01f4acd95e9110d956cfdd304ff8a1f1028c3d7d7d171f7c77dbbe5b96cc33a367bfd5d5ab105a7ab4d5df90af1243','barangay_user',NULL,74,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(84,'Imelda Navarro','longos.calasiao@reliefline.gov.ph','scrypt:32768:8:1$5adVfWpl3TQJGgbz$4d57b5caff71377eac33d7bb9b8e2d6be35ec702fb4add281f728f224c7f7a067d6645fd97cc185001f40122041a143cce3a5252d13cf06810eba290b1b2d422','barangay_user',NULL,75,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(85,'Bienvenido Pascual','lumbang.calasiao@reliefline.gov.ph','scrypt:32768:8:1$ShOboabTJ3SkaQt2$24212be124fc0c3760d1de8ff4abd30a3882c1f61006ed07a530547438fe10bc3dc82c254177d3021efa8fab3d24255b3ce831211605fbc84c42044f821206d7','barangay_user',NULL,76,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(86,'Nenita Ocampo','macabito.calasiao@reliefline.gov.ph','scrypt:32768:8:1$B4o0y1xtRU1VyrU0$7cb6657aa7bf74eb7d7e40300da1e914951c28769a0e2daae72d37e08ec1b3d97fbd6c17c4bad94c5b5625bfa22ba82774f7c10f279286c9c6fa0353074e465b','barangay_user',NULL,77,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(87,'Wilfredo Salazar','malabago.calasiao@reliefline.gov.ph','scrypt:32768:8:1$GtkvoNlA4QRsqAxO$997633dc04bcac98cda1632ead9759f033cd75001227e51fec8bf3d698131acb1cc05fc2a00cd48c3e77efc29056d18e59429e8df4675166f507247079de351f','barangay_user',NULL,78,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(88,'Adelaida Gonzales','mancup.calasiao@reliefline.gov.ph','scrypt:32768:8:1$khnXOe8mW7SQMPcv$3fa35a3233f32ac7807abb0cd8e8f0dd51f8d0b1ea1b3ebdaac998db45420e44cf0016e8b7e488d6ec462617055d1e66182b58dbad5f07b708401189aa1619d9','barangay_user',NULL,79,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(89,'Rustico Del Rosario','nagsaing.calasiao@reliefline.gov.ph','scrypt:32768:8:1$1azRGHxBg2vih862$f5294433ab55267c179d1d7b4cb2ee4f3496cb363ec742628c9f09e7f389576fe9dab9229853a24f3723181c01a0fc7732f7b00bdff4eb4db266942b8af8f854','barangay_user',NULL,80,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(90,'Herminia Flores','nalsian.calasiao@reliefline.gov.ph','scrypt:32768:8:1$TFLjzWjF4G2MV7bv$c6fe99f9a79fa9eefe8bb7379ad463c87d721d6580e759e6c343eba9a4904e616bf14eef0988d3e73e4a468e57312945852a6c4c8726d7e0efd5c9ddae67d763','barangay_user',NULL,81,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(91,'Renato Marquez','poblacioneast.calasiao@reliefline.gov.ph','scrypt:32768:8:1$YwsrODeH4hFCCfCG$8c9ce8158c42167f1c3a5ee00d6b7673548155b58e0603106477cfbdda2bc5ef36d81d309390e72410ed2541d08b08ef7e3f01df59aebf0f90b0b475096aa8d3','barangay_user',NULL,82,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(92,'Purificacion Ignacio','poblacionwest.calasiao@reliefline.gov.ph','scrypt:32768:8:1$WYrrt58OYwIPpODB$114565d696d66b5987c37d34d927215891d0d008820da71eb3958fd29ab0af8adc922585b48e785895ba9d31db91826f17fb42d27d9b030f4d57d1e617462db5','barangay_user',NULL,83,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(93,'Armando Velasco','quesban.calasiao@reliefline.gov.ph','scrypt:32768:8:1$6IvgnMGIOMfhXTuv$bc9f42bc3ee403de29c98cd25cdc683c7a3bc013bc9625b3e17db72c69478aa111aa3bf8c78268166603e5e020050859845b37c012a58413b4d01fc8dc48d64f','barangay_user',NULL,84,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(94,'Esperanza Rivera','sanmiguel.calasiao@reliefline.gov.ph','scrypt:32768:8:1$hIBb6lVpvu2d2Qtv$cf1ed84e4698a3da5bc7d37777fc2a7848c62662981a9b16b736846a8e3a00d4a40167fb76f108dae0b8d0f19900c8cf0ad60b867a2c43b1ff662043f83c0bfa','barangay_user',NULL,85,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(95,'Nestor Agustin','sanvicente.calasiao@reliefline.gov.ph','scrypt:32768:8:1$9k8iYaMLSIfcswFs$575ced673d11e0971fc9c9e952076778d94cb02ab4f43a70856dbb93c9944554e0a359047ae9917386c1f0523cc3a05f76e14e679b3564a5e3a27a57934f4723','barangay_user',NULL,86,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(96,'Lourdes Panganiban','songkoy.calasiao@reliefline.gov.ph','scrypt:32768:8:1$w1j2oMfja6y1fopu$736c4483a5db0ca009e28bec2a292ddd7809233f6957ee4dd53968eefb923a04ceee5de19e25681adf610d68c8a664cbc3215ae67e735a2878f27899836f949c','barangay_user',NULL,87,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,NULL),(97,'Cirilo Bernardo','talibaew.calasiao@reliefline.gov.ph','scrypt:32768:8:1$OjWDf6Z0oreQNd6U$a92fe87fe0d20e9817a97e2f01580bbe10cec70fc9a927462cb970dba1734912ccfff5a189fe53ddd1597d8e766e27f588f30df0c6ae476bff474ed2e95ed29a','barangay_user',NULL,88,'Barangay Captain','2026-08-28 07:20:04',1,0,NULL,'2026-08-28 07:20:21');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `warehouse_inventory`
@@ -2568,7 +752,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `warehouse_inventory`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `warehouse_inventory` (
   `inventory_id` int(11) NOT NULL AUTO_INCREMENT,
   `office_id` int(11) NOT NULL,
@@ -2591,28 +775,11 @@ CREATE TABLE `warehouse_inventory` (
 -- Dumping data for table `warehouse_inventory`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `warehouse_inventory` WRITE;
 /*!40000 ALTER TABLE `warehouse_inventory` DISABLE KEYS */;
-INSERT INTO `warehouse_inventory` VALUES
-(1,1,'food_pack','Food Packs','packs',11750,0,'2026-08-29 09:20:44',2),
-(2,1,'hygiene_kit','Hygiene Kits','kits',1500,0,'2026-07-27 02:01:14',2),
-(3,1,'kitchen_kit','Kitchen Kits','kits',800,0,'2026-07-20 02:49:52',2),
-(4,2,'food_pack','Food Packs','packs',8195,0,'2026-08-28 09:08:01',3),
-(5,2,'hygiene_kit','Hygiene Kits','kits',800,0,'2026-08-28 07:38:34',3),
-(6,2,'kitchen_kit','Kitchen Kits','kits',200,0,'2026-07-20 02:49:52',3),
-(7,3,'food_pack','Food Packs','packs',5172,0,'2026-08-28 09:36:11',4),
-(8,3,'hygiene_kit','Hygiene Kits','kits',550,0,'2026-08-28 07:38:34',4),
-(9,3,'kitchen_kit','Kitchen Kits','kits',200,0,'2026-07-27 02:01:14',4),
-(10,4,'food_pack','Food Packs','packs',5830,0,'2026-08-28 09:01:55',5),
-(11,4,'hygiene_kit','Hygiene Kits','kits',750,0,'2026-08-28 07:38:34',5),
-(12,4,'kitchen_kit','Kitchen Kits','kits',250,0,'2026-07-20 02:49:52',5),
-(13,5,'food_pack','Food Packs','packs',7700,3000,'2026-08-29 08:55:29',2),
-(14,6,'food_pack','Food Packs','packs',500,0,'2026-07-29 02:31:11',NULL);
+INSERT INTO `warehouse_inventory` VALUES (1,1,'food_pack','Food Packs','packs',11750,0,'2026-08-29 09:20:44',2),(2,1,'hygiene_kit','Hygiene Kits','kits',1500,0,'2026-07-27 02:01:14',2),(3,1,'kitchen_kit','Kitchen Kits','kits',800,0,'2026-07-20 02:49:52',2),(4,2,'food_pack','Food Packs','packs',18666,0,'2026-08-30 23:16:23',3),(5,2,'hygiene_kit','Hygiene Kits','kits',800,0,'2026-08-28 07:38:34',3),(6,2,'kitchen_kit','Kitchen Kits','kits',200,0,'2026-07-20 02:49:52',3),(7,3,'food_pack','Food Packs','packs',5172,0,'2026-08-28 09:36:11',4),(8,3,'hygiene_kit','Hygiene Kits','kits',550,0,'2026-08-28 07:38:34',4),(9,3,'kitchen_kit','Kitchen Kits','kits',200,0,'2026-07-27 02:01:14',4),(10,4,'food_pack','Food Packs','packs',5830,0,'2026-08-28 09:01:55',5),(11,4,'hygiene_kit','Hygiene Kits','kits',750,0,'2026-08-28 07:38:34',5),(12,4,'kitchen_kit','Kitchen Kits','kits',250,0,'2026-07-20 02:49:52',5),(13,5,'food_pack','Food Packs','packs',1729,3000,'2026-08-30 21:28:04',2),(14,6,'food_pack','Food Packs','packs',500,0,'2026-07-29 02:31:11',NULL);
 /*!40000 ALTER TABLE `warehouse_inventory` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `warehouse_stock_logs`
@@ -2620,7 +787,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `warehouse_stock_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `warehouse_stock_logs` (
   `log_id` int(11) NOT NULL AUTO_INCREMENT,
   `office_id` int(11) NOT NULL,
@@ -2637,49 +804,18 @@ CREATE TABLE `warehouse_stock_logs` (
   KEY `updated_by` (`updated_by`),
   CONSTRAINT `warehouse_stock_logs_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   CONSTRAINT `warehouse_stock_logs_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `warehouse_stock_logs`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `warehouse_stock_logs` WRITE;
 /*!40000 ALTER TABLE `warehouse_stock_logs` DISABLE KEYS */;
-INSERT INTO `warehouse_stock_logs` VALUES
-(1,1,'food_pack','Food Packs',1500,'Typhoon relief donation drive','donation','Philippine Red Cross',2,'2026-07-18 02:01:14'),
-(2,1,'hygiene_kit','Hygiene Kits',300,'National office augmentation for hygiene kit stock','donation','DSWD Central Office',2,'2026-07-20 02:01:14'),
-(3,5,'food_pack','Food Packs',2000,'Corporate relief drive donation','donation','Jollibee Group Foundation, Inc.',2,'2026-07-21 02:01:14'),
-(4,2,'food_pack','Food Packs',300,'Typhoon relief donation drive','donation','SM Foundation',2,'2026-07-22 02:01:14'),
-(5,3,'kitchen_kit','Kitchen Kits',50,'Local civic group donation','donation','Rotary Club of Pangasinan',2,'2026-07-23 02:01:14'),
-(6,4,'food_pack','Food Packs',400,'Typhoon relief donation drive','donation','Ayala Foundation',2,'2026-07-24 02:01:14'),
-(7,5,'food_pack','Food Packs',3000,'Provincial budget replenishment','standard',NULL,2,'2026-07-19 02:01:14'),
-(8,2,'hygiene_kit','Hygiene Kits',150,'Routine restock from provincial supply','standard',NULL,2,'2026-07-25 02:01:14'),
-(9,1,'food_pack','Food Packs',9500,NULL,'standard',NULL,2,'2026-08-28 04:29:17'),
-(22,2,'food_pack','Food Packs',3000,'Provincial supply top-up','standard',NULL,2,'2026-08-14 07:38:34'),
-(23,2,'food_pack','Food Packs',800,'Donation drop-off','donation','Philippine Red Cross',2,'2026-08-22 07:38:34'),
-(24,2,'hygiene_kit','Hygiene Kits',250,'Provincial supply','standard',NULL,2,'2026-08-18 07:38:34'),
-(25,3,'food_pack','Food Packs',3000,'Provincial supply top-up','standard',NULL,2,'2026-08-14 07:38:34'),
-(26,3,'food_pack','Food Packs',800,'Donation drop-off','donation','Philippine Red Cross',2,'2026-08-22 07:38:34'),
-(27,3,'hygiene_kit','Hygiene Kits',250,'Provincial supply','standard',NULL,2,'2026-08-18 07:38:34'),
-(28,4,'food_pack','Food Packs',3000,'Provincial supply top-up','standard',NULL,2,'2026-08-14 07:38:34'),
-(29,4,'food_pack','Food Packs',800,'Donation drop-off','donation','Philippine Red Cross',2,'2026-08-22 07:38:34'),
-(30,4,'hygiene_kit','Hygiene Kits',250,'Provincial supply','standard',NULL,2,'2026-08-18 07:38:34'),
-(31,2,'food_pack','Food Packs',-120,'Released to Brgy. Catablan (RR-2026-037)','standard',NULL,3,'2026-08-28 08:58:09'),
-(32,5,'food_pack','Food Packs',-1000,'Replenishment to Santa Barbara Municipal Social Welfare and Development Office (SR-2026-018)','standard',NULL,2,'2026-08-28 09:36:10'),
-(33,3,'food_pack','Food Packs',1000,'Received from PSWDO Warehouse (SR-2026-018)','standard',NULL,4,'2026-08-28 09:36:11'),
-(34,5,'food_pack','Food Packs',-2500,'Replenishment to Urdaneta City Social Welfare and Development Office (SR-2026-019)','standard',NULL,2,'2026-08-29 04:01:46'),
-(35,5,'food_pack','Food Packs',-2000,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 07:33:34'),
-(36,5,'food_pack','Food Packs',-2000,'Pre-positioning to Urdaneta City Social Welfare and Development Office','standard',NULL,2,'2026-08-29 08:55:29'),
-(37,1,'food_pack','Food Packs',-100,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:02:49'),
-(38,1,'food_pack','Food Packs',-50,'Pre-positioning to Santa Barbara Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:03:26'),
-(39,1,'food_pack','Food Packs',-75,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:20:08'),
-(40,1,'food_pack','Food Packs',-25,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:20:44');
+INSERT INTO `warehouse_stock_logs` VALUES (1,1,'food_pack','Food Packs',1500,'Typhoon relief donation drive','donation','Philippine Red Cross',2,'2026-07-18 02:01:14'),(2,1,'hygiene_kit','Hygiene Kits',300,'National office augmentation for hygiene kit stock','donation','DSWD Central Office',2,'2026-07-20 02:01:14'),(3,5,'food_pack','Food Packs',2000,'Corporate relief drive donation','donation','Jollibee Group Foundation, Inc.',2,'2026-07-21 02:01:14'),(4,2,'food_pack','Food Packs',300,'Typhoon relief donation drive','donation','SM Foundation',2,'2026-07-22 02:01:14'),(5,3,'kitchen_kit','Kitchen Kits',50,'Local civic group donation','donation','Rotary Club of Pangasinan',2,'2026-07-23 02:01:14'),(6,4,'food_pack','Food Packs',400,'Typhoon relief donation drive','donation','Ayala Foundation',2,'2026-07-24 02:01:14'),(7,5,'food_pack','Food Packs',3000,'Provincial budget replenishment','standard',NULL,2,'2026-07-19 02:01:14'),(8,2,'hygiene_kit','Hygiene Kits',150,'Routine restock from provincial supply','standard',NULL,2,'2026-07-25 02:01:14'),(9,1,'food_pack','Food Packs',9500,NULL,'standard',NULL,2,'2026-08-28 04:29:17'),(22,2,'food_pack','Food Packs',3000,'Provincial supply top-up','standard',NULL,2,'2026-08-14 07:38:34'),(23,2,'food_pack','Food Packs',800,'Donation drop-off','donation','Philippine Red Cross',2,'2026-08-22 07:38:34'),(24,2,'hygiene_kit','Hygiene Kits',250,'Provincial supply','standard',NULL,2,'2026-08-18 07:38:34'),(25,3,'food_pack','Food Packs',3000,'Provincial supply top-up','standard',NULL,2,'2026-08-14 07:38:34'),(26,3,'food_pack','Food Packs',800,'Donation drop-off','donation','Philippine Red Cross',2,'2026-08-22 07:38:34'),(27,3,'hygiene_kit','Hygiene Kits',250,'Provincial supply','standard',NULL,2,'2026-08-18 07:38:34'),(28,4,'food_pack','Food Packs',3000,'Provincial supply top-up','standard',NULL,2,'2026-08-14 07:38:34'),(29,4,'food_pack','Food Packs',800,'Donation drop-off','donation','Philippine Red Cross',2,'2026-08-22 07:38:34'),(30,4,'hygiene_kit','Hygiene Kits',250,'Provincial supply','standard',NULL,2,'2026-08-18 07:38:34'),(31,2,'food_pack','Food Packs',-120,'Released to Brgy. Catablan (RR-2026-037)','standard',NULL,3,'2026-08-28 08:58:09'),(32,5,'food_pack','Food Packs',-1000,'Replenishment to Santa Barbara Municipal Social Welfare and Development Office (SR-2026-018)','standard',NULL,2,'2026-08-28 09:36:10'),(33,3,'food_pack','Food Packs',1000,'Received from PSWDO Warehouse (SR-2026-018)','standard',NULL,4,'2026-08-28 09:36:11'),(34,5,'food_pack','Food Packs',-2500,'Replenishment to Urdaneta City Social Welfare and Development Office (SR-2026-019)','standard',NULL,2,'2026-08-29 04:01:46'),(35,5,'food_pack','Food Packs',-2000,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 07:33:34'),(36,5,'food_pack','Food Packs',-2000,'Pre-positioning to Urdaneta City Social Welfare and Development Office','standard',NULL,2,'2026-08-29 08:55:29'),(37,1,'food_pack','Food Packs',-100,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:02:49'),(38,1,'food_pack','Food Packs',-50,'Pre-positioning to Santa Barbara Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:03:26'),(39,1,'food_pack','Food Packs',-75,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:20:08'),(40,1,'food_pack','Food Packs',-25,'Pre-positioning to Calasiao Municipal Social Welfare and Development Office','standard',NULL,2,'2026-08-29 09:20:44'),(41,5,'food_pack','Food Packs',-5971,'Replenishment to Urdaneta City Social Welfare and Development Office (SR-2026-023)','standard',NULL,2,'2026-08-30 21:28:04'),(42,2,'food_pack','Food Packs',5971,'Received from PSWDO Warehouse (SR-2026-023)','standard',NULL,3,'2026-08-30 21:46:25'),(43,2,'food_pack','Food Packs',2000,'Received from PSWDO Warehouse (TR-2026-009)','standard',NULL,3,'2026-08-30 23:16:20'),(44,2,'food_pack','Food Packs',2500,'Received from PSWDO Warehouse (SR-2026-019)','standard',NULL,3,'2026-08-30 23:16:23');
 /*!40000 ALTER TABLE `warehouse_stock_logs` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `warehouse_transfers`
@@ -2687,7 +823,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 DROP TABLE IF EXISTS `warehouse_transfers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `warehouse_transfers` (
   `transfer_id` int(11) NOT NULL AUTO_INCREMENT,
   `from_office_id` int(11) NOT NULL,
@@ -2717,33 +853,18 @@ CREATE TABLE `warehouse_transfers` (
   CONSTRAINT `warehouse_transfers_ibfk_1` FOREIGN KEY (`from_office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   CONSTRAINT `warehouse_transfers_ibfk_2` FOREIGN KEY (`to_office_id`) REFERENCES `offices` (`office_id`) ON DELETE CASCADE,
   CONSTRAINT `warehouse_transfers_ibfk_3` FOREIGN KEY (`requested_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `warehouse_transfers`
 --
 
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `warehouse_transfers` WRITE;
 /*!40000 ALTER TABLE `warehouse_transfers` DISABLE KEYS */;
-INSERT INTO `warehouse_transfers` VALUES
-(1,5,6,'food_pack',500,NULL,'completed',NULL,2,'2026-07-29 02:31:11','2026-07-29 02:31:11',NULL,NULL,NULL,NULL,NULL,NULL),
-(2,1,2,'food_pack',2000,NULL,'completed',NULL,2,'2026-08-14 14:10:57','2026-08-14 14:10:57',NULL,NULL,NULL,NULL,NULL,NULL),
-(3,1,2,'food_pack',2000,NULL,'completed',NULL,2,'2026-08-24 15:34:43','2026-08-24 15:34:43',NULL,NULL,NULL,NULL,NULL,NULL),
-(4,5,3,'food_pack',1000,18,'completed','delivered',2,'2026-08-28 09:36:10','2026-08-28 09:36:11','2026-07-25',2,'2026-08-28 09:36:11','SB Warehouse Officer','2026-08-28 09:36:11','truck 3'),
-(5,5,4,'food_pack',1500,20,'pending','in_transit',5,'2026-08-28 09:39:49',NULL,'2026-08-28',2,'2026-08-28 09:39:49',NULL,NULL,'Truck 1'),
-(7,5,2,'food_pack',2500,19,'pending','in_transit',2,'2026-08-29 04:01:46',NULL,NULL,2,'2026-08-29 09:08:59',NULL,NULL,NULL),
-(8,5,4,'food_pack',2000,NULL,'pending','in_transit',2,'2026-08-29 07:33:34',NULL,NULL,2,'2026-08-29 07:33:34',NULL,NULL,'wqe'),
-(9,5,2,'food_pack',2000,NULL,'pending','in_transit',2,'2026-08-29 08:55:29',NULL,NULL,2,'2026-08-29 08:55:29',NULL,NULL,'Proactive pre-positioning'),
-(10,1,4,'food_pack',100,NULL,'pending','in_transit',2,'2026-08-29 09:02:49',NULL,NULL,2,'2026-08-29 09:02:49',NULL,NULL,'Proactive pre-positioning'),
-(11,1,3,'food_pack',50,NULL,'pending','in_transit',2,'2026-08-29 09:03:26',NULL,NULL,2,'2026-08-29 09:03:26',NULL,NULL,'Proactive pre-positioning'),
-(12,1,4,'food_pack',75,NULL,'pending','in_transit',2,'2026-08-29 09:20:08',NULL,NULL,2,'2026-08-29 09:20:08',NULL,NULL,'Proactive pre-positioning'),
-(13,1,4,'food_pack',25,NULL,'pending','in_transit',2,'2026-08-29 09:20:44',NULL,NULL,2,'2026-08-29 09:20:44',NULL,NULL,'Proactive pre-positioning');
+INSERT INTO `warehouse_transfers` VALUES (1,5,6,'food_pack',500,NULL,'completed',NULL,2,'2026-07-29 02:31:11','2026-07-29 02:31:11',NULL,NULL,NULL,NULL,NULL,NULL),(2,1,2,'food_pack',2000,NULL,'completed',NULL,2,'2026-08-14 14:10:57','2026-08-14 14:10:57',NULL,NULL,NULL,NULL,NULL,NULL),(3,1,2,'food_pack',2000,NULL,'completed',NULL,2,'2026-08-24 15:34:43','2026-08-24 15:34:43',NULL,NULL,NULL,NULL,NULL,NULL),(4,5,3,'food_pack',1000,18,'completed','delivered',2,'2026-08-28 09:36:10','2026-08-28 09:36:11','2026-07-25',2,'2026-08-28 09:36:11','SB Warehouse Officer','2026-08-28 09:36:11','truck 3'),(5,5,4,'food_pack',1500,20,'pending','in_transit',5,'2026-08-28 09:39:49',NULL,'2026-08-28',2,'2026-08-28 09:39:49',NULL,NULL,'Truck 1'),(7,5,2,'food_pack',2500,19,'completed','delivered',2,'2026-08-29 04:01:46','2026-08-30 15:16:23',NULL,2,'2026-08-29 09:08:59','Urdaneta CSWDO Admin','2026-08-30 15:16:23',NULL),(8,5,4,'food_pack',2000,NULL,'pending','in_transit',2,'2026-08-29 07:33:34',NULL,NULL,2,'2026-08-29 07:33:34',NULL,NULL,'wqe'),(9,5,2,'food_pack',2000,NULL,'completed','delivered',2,'2026-08-29 08:55:29','2026-08-30 15:16:20',NULL,2,'2026-08-29 08:55:29','Urdaneta CSWDO Admin','2026-08-30 15:16:20','Proactive pre-positioning'),(10,1,4,'food_pack',100,NULL,'pending','in_transit',2,'2026-08-29 09:02:49',NULL,NULL,2,'2026-08-29 09:02:49',NULL,NULL,'Proactive pre-positioning'),(11,1,3,'food_pack',50,NULL,'pending','in_transit',2,'2026-08-29 09:03:26',NULL,NULL,2,'2026-08-29 09:03:26',NULL,NULL,'Proactive pre-positioning'),(12,1,4,'food_pack',75,NULL,'pending','in_transit',2,'2026-08-29 09:20:08',NULL,NULL,2,'2026-08-29 09:20:08',NULL,NULL,'Proactive pre-positioning'),(13,1,4,'food_pack',25,NULL,'pending','in_transit',2,'2026-08-29 09:20:44',NULL,NULL,2,'2026-08-29 09:20:44',NULL,NULL,'Proactive pre-positioning'),(14,5,2,'food_pack',5971,23,'completed','delivered',2,'2026-08-30 21:28:04','2026-08-30 13:46:25',NULL,2,'2026-08-30 13:28:43','Urdaneta CSWDO Admin','2026-08-30 13:46:25',NULL);
 /*!40000 ALTER TABLE `warehouse_transfers` ENABLE KEYS */;
 UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -2752,6 +873,6 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-29  9:47:34
+-- Dump completed on 2026-08-31  0:28:00

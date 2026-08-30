@@ -795,11 +795,32 @@ def relief_monitoring():
         "status": a.display_status,
     } for a in other_allocations]
 
+    search_query = (request.args.get("q") or "").strip()
+    if search_query:
+        ql = search_query.lower()
+
+        def _row_matches(row):
+            office = row["fulfilling_office"].office_name if row["fulfilling_office"] else ""
+            return any(ql in field.lower() for field in (
+                row["label"], row["ref"], row["request_ref"], office,
+            ))
+
+        delivery_rows = [r for r in delivery_rows if _row_matches(r)]
+        other_rows = [r for r in other_rows if ql in r["ref"].lower()]
+
+    status_filter = request.args.get("status", "all")
+    if status_filter == "transit":
+        delivery_rows = [r for r in delivery_rows if r["distribution"].status != "confirmed"]
+    elif status_filter == "received":
+        delivery_rows = [r for r in delivery_rows if r["distribution"].status == "confirmed"]
+
     return render_template(
         "barangay/relief_monitoring.html",
         barangay=barangay,
         delivery_rows=delivery_rows,
         other_rows=other_rows,
+        search_query=search_query,
+        status_filter=status_filter,
         total_deliveries=len(distributions),
         in_transit_count=in_transit_count,
         received_count=received_count,
@@ -1269,7 +1290,7 @@ def notifications():
     unread_count = ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(scope).count()
 
-    per_page = 15
+    per_page = 10
     all_matching = query.order_by(ActivityLog.created_at.desc()).all()
     total_filtered = len(all_matching)
     total_pages = max((total_filtered + per_page - 1) // per_page, 1)
@@ -1304,7 +1325,7 @@ def notifications():
         "barangay/notifications.html",
         items=page_items, unread_count=unread_count, total_count=total_count,
         total_filtered=total_filtered, category_filter=category_filter,
-        categories=categories, page=page, total_pages=total_pages, barangay=barangay,
+        categories=categories, page=page, total_pages=total_pages, per_page=per_page, barangay=barangay,
     )
 
 

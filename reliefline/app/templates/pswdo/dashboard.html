@@ -187,7 +187,7 @@
         </div>
 
         <!-- GIS Map + Pending Requests -->
-        <div class="main-grid">
+        <div class="main-grid dash-grid-even">
 
             <section class="panel map-panel">
                 <div class="panel-header">
@@ -249,8 +249,9 @@
             </section>
 
         </div>
-<!-- Warehouse Status + Predictive Analytics -->
-        <div class="main-grid" style="margin-top: 16px;">
+
+        <!-- Warehouse Status + Recommendations -->
+        <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
             <section class="panel">
                 <div class="panel-header">
@@ -325,7 +326,7 @@
                     </div>
                 </div>
                 {% else %}
-                <p class="empty-note">Walang recommendations ngayon — malusog ang stock levels.</p>
+                <p class="empty-note">No recommendations right now — stock levels are healthy.</p>
                 {% endfor %}
 
                 {{ prediction_disclaimer() }}
@@ -334,7 +335,7 @@
         </div>
 
         <!-- Distribution Progress + Recent Activities -->
-        <div class="main-grid" style="margin-top: 16px;">
+        <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
             <section class="panel distribution-progress-panel">
                 <div class="panel-header">
@@ -376,7 +377,7 @@
                     </div>
                 </div>
                 {% else %}
-                <p class="empty-note">Walang distribution data ngayon.</p>
+                <p class="empty-note">No distribution data yet.</p>
                 {% endfor %}
             </section>
 
@@ -394,7 +395,7 @@
                     </div>
                 </div>
                 {% else %}
-                <p class="empty-note">Wala pang activity.</p>
+                <p class="empty-note">No recent activity.</p>
                 {% endfor %}
             </section>
 

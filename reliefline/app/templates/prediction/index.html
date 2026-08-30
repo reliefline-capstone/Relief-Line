@@ -54,7 +54,7 @@
         </section>
 
         <!-- Stat cards -->
-        <section class="stat-cards">
+        <section class="stat-cards stat-cards-4">
             <div class="stat-card">
                 <div class="stat-icon orange">{{ icon('package', 18, '#e67e22') }}</div>
                 <span class="stat-value">{{ "{:,}".format(estimated_need) }} Packs</span>
@@ -88,7 +88,7 @@
             </div>
         </section>
 
-        <div class="main-grid">
+        <div class="main-grid {{ 'pa-grid-stack' if is_cswdo else 'dash-grid-even' }}">
 
             <section class="panel">
                 <div class="panel-header">
@@ -118,13 +118,13 @@
                 {% endfor %}
             </section>
 
-            <section class="panel">
+            <section class="panel" data-ranking>
                 <div class="panel-header">
                     <h3>Barangay Priority Ranking</h3>
                     <span class="rd-sub">Real status &amp; requests first</span>
                 </div>
                 {% for r in ranking %}
-                <div class="gis-priority-row">
+                <div class="gis-priority-row {{ 'pa-rank-extra' if loop.index > 5 }}">
                     <div>
                         <strong>{{ loop.index }}. {{ r.name }}</strong>
                         <span>{{ r.lgu }} · {{ "{:,}".format(r.affected_families) }} families</span>
@@ -144,6 +144,12 @@
                 {% else %}
                 <p class="empty-note">No barangays in scope for this filter.</p>
                 {% endfor %}
+                {% if ranking|length > 5 %}
+                <button type="button" class="pa-rank-toggle" data-ranking-toggle
+                        data-more="View all {{ ranking|length }} barangays" data-less="Show top 5 only">
+                    <span data-rank-label>View all {{ ranking|length }} barangays</span> {{ icon('chevron-down', 14) }}
+                </button>
+                {% endif %}
                 {% if ranking %}<p class="rd-sub" style="margin-top:10px;">* model-estimated — no barangay report submitted yet. When a barangay files a Barangay Report, act on it from the Barangay Reports inbox. Use "Allocate" here to push packs proactively instead, ahead of any request.</p>{% endif %}
             </section>
 
@@ -186,21 +192,37 @@
             </div>
         </section>
 
-        <div class="main-grid" style="margin-top:16px;">
+        <div class="main-grid {{ 'pa-grid-stack' if is_cswdo else 'dash-grid-even' }}" style="margin-top:16px;">
 
             <section class="panel">
                 <div class="panel-header">
                     <h3>Historical Trends</h3>
                 </div>
                 {% if historical_trend|length >= 2 %}
-                <div class="pa-trend-chart">
-                    {% set max_packs = historical_trend|map(attribute='packs')|max %}
-                    {% for point in historical_trend %}
-                    <div class="pa-trend-bar-wrap">
-                        <div class="pa-trend-bar" style="height: {{ (point.packs / max_packs * 100) if max_packs else 0 }}%;" title="{{ point.date }}: {{ '{:,}'.format(point.packs) }} packs"></div>
-                        <span>{{ point.date }}</span>
-                    </div>
-                    {% endfor %}
+                {% set n = historical_trend|length %}
+                {% set max_packs = historical_trend|map(attribute='packs')|max %}
+                {% set ns = namespace(pts=[]) %}
+                {%- for point in historical_trend -%}
+                    {% set x = 40 + (loop.index0 * 920 / (n - 1)) %}
+                    {% set y = 30 + 190 - (point.packs / max_packs * 190 if max_packs else 0) %}
+                    {% set ns.pts = ns.pts + ['%.1f,%.1f'|format(x, y)] %}
+                {%- endfor -%}
+                <div class="pa-line-chart">
+                    <svg class="pa-line-svg" viewBox="0 0 1000 262" role="img"
+                         aria-label="Food packs delivered per day over the selected range">
+                        {% for gy in [30, 77.5, 125, 172.5, 220] %}
+                        <line class="pa-line-grid" x1="40" y1="{{ gy }}" x2="960" y2="{{ gy }}"></line>
+                        {% endfor %}
+                        <polygon class="pa-line-area" points="40,220 {{ ns.pts|join(' ') }} 960,220"></polygon>
+                        <polyline class="pa-line-path" points="{{ ns.pts|join(' ') }}"></polyline>
+                        {%- for point in historical_trend -%}
+                            {% set x = 40 + (loop.index0 * 920 / (n - 1)) %}
+                            {% set y = 30 + 190 - (point.packs / max_packs * 190 if max_packs else 0) %}
+                            <circle class="pa-line-dot" cx="{{ '%.1f'|format(x) }}" cy="{{ '%.1f'|format(y) }}" r="4.5"></circle>
+                            <text class="pa-line-value" x="{{ '%.1f'|format(x) }}" y="{{ '%.1f'|format(y - 12) }}" text-anchor="middle">{{ "{:,}".format(point.packs) }}</text>
+                            <text class="pa-line-label" x="{{ '%.1f'|format(x) }}" y="248" text-anchor="middle">{{ point.date }}</text>
+                        {%- endfor -%}
+                    </svg>
                 </div>
                 {% elif historical_trend|length == 1 %}
                 <p class="empty-note">Only one day of delivery history on record so far ({{ historical_trend[0].date }}: {{ "{:,}".format(historical_trend[0].packs) }} packs delivered) — not enough to chart a trend yet. This will fill in as more distributions are completed.</p>
@@ -224,7 +246,7 @@
                     </div>
                 </div>
                 {% else %}
-                <p class="empty-note">Walang recommendations ngayon — malusog ang stock levels.</p>
+                <p class="empty-note">No recommendations right now — stock levels are healthy.</p>
                 {% endfor %}
 
                 {{ prediction_disclaimer() }}
@@ -305,6 +327,14 @@
             document.getElementById('pa-am-barangay-id').value = btn.dataset.barangayId;
             document.getElementById('pa-am-barangay-name').textContent = btn.dataset.barangayName;
             document.getElementById('pa-am-quantity').value = btn.dataset.predicted;
+        });
+    });
+
+    // Barangay Priority Ranking — show the top 5, reveal the rest on click.
+    document.querySelectorAll('[data-ranking-toggle]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var expanded = btn.closest('[data-ranking]').classList.toggle('is-expanded');
+            btn.querySelector('[data-rank-label]').textContent = expanded ? btn.dataset.less : btn.dataset.more;
         });
     });
 })();

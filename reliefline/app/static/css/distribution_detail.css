@@ -88,12 +88,83 @@
 .dd-kv-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px 24px;
+    gap: 11px 24px;
 }
 
 .dd-kv-list div { display: flex; flex-direction: column; gap: 3px; }
 .dd-kv-list span { font-size: 11px; color: #8a94a6; }
 .dd-kv-list strong { font-size: 14px; display: flex; align-items: center; gap: 6px; }
+
+/* Right column of the detail grid — stacks Confirmations above Update
+   Delivery so the shorter panels sit together instead of leaving a wide
+   blank band beside the taller Delivery panel. */
+.dd-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+/* Confirmations — one card per checkpoint (issuance, barangay validation),
+   with a status icon + pill so "done vs pending" reads at a glance. */
+.dd-confirm-list { display: flex; flex-direction: column; gap: 10px; }
+
+.dd-confirm {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid #eef1f6;
+    border-radius: 10px;
+    background: #fbfcfe;
+}
+
+.dd-confirm-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #eef1f6;
+    color: #8a94a6;
+}
+
+.dd-confirm-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.dd-confirm-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a2233;
+}
+
+.dd-confirm-tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: #eef1f6;
+    color: #8a94a6;
+}
+
+.dd-confirm-meta { font-size: 12px; line-height: 1.5; color: #55606f; }
+.dd-confirm-note { font-size: 11.5px; color: #8a94a6; }
+
+.dd-confirm-done {
+    border-color: #cfead9;
+    background: #f5fcf8;
+}
+.dd-confirm-done .dd-confirm-icon { background: #e8faf0; color: #1e8449; }
+.dd-confirm-done .dd-confirm-tag { background: #e8faf0; color: #1e8449; }
+
+.dd-confirm-pending .dd-confirm-icon { background: #fef5e3; color: #d68910; }
+.dd-confirm-pending .dd-confirm-tag { background: #fef5e3; color: #d68910; }
 
 /* Warehouse / schedule tiles */
 .dd-wh-tiles {

@@ -35,26 +35,45 @@
 
         <section class="stat-cards" style="grid-template-columns: repeat(4, 1fr);">
             <div class="stat-card">
-                <div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
+                <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ total_deliveries }}</span>
                 <span class="stat-label">Total Deliveries</span>
+                <span class="stat-sub">All time</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
                 <span class="stat-value">{{ in_transit_count }}</span>
                 <span class="stat-label">In Transit</span>
+                <span class="stat-sub">Currently moving</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ received_count }}</span>
                 <span class="stat-label">Received</span>
+                <span class="stat-sub">Confirmed</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon purple">{{ icon('package', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_packs) }}</span>
                 <span class="stat-label">Total Packs</span>
+                <span class="stat-sub">All deliveries</span>
             </div>
         </section>
+
+        <div class="dm-list-header">
+            <h3>Deliveries</h3>
+            <form method="GET" class="dm-list-filters" role="search">
+                <div class="rr-search-wrapper dm-search">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search delivery or warehouse…">
+                </div>
+                <select name="status" onchange="this.form.submit()">
+                    <option value="all" {{ 'selected' if status_filter == 'all' }}>All statuses</option>
+                    <option value="transit" {{ 'selected' if status_filter == 'transit' }}>In Transit</option>
+                    <option value="received" {{ 'selected' if status_filter == 'received' }}>Received</option>
+                </select>
+            </form>
+        </div>
 
         {% if delivery_rows %}
         {% for row in delivery_rows %}
@@ -113,17 +132,11 @@
             <button type="button" class="dm-confirm-btn" data-open-modal="confirm-modal-{{ d.distribution_id }}">
                 {{ icon('check-circle', 18, 'white') }} Confirm Relief Receipt — {{ "{:,}".format(d.quantity_released) }} Food Packs
             </button>
-            {% elif confirmed %}
-            <div class="dm-confirmed-banner">
-                {{ icon('check-circle', 16, '#1e8449') }}
-                <div>
-                    <strong>Confirmed received by {{ d.received_by }}</strong>
-                    <span>{{ d.distribution_date.strftime('%B %d, %Y') }}{% if d.time_received %} at {{ d.time_received.strftime('%I:%M %p') }}{% endif %}</span>
-                </div>
-            </div>
             {% endif %}
         </div>
         {% endfor %}
+        {% elif search_query or status_filter != 'all' %}
+        <section class="panel"><p class="empty-note">No deliveries match your search or filter. <a href="{{ url_for('barangay.relief_monitoring') }}">Clear</a></p></section>
         {% else %}
         <section class="panel"><p class="empty-note">No relief deliveries have been recorded for your barangay yet.</p></section>
         {% endif %}

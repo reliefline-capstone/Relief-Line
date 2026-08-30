@@ -109,17 +109,17 @@
 .info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 16px;
+    gap: 12px;
 }
 
 .info-box {
     background: #f8f9fb;
     border-radius: 10px;
-    padding: 14px 16px;
+    padding: 12px 14px;
 }
 
-.info-box span { display: block; font-size: 11px; color: #8a94a6; margin-bottom: 4px; }
-.info-box strong { font-size: 18px; color: #1a1a1a; }
+.info-box span { display: block; font-size: 11px; color: #8a94a6; margin-bottom: 3px; }
+.info-box strong { font-size: 17px; color: #1a1a1a; }
 
 /* Confirm-receipt inline form (Relief Monitoring) */
 .confirm-receipt-box {
@@ -144,19 +144,30 @@
 .wizard-form {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    /* Deliberately no max-width — unlike .settings-form (profile_settings.css),
-       this form needs the panel's full width for .form-row-2col to read as
-       two real columns instead of a squeezed single strip. */
+    gap: 14px;
+    /* No max-width here — the step panels stay full width so they line up with
+       the stepper panel above. Field width is capped on the rows themselves
+       (.form-row-2col / textarea) so inputs don't stretch the whole panel. */
 }
 
 .autofill-box {
     background: #f8f9fb;
     border: 1px solid #eef1f6;
     border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 18px;
+    padding: 11px 14px;
+    margin-bottom: 12px;
 }
+
+/* Inline info-callout variant (icon + one line of guidance) */
+.autofill-box-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #55606f;
+}
+.autofill-box-note svg { flex-shrink: 0; margin-top: 1px; }
 
 .autofill-box-title {
     display: block;
@@ -165,13 +176,13 @@
     color: #8a94a6;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 10px;
+    margin-bottom: 7px;
 }
 
 .autofill-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px 24px;
+    gap: 8px 24px;
 }
 @media (max-width: 600px) { .autofill-grid { grid-template-columns: 1fr; } }
 
@@ -217,7 +228,15 @@
 .wizard-progress-fill { height: 100%; background: #2c5aa0; transition: width 0.2s ease; }
 #wizard-pct { font-weight: 700; color: #2c5aa0; white-space: nowrap; }
 
-.form-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.form-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-bottom: 10px; max-width: 680px; }
+.form-row-2col:last-child { margin-bottom: 0; }
+.wizard-step > .form-row { margin-bottom: 10px; }
+.wizard-step > .form-row input { max-width: 332px; }
+.wizard-step > .form-row textarea { max-width: 680px; }
+/* Consistent spacing under every step's guidance line — a bit more room here
+   than between fields, so the intro reads as separate from the form. Some
+   steps set an inline margin-top on the next block, some don't. */
+.wizard-step > .form-hint { margin: 0 0 18px; }
 @media (max-width: 700px) { .form-row-2col { grid-template-columns: 1fr; } }
 
 .required-mark { color: #c0392b; }
@@ -264,8 +283,8 @@
     font-size: 13px; font-weight: 400; color: #1a1a1a; margin: 0 0 10px;
 }
 
-.wizard-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
-.wizard-save-draft-row { margin-top: 14px; }
+.wizard-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 14px; border-top: 1px solid #f0f2f6; }
+.wizard-save-draft-row { margin-top: 12px; }
 
 .review-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 16px; }
 @media (max-width: 700px) { .review-grid { grid-template-columns: 1fr; } }
@@ -310,16 +329,52 @@
    view). Reuses .dd-stepper/.dd-step from distribution_detail.css for the
    step circles so it's the same component PSWDO's own distribution detail
    page uses, just re-labeled for the barangay's 6-step view. */
+/* "Deliveries" section header — title on the left, search on the right. */
+.dm-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 4px 0 12px;
+}
+.dm-list-header h3 { font-size: 15px; color: #1a1a1a; }
+.dm-list-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.dm-search { width: 280px; max-width: 100%; }
+.dm-search:focus-within { border-color: #2c5aa0; box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.12); }
+/* Long placeholder / typed text trails off with an ellipsis instead of a
+   hard clip at the box edge. */
+.dm-search input {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+@media (max-width: 640px) {
+    .dm-search { width: 100%; }
+}
+
 .dm-delivery-card {
     background: white;
     border-radius: 12px;
-    padding: 18px 20px;
-    margin-bottom: 16px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
     border: 1px solid #eef1f6;
+    border-left: 3px solid #d8dee8;
 }
 
-.dm-card-pending { background: #fef9f0; border-color: #f6dcae; }
-.dm-card-done { background: #f2fbf6; border-color: #bfe8d2; }
+.dm-card-pending { border-left-color: #e0a63a; }
+.dm-card-done { border-left-color: #2fae76; }
+
+/* Compact the shared .dd-stepper inside these cards — the full-size version
+   (34px circles, 90px columns) made every delivery card very tall. */
+.dm-delivery-card .dd-stepper { padding: 2px 0 0; }
+.dm-delivery-card .dd-step { width: 74px; gap: 5px; }
+.dm-delivery-card .dd-step-circle { width: 26px; height: 26px; font-size: 11px; }
+.dm-delivery-card .dd-step-circle svg { width: 13px; height: 13px; }
+.dm-delivery-card .dd-step span { font-size: 10px; line-height: 1.25; }
+.dm-delivery-card .dd-step-line { margin-top: 13px; }
 
 .dm-delivery-header {
     display: flex;
@@ -327,16 +382,17 @@
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .dm-delivery-title { display: flex; align-items: center; gap: 12px; }
 
 .dm-delivery-icon {
-    width: 40px; height: 40px; border-radius: 10px;
+    width: 34px; height: 34px; border-radius: 9px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
 }
+.dm-delivery-icon svg { width: 17px; height: 17px; }
 .dm-icon-transit { background: #d68910; }
 .dm-icon-done { background: #1e8449; }
 
@@ -349,27 +405,20 @@
 .dm-delivery-info-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    margin: 16px 0;
-    padding-top: 14px;
-    border-top: 1px solid rgba(0,0,0,0.06);
+    gap: 12px;
+    margin: 12px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid #eef1f6;
 }
-.dm-delivery-info-grid span { display: block; font-size: 10.5px; color: #8a94a6; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 3px; }
-.dm-delivery-info-grid strong { font-size: 15px; color: #1a1a1a; }
+.dm-delivery-info-grid span { display: block; font-size: 10px; color: #8a94a6; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
+.dm-delivery-info-grid strong { font-size: 13.5px; color: #1a1a1a; }
 @media (max-width: 700px) { .dm-delivery-info-grid { grid-template-columns: 1fr; } }
 
 .dm-confirm-btn {
     width: 100%;
+    margin-top: 12px;
     display: flex; align-items: center; justify-content: center; gap: 8px;
     background: #1e8449; color: white; border: none; border-radius: 8px;
-    padding: 14px; font-size: 14px; font-weight: 700; cursor: pointer;
+    padding: 11px; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .dm-confirm-btn:hover { background: #196f3d; }
-
-.dm-confirmed-banner {
-    display: flex; align-items: flex-start; gap: 10px;
-    background: white; border: 1px solid #bfe8d2; border-radius: 8px;
-    padding: 12px 14px;
-}
-.dm-confirmed-banner strong { display: block; font-size: 13px; color: #1e8449; }
-.dm-confirmed-banner span { font-size: 11.5px; color: #8a94a6; }

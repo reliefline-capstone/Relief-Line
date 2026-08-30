@@ -92,7 +92,7 @@
                         <td><span class="badge-health badge-{{ row.status|lower }}">{{ 'Low Stock' if row.status == 'Low' else row.status }}</span></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="empty-note" style="text-align:center; padding:24px;">Walang naka-record na item para sa warehouse na ito.</td></tr>
+                    <tr><td colspan="4" class="empty-note" style="text-align:center; padding:24px;">No items recorded for this warehouse.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -118,7 +118,7 @@
                 </div>
             </div>
             {% else %}
-            <p class="empty-note">Wala pang stock movement na naitala.</p>
+            <p class="empty-note">No stock movements recorded yet.</p>
             {% endfor %}
         </section>
 

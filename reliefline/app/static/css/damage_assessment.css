@@ -399,8 +399,38 @@
     color: #8a94a6;
 }
 
+/* Barangay Reports review modal — wider, two-column body (assessment details
+   on the left, the allocation decision on the right) so the whole review fits
+   on one screen without the modal ever needing to scroll. */
+.rd-modal.rr-review-modal { max-width: 780px; }
+
+.rr-review-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 4px;
+}
+.rr-review-body > div { min-width: 0; }
+
+.rr-review-details .rd-info-grid { gap: 12px 18px; }
+
+.rr-review-decision {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.rr-review-decision .rd-amount-tile { flex: none; padding: 14px 16px; }
+.rr-review-decision .rd-amount-tile strong { font-size: 19px; }
+.rr-review-decision .rd-decision-summary { margin: 0; }
+.rr-review-decision .settings-form { gap: 14px; }
+.rr-review-decision .settings-form textarea { min-height: 56px; }
+
+.rd-modal.rr-review-modal .rr-review-actions { margin-top: 18px; }
+.rd-modal.rr-review-modal > .rr-review-foot-hint { margin: 12px 0 0; }
+
 @media (max-width: 700px) {
     .da-data-grid { grid-template-columns: 1fr; }
     .da-flood-distribution-grid { grid-template-columns: repeat(2, 1fr); }
-    .stat-cards-4 { grid-template-columns: repeat(2, 1fr); }
+    .stat-cards-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rr-review-body { grid-template-columns: 1fr; gap: 16px; }
 }

@@ -55,48 +55,65 @@
                     <div class="panel-header">
                         <h3>{{ icon('user', 18, '#0f2547') }} Account Information</h3>
                     </div>
-                    <form method="POST" action="{{ url_for('barangay.update_profile_info') }}" class="settings-form">
-                        <div class="form-row">
-                            <label for="name">Full Name</label>
-                            <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
-                        </div>
-                        <div class="form-row">
-                            <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" value="{{ current_user.email }}" required>
-                        </div>
-                        <div class="form-row">
-                            <label for="designation">Designation</label>
-                            <input type="text" id="designation" name="designation" value="{{ current_user.designation or '' }}" placeholder="e.g. Barangay Captain">
-                        </div>
-                        <div class="form-row">
-                            <label for="role">Role</label>
-                            <input type="text" id="role" value="{{ ROLE_LABELS.get(current_user.role, current_user.role) }}" disabled>
-                            <span class="form-hint">Role and barangay assignment are managed by a System Administrator.</span>
-                        </div>
-                        <button type="submit" class="btn-primary">{{ icon('check-circle', 14, 'white') }} Save Changes</button>
-                    </form>
+                    <div class="settings-panel-body">
+                        <form method="POST" action="{{ url_for('barangay.update_profile_info') }}" class="settings-form">
+                            <div class="form-row">
+                                <label for="name">Full Name</label>
+                                <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
+                            </div>
+                            <div class="form-row">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" name="email" value="{{ current_user.email }}" required>
+                            </div>
+                            <div class="form-row">
+                                <label for="designation">Designation</label>
+                                <input type="text" id="designation" name="designation" value="{{ current_user.designation or '' }}" placeholder="e.g. Barangay Captain">
+                            </div>
+                            <div class="form-row">
+                                <label for="role">Role</label>
+                                <input type="text" id="role" value="{{ ROLE_LABELS.get(current_user.role, current_user.role) }}" disabled>
+                                <span class="form-hint">Role and barangay assignment are managed by a System Administrator.</span>
+                            </div>
+                            <button type="submit" class="btn-primary">{{ icon('check-circle', 14, 'white') }} Save Changes</button>
+                        </form>
+                        <aside class="settings-aside">
+                            <h4>About your details</h4>
+                            <p>Your name, designation, and email identify your barangay on every relief request and damage report you submit, and are used for system notifications. Keep them current.</p>
+                        </aside>
+                    </div>
                 </section>
 
                 <section class="panel">
                     <div class="panel-header">
                         <h3>{{ icon('lock', 18, '#0f2547') }} Change Password</h3>
                     </div>
-                    <form method="POST" action="{{ url_for('barangay.change_password') }}" class="settings-form">
-                        <div class="form-row">
-                            <label for="current_password">Current Password</label>
-                            <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
-                        </div>
-                        <div class="form-row">
-                            <label for="new_password">New Password</label>
-                            <input type="password" id="new_password" name="new_password" autocomplete="new-password" minlength="8" required>
-                            <span class="form-hint">Minimum 8 characters.</span>
-                        </div>
-                        <div class="form-row">
-                            <label for="confirm_password">Confirm New Password</label>
-                            <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" minlength="8" required>
-                        </div>
-                        <button type="submit" class="btn-primary">{{ icon('lock', 14, 'white') }} Update Password</button>
-                    </form>
+                    <div class="settings-panel-body">
+                        <form method="POST" action="{{ url_for('barangay.change_password') }}" class="settings-form">
+                            <div class="form-row">
+                                <label for="current_password">Current Password</label>
+                                <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+                            </div>
+                            <div class="form-row">
+                                <label for="new_password">New Password</label>
+                                <input type="password" id="new_password" name="new_password" autocomplete="new-password" minlength="8" required>
+                                <span class="form-hint">Minimum 8 characters.</span>
+                            </div>
+                            <div class="form-row">
+                                <label for="confirm_password">Confirm New Password</label>
+                                <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" minlength="8" required>
+                            </div>
+                            <button type="submit" class="btn-primary">{{ icon('lock', 14, 'white') }} Update Password</button>
+                        </form>
+                        <aside class="settings-aside">
+                            <h4>Password tips</h4>
+                            <ul>
+                                <li>{{ icon('check-circle', 14, '#2c9d6b') }} At least 8 characters</li>
+                                <li>{{ icon('check-circle', 14, '#2c9d6b') }} Mix letters, numbers &amp; symbols</li>
+                                <li>{{ icon('check-circle', 14, '#2c9d6b') }} Don't reuse a password from another site</li>
+                                <li>{{ icon('check-circle', 14, '#2c9d6b') }} Change it right away if you think it's known</li>
+                            </ul>
+                        </aside>
+                    </div>
                 </section>
             </div>
 

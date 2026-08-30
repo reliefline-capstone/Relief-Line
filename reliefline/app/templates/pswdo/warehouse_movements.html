@@ -68,7 +68,7 @@
                         <td><strong class="{{ 'text-red' if m.qty < 0 else 'text-green' }}">{{ '+' if m.qty > 0 }}{{ "{:,}".format(m.qty) }}</strong></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Walang record.</td></tr>
+                    <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">No records.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

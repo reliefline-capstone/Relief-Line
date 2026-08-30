@@ -2798,7 +2798,7 @@ def notifications():
     unread_count = ActivityLog.query.filter(base_scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(base_scope).count()
 
-    per_page = 15
+    per_page = 10
     all_matching = query.order_by(ActivityLog.created_at.desc()).all()
     total_filtered = len(all_matching)
     total_pages = max((total_filtered + per_page - 1) // per_page, 1)
@@ -2836,6 +2836,7 @@ def notifications():
         categories=categories,
         page=page,
         total_pages=total_pages,
+        per_page=per_page,
     )
 
 

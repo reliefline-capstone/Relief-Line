@@ -17,19 +17,43 @@ document.addEventListener('DOMContentLoaded', function () {
         select.addEventListener('change', function () { syncToggleFields(select); });
     });
 
+    // While any modal is open, lock the page behind it so the mouse wheel
+    // scrolls the modal (or nothing), never the list underneath.
+    function syncScrollLock() {
+        var anyOpen = document.querySelector('.rd-modal-overlay:not([hidden])');
+        document.documentElement.classList.toggle('rd-modal-open', !!anyOpen);
+        // .dashboard-main is the scroll container on these pages; belt-and-
+        // braces inline lock in case a stylesheet rule doesn't win.
+        var main = document.querySelector('.dashboard-main');
+        if (main) main.style.overflow = anyOpen ? 'hidden' : '';
+    }
+    function openModal(modal) {
+        if (!modal) return;
+        // .dashboard-main keeps a retained transform from its entrance
+        // animation, which makes it the containing block for position:fixed —
+        // so an overlay nested inside it is offset by the sidebar and scrolls
+        // away with the list. Re-parenting to <body> pins it to the viewport.
+        if (modal.parentNode !== document.body) document.body.appendChild(modal);
+        modal.hidden = false;
+        syncScrollLock();
+    }
+    function closeModal(overlay) {
+        overlay.hidden = true;
+        syncScrollLock();
+    }
+
     document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            var modal = document.getElementById(btn.dataset.openModal);
-            if (modal) modal.hidden = false;
+            openModal(document.getElementById(btn.dataset.openModal));
         });
     });
 
     document.querySelectorAll('.rd-modal-overlay').forEach(function (overlay) {
         overlay.addEventListener('click', function (e) {
-            if (e.target === overlay) overlay.hidden = true;
+            if (e.target === overlay) closeModal(overlay);
         });
         overlay.querySelectorAll('[data-close-modal]').forEach(function (btn) {
-            btn.addEventListener('click', function () { overlay.hidden = true; });
+            btn.addEventListener('click', function () { closeModal(overlay); });
         });
     });
 
@@ -38,7 +62,16 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.rd-modal-overlay').forEach(function (overlay) {
                 overlay.hidden = true;
             });
+            syncScrollLock();
         }
+    });
+
+    // Catch every other way a modal gets shown/hidden (e.g. weather_widget.js
+    // toggling .hidden directly) so the scroll-lock stays in sync regardless.
+    document.querySelectorAll('.rd-modal-overlay').forEach(function (overlay) {
+        new MutationObserver(syncScrollLock).observe(overlay, {
+            attributes: true, attributeFilter: ['hidden'],
+        });
     });
 
     // Live "stock after transfer" calculation for warehouse -> warehouse moves

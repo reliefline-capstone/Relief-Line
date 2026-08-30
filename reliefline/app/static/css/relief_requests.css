@@ -81,6 +81,16 @@
 }
 .filter-bar input[type="text"]:focus { outline: none; border-color: #0f2547; }
 
+/* When the search field is wrapped in .rr-search-wrapper, that wrapper is
+   the styled box — strip the wrapped <input>'s own border/height/padding so
+   it doesn't render a second box inside the first. */
+.filter-bar .rr-search-wrapper input[type="text"] {
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    border: none;
+}
+
 .date-input-wrapper {
     display: flex;
     align-items: center;
@@ -383,7 +393,8 @@
 }
 
 /* Numbered pagination rendered as bare <a> links */
-.rr-pagination { justify-content: center; gap: 6px; }
+.rr-pagination { justify-content: center; gap: 6px; flex-wrap: wrap; }
+.pagination-controls { flex-wrap: wrap; justify-content: center; }
 .rr-pagination a {
     padding: 6px 12px;
     border: 1px solid #d8dee8;

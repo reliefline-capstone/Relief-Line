@@ -440,6 +440,20 @@
 /* Side column */
 .wh-side-col { display: flex; flex-direction: column; }
 
+/* Municipal Warehouse detail — General Information (left) and the Capacity
+   card (right) sit as a matched pair, so the Capacity panel stretches to the
+   same height instead of floating short beside the longer info list. */
+.mi-detail-grid { align-items: stretch; }
+.mi-detail-grid .wh-side-col > .panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+/* Center the ring + figures block in the taller panel instead of leaving
+   all the slack at the bottom. */
+.mi-detail-grid .wh-capacity-ring-wrapper { margin-top: auto; }
+.mi-detail-grid .wh-side-col .wh-info-rows { margin-bottom: auto; }
+
 /* Recent Stock Movements */
 .wh-movement-row {
     display: flex;
@@ -494,7 +508,7 @@
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    padding: 11px 0;
+    padding: 8px 0;
     border-bottom: 1px solid #f0f2f6;
     font-size: 13px;
 }

@@ -334,7 +334,6 @@ def dashboard():
     activity_filters = _own_activity_filters()
 
     recent_activities = []
-    notifications = []
     if activity_filters:
         # Also restricted to NOTIFICATION_META's known operational action_types
         # (see app.routes.pswdo.notifications) — the office/barangay OR-scope
@@ -346,9 +345,6 @@ def dashboard():
             db.or_(*activity_filters), ActivityLog.action_type.in_(known_types)
         )
         recent_activities = scoped_query.order_by(ActivityLog.created_at.desc()).limit(4).all()
-        notifications = scoped_query.filter(ActivityLog.is_read.is_(False)).order_by(
-            ActivityLog.created_at.desc()
-        ).limit(3).all()
 
     return render_template(
         "cswdo/dashboard.html",
@@ -372,7 +368,6 @@ def dashboard():
         relief_request_rows=relief_request_rows,
         barangay_reports=barangay_reports,
         recent_activities=recent_activities,
-        notifications=notifications,
         dispatch_status_labels=DISPATCH_STATUS_LABELS,
         weather_cities=[lgu] if lgu else [],
     )
@@ -1286,7 +1281,7 @@ def notifications():
     unread_count = ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(scope).count()
 
-    per_page = 15
+    per_page = 10
     all_matching = query.order_by(ActivityLog.created_at.desc()).all()
     total_filtered = len(all_matching)
     total_pages = max((total_filtered + per_page - 1) // per_page, 1)
@@ -1313,7 +1308,7 @@ def notifications():
         "cswdo/notifications.html",
         items=page_items, unread_count=unread_count, total_count=total_count,
         total_filtered=total_filtered, category_filter=category_filter,
-        categories=CSWDO_NOTIFICATION_CATEGORIES, page=page, total_pages=total_pages, lgu=lgu,
+        categories=CSWDO_NOTIFICATION_CATEGORIES, page=page, total_pages=total_pages, per_page=per_page, lgu=lgu,
     )
 
 
@@ -1721,7 +1716,7 @@ def municipal_inventory():
         for item in items
     ]
 
-    movements = _recent_stock_movements([office.office_id], limit=8)
+    movements = _recent_stock_movements([office.office_id], limit=3)
     all_movements = _full_stock_movements([office.office_id])
     stock_in = sum(m["qty"] for m in all_movements if m["qty"] > 0)
     stock_out = sum(-m["qty"] for m in all_movements if m["qty"] < 0)

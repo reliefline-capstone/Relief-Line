@@ -18,8 +18,9 @@
 
 {% macro request_modal(r) %}
 {% set rep = r.report %}
+{% set can_decide = rep.status in ('pending', 'returned') %}
 <div class="rd-modal-overlay" id="rr-modal-{{ rep.report_id }}" hidden>
-    <div class="rd-modal" style="max-width:640px;">
+    <div class="rd-modal rr-review-modal">
         <div class="rd-modal-header">
             <h3>{{ icon(situation_icons.get(rep.disaster_type, 'cloud-lightning'), 18, '#0f2547') }}
                 {{ rep.ref }} — Brgy. {{ r.barangay.barangay_name }}
@@ -34,60 +35,70 @@
             {%- if rep.submitted_at %} · {{ rep.submitted_at.strftime('%b %d, %Y %I:%M %p') }}{% endif %}
         </p>
 
-        <div class="rd-info-grid">
-            <div><span>Assessed Severity</span><strong><span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span></strong></div>
-            <div><span>Affected Families</span><strong>{{ "{:,}".format(rep.affected_families or 0) }}</strong></div>
-            <div><span>Affected Individuals</span><strong>{{ "{:,}".format(rep.affected_individuals or 0) }}</strong></div>
-            <div><span>Totally Damaged Houses</span><strong>{{ rep.totally_damaged_houses or 0 }}</strong></div>
-            <div><span>Partially Damaged</span><strong>{{ rep.partially_damaged_houses or 0 }}</strong></div>
-            <div><span>Flood/Surge Depth</span><strong>{{ '%.1f'|format(rep.flood_depth_m) + ' m' if rep.flood_depth_m is not none else '—' }}</strong></div>
-            <div><span>Water Level</span><strong>{{ rep.water_level_desc or '—' }}</strong></div>
-            <div><span>Casualties / Missing</span><strong>{{ rep.casualties_deaths or 0 }} / {{ rep.missing_persons or 0 }}</strong></div>
-        </div>
+        <div class="rr-review-body">
+            <div class="rr-review-details">
+                <div class="rd-info-grid">
+                    <div><span>Assessed Severity</span><strong><span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span></strong></div>
+                    <div><span>Affected Families</span><strong>{{ "{:,}".format(rep.affected_families or 0) }}</strong></div>
+                    <div><span>Affected Individuals</span><strong>{{ "{:,}".format(rep.affected_individuals or 0) }}</strong></div>
+                    <div><span>Totally Damaged Houses</span><strong>{{ rep.totally_damaged_houses or 0 }}</strong></div>
+                    <div><span>Partially Damaged</span><strong>{{ rep.partially_damaged_houses or 0 }}</strong></div>
+                    <div><span>Flood/Surge Depth</span><strong>{{ '%.1f'|format(rep.flood_depth_m) + ' m' if rep.flood_depth_m is not none else '—' }}</strong></div>
+                    <div><span>Water Level</span><strong>{{ rep.water_level_desc or '—' }}</strong></div>
+                    <div><span>Casualties / Missing</span><strong>{{ rep.casualties_deaths or 0 }} / {{ rep.missing_persons or 0 }}</strong></div>
+                </div>
 
-        <div class="rd-amount-tile" style="margin-top:12px;">
-            <div><span>Barangay Requested</span><strong>{{ "{:,}".format(rep.requested_food_packs or 0) }} packs</strong></div>
-            <div><span>Model Estimate</span><strong>~{{ "{:,}".format(r.model_estimate) }} packs</strong> <span class="rd-sub">decision support</span></div>
-        </div>
+                {% if rep.remarks %}<p class="da-remarks-box" style="margin-top:12px;">{{ rep.remarks }}</p>{% endif %}
+                {% if rep.review_remarks and rep.status in ('declined','returned') %}
+                <p class="da-remarks-box" style="margin-top:8px; border-color:#e0b4b4;"><strong>MSWDO/CSWDO note:</strong> {{ rep.review_remarks }}</p>
+                {% endif %}
+            </div>
 
-        {% if rep.remarks %}<p class="da-remarks-box" style="margin-top:12px;">{{ rep.remarks }}</p>{% endif %}
-        {% if rep.review_remarks and rep.status in ('declined','returned') %}
-        <p class="da-remarks-box" style="margin-top:8px; border-color:#e0b4b4;"><strong>MSWDO/CSWDO note:</strong> {{ rep.review_remarks }}</p>
-        {% endif %}
+            <div class="rr-review-decision">
+                <div class="rd-amount-tile">
+                    <div><span>Barangay Requested</span><strong>{{ "{:,}".format(rep.requested_food_packs or 0) }} packs</strong></div>
+                    <div><span>Model Estimate</span><strong>~{{ "{:,}".format(r.model_estimate) }} packs</strong> <span class="rd-sub">decision support</span></div>
+                </div>
 
-        {% if r.allocation %}
-        <div class="rd-decision-summary" style="margin-top:12px;">
-            {{ icon('truck', 14, '#1e8449') }}
-            <div>
-                <strong>Allocated {{ "{:,}".format(r.allocation.allocated_quantity) }} food packs</strong>
-                {% set d = r.allocation.distribution_records[0] if r.allocation.distribution_records else none %}
-                {% if d %}<span>Delivery {{ dispatch_labels.get(d.dispatch_status, d.dispatch_status) }} —
-                    <a href="{{ url_for('cswdo.delivery_detail', distribution_id=d.distribution_id) }}">track it →</a></span>{% endif %}
+                {% if r.allocation %}
+                <div class="rd-decision-summary">
+                    {{ icon('truck', 14, '#1e8449') }}
+                    <div>
+                        <strong>Allocated {{ "{:,}".format(r.allocation.allocated_quantity) }} food packs</strong>
+                        {% set d = r.allocation.distribution_records[0] if r.allocation.distribution_records else none %}
+                        {% if d %}<span>Delivery {{ dispatch_labels.get(d.dispatch_status, d.dispatch_status) }} —
+                            <a href="{{ url_for('cswdo.delivery_detail', distribution_id=d.distribution_id) }}">track it →</a></span>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if can_decide %}
+                <form method="POST" action="{{ url_for('cswdo.approve_relief_request', report_id=rep.report_id) }}"
+                      id="rr-form-{{ rep.report_id }}" class="settings-form">
+                    <div class="form-row">
+                        <label for="rr-q-{{ rep.report_id }}">Food packs to allocate *</label>
+                        <input type="number" name="quantity" id="rr-q-{{ rep.report_id }}" min="1"
+                               value="{{ rep.requested_food_packs or r.model_estimate }}" required>
+                        <span class="form-hint">Barangay asked for {{ "{:,}".format(rep.requested_food_packs or 0) }} ·
+                            <a href="#" data-fill="#rr-q-{{ rep.report_id }}" data-value="{{ r.model_estimate }}">use model estimate ({{ "{:,}".format(r.model_estimate) }})</a>
+                            · your warehouse: {{ "{:,}".format(on_hand) }} on hand</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="rr-r-{{ rep.report_id }}">Remarks (optional)</label>
+                        <textarea name="review_remarks" id="rr-r-{{ rep.report_id }}" rows="2"></textarea>
+                    </div>
+                </form>
+                {% endif %}
             </div>
         </div>
-        {% endif %}
 
-        {% if rep.status in ('pending','returned') %}
-        <form method="POST" action="{{ url_for('cswdo.approve_relief_request', report_id=rep.report_id) }}" class="settings-form" style="margin-top:14px;">
-            <div class="form-row">
-                <label for="rr-q-{{ rep.report_id }}">Food packs to allocate *</label>
-                <input type="number" name="quantity" id="rr-q-{{ rep.report_id }}" min="1"
-                       value="{{ rep.requested_food_packs or r.model_estimate }}" required>
-                <span class="form-hint">Barangay asked for {{ "{:,}".format(rep.requested_food_packs or 0) }} ·
-                    <a href="#" data-fill="#rr-q-{{ rep.report_id }}" data-value="{{ r.model_estimate }}">use model estimate ({{ "{:,}".format(r.model_estimate) }})</a>
-                    · your warehouse: {{ "{:,}".format(on_hand) }} on hand</span>
-            </div>
-            <div class="form-row">
-                <label for="rr-r-{{ rep.report_id }}">Remarks (optional)</label>
-                <textarea name="review_remarks" id="rr-r-{{ rep.report_id }}" rows="2"></textarea>
-            </div>
-            <div class="rd-modal-actions">
-                <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Approve &amp; Fulfil</button>
-                <button type="submit" formaction="{{ url_for('cswdo.return_damage_report', report_id=rep.report_id) }}" class="btn-decision btn-partial" formnovalidate>{{ icon('rotate-ccw', 16, 'white') }} Return</button>
-                <button type="submit" formaction="{{ url_for('cswdo.decline_relief_request', report_id=rep.report_id) }}" class="btn-decision btn-reject" formnovalidate>{{ icon('x-circle', 16, 'white') }} Decline</button>
-            </div>
-            <p class="form-hint">Return sends it back to the barangay to fix; Decline closes it. The remark above is used as the reason for both.</p>
-        </form>
+        {% if can_decide %}
+        <div class="rd-modal-actions rr-review-actions">
+            <button type="submit" form="rr-form-{{ rep.report_id }}" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Approve &amp; Fulfil</button>
+            <button type="submit" form="rr-form-{{ rep.report_id }}" formaction="{{ url_for('cswdo.return_damage_report', report_id=rep.report_id) }}" class="btn-decision btn-partial" formnovalidate>{{ icon('rotate-ccw', 16, 'white') }} Return</button>
+            <button type="submit" form="rr-form-{{ rep.report_id }}" formaction="{{ url_for('cswdo.decline_relief_request', report_id=rep.report_id) }}" class="btn-decision btn-reject" formnovalidate>{{ icon('x-circle', 16, 'white') }} Decline</button>
+        </div>
+        <p class="form-hint rr-review-foot-hint">Return sends it back to the barangay to fix; Decline closes it. The remark above is used as the reason for both.</p>
         {% endif %}
     </div>
 </div>

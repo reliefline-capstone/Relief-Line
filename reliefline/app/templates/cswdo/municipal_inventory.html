@@ -19,12 +19,10 @@
 
 
         <section class="page-header">
-            <form method="GET" class="wh-search-form">
-                <div class="wh-search-wrapper">
-                    {{ icon('search', 14, '#8a94a6') }}
-                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search item...">
-                </div>
-            </form>
+            <div>
+                <h2>Municipal Warehouse</h2>
+                <p>{{ office.office_name }} · {{ office.area_covered }}</p>
+            </div>
             <div class="wh-header-actions">
                 <a href="{{ url_for('cswdo.municipal_inventory_movements') }}" class="btn-outline">{{ icon('activity', 14) }} Movement History</a>
                 <a href="{{ url_for('cswdo.municipal_inventory_export') }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
@@ -32,7 +30,7 @@
             </div>
         </section>
 
-        <div class="main-grid">
+        <div class="main-grid mi-detail-grid">
 
             <section class="panel">
                 <div class="panel-header">
@@ -107,7 +105,15 @@
         {% endif %}
 
         <section class="panel wh-table-panel" style="margin-top:16px;">
-            <div class="panel-header"><h3>Inventory</h3></div>
+            <div class="panel-header">
+                <h3>Inventory</h3>
+                <form method="GET" class="wh-search-form">
+                    <div class="wh-search-wrapper">
+                        {{ icon('search', 14, '#8a94a6') }}
+                        <input type="text" name="q" value="{{ search_query }}" placeholder="Search item...">
+                    </div>
+                </form>
+            </div>
             <table class="wh-table">
                 <thead>
                     <tr>

@@ -1,29 +1,59 @@
 #!/usr/bin/env bash
-# Keeps reliefline/database/reliefline_db.sql in sync with the devcontainer's
-# live MariaDB on every commit, so `git push` always hands groupmates a
-# working snapshot of the current schema + data — .devcontainer/setup.sh
-# loads this exact file to provision a fresh database for anyone who opens
-# the project.
+# Keeps reliefline/database/reliefline_db.sql in sync with your live MariaDB/
+# MySQL on every commit, so `git push` always hands groupmates a working
+# snapshot of the current schema + data — .devcontainer/setup.sh loads this
+# exact file to provision a fresh database for anyone who opens the project.
 #
-# No-ops (does nothing, never blocks the commit) when mysqldump or the
-# devcontainer's MariaDB aren't reachable — e.g. committing from outside the
-# devcontainer. Enabled repo-wide via `git config core.hooksPath .githooks`
-# (set automatically by .devcontainer/setup.sh).
+# Works both inside the devcontainer (MariaDB, user "reliefline") and on a
+# local Windows/XAMPP checkout (MySQL, user "root", no password). No-ops
+# (does nothing, never blocks the commit) when mysqldump or the database
+# aren't reachable. Enabled per-checkout via:
+#     git config core.hooksPath .githooks
+# (done automatically by .devcontainer/setup.sh; run it once by hand on a
+# plain local clone.)
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DUMP_FILE="$PROJECT_DIR/reliefline/database/reliefline_db.sql"
-DB_USER="reliefline"
-DB_PASS="reliefline_dev_pw"
 DB_NAME="reliefline_db"
 DB_HOST="127.0.0.1"
 
-if ! command -v mysqldump >/dev/null 2>&1; then
-    exit 0
+# --- locate mysqldump ------------------------------------------------------
+DUMP_BIN=""
+if command -v mysqldump >/dev/null 2>&1; then
+    DUMP_BIN="$(command -v mysqldump)"
+else
+    for base in \
+        "/c/xampp/mysql/bin" \
+        "/d/program files/xamp/mysql/bin" \
+        "/d/xampp/mysql/bin" \
+        "/c/Program Files/MySQL/MySQL Server 8.0/bin" \
+        "/c/Program Files/MariaDB 11.4/bin"
+    do
+        if [ -x "$base/mysqldump.exe" ]; then
+            DUMP_BIN="$base/mysqldump.exe"
+            break
+        fi
+    done
 fi
-if ! mysqladmin ping -u "$DB_USER" -p"$DB_PASS" -h "$DB_HOST" --silent >/dev/null 2>&1; then
-    exit 0
-fi
+[ -n "$DUMP_BIN" ] || exit 0
 
-mysqldump -u "$DB_USER" -p"$DB_PASS" -h "$DB_HOST" "$DB_NAME" > "$DUMP_FILE"
+# --- pick the first set of credentials that actually authenticates ----------
+# (a real dump probe — mysqladmin ping reports "alive" even on auth failure)
+# format: "user|password"
+CANDIDATES=("reliefline|reliefline_dev_pw" "root|")
+DB_USER=""
+DB_PASS=""
+for cand in "${CANDIDATES[@]}"; do
+    u="${cand%%|*}"
+    p="${cand#*|}"
+    if "$DUMP_BIN" -u "$u" ${p:+-p"$p"} -h "$DB_HOST" --no-data --skip-dump-date \
+        "$DB_NAME" >/dev/null 2>&1; then
+        DB_USER="$u"; DB_PASS="$p"; break
+    fi
+done
+[ -n "$DB_USER" ] || exit 0
+
+# --- dump and stage ---------------------------------------------------------
+"$DUMP_BIN" -u "$DB_USER" ${DB_PASS:+-p"$DB_PASS"} -h "$DB_HOST" "$DB_NAME" > "$DUMP_FILE"
 git add "$DUMP_FILE"

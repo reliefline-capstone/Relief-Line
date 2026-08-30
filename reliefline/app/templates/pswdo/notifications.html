@@ -60,19 +60,29 @@
             {% endfor %}
 
             <div class="rr-pagination">
-                <span>Showing {{ items|length }} of {{ total_filtered }} notification{{ 's' if total_filtered != 1 }}</span>
+                <span>Showing {{ (page - 1) * per_page + 1 }}–{{ (page - 1) * per_page + items|length }} of {{ total_filtered }} notification{{ 's' if total_filtered != 1 }}</span>
+                {% if total_pages > 1 %}
                 <div class="pagination-controls">
                     {% if page > 1 %}
                     <a href="{{ url_for('pswdo.notifications', page=page-1, category=category_filter) }}" class="page-btn">Previous</a>
                     {% endif %}
-                    <span class="page-btn active">{{ page }}</span>
+                    {% set win_end = [[page, 10]|max, total_pages]|min %}
+                    {% set win_start = [1, win_end - 9]|max %}
+                    {% for p in range(win_start, win_end + 1) %}
+                    {% if p == page %}
+                    <span class="page-btn active">{{ p }}</span>
+                    {% else %}
+                    <a href="{{ url_for('pswdo.notifications', page=p, category=category_filter) }}" class="page-btn">{{ p }}</a>
+                    {% endif %}
+                    {% endfor %}
                     {% if page < total_pages %}
                     <a href="{{ url_for('pswdo.notifications', page=page+1, category=category_filter) }}" class="page-btn">Next</a>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
             {% else %}
-            <p class="empty-note">Walang notifications pa dito.</p>
+            <p class="empty-note">No notifications here yet.</p>
             {% endif %}
         </section>
 

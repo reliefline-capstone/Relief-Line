@@ -34,6 +34,9 @@
          extra_css so a page can still add its own overrides after it if
          ever needed. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom_select.css') }}?v={{ asset_version('css/custom_select.css') }}">
+    <!-- Custom calendar / time pickers for every <input type="date|time"> —
+         same reason as custom_select: the native popup is unstyleable. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom_datetime.css') }}?v={{ asset_version('css/custom_datetime.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -71,6 +74,7 @@
 
     {% block extra_js %}{% endblock %}
     <script src="{{ url_for('static', filename='js/custom_select.js') }}?v={{ asset_version('js/custom_select.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/custom_datetime.js') }}?v={{ asset_version('js/custom_datetime.js') }}"></script>
     <!-- Delegated (not bound to #sidebar-toggle-btn directly) so it works
          no matter which role's _sidebar.html rendered the button, without
          needing per-page wiring. -->

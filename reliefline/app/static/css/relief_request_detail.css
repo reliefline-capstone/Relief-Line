@@ -81,7 +81,7 @@
 .rd-info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px 24px;
+    gap: 12px 24px;
 }
 
 /* Label above value — this had no rule of its own at all before, so the
@@ -230,6 +230,14 @@
 }
 
 .rd-modal-overlay[hidden] { display: none; }
+
+/* Scroll-lock: while a modal is open, freeze the page/list behind it so the
+   wheel acts on the modal, not the table underneath (see relief_request_detail.js
+   which toggles .rd-modal-open on <html>). .dashboard-main is the actual scroll
+   container on these pages (height:100vh; overflow-y:auto), so it's the one to
+   pin — body/html overflow alone wouldn't do it. */
+html.rd-modal-open .dashboard-main { overflow: hidden; }
+html.rd-modal-open { overflow: hidden; }
 
 .rd-modal {
     background: white;

@@ -64,52 +64,67 @@
                 </div>
             </section>
 
+            <div class="dd-side-col">
             <section class="panel">
                 <div class="panel-header"><h3>Confirmations</h3></div>
 
-                <div class="dd-confirm-block {{ 'is-done' if rec.is_issued }}">
-                    <strong>{{ icon('package', 14) }} Issuance — released from warehouse</strong>
-                    {% if rec.is_issued %}
-                    <span>Confirmed by {{ rec.issued_by_user.name if rec.issued_by_user else 'MSWDO/CSWDO' }}
-                        {%- if rec.issued_at %} · {{ rec.issued_at.strftime('%b %d, %I:%M %p') }}{% endif %}</span>
-                    {% if rec.issuance_note %}<span class="rd-sub">{{ rec.issuance_note }}</span>{% endif %}
-                    {% else %}
-                    <span class="rd-sub">Not yet confirmed — available once the delivery is loaded.</span>
-                    {% endif %}
-                </div>
+                <div class="dd-confirm-list">
+                    <div class="dd-confirm {{ 'dd-confirm-done' if rec.is_issued else 'dd-confirm-pending' }}">
+                        <div class="dd-confirm-icon">{{ icon('check-circle' if rec.is_issued else 'package', 15) }}</div>
+                        <div class="dd-confirm-body">
+                            <div class="dd-confirm-title">
+                                Issuance — released from warehouse
+                                <span class="dd-confirm-tag">{{ 'Confirmed' if rec.is_issued else 'Pending' }}</span>
+                            </div>
+                            {% if rec.is_issued %}
+                            <span class="dd-confirm-meta">Confirmed by {{ rec.issued_by_user.name if rec.issued_by_user else 'MSWDO/CSWDO' }}
+                                {%- if rec.issued_at %} · {{ rec.issued_at.strftime('%b %d, %I:%M %p') }}{% endif %}</span>
+                            {% if rec.issuance_note %}<span class="dd-confirm-note">{{ rec.issuance_note }}</span>{% endif %}
+                            {% else %}
+                            <span class="dd-confirm-meta">Not yet confirmed — available once the delivery is loaded.</span>
+                            {% endif %}
+                        </div>
+                    </div>
 
-                <div class="dd-confirm-block {{ 'is-done' if rec.is_validated }}" style="margin-top:10px;">
-                    <strong>{{ icon('check-circle', 14) }} Validation — barangay confirmed receipt</strong>
-                    {% if rec.is_validated %}
-                    <span>Received by {{ rec.received_by }}{% if rec.time_received %} · {{ rec.time_received.strftime('%I:%M %p') }}{% endif %}
-                        · condition: {{ rec.condition }}</span>
-                    {% if attachments and attachments[0] %}<span class="rd-sub">{{ attachments|length }} proof file(s) attached</span>{% endif %}
-                    {% else %}
-                    <span class="rd-sub">Pending — only the barangay can validate receipt, with a photo or signature.</span>
-                    {% endif %}
+                    <div class="dd-confirm {{ 'dd-confirm-done' if rec.is_validated else 'dd-confirm-pending' }}">
+                        <div class="dd-confirm-icon">{{ icon('check-circle' if rec.is_validated else 'clock', 15) }}</div>
+                        <div class="dd-confirm-body">
+                            <div class="dd-confirm-title">
+                                Validation — barangay confirmed receipt
+                                <span class="dd-confirm-tag">{{ 'Confirmed' if rec.is_validated else 'Pending' }}</span>
+                            </div>
+                            {% if rec.is_validated %}
+                            <span class="dd-confirm-meta">Received by {{ rec.received_by }}{% if rec.time_received %} · {{ rec.time_received.strftime('%I:%M %p') }}{% endif %}
+                                · condition: {{ rec.condition }}</span>
+                            {% if attachments and attachments[0] %}<span class="dd-confirm-note">{{ attachments|length }} proof file(s) attached</span>{% endif %}
+                            {% else %}
+                            <span class="dd-confirm-meta">Only the barangay can validate receipt, with a photo or signature.</span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </section>
-        </div>
 
-        <!-- Actions -->
-        <section class="panel">
-            <div class="panel-header"><h3>Update Delivery</h3></div>
-            {% if rec.is_validated %}
-            <p class="empty-note">This delivery is complete — the barangay has validated receipt.</p>
-            {% elif next_status %}
-            <form method="POST" action="{{ url_for('cswdo.advance_delivery', distribution_id=rec.distribution_id) }}" style="display:inline;">
-                <input type="hidden" name="target" value="{{ next_status }}">
-                <button type="submit" class="btn-decision btn-partial">{{ icon('arrow-right', 16, 'white') }} Mark {{ dispatch_labels.get(next_status, next_status) }}</button>
-            </form>
-            {% elif can_issue %}
-            <form method="POST" action="{{ url_for('cswdo.confirm_issuance', distribution_id=rec.distribution_id) }}" class="settings-form">
-                <p class="form-hint">Confirm the {{ "{:,}".format(rec.quantity_released) }} food packs have been released from your warehouse and handed to transport.</p>
-                <button type="submit" class="btn-decision btn-approve-full">{{ icon('package', 16, 'white') }} Confirm Issuance</button>
-            </form>
-            {% else %}
-            <p class="empty-note">Waiting for the barangay to validate receipt. There's nothing to update from here.</p>
-            {% endif %}
-        </section>
+            <section class="panel">
+                <div class="panel-header"><h3>Update Delivery</h3></div>
+                {% if rec.is_validated %}
+                <p class="empty-note">This delivery is complete — the barangay has validated receipt.</p>
+                {% elif next_status %}
+                <form method="POST" action="{{ url_for('cswdo.advance_delivery', distribution_id=rec.distribution_id) }}" style="display:inline;">
+                    <input type="hidden" name="target" value="{{ next_status }}">
+                    <button type="submit" class="btn-decision btn-partial">{{ icon('arrow-right', 16, 'white') }} Mark {{ dispatch_labels.get(next_status, next_status) }}</button>
+                </form>
+                {% elif can_issue %}
+                <form method="POST" action="{{ url_for('cswdo.confirm_issuance', distribution_id=rec.distribution_id) }}" class="settings-form">
+                    <p class="form-hint">Confirm the {{ "{:,}".format(rec.quantity_released) }} food packs have been released from your warehouse and handed to transport.</p>
+                    <button type="submit" class="btn-decision btn-approve-full">{{ icon('package', 16, 'white') }} Confirm Issuance</button>
+                </form>
+                {% else %}
+                <p class="empty-note">Waiting for the barangay to validate receipt. There's nothing to update from here.</p>
+                {% endif %}
+            </section>
+            </div>
+        </div>
 
     </main>
 </div>
