@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
-{% block title %}Relief Requests - ReliefLine{% endblock %}
+{% block title %}Barangay Reports - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
@@ -40,13 +40,8 @@
             <div><span>Affected Individuals</span><strong>{{ "{:,}".format(rep.affected_individuals or 0) }}</strong></div>
             <div><span>Totally Damaged Houses</span><strong>{{ rep.totally_damaged_houses or 0 }}</strong></div>
             <div><span>Partially Damaged</span><strong>{{ rep.partially_damaged_houses or 0 }}</strong></div>
-            {% if rep.disaster_type == 'Wind' %}
-            <div><span>Roofs Damaged</span><strong>{{ rep.roofs_damaged or 0 }}</strong></div>
-            <div><span>Wind Signal</span><strong>{{ rep.wind_signal or '—' }}</strong></div>
-            {% elif rep.flood_depth_m is not none %}
-            <div><span>Flood Depth</span><strong>{{ '%.1f'|format(rep.flood_depth_m) }} m</strong></div>
+            <div><span>Flood/Surge Depth</span><strong>{{ '%.1f'|format(rep.flood_depth_m) + ' m' if rep.flood_depth_m is not none else '—' }}</strong></div>
             <div><span>Water Level</span><strong>{{ rep.water_level_desc or '—' }}</strong></div>
-            {% endif %}
             <div><span>Casualties / Missing</span><strong>{{ rep.casualties_deaths or 0 }} / {{ rep.missing_persons or 0 }}</strong></div>
         </div>
 
@@ -109,7 +104,7 @@
 
         <div class="page-header">
             <div>
-                <h2>Relief Requests</h2>
+                <h2>Barangay Reports</h2>
                 <p>{{ lgu or '—' }}{% if primary_event %} · {{ icon('cloud-lightning', 12) }} {{ primary_event.event_name }}{% endif %} · {{ now.strftime('%B %d, %Y') }}</p>
             </div>
             <div style="display:flex; gap:10px;">

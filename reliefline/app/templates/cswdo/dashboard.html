@@ -34,6 +34,13 @@
                 <div class="banner-weather-live" data-weather-header data-endpoint="{{ url_for('cswdo.dashboard_weather') }}">
                     <span class="weather-header-loading">Checking conditions…</span>
                 </div>
+                {% if primary_event %}
+                <div class="banner-event-badge" title="Currently active disaster event">
+                    <span class="banner-event-badge-dot"></span>
+                    {{ icon('cloud-lightning', 13, 'white') }}
+                    Active Event: {{ primary_event.event_name }}{% if primary_event.weather_condition %} · {{ primary_event.weather_condition }}{% endif %}
+                </div>
+                {% endif %}
             </div>
         </section>
 

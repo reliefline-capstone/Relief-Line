@@ -76,6 +76,7 @@
                 <span class="stat-label">Days of Supply</span>
                 <span class="stat-sub">
                     {%- if burn_rate %}Burn rate ~{{ burn_rate|int }} packs/day ({{ "{:,}".format(total_affected_families) }} families ÷ 3)
+                    {%- elif event %}No affected-families data yet — burn rate not computed
                     {%- else %}No active event — burn rate not computed{% endif -%}
                 </span>
             </div>
@@ -131,12 +132,19 @@
                     <div class="gis-priority-row-right">
                         <span class="badge-priority badge-priority-{{ r.priority_tier }}"><i class="priority-dot"></i> {{ r.priority_label }}</span>
                         <strong>{{ "{:,}".format(r.packs_needed) }} packs{% if r.need_source == 'model' %}*{% endif %}</strong>
+                        {% if can_allocate and event and r.need_source == 'model' and r.undelivered > 0 %}
+                        <button type="button" class="btn-view-sm" data-open-modal="pa-allocate-modal"
+                                data-barangay-id="{{ r.barangay_id }}" data-barangay-name="{{ r.name }}"
+                                data-predicted="{{ r.undelivered }}">
+                            {{ icon('package', 13) }} Allocate
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
                 {% else %}
                 <p class="empty-note">No barangays in scope for this filter.</p>
                 {% endfor %}
-                {% if ranking %}<p class="rd-sub" style="margin-top:10px;">* model-estimated — no barangay request submitted yet. When a barangay files a Relief Request, act on it from the Relief Requests inbox.</p>{% endif %}
+                {% if ranking %}<p class="rd-sub" style="margin-top:10px;">* model-estimated — no barangay report submitted yet. When a barangay files a Barangay Report, act on it from the Barangay Reports inbox. Use "Allocate" here to push packs proactively instead, ahead of any request.</p>{% endif %}
             </section>
 
 
@@ -244,6 +252,45 @@
             <p class="empty-note">No model has been trained yet. Run <code>scripts/train_model.py</code> against the current database.</p>
             {% endif %}
         </section>
+
+        {% if can_allocate %}
+        <div class="rd-modal-overlay" id="pa-allocate-modal" hidden>
+            <div class="rd-modal" style="max-width:560px;">
+                <div class="rd-modal-header">
+                    <h3>{{ icon('package', 18, '#0f2547') }} Proactive Allocation — <span id="pa-am-barangay-name"></span></h3>
+                    <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+                </div>
+                <p class="form-hint">
+                    No Barangay Report has been filed by this barangay yet. This releases food packs from
+                    your own warehouse ahead of one, based on the model's estimate below — the number is
+                    yours to set; the model only supports the decision, it doesn't make it.
+                </p>
+                {% if event %}
+                <form method="POST" action="{{ url_for('cswdo.proactive_allocate') }}" class="settings-form">
+                    <input type="hidden" name="barangay_id" id="pa-am-barangay-id">
+                    <input type="hidden" name="event_id" value="{{ event.event_id }}">
+                    <div class="form-row">
+                        <label for="pa-am-quantity">Food packs to allocate *</label>
+                        <input type="number" name="quantity" id="pa-am-quantity" min="1" required>
+                        <span class="form-hint">Prefilled with the model's estimate (decision support only) ·
+                            your warehouse: {{ "{:,}".format(total_food_packs) }} on hand · event: {{ event.event_name }}</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="pa-am-remarks">Justification *</label>
+                        <textarea name="remarks" id="pa-am-remarks" rows="2" required
+                                  placeholder="Why allocate now, without a barangay request?"></textarea>
+                    </div>
+                    <div class="rd-modal-actions">
+                        <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Allocate</button>
+                    </div>
+                    <p class="form-hint">Recorded as a proactive, model-informed allocation. The barangay still confirms receipt with a photo/signature once delivered — same accountability trail as every other delivery.</p>
+                </form>
+                {% else %}
+                <p class="empty-note">Select an active disaster event above before allocating proactively.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
 
     </main>
 </div>

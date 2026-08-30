@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
-{% block title %}{{ 'Edit ' + report.ref if report else 'New Relief Request' }} - ReliefLine{% endblock %}
+{% block title %}{{ 'Edit ' + report.ref if report else 'New Barangay Report' }} - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
@@ -21,7 +21,7 @@
         <section class="page-header">
             <div>
                 <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Cancel</a>
-                <h2>{{ 'Edit ' + report.ref if report else 'New Relief Request' }}</h2>
+                <h2>{{ 'Edit ' + report.ref if report else 'New Barangay Report' }}</h2>
                 <p>Brgy. {{ barangay.barangay_name }} · {{ (report.event.event_name if report and report.event else (active_events[0].event_name if active_events else 'Standing Request')) }}</p>
             </div>
         </section>
@@ -84,29 +84,14 @@
                 <div class="panel-header"><h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Situation</h3></div>
                 <p class="form-hint">
                     This report is for the current <strong>typhoon-related event</strong>{% if active_events %} ({{ active_events[0].event_name }}){% endif %}.
-                    Tell us which hazard hit your barangay and record what you observed.
+                    Record what you observed — flood impact, damage, and affected residents.
                 </p>
 
-                <div class="weather-widget" data-weather-widget data-endpoint="{{ url_for('barangay.dashboard_weather') }}" style="margin-bottom:18px;">
-                    <div class="weather-widget-header">
-                        <span class="weather-widget-title">{{ icon('cloud', 16) }} Current Conditions — Brgy. {{ barangay.barangay_name }}</span>
-                    </div>
-                    <p class="weather-empty skeleton-shimmer">Loading live weather…</p>
-                </div>
-
-                <div class="form-row">
-                    <label>Primary typhoon-related hazard <span class="required-mark">*</span></label>
-                    <div class="severity-cards disaster-type-cards" id="hazard-cards">
-                        {% for opt in hazard_options %}
-                        <label class="severity-card">
-                            <input type="radio" name="disaster_type" value="{{ opt }}"
-                                   {{ 'checked' if (report.disaster_type if report and report.disaster_type else 'Combined') == opt }} required>
-                            {{ icon(hazard_icons.get(opt, 'cloud-lightning'), 20, '#2c5aa0') }}
-                            <strong>{{ opt }}</strong>
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
+                {# No hazard picker — a typhoon can bring flooding, storm surge, and
+                   strong winds together, so every report now covers all of it
+                   (disaster_type is fixed to "Combined"; see HAZARD_OPTIONS[-1] in
+                   app.routes.barangay, which already defaulted here regardless). #}
+                <input type="hidden" name="disaster_type" value="Combined">
                 <div class="form-row-2col">
                     <div class="form-row">
                         <label for="incident_date">Date of Incident <span class="required-mark">*</span></label>
@@ -120,7 +105,7 @@
                     </div>
                 </div>
 
-                <div class="form-row-2col hazard-field" data-hazard="water" hidden>
+                <div class="form-row-2col">
                     <div class="form-row">
                         <label for="flood_depth_m">Flood / Surge Depth (meters)</label>
                         <input type="number" id="flood_depth_m" name="flood_depth_m" min="0" step="0.1" placeholder="e.g. 1.2"
@@ -133,22 +118,9 @@
                     </div>
                 </div>
 
-                <div class="form-row-2col hazard-field" data-hazard="wind" hidden>
-                    <div class="form-row">
-                        <label for="roofs_damaged">Roofs Damaged / Blown Off</label>
-                        <input type="number" id="roofs_damaged" name="roofs_damaged" min="0"
-                               value="{{ report.roofs_damaged or 0 }}">
-                    </div>
-                    <div class="form-row">
-                        <label for="wind_signal">Wind Signal in Effect</label>
-                        <input type="text" id="wind_signal" name="wind_signal" placeholder="e.g. Signal No. 3"
-                               value="{{ report.wind_signal or '' }}">
-                    </div>
-                </div>
-
                 <div class="autofill-box" style="margin-top:4px;">
                     {{ icon('info', 14, '#2c5aa0') }}
-                    <span><strong>Severity is assessed automatically</strong> from what you report — depth, damaged houses/roofs, casualties, and affected families. You don't grade it yourself; the assessed level shows on the Review step.</span>
+                    <span><strong>Severity is assessed automatically</strong> from what you report — depth, damaged houses, casualties, and affected families. You don't grade it yourself; the assessed level shows on the Review step.</span>
                 </div>
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
@@ -331,7 +303,6 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/weather_widget.js') }}?v={{ asset_version('js/weather_widget.js') }}"></script>
 <script>
 (function () {
     var steps = Array.prototype.slice.call(document.querySelectorAll('.wizard-step'));
@@ -390,24 +361,13 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
 
     function num(id) { return parseInt((document.getElementById(id) || {}).value || '0', 10) || 0; }
     function fnum(id) { return parseFloat((document.getElementById(id) || {}).value || '0') || 0; }
-    function hazard() { return ((document.querySelector('input[name="disaster_type"]:checked') || {}).value || '').toLowerCase(); }
+    // No hazard picker anymore — every report is filed as "Combined" (see the
+    // hidden disaster_type input above), so flood/wind fields are always shown
+    // and always scored together. Kept as a function (not a bare constant) so
+    // computeSeverity below still reads exactly like its Python mirror.
+    function hazard() { return 'combined'; }
 
     var WATER_HAZARDS = {{ water_hazards|tojson }};
-    var WIND_HAZARDS = {{ wind_hazards|tojson }};
-
-    function syncHazardFields() {
-        var h = hazard();
-        document.querySelectorAll('.hazard-field').forEach(function (el) {
-            var kind = el.dataset.hazard;
-            var show = (kind === 'water' && WATER_HAZARDS.indexOf(h) !== -1)
-                    || (kind === 'wind' && WIND_HAZARDS.indexOf(h) !== -1);
-            el.hidden = !show;
-        });
-    }
-    document.querySelectorAll('input[name="disaster_type"]').forEach(function (r) {
-        r.addEventListener('change', syncHazardFields);
-    });
-    syncHazardFields();
 
     // Mirror of app.routes.barangay._compute_severity — keep the two in sync.
     function computeSeverity() {
@@ -421,7 +381,7 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
             score += depth > 2 ? 32 : (depth > 1 ? 20 : (depth >= 0.5 ? 10 : 3));
         }
         var t = num('totally_damaged_houses');
-        var p = num('partially_damaged_houses') + num('roofs_damaged');
+        var p = num('partially_damaged_houses');
         score += t >= 50 ? 30 : (t >= 20 ? 20 : (t >= 5 ? 10 : (t >= 1 ? 4 : 0)));
         score += p >= 100 ? 12 : (p >= 30 ? 7 : (p >= 1 ? 3 : 0));
         var f = num('affected_families');
@@ -448,8 +408,7 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
     }
 
     function populateReview() {
-        var checkedType = document.querySelector('input[name="disaster_type"]:checked');
-        document.getElementById('rv-disaster-type').textContent = checkedType ? checkedType.value : '—';
+        document.getElementById('rv-disaster-type').textContent = 'Combined';
         document.getElementById('rv-date').textContent = (textOf('incident_date') || '—') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
         var dv = textOf('flood_depth_m');
         document.getElementById('rv-depth').textContent = dv ? dv + 'm' : '—';

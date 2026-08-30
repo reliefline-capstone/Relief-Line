@@ -24,8 +24,7 @@
                 <p>Brgy. {{ barangay.barangay_name }} · food packs currently on hand</p>
             </div>
             <div style="display:flex; gap:10px;">
-                <button type="button" class="btn-outline" data-open-modal="bi-distribute">{{ icon('minus', 14) }} Record Distribution</button>
-                <button type="button" class="btn-add-warehouse" data-open-modal="bi-adjust">{{ icon('sliders', 14, 'white') }} Adjust</button>
+                <button type="button" class="btn-add-warehouse" data-open-modal="bi-distribute">{{ icon('minus', 14, 'white') }} Record Distribution</button>
             </div>
         </div>
 
@@ -78,7 +77,6 @@
         <div class="rd-modal-header"><h3>{{ icon('minus', 18, '#0f2547') }} Record Distribution</h3>
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
         <form method="POST" action="{{ url_for('barangay.inventory_record') }}" class="settings-form">
-            <input type="hidden" name="kind" value="distribution">
             <div class="form-row">
                 <label for="bi-d-amount">Food packs handed out *</label>
                 <input type="number" name="amount" id="bi-d-amount" min="1" max="{{ on_hand }}" required>
@@ -90,35 +88,6 @@
             </div>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">Record</button>
-                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="rd-modal-overlay" id="bi-adjust" hidden>
-    <div class="rd-modal">
-        <div class="rd-modal-header"><h3>{{ icon('sliders', 18, '#0f2547') }} Adjust Count</h3>
-            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
-        <form method="POST" action="{{ url_for('barangay.inventory_record') }}" class="settings-form">
-            <input type="hidden" name="kind" value="adjustment">
-            <div class="form-row">
-                <label>Direction</label>
-                <select name="direction">
-                    <option value="add">Add (found extra / recount up)</option>
-                    <option value="subtract">Subtract (spoilage / recount down)</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <label for="bi-a-amount">Amount *</label>
-                <input type="number" name="amount" id="bi-a-amount" min="1" required>
-            </div>
-            <div class="form-row">
-                <label for="bi-a-reason">Reason *</label>
-                <input type="text" name="reason" id="bi-a-reason" placeholder="e.g. 20 packs water-damaged" required>
-            </div>
-            <div class="rd-modal-actions">
-                <button type="submit" class="btn-decision btn-partial">Apply</button>
                 <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
             </div>
         </form>

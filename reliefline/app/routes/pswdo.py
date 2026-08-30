@@ -102,6 +102,11 @@ NOTIFICATION_META = {
     # Tier 1 (barangay -> CSWDO) — CSWDO + barangay feeds only, never PSWDO's.
     "barangay_relief_approved": {"icon": "check-circle", "color": "#1e8449", "category": "relief_requests", "category_label": "Relief Requests"},
     "barangay_relief_declined": {"icon": "x-circle", "color": "#c0392b", "category": "relief_requests", "category_label": "Relief Requests"},
+    # CSWDO -> barangay, model-driven, no request behind it (source='cswdo_direct'
+    # on AllocationRecord). Same tier as barangay_relief_approved above — CSWDO
+    # decides and fulfils entirely from its own warehouse, so this is CSWDO +
+    # barangay feeds only too; PSWDO has nothing to act on for it.
+    "cswdo_proactive_allocation": {"icon": "package", "color": "#6c5ce7", "category": "relief_requests", "category_label": "Relief Requests"},
 }
 DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
 
@@ -115,6 +120,7 @@ DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "ot
 PSWDO_EXCLUDED_NOTIFICATION_TYPES = {
     "damage_report_submitted", "damage_report_verified", "damage_report_returned",
     "barangay_relief_approved", "barangay_relief_declined",
+    "cswdo_proactive_allocation",
 }
 PSWDO_NOTIFICATION_TYPES = [k for k in NOTIFICATION_META if k not in PSWDO_EXCLUDED_NOTIFICATION_TYPES]
 
@@ -779,10 +785,13 @@ def dashboard():
     # Scoped to the active event when one exists; otherwise every approved/
     # released allocation counts (direct allocations and standing requests
     # can both happen with no declared event — see direct_allocation).
+    # Excludes both barangay_request and cswdo_direct — municipal-to-barangay
+    # tiers CSWDO handles and fulfils entirely on its own; PSWDO's own "today"
+    # panel is about its own warehouse/dispatch activity only.
     today_query = AllocationRecord.query.join(Barangay).filter(
         Barangay.city_municipality.in_(TARGET_LGUS),
         AllocationRecord.status.in_(["approved", "released"]),
-        AllocationRecord.source != "barangay_request",
+        AllocationRecord.source.notin_(("barangay_request", "cswdo_direct")),
     )
     if today_active_event:
         today_query = today_query.filter(AllocationRecord.event_id == today_active_event.event_id)
@@ -2364,7 +2373,7 @@ def _filtered_distributions():
 
     base_query = DistributionRecord.query.join(Barangay).join(AllocationRecord).filter(
         Barangay.city_municipality.in_(TARGET_LGUS),
-        AllocationRecord.source != "barangay_request",
+        AllocationRecord.source.notin_(("barangay_request", "cswdo_direct")),
     )
     today_query = base_query.filter(DistributionRecord.distribution_date == today)
 
@@ -2415,7 +2424,7 @@ def _eligible_for_distribution():
     allocations = AllocationRecord.query.join(Barangay).filter(
         Barangay.city_municipality.in_(TARGET_LGUS),
         AllocationRecord.status == "approved",
-        AllocationRecord.source != "barangay_request",
+        AllocationRecord.source.notin_(("barangay_request", "cswdo_direct")),
         ~AllocationRecord.distribution_records.any(),
     ).order_by(AllocationRecord.allocation_date.desc()).all()
 

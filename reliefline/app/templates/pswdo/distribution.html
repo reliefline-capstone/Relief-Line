@@ -171,7 +171,7 @@
             <div class="nd-step-panel" data-step-panel="2" hidden>
                 <button type="button" class="nd-back-link" data-step-back>{{ icon('arrow-left', 14) }} Back to municipality</button>
 
-                <label>Approved Relief Request in <span id="nd-selected-muni"></span> *</label>
+                <label>Approved Barangay Report in <span id="nd-selected-muni"></span> *</label>
                 <div class="nd-request-list" id="nd-request-list">
                     {% for row in eligible_allocations %}
                     <label class="nd-request-option" data-municipality="{{ row.municipality }}" data-stock-ok="{{ 'true' if row.stock_ok else 'false' }}">

@@ -24,7 +24,7 @@
                 <h2>Deliveries</h2>
                 <p>{{ lgu or '—' }} · food packs released from your warehouse to barangays</p>
             </div>
-            <a href="{{ url_for('cswdo.damage_assessment') }}" class="btn-outline">{{ icon('clipboard', 16) }} Relief Requests</a>
+            <a href="{{ url_for('cswdo.damage_assessment') }}" class="btn-outline">{{ icon('clipboard', 16) }} Barangay Reports</a>
         </div>
 
         <section class="stat-cards stat-cards-4">
@@ -66,7 +66,7 @@
         <section class="panel rr-table-panel">
             <table class="rr-table">
                 <thead>
-                    <tr><th>Delivery ID</th><th>Relief Request</th><th>Barangay</th><th>Packs</th><th>Status</th><th>Progress</th><th></th></tr>
+                    <tr><th>Delivery ID</th><th>Barangay Report</th><th>Barangay</th><th>Packs</th><th>Status</th><th>Progress</th><th></th></tr>
                 </thead>
                 <tbody>
                     {% for row in rows %}

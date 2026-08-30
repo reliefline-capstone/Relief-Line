@@ -1573,7 +1573,7 @@ CREATE TABLE `barangay_reports` (
   CONSTRAINT `barangay_reports_ibfk_1` FOREIGN KEY (`barangay_id`) REFERENCES `barangays` (`barangay_id`),
   CONSTRAINT `barangay_reports_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `barangay_reports_ibfk_3` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2055,7 +2055,7 @@ CREATE TABLE `password_reset_requests` (
   KEY `reviewed_by` (`reviewed_by`),
   CONSTRAINT `password_reset_requests_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `password_reset_requests_ibfk_2` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2290,7 +2290,7 @@ CREATE TABLE `relief_request_batches` (
   CONSTRAINT `relief_request_batches_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`office_id`),
   CONSTRAINT `relief_request_batches_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `disaster_events` (`event_id`),
   CONSTRAINT `relief_request_batches_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

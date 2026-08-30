@@ -45,17 +45,16 @@ REPORT_STATUS_LABELS = {
 # The report is always for a TYPHOON-RELATED event (the manuscript scopes the
 # system to typhoons; other disaster types are "future implementations"). This
 # field is a SUB-CLASSIFICATION of that event — which typhoon-related hazard
-# actually hit the barangay — not a standalone disaster-type picker. Stored in
-# the `disaster_type` column. Drives which impact fields the form shows.
+# actually hit the barangay. No longer a user-facing picker (the form dropped
+# it — every typhoon can bring flooding, storm surge, and strong winds
+# together, so every report is filed as "Combined"); kept only as the fixed
+# value stored in the `disaster_type` column and the fallback _apply_report_form
+# uses if that hidden field is ever missing.
 HAZARD_OPTIONS = ["Strong Winds", "Flooding", "Storm Surge", "Combined"]
-HAZARD_ICONS = {
-    "Strong Winds": "wind", "Flooding": "cloud-rain",
-    "Storm Surge": "droplet", "Combined": "cloud-lightning",
-}
-# Hazards where flood-depth / water-level fields are relevant.
+# Hazards where flood-depth / water-level fields are relevant — still real
+# inputs on the form. "Combined" (the only value the form ever submits now)
+# is a member, so this branch is effectively always taken.
 _WATER_HAZARDS = {"flooding", "storm surge", "combined"}
-# Hazards where roofs-damaged / wind-signal fields are relevant.
-_WIND_HAZARDS = {"strong winds", "combined"}
 
 # Severity (flood_level) is NOT picked by hand — the system computes it from
 # the entered impact data (see _compute_severity). These labels/order are used
@@ -195,6 +194,7 @@ NOTIFICATION_LINK_BUILDERS = {
     "allocation_rejected": _relief_monitoring_notification_link,
     "barangay_relief_approved": _relief_monitoring_notification_link,
     "barangay_relief_declined": _damage_report_notification_link,
+    "cswdo_proactive_allocation": _relief_monitoring_notification_link,
     "distribution_status": _relief_monitoring_notification_link,
     "distribution_delivered": _relief_monitoring_notification_link,
     "distribution_receipt_confirmed": _relief_monitoring_notification_link,
@@ -537,10 +537,12 @@ def _report_form_context(barangay, report=None):
         "barangay": barangay,
         "report": report,
         "active_events": active_events,
-        "hazard_options": HAZARD_OPTIONS,
-        "hazard_icons": HAZARD_ICONS,
+        # hazard_options/hazard_icons dropped — no more hazard picker, every
+        # report is fixed to "Combined" (see the form's hidden disaster_type
+        # input + _apply_report_form's HAZARD_OPTIONS[-1] fallback). water_hazards
+        # stays: the form's JS still mirrors _compute_severity's water-depth
+        # scoring branch, which checks membership in it.
         "water_hazards": list(_WATER_HAZARDS),
-        "wind_hazards": list(_WIND_HAZARDS),
         "severity_labels": SEVERITY_LABELS,
         "model_estimate": model_estimate,
         "today": date.today(),
@@ -591,13 +593,11 @@ def _apply_report_form(report):
     else:
         report.flood_depth_m = None
         report.water_level_desc = None
-    # Wind-hazard branch fields
-    if _hazard_lc in _WIND_HAZARDS:
-        report.roofs_damaged = request.form.get("roofs_damaged", type=int) or 0
-        report.wind_signal = request.form.get("wind_signal", "").strip() or None
-    else:
-        report.roofs_damaged = 0
-        report.wind_signal = None
+    # Roofs Damaged / Wind Signal are no longer collected — the form dropped
+    # them (see damage_report_form.html Step 2). Left as inert zero/None on
+    # new reports; existing rows for old reports keep whatever they had.
+    report.roofs_damaged = 0
+    report.wind_signal = None
 
     report.affected_families = request.form.get("affected_families", type=int) or 0
     report.affected_individuals = request.form.get("affected_individuals", type=int) or 0
@@ -948,8 +948,12 @@ def inventory():
 @login_required
 @role_required("barangay_user")
 def inventory_record():
+    """Barangay-side stock write — DISTRIBUTION ONLY. Stock only ever comes IN
+    automatically, via a validated delivery (see _record_barangay_receipt,
+    called from confirm_receipt) — a barangay account has no way to add stock
+    by hand here, only record having handed packs out to residents. (A manual
+    "Adjust Count" add/subtract used to live here too; removed on purpose.)"""
     barangay = _own_barangay_or_404()
-    kind = request.form.get("kind", "distribution")   # distribution | adjustment
     amount = request.form.get("amount", type=int) or 0
     reason = request.form.get("reason", "").strip() or None
 
@@ -960,36 +964,20 @@ def inventory_record():
     inv = BarangayInventory.query.filter_by(
         barangay_id=barangay.barangay_id, item_type="food_pack"
     ).first()
-    if inv is None:
-        inv = BarangayInventory(
-            barangay_id=barangay.barangay_id, item_type="food_pack",
-            item_name="Food Packs", unit="packs", quantity_available=0,
-        )
-        db.session.add(inv)
+    on_hand = inv.quantity_available if inv else 0
+    if inv is None or on_hand < amount:
+        flash(f"You only have {on_hand:,} food packs on hand.", "error")
+        return redirect(url_for("barangay.inventory"))
 
-    if kind == "distribution":
-        delta = -amount
-        if (inv.quantity_available or 0) + delta < 0:
-            flash(f"You only have {inv.quantity_available or 0:,} food packs on hand.", "error")
-            return redirect(url_for("barangay.inventory"))
-        source_type, default_reason = "distribution", "Distributed to residents"
-    else:  # adjustment — allow + or - via sign toggle
-        direction = request.form.get("direction", "add")
-        delta = amount if direction == "add" else -amount
-        if (inv.quantity_available or 0) + delta < 0:
-            flash("That correction would put the count below zero.", "error")
-            return redirect(url_for("barangay.inventory"))
-        source_type, default_reason = "adjustment", "Manual correction"
-
-    inv.quantity_available = (inv.quantity_available or 0) + delta
+    inv.quantity_available = on_hand - amount
     inv.updated_by = current_user.user_id
     db.session.add(BarangayStockLog(
         barangay_id=barangay.barangay_id, item_type="food_pack", item_name="Food Packs",
-        delta=delta, source_type=source_type, reason=reason or default_reason,
+        delta=-amount, source_type="distribution", reason=reason or "Distributed to residents",
         updated_by=current_user.user_id,
     ))
     db.session.commit()
-    flash("Inventory updated.", "success")
+    flash(f"Recorded {amount:,} food packs distributed to residents.", "success")
     return redirect(url_for("barangay.inventory"))
 
 

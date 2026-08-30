@@ -534,6 +534,40 @@ html.sidebar-collapsed .dashboard-main {
 .greeting-banner p { font-size: 13px; opacity: 0.85; }
 .greeting-banner h2 { font-size: 22px; margin: 0 0 12px; font-weight: 700; }
 
+/* Active-event badge, right column of the greeting banner (below the live
+   weather chip) — shown on all three dashboards (PSWDO, CSWDO/MSWDO,
+   barangay) whenever a DisasterEvent is currently active, so no role has to
+   dig into a report or the Weather & Typhoon Watch panel just to notice one
+   is live. */
+.banner-event-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(192, 57, 43, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 20px;
+    width: fit-content;
+}
+
+.banner-event-badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ff6b5c;
+    flex-shrink: 0;
+    animation: bannerEventPulse 1.6s infinite;
+}
+
+@keyframes bannerEventPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 107, 92, 0.6); }
+    70% { box-shadow: 0 0 0 6px rgba(255, 107, 92, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 107, 92, 0); }
+}
+
 .greeting-main { display: flex; flex-direction: column; }
 
 /* Forecast strip in the greeting banner — sits where a manually-logged
@@ -607,7 +641,6 @@ html.sidebar-collapsed .dashboard-main {
     gap: 6px;
     font-size: 13px;
     font-weight: 600;
-    margin-bottom: 6px;
     color: white;
 }
 
@@ -615,21 +648,6 @@ html.sidebar-collapsed .dashboard-main {
 .weather-header-city { opacity: 0.75; font-weight: 600; }
 .weather-header-temp { font-weight: 700; }
 .weather-header-cond { opacity: 0.75; font-weight: 500; }
-
-.weather-header-typhoon {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 20px;
-    white-space: nowrap;
-}
-
-.weather-header-typhoon.is-clear { background: rgba(46, 213, 115, 0.18); color: #7ee8a8; }
-.weather-header-typhoon.is-alert { background: rgba(231, 76, 60, 0.28); color: #ffab9e; }
-.weather-header-typhoon.is-unknown { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.7); }
 
 /* Period filter */
 .dash-period-bar {

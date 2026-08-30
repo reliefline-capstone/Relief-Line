@@ -9,7 +9,7 @@
     </div>
     <nav class="sidebar-nav">
         <a href="{{ url_for('barangay.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} <span class="sidebar-label">Dashboard</span></a>
-        <a href="{{ url_for('barangay.damage_report') }}" class="{{ 'active' if active_page == 'damage_report' }}">{{ icon('clipboard', 18) }} <span class="sidebar-label">Relief Request</span></a>
+        <a href="{{ url_for('barangay.damage_report') }}" class="{{ 'active' if active_page == 'damage_report' }}">{{ icon('clipboard', 18) }} <span class="sidebar-label">Barangay Report</span></a>
         <a href="{{ url_for('barangay.relief_monitoring') }}" class="{{ 'active' if active_page == 'relief_monitoring' }}">{{ icon('truck', 18) }} <span class="sidebar-label">Relief Monitoring</span></a>
         <a href="{{ url_for('barangay.inventory') }}" class="{{ 'active' if active_page == 'inventory' }}">{{ icon('package', 18) }} <span class="sidebar-label">Inventory</span></a>
         <a href="{{ url_for('barangay.reports') }}" class="{{ 'active' if active_page == 'reports' }}">{{ icon('bar-chart', 18) }} <span class="sidebar-label">Reports</span></a>

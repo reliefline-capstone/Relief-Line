@@ -16,6 +16,7 @@ MODULE_LABELS = {
     "allocation_rejected": "Allocation",
     "relief_request_submitted": "Allocation",
     "direct_allocation": "Allocation",
+    "cswdo_proactive_allocation": "Allocation",
     "disaster_event_declared": "Disaster Events",
     "disaster_event_ended": "Disaster Events",
     "distribution_status": "Distribution",

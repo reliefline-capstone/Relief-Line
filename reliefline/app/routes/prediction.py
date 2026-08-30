@@ -103,6 +103,10 @@ def index():
 
     scope_lgus = _scope_lgus()
     is_cswdo = _is_cswdo()
+    # Proactive allocation is a CSWDO/MSWDO action (this page's route is
+    # already cswdo_admin/system_admin-only) — just needs an office on file
+    # to know which warehouse to deduct from and which barangay it may act on.
+    can_allocate = bool(current_user.office)
     municipality_filter = request.args.get("municipality", "all")
     if municipality_filter != "all" and municipality_filter in scope_lgus:
         lgus = [municipality_filter]
@@ -258,6 +262,7 @@ def index():
         event_id=event_id,
         target_lgus=scope_lgus,
         is_cswdo=is_cswdo,
+        can_allocate=can_allocate,
         scope_label=(scope_lgus[0] + " MSWDO/CSWDO") if is_cswdo and scope_lgus else "PSWDO",
         municipality_filter=municipality_filter,
         days_filter=days_filter,

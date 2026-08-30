@@ -18,12 +18,6 @@
     <main class="dashboard-main">
 
 
-        {% set crumbs = [
-            {"label": "Dashboard", "url": url_for('cswdo.dashboard')},
-            {"label": office.office_name + " Warehouse", "url": none, "status": ('Low Stock' if health == 'Low' else health)}
-        ] %}
-        {% include "pswdo/_warehouse_subnav.html" %}
-
         <section class="page-header">
             <form method="GET" class="wh-search-form">
                 <div class="wh-search-wrapper">
@@ -52,7 +46,11 @@
                     <div class="wh-info-row"><span>Email</span><strong>{{ office.email or '—' }}</strong></div>
                     <div class="wh-info-row"><span>Storage Capacity</span><strong>{{ "{:,}".format(capacity) }} Packs</strong></div>
                     <div class="wh-info-row"><span>Food Packs On Hand</span><strong>{{ "{:,}".format(food_pack_qty) }} Packs</strong></div>
-                    <div class="wh-info-row"><span>Burn Rate</span><strong>{% if burn %}~{{ burn|int }} packs/day (active event){% else %}No active event{% endif %}</strong></div>
+                    <div class="wh-info-row"><span>Burn Rate</span><strong>
+                        {%- if burn %}~{{ burn|int }} packs/day (active event)
+                        {%- elif has_active_event %}No affected-families data yet
+                        {%- else %}No active event{% endif -%}
+                    </strong></div>
                     <div class="wh-info-row"><span>Days of Supply</span><strong>{% if days_remaining is not none %}{{ days_remaining|int }} days at current rate{% else %}—{% endif %}</strong></div>
                 </div>
                 <p class="form-hint" style="margin-top:12px;">This office manages its own municipal stock. Provincial replenishment / pre-positioning transfers are coordinated with the PSWDO.</p>
@@ -60,7 +58,13 @@
 
             <aside class="wh-side-col">
                 <section class="panel">
-                    <div class="panel-header"><h3>Capacity</h3></div>
+                    <div class="panel-header">
+                        <h3>Capacity</h3>
+                        <span class="wh-breadcrumb-status">
+                            <i class="wh-status-dot wh-status-dot-{{ health|lower }}"></i>
+                            {{ 'Low Stock' if health == 'Low' else health }}
+                        </span>
+                    </div>
                     <div class="wh-capacity-ring-wrapper">
                         <svg width="140" height="140" viewBox="0 0 140 140">
                             <circle cx="70" cy="70" r="58" fill="none" stroke="#eee" stroke-width="12"/>

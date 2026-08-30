@@ -9,7 +9,7 @@
     </div>
     <nav class="sidebar-nav">
         <a href="{{ url_for('cswdo.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} <span class="sidebar-label">Dashboard</span></a>
-        <a href="{{ url_for('cswdo.damage_assessment') }}" class="{{ 'active' if active_page == 'damage_assessment' }}">{{ icon('clipboard', 18) }} <span class="sidebar-label">Relief Requests</span></a>
+        <a href="{{ url_for('cswdo.damage_assessment') }}" class="{{ 'active' if active_page == 'damage_assessment' }}">{{ icon('clipboard', 18) }} <span class="sidebar-label">Barangay Reports</span></a>
         <a href="{{ url_for('cswdo.deliveries') }}" class="{{ 'active' if active_page == 'deliveries' }}">{{ icon('truck', 18) }} <span class="sidebar-label">Deliveries</span></a>
         <a href="{{ url_for('cswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('download', 18) }} <span class="sidebar-label">Stock Requests</span></a>
         <a href="{{ url_for('prediction.index') }}" class="{{ 'active' if active_page == 'predictive_analytics' }}">{{ icon('trending-up', 18) }} <span class="sidebar-label">Predictive Analytics</span></a>

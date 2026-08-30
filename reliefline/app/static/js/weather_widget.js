@@ -297,10 +297,19 @@
     }
 
     // --- Compact header chip (greeting banner) -----------------------------
-    // A one-line "conditions + typhoon status" glance, distinct from the
-    // full multi-city panel above. Uses the first city in the endpoint's
-    // response — the viewer's own LGU for CSWDO/barangay, or the first of
-    // the three target LGUs for PSWDO's province-wide view.
+    // A one-line live-conditions glance, distinct from the full multi-city
+    // panel above. Uses the first city in the endpoint's response — the
+    // viewer's own LGU for CSWDO/barangay, or the first of the three target
+    // LGUs for PSWDO's province-wide view.
+    //
+    // No typhoon-watch line here on purpose (used to show GDACS's raw "is
+    // there any cyclone in the PAR" read, e.g. "No active cyclone in the
+    // PAR") — it duplicated the greeting banner's own Active Event badge
+    // (server-rendered from this office's actual declared DisasterEvent,
+    // see app.routes.cswdo/barangay dashboard()), was a second, less
+    // authoritative signal for the same thing, and ate up header space for
+    // it. PSWDO's fuller Weather & Typhoon Watch panel further down the page
+    // still carries the live GDACS read for those who want it.
 
     function renderHeaderChip(container, data) {
         var city = (data.cities || [])[0];
@@ -317,24 +326,7 @@
             conditionsHtml = svgIcon("cloud", 16) + '<span class="weather-header-cond">Weather unavailable</span>';
         }
 
-        var watch = data.typhoon_watch;
-        var typhoonHtml;
-        if (!watch || !watch.available) {
-            typhoonHtml = '<span class="weather-header-typhoon is-unknown">' + svgIcon("alert-triangle", 12) + ' Typhoon status unavailable</span>';
-        } else if (watch.active) {
-            var first = watch.storms[0] || {};
-            var more = watch.storms.length > 1 ? " (+" + (watch.storms.length - 1) + " more)" : "";
-            typhoonHtml = (
-                '<span class="weather-header-typhoon is-alert">' + svgIcon("alert-triangle", 12) +
-                ' Tropical Cyclone Watch: ' + escapeHtml(first.name || "Unnamed system") + escapeHtml(more) + '</span>'
-            );
-        } else {
-            typhoonHtml = '<span class="weather-header-typhoon is-clear">' + svgIcon("check-circle", 12) + ' No active cyclone in the PAR</span>';
-        }
-
-        container.innerHTML = (
-            '<div class="weather-header-conditions">' + conditionsHtml + '</div>' + typhoonHtml
-        );
+        container.innerHTML = '<div class="weather-header-conditions">' + conditionsHtml + '</div>';
     }
 
     function renderHeaderError(container) {

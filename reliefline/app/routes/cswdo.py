@@ -88,6 +88,7 @@ def _cswdo_barangay_relief_link(log):
 CSWDO_NOTIFICATION_LINK_BUILDERS = {
     "allocation_approved": _cswdo_allocation_link,
     "allocation_rejected": _cswdo_allocation_link,
+    "cswdo_proactive_allocation": _cswdo_allocation_link,
     "barangay_relief_approved": _cswdo_barangay_relief_link,
     "barangay_relief_declined": lambda log: url_for("cswdo.damage_assessment", tab="declined"),
     "relief_request_submitted": lambda log: _cswdo_batch_tracking_link(log.batch_id) or url_for("cswdo.relief_requests"),
@@ -538,6 +539,111 @@ def _fulfil_barangay_request(report, quantity, office):
     return alloc, None
 
 
+def _push_proactive_allocation(barangay, quantity, office, event, remarks):
+    """CSWDO/MSWDO pushing food packs to a barangay proactively — no
+    BarangayReport behind it (source='cswdo_direct'). Same warehouse-check +
+    AllocationRecord + DistributionRecord shape as _fulfil_barangay_request;
+    only the provenance differs. predicted_quantity is recorded for
+    reference/traceability, but allocated_quantity is always whatever the
+    CSWDO admin actually entered on the form — the model never decides the
+    number on its own (manuscript Ch.2: predicted output is decision support,
+    not an automatic final allocation)."""
+    fp = _own_food_pack_inventory()
+    available = fp.quantity_available if fp else 0
+    if quantity > available:
+        return None, (
+            f"{office.office_name} only has {available:,} food packs on hand — "
+            f"request a stock replenishment from PSWDO or allocate a smaller quantity."
+        )
+
+    alloc = AllocationRecord(
+        barangay_id=barangay.barangay_id, office_id=office.office_id,
+        predicted_quantity=ml_predict.predict_quantity(barangay) or 0,
+        allocated_quantity=quantity,
+        historical_allocation=ml_predict.historical_allocation_for(barangay.barangay_id),
+        allocation_date=date.today(), event_id=event.event_id,
+        status="approved", fulfilling_office_id=office.office_id,
+        source="cswdo_direct", barangay_report_id=None,
+        created_by=current_user.user_id, decided_by=current_user.user_id,
+        remarks=remarks or None,
+    )
+    db.session.add(alloc)
+    db.session.flush()
+
+    dist = DistributionRecord(
+        barangay_id=barangay.barangay_id, allocation_id=alloc.allocation_id,
+        quantity_released=quantity, distribution_date=date.today(),
+        dispatch_status="preparing", submitted_by=current_user.user_id,
+    )
+    db.session.add(dist)
+
+    fp.quantity_available -= quantity
+    fp.updated_by = current_user.user_id
+    db.session.add(WarehouseStockLog(
+        office_id=office.office_id, item_type="food_pack", item_name="Food Packs",
+        delta=-quantity,
+        reason=f"Proactively allocated to Brgy. {barangay.barangay_name} ({event.event_name})",
+        source_type="standard", updated_by=current_user.user_id,
+    ))
+    db.session.flush()
+    return alloc, None
+
+
+@cswdo_bp.route("/proactive-allocate", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def proactive_allocate():
+    """Push food packs to a barangay ahead of any Relief Request — the
+    manuscript's pre-positioning phase applied at the barangay tier, driven
+    by the Predictive Analytics ranking (see prediction.index / _barangay_
+    snapshot's 'model'-sourced rows). Scoped to an active disaster event on
+    purpose, so this stays typhoon-related pre-positioning rather than an
+    everyday bypass of the request workflow."""
+    office = current_user.office
+    if not office:
+        flash("No office on file for this account.", "error")
+        return redirect(url_for("prediction.index"))
+
+    barangay_id = request.form.get("barangay_id", type=int)
+    barangay = Barangay.query.get(barangay_id) if barangay_id else None
+    if not barangay or barangay.city_municipality != office.area_covered:
+        flash("Select a barangay in your own LGU.", "error")
+        return redirect(url_for("prediction.index"))
+
+    event_id = request.form.get("event_id", type=int)
+    event = DisasterEvent.query.get(event_id) if event_id else None
+    if not event or event.status != "active":
+        flash("Select an active disaster event before allocating proactively.", "error")
+        return redirect(url_for("prediction.index"))
+
+    quantity = request.form.get("quantity", type=int)
+    if not quantity or quantity <= 0:
+        flash("Enter the number of food packs to allocate.", "error")
+        return redirect(url_for("prediction.index", event_id=event_id))
+
+    remarks = request.form.get("remarks", "").strip()
+    if not remarks:
+        flash("Add a short justification for this proactive allocation (no barangay request backs it, so this is the record of why).", "error")
+        return redirect(url_for("prediction.index", event_id=event_id))
+
+    alloc, error = _push_proactive_allocation(barangay, quantity, office, event, remarks)
+    if error:
+        flash(error, "error")
+        return redirect(url_for("prediction.index", event_id=event_id))
+
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="cswdo_proactive_allocation",
+        description=f"{office.office_name} proactively allocated {quantity:,} food packs to "
+                    f"Brgy. {barangay.barangay_name} ({event.event_name}) — model estimate was "
+                    f"{alloc.predicted_quantity:,}",
+        office_id=office.office_id, barangay_id=barangay.barangay_id,
+        allocation_id=alloc.allocation_id,
+    ))
+    db.session.commit()
+    flash(f"{quantity:,} food packs proactively allocated to Brgy. {barangay.barangay_name}.", "success")
+    return redirect(url_for("prediction.index", event_id=event_id))
+
+
 @cswdo_bp.route("/damage-assessment/<int:report_id>/approve", methods=["POST"])
 @login_required
 @role_required("cswdo_admin", "system_admin")
@@ -724,8 +830,10 @@ def deliveries():
     barangay_ids = [b.barangay_id for b in lgu_barangays]
 
     q = DistributionRecord.query.filter(DistributionRecord.barangay_id.in_(barangay_ids)) if barangay_ids else DistributionRecord.query.filter(db.false())
-    # Barangay-tier deliveries only (this office fulfilled them itself).
-    q = q.join(AllocationRecord).filter(AllocationRecord.source == "barangay_request")
+    # Barangay-tier deliveries only (this office fulfilled them itself) —
+    # covers both a barangay's own Relief Request and a proactive,
+    # model-driven push with no request behind it.
+    q = q.join(AllocationRecord).filter(AllocationRecord.source.in_(("barangay_request", "cswdo_direct")))
     all_recs = q.order_by(DistributionRecord.distribution_date.desc()).all()
 
     def _counts(status):
@@ -819,7 +927,6 @@ def confirm_issuance(distribution_id):
 
     rec.issued_by = current_user.user_id
     rec.issued_at = datetime.utcnow()
-    rec.issuance_note = request.form.get("issuance_note", "").strip() or None
     rec.dispatch_status = "dispatched"
     rec.departure_time = datetime.now().time()
 
@@ -1110,9 +1217,14 @@ def receive_transfer(transfer_id):
     ))
     db.session.commit()
     flash(f"Received {transfer.quantity:,} food packs. Warehouse updated.", "success")
-    dest = url_for("cswdo.relief_requests", tab="tracking", batch_id=transfer.batch_id) if transfer.batch_id \
+    # Same request.referrer-first pattern as the two early-exit branches above —
+    # "Confirm Receipt" is submitted from both this page's Municipal Warehouse
+    # view and the Relief Requests tracking tab, so send the admin back to
+    # whichever one they actually clicked it from, instead of always bouncing
+    # to Relief Requests.
+    fallback = url_for("cswdo.relief_requests", tab="tracking", batch_id=transfer.batch_id) if transfer.batch_id \
         else url_for("cswdo.municipal_inventory")
-    return redirect(dest)
+    return redirect(request.referrer or fallback)
 
 
 @cswdo_bp.route("/relief-requests/export")
@@ -1627,7 +1739,7 @@ def municipal_inventory():
         office=office, food_pack_qty=food_pack_qty, capacity=capacity, pct=pct, health=health,
         burn=burn, days_remaining=days_remaining, inventory_summary=rows, rows=rows,
         movements=movements, search_query=search_query, incoming_transfers=incoming,
-        stock_in=stock_in, stock_out=stock_out,
+        stock_in=stock_in, stock_out=stock_out, has_active_event=bool(active_events),
     )
 
 

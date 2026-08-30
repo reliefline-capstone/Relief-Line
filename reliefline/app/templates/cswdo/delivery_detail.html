@@ -27,7 +27,8 @@
             <div>
                 <h2>{{ ref }}</h2>
                 <p>Brgy. {{ rec.barangay.barangay_name }}
-                    {%- if report %} · Relief Request {{ report.ref }}{% endif %}
+                    {%- if report %} · Barangay Report {{ report.ref }}
+                    {%- elif alloc and alloc.source == 'cswdo_direct' %} · Proactive Allocation (no barangay request){% endif %}
                     · {{ "{:,}".format(rec.quantity_released) }} food packs</p>
             </div>
         </div>
@@ -56,6 +57,9 @@
                     {% if report %}
                     <div><span>Barangay Requested</span><strong>{{ "{:,}".format(report.requested_food_packs or 0) }}</strong></div>
                     <div><span>Assessed Severity</span><strong><span class="badge-priority tier-{{ priority.tier }}">{{ priority.label }}</span></strong></div>
+                    {% elif alloc and alloc.source == 'cswdo_direct' %}
+                    <div><span>Model Estimate</span><strong>~{{ "{:,}".format(alloc.predicted_quantity or 0) }} packs</strong> <span class="rd-sub">decision support</span></div>
+                    {% if alloc.remarks %}<div><span>Justification</span><strong>{{ alloc.remarks }}</strong></div>{% endif %}
                     {% endif %}
                 </div>
             </section>
@@ -100,10 +104,6 @@
             {% elif can_issue %}
             <form method="POST" action="{{ url_for('cswdo.confirm_issuance', distribution_id=rec.distribution_id) }}" class="settings-form">
                 <p class="form-hint">Confirm the {{ "{:,}".format(rec.quantity_released) }} food packs have been released from your warehouse and handed to transport.</p>
-                <div class="form-row">
-                    <label for="issuance_note">Issuance note (optional)</label>
-                    <input type="text" name="issuance_note" id="issuance_note" placeholder="e.g. Released to Brgy. truck, driver J. Cruz">
-                </div>
                 <button type="submit" class="btn-decision btn-approve-full">{{ icon('package', 16, 'white') }} Confirm Issuance</button>
             </form>
             {% else %}

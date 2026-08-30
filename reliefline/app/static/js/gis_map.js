@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<button type="button" class="btn-decision btn-partial dd-full-width" data-external="distribution" data-lgu="' + escapeHtml(lgu) + '">' + ICON.arrow + ' View Distribution</button>';
     }
     function reliefButtonHtml(lgu) {
-        return '<button type="button" class="btn-outline dd-full-width" data-external="relief" data-lgu="' + escapeHtml(lgu) + '" style="justify-content:center; margin-top:10px;">' + ICON.clipboard + ' View Relief Request</button>';
+        return '<button type="button" class="btn-outline dd-full-width" data-external="relief" data-lgu="' + escapeHtml(lgu) + '" style="justify-content:center; margin-top:10px;">' + ICON.clipboard + ' View Barangay Report</button>';
     }
 
     function renderOverviewPanel() {
@@ -650,7 +650,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderBreadcrumb() {
         var el = document.getElementById('gis-breadcrumb');
         var parts = [];
-        parts.push({ label: 'Province', nav: 'overview' });
+        // "Province" is province-wide oversight — a PSWDO/system_admin
+        // concern only (see IS_MUNI_ONLY above). A CSWDO/MSWDO account is
+        // already locked to its own single LGU server-side, so this crumb
+        // stays as a plain, non-clickable label for them instead of a link
+        // back to a province overview they have no business opening.
+        parts.push({ label: 'Province', nav: 'overview', disabled: GIS_CONFIG.role === 'cswdo_admin' });
         if (state.lgu) {
             parts.push({ label: state.lgu, nav: 'municipality', lgu: state.lgu });
         }
@@ -663,10 +668,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         el.innerHTML = parts.map(function (p, i) {
             var isLast = i === parts.length - 1;
-            if (isLast) return '<span class="gis-crumb-current">' + escapeHtml(p.label) + '</span>';
+            var sep = isLast ? '' : '<span class="gis-crumb-sep">/</span>';
+            if (isLast || p.disabled) return '<span class="gis-crumb-current">' + escapeHtml(p.label) + '</span>' + sep;
             var attrs = 'data-nav="' + p.nav + '"';
             if (p.lgu) attrs += ' data-lgu="' + escapeHtml(p.lgu) + '"';
-            return '<span class="gis-crumb-link" ' + attrs + '>' + escapeHtml(p.label) + '</span><span class="gis-crumb-sep">/</span>';
+            return '<span class="gis-crumb-link" ' + attrs + '>' + escapeHtml(p.label) + '</span>' + sep;
         }).join('');
     }
 
