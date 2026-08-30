@@ -67,7 +67,7 @@
             </div>
         </section>
 
-        <div class="main-grid" style="margin-top:16px;">
+        <div class="main-grid drv-grid" style="margin-top:16px;">
             <section class="panel">
                 <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Report Information</h3></div>
                 <div class="review-row"><span>Report ID</span><strong>{{ report.ref }}</strong></div>
@@ -82,7 +82,7 @@
                 <div class="review-row"><span>Severity</span><strong>{{ priority_by_status.get(report.flood_level, {}).get('label', '—') }}</strong></div>
             </section>
 
-            <div>
+            <div class="drv-side">
                 <section class="panel">
                     <div class="panel-header"><h3>{{ icon('users', 18, '#0f2547') }} Damage Summary</h3></div>
                     <div class="info-grid">
@@ -95,7 +95,7 @@
                     </div>
                 </section>
 
-                <section class="panel" style="margin-top:16px;">
+                <section class="panel">
                     <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Needs</h3></div>
                     <div class="review-row"><span>Drinking Water (cases)</span><strong>{{ report.drinking_water_cases }}</strong></div>
                     <div class="review-row"><span>Hygiene Kits</span><strong>{{ report.hygiene_kits_est }}</strong></div>

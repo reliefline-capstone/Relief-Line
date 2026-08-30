@@ -422,3 +422,17 @@
     padding: 11px; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .dm-confirm-btn:hover { background: #196f3d; }
+
+/* Damage report view — the left "Report Information" panel and the right
+   column (Damage Summary + Relief Needs) should bottom-align as an
+   equal-height pair. .main-grid defaults to align-items: start, so each
+   column would otherwise size to its own content and end at a different
+   point. */
+.drv-grid { align-items: stretch; }
+.drv-grid > .panel { display: flex; flex-direction: column; }
+.drv-side { display: flex; flex-direction: column; gap: 16px; }
+.drv-side > .panel:last-child { flex: 1; }
+@media (max-width: 1200px) {
+    .drv-grid { align-items: start; }
+    .drv-side > .panel:last-child { flex: none; }
+}

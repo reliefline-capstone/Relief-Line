@@ -54,6 +54,8 @@
 
         <div class="main-grid">
 
+            <div class="gis-map-col">
+
             <section class="panel gis-map-panel">
                 <div class="gis-search-bar">
                     <button type="button" class="gis-search-icon-btn" id="gis-search-btn" title="Search">{{ icon('search', 16) }}</button>
@@ -76,35 +78,37 @@
                 </div>
             </section>
 
+            <section class="panel wh-table-panel" style="margin-top:16px;">
+                <div class="panel-header">
+                    <h3>Active Distribution Routes</h3>
+                    <span class="badge-count" id="routes-count">0</span>
+                </div>
+                <p class="empty-note" style="padding:0 20px 10px;">Click a route to draw its actual road path on the map, with distance and estimated travel time.</p>
+                <div id="gis-route-detail" class="gis-route-detail" hidden></div>
+                <table class="wh-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>ROUTE</th>
+                            <th>PACKS</th>
+                            <th>STATUS</th>
+                            <th>ETA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="routes-table-body">
+                        <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            </div>
+
             <aside class="wh-side-col">
                 <nav class="gis-breadcrumb" id="gis-breadcrumb"></nav>
                 <div id="gis-info-panel"></div>
             </aside>
 
         </div>
-
-        <section class="panel wh-table-panel" style="margin-top:16px;">
-            <div class="panel-header">
-                <h3>Active Distribution Routes</h3>
-                <span class="badge-count" id="routes-count">0</span>
-            </div>
-            <p class="empty-note" style="padding:0 20px 10px;">Click a route to draw its actual road path on the map, with distance and estimated travel time.</p>
-            <div id="gis-route-detail" class="gis-route-detail" hidden></div>
-            <table class="wh-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>ROUTE</th>
-                        <th>PACKS</th>
-                        <th>STATUS</th>
-                        <th>ETA</th>
-                    </tr>
-                </thead>
-                <tbody id="routes-table-body">
-                    <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Loading…</td></tr>
-                </tbody>
-            </table>
-        </section>
 
     </main>
 </div>

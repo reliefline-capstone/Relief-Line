@@ -17,7 +17,6 @@
     font-weight: 600;
 }
 
-.rd-breadcrumb a svg { transform: rotate(180deg); }
 .rd-crumb-sep { color: #c3cad6; }
 
 /* Layout */

@@ -130,16 +130,18 @@
         {% elif tab == 'tracking' %}
         {% if selected %}
         {% set t = selected.transfer %}
-        <div class="rr-track-card rr-status-banner-{{ selected.display_status }}">
-            <div>
-                <strong>{{ selected.ref }} · {{ status_labels.get(selected.display_status, selected.display_status) }}</strong>
-                <span>{{ "{:,}".format(selected.requested_food_packs) }} requested{% if selected.approved_food_packs %} · {{ "{:,}".format(selected.approved_food_packs) }} approved{% endif %}</span>
+        <div class="rr-track-card rr-track-{{ selected.display_status }}">
+            <div class="rr-track-head">
+                <div class="rr-track-head-title">
+                    <strong>{{ selected.ref }}</strong>
+                    <span class="rr-track-status">{{ status_labels.get(selected.display_status, selected.display_status) }}</span>
+                </div>
+                <span class="rr-track-figures">{{ "{:,}".format(selected.requested_food_packs) }} requested{% if selected.approved_food_packs %} · {{ "{:,}".format(selected.approved_food_packs) }} approved{% endif %}</span>
             </div>
-            {% if selected.trackable is not defined %}{% endif %}
-        </div>
-        <div class="rr-handler-row">
-            <div><span>Current Handler</span><strong>{% if selected.display_status == 'pending' %}PSWDO Office{% elif selected.display_status == 'fulfilled' %}Completed{% else %}Warehouse / Logistics{% endif %}</strong></div>
-            <div><span>Decision</span><strong>{{ selected.decision_remarks or ('Awaiting PSWDO' if selected.display_status == 'pending' else '—') }}</strong></div>
+            <div class="rr-handler-row">
+                <div><span>Current Handler</span><strong>{% if selected.display_status == 'pending' %}PSWDO Office{% elif selected.display_status == 'fulfilled' %}Completed{% else %}Warehouse / Logistics{% endif %}</strong></div>
+                <div><span>Decision</span><strong>{{ selected.decision_remarks or ('Awaiting PSWDO' if selected.display_status == 'pending' else '—') }}</strong></div>
+            </div>
         </div>
         {% if t %}
         <section class="panel dd-stepper-panel">

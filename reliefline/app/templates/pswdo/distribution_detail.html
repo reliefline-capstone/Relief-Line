@@ -21,7 +21,7 @@
 
 
         <div class="rd-breadcrumb">
-            <a href="{{ url_for('pswdo.distribution') }}">{{ icon('arrow-right', 14) }} Distribution Operations</a>
+            <a href="{{ url_for('pswdo.distribution') }}">{{ icon('arrow-left', 14) }} Distribution Operations</a>
             <span class="rd-crumb-sep">/</span>
             <span>D-{{ rec.distribution_date.year }}-{{ '%03d'|format(rec.distribution_id) }}</span>
             <span class="badge-status badge-status-{{ rec.dispatch_status }}"><i class="priority-dot"></i> {{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}</span>
