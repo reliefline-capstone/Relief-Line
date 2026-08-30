@@ -287,7 +287,7 @@ def dashboard():
     my_reports = _own_submitted_reports(barangay.barangay_id)
     pending_reports = [r for r in my_reports if r.status in ("pending", "returned")]
     returned_reports = [r for r in my_reports if r.status == "returned"]
-    recent_reports = my_reports[:2]
+    recent_reports = my_reports[:4]
 
     # Food packs allocated to this barangay for the active event
     food_packs_allocated = 0

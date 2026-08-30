@@ -878,6 +878,15 @@ html.sidebar-collapsed .dashboard-main {
 .dash-grid-even .map-placeholder-box {
     flex: 1;
 }
+/* A row-list panel (Recent Damage Reports / Relief Deliveries): when its
+   sibling is taller, take the slack and space the rows out evenly instead of
+   top-packing them and leaving a block of empty space at the bottom. */
+.dash-grid-even .dash-panel-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
 
 .panel {
     background: white;

@@ -46,12 +46,12 @@
         </section>
 
         <!-- Stat cards -->
-        <section class="stat-cards">
+        <section class="stat-cards stat-cards-4">
             <div class="stat-card">
                 <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(affected_families) }}</span>
                 <span class="stat-label">Affected Families</span>
-                <span class="stat-sub badge-priority tier-{{ priority.tier }}" style="margin-top:4px;">{{ priority.label }}</span>
+                <span class="stat-sub badge-priority tier-{{ priority.tier }}" style="margin-top:4px; align-self:flex-start;">{{ priority.label }}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
@@ -141,13 +141,14 @@
         </section>
 
         <!-- Recent Damage Reports + Relief Deliveries -->
-        <div class="main-grid" style="margin-top: 16px;">
+        <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
             <section class="panel">
                 <div class="panel-header">
                     <h3>Recent Damage Reports</h3>
                     <a href="{{ url_for('barangay.damage_report') }}" class="link-manage">View All →</a>
                 </div>
+                <div class="dash-panel-list">
                 {% for r in recent_reports %}
                 <div class="barangay-report-row">
                     <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}">
@@ -159,6 +160,7 @@
                 {% else %}
                 <p class="empty-note">No damage reports submitted yet.</p>
                 {% endfor %}
+                </div>
             </section>
 
             <section class="panel">
@@ -166,6 +168,7 @@
                     <h3>Relief Deliveries</h3>
                     <a href="{{ url_for('barangay.relief_monitoring') }}" class="link-manage">View All →</a>
                 </div>
+                <div class="dash-panel-list">
                 {% for d in my_distributions %}
                 <div class="request-card">
                     <div class="request-top">
@@ -187,6 +190,7 @@
                 {% else %}
                 <p class="empty-note">No relief deliveries recorded yet.</p>
                 {% endfor %}
+                </div>
             </section>
 
         </div>
