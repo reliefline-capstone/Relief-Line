@@ -51,7 +51,7 @@
                 <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(affected_families) }}</span>
                 <span class="stat-label">Affected Families</span>
-                <span class="stat-sub badge-priority tier-{{ priority.tier }}" style="margin-top:4px; align-self:flex-start;">{{ priority.label }}</span>
+                <span class="stat-sub">this typhoon event</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
@@ -76,9 +76,7 @@
         <!-- Current Standing -->
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
-                <h3>{{ icon('users', 18, '#0f2547') }} Current Standing
-                    <span class="badge-priority tier-{{ priority.tier }}" style="margin-left:8px;">{{ priority.label }}</span>
-                </h3>
+                <h3>{{ icon('users', 18, '#0f2547') }} Current Standing</h3>
             </div>
             {% if not primary_event %}
             <p class="empty-note">There is no active typhoon event right now.</p>
@@ -86,7 +84,7 @@
             <div class="info-grid">
                 <div class="info-box">
                     <span>Affected Families</span>
-                    <strong>{{ "{:,}".format(status_row.affected_families if status_row else 0) }}</strong>
+                    <strong>{{ "{:,}".format(affected_families) }}</strong>
                 </div>
                 <div class="info-box">
                     <span>Affected Individuals</span>
@@ -102,8 +100,12 @@
                 </div>
             </div>
             <p class="form-hint" style="margin-top:12px;">
-                These figures come from your latest verified Damage Report for this event.
-                To update them, submit a new <a href="{{ url_for('barangay.new_damage_report') }}">Damage Report</a>.
+                {% if standing_verified %}
+                These figures are from your latest Barangay Report for this event, as reviewed by MSWDO/CSWDO.
+                {% else %}
+                These figures are from your latest submitted Barangay Report and are still awaiting MSWDO/CSWDO review.
+                {% endif %}
+                To update them, submit a new <a href="{{ url_for('barangay.new_damage_report') }}">Barangay Report</a>.
             </p>
             {% endif %}
         </section>
@@ -140,12 +142,12 @@
             </p>
         </section>
 
-        <!-- Recent Damage Reports + Relief Deliveries -->
+        <!-- Recent Barangay Reports + Relief Deliveries -->
         <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
             <section class="panel">
                 <div class="panel-header">
-                    <h3>Recent Damage Reports</h3>
+                    <h3>Recent Barangay Reports</h3>
                     <a href="{{ url_for('barangay.damage_report') }}" class="link-manage">View All →</a>
                 </div>
                 <div class="dash-panel-list">
@@ -158,7 +160,7 @@
                     <span class="badge-status status-{{ r.status }}">{{ report_status_labels.get(r.status, r.status) }}</span>
                 </div>
                 {% else %}
-                <p class="empty-note">No damage reports submitted yet.</p>
+                <p class="empty-note">No barangay reports submitted yet.</p>
                 {% endfor %}
                 </div>
             </section>

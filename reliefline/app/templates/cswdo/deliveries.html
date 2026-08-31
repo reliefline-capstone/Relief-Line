@@ -66,7 +66,7 @@
         <section class="panel rr-table-panel">
             <table class="rr-table">
                 <thead>
-                    <tr><th>Delivery ID</th><th>Barangay Report</th><th>Barangay</th><th>Packs</th><th>Status</th><th>Progress</th><th></th></tr>
+                    <tr><th>Delivery ID</th><th>Barangay Report</th><th>Typhoon Event</th><th>Barangay</th><th>Packs</th><th>Status</th><th>Progress</th><th></th></tr>
                 </thead>
                 <tbody>
                     {% for row in rows %}
@@ -74,6 +74,7 @@
                     <tr>
                         <td>{{ row.ref }}</td>
                         <td>{{ row.request_ref or '—' }}</td>
+                        <td>{{ row.event or '—' }}</td>
                         <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
                         <td><strong>{{ "{:,}".format(r.quantity_released) }}</strong></td>
                         <td>
@@ -88,7 +89,7 @@
                         <td><a href="{{ url_for('cswdo.delivery_detail', distribution_id=r.distribution_id) }}" class="btn-view-sm">{{ icon('eye', 13) }} View</a></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="7"><p class="empty-note" style="padding:16px 0;">No deliveries yet. Approve a relief request to start one.</p></td></tr>
+                    <tr><td colspan="8"><p class="empty-note" style="padding:16px 0;">No deliveries yet. Approve a relief request to start one.</p></td></tr>
                     {% endfor %}
                 </tbody>
             </table>

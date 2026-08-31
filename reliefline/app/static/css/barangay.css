@@ -78,16 +78,22 @@
 
 /* Damage-report status badges not otherwise shared by dashboard.css
    (that file only defines AllocationRecord's status vocabulary) */
-.badge-status.status-verified { background: #e8faf0; color: #1e8449; }
-.badge-status.status-returned { background: #fdecea; color: #c0392b; }
+.badge-status.status-pending { background: #fef5e3; color: #d68910; }
+.badge-status.status-approved,
+.badge-status.status-fulfilled { background: #e8faf0; color: #1e8449; }
+.badge-status.status-returned,
+.badge-status.status-declined { background: #fdecea; color: #c0392b; }
 
 /* Same colors, keyed for the .rr-table / dot-badge convention (relief_requests.css)
    instead — used wherever a damage report status renders inside an .rr-table row
-   (Reports, Affected Families, Damage Report tables) so those tables can reuse the
-   exact same badge-status-{status} + priority-dot markup as the PSWDO/CSWDO tables. */
+   (Reports, Damage Report tables) so those tables can reuse the exact same
+   badge-status-{status} + priority-dot markup as the PSWDO/CSWDO tables. */
 .badge-status-draft { background: #f0f2f6; color: #8a94a6; }
-.badge-status-verified { background: #e8faf0; color: #1e8449; }
-.badge-status-returned { background: #fdecea; color: #c0392b; }
+.badge-status-pending { background: #fef5e3; color: #d68910; }
+.badge-status-approved,
+.badge-status-fulfilled { background: #e8faf0; color: #1e8449; }
+.badge-status-returned,
+.badge-status-declined { background: #fdecea; color: #c0392b; }
 
 /* Active Alerts panel (Dashboard + Notifications) */
 .alert-row {
@@ -317,9 +323,11 @@
 .timeline-node.done .timeline-dot { background: #2c5aa0; border-color: #2c5aa0; color: white; }
 .timeline-node.current-verified .timeline-dot { background: #1e8449; border-color: #1e8449; color: white; }
 .timeline-node.current-returned .timeline-dot { background: #fdecea; border-color: #c0392b; color: #c0392b; }
+.timeline-node.current-declined .timeline-dot { background: #c0392b; border-color: #c0392b; color: white; }
 .timeline-node.current-pending .timeline-dot { background: #fef5e3; border-color: #d68910; color: #d68910; }
 .timeline-label { font-size: 12px; font-weight: 600; text-align: center; }
-.timeline-node.current-returned .timeline-label { color: #c0392b; }
+.timeline-node.current-returned .timeline-label,
+.timeline-node.current-declined .timeline-label { color: #c0392b; }
 .timeline-node.current-verified .timeline-label { color: #1e8449; }
 .timeline-sub { font-size: 10.5px; color: #8a94a6; }
 .timeline-line { flex: 1; height: 2px; background: #e5e9f0; margin-top: 14px; }

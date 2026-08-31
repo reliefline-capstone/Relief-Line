@@ -465,6 +465,24 @@
 
 .wh-movement-row:last-child { border-bottom: none; }
 
+.wh-movement-more { border-top: 1px solid #f0f2f6; }
+.wh-movement-more > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 0 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2c5aa0;
+    user-select: none;
+}
+.wh-movement-more > summary::-webkit-details-marker { display: none; }
+.wh-movement-more > summary:hover { color: #1e3a6b; }
+.wh-movement-more[open] > summary { margin-bottom: 4px; }
+.wh-movement-more .wh-movement-row:first-of-type { border-top: none; }
+
 .wh-movement-icon {
     flex-shrink: 0;
     width: 28px; height: 28px;

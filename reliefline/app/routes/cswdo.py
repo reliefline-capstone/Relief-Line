@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import os
+import shutil
 import zipfile
 from datetime import datetime, date
 
@@ -12,7 +13,6 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.utils.decorators import role_required
 from app.models.barangay import Barangay
-from app.models.office import Office
 from app.models.warehouse import WarehouseInventory
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
@@ -31,15 +31,12 @@ from app.ml import predict as ml_predict
 from app.routes.pswdo import (
     _healthy_threshold, _moderate_threshold, DISPATCH_STATUS_LABELS,
     ROUTE_PROGRESS_BY_STATUS, DISPATCH_STEPS, STEP_LABELS,
-    PRIORITY_BY_STATUS, DEFAULT_PRIORITY,
     NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
     _item_status, _priority_info, _lgu_burn_rate, _recent_stock_movements,
     _gis_scope_lgus, _gis_config,
     _parse_stock_source, _slugify, _full_stock_movements,
-    ALLOWED_PROOF_EXTENSIONS,
 )
 from app.models.warehouse import WarehouseStockLog
-from app.models.barangay_inventory import BarangayInventory, BarangayStockLog
 
 # CSWDO's own link targets for notification "View" buttons — deliberately NOT
 # the pswdo.* links NOTIFICATION_LINK_BUILDERS (app/routes/pswdo.py) resolves
@@ -99,8 +96,9 @@ CSWDO_NOTIFICATION_LINK_BUILDERS = {
 
 CSWDO_NOTIFICATION_CATEGORIES = [
     {"value": "all", "label": "All"},
-    {"value": "relief_requests", "label": "Relief Requests"},
-    {"value": "distribution", "label": "Distribution"},
+    {"value": "barangay_reports", "label": "Barangay Reports"},
+    {"value": "relief_requests", "label": "Stock Requests"},
+    {"value": "distribution", "label": "Deliveries"},
 ]
 
 ALLOWED_UPLOAD_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "zip", "doc", "docx"}
@@ -127,7 +125,6 @@ DAMAGE_STATUS_LABELS = {
     "no_report": "No Report",
 }
 
-SITUATION_ICONS = {"Typhoon": "cloud-lightning", "Wind": "wind", "Flash Flood": "cloud-rain"}
 
 
 def _own_lgu_barangays():
@@ -278,30 +275,39 @@ def dashboard():
             DistributionRecord.dispatch_status == "delivered",
         ).count()
 
-    # Relief Request Status — this office's own AllocationRecords, most recent
-    # first. Active event / standing only — past ended events are historical
-    # record + model training data, not a live queue item.
+    # Barangay Relief Requests — Tier-1 requests from this LGU's barangays (a
+    # BarangayReport carrying a food-pack ask). CSWDO/MSWDO reviews and fulfils
+    # these from its own municipal warehouse; PSWDO is not involved. This is a
+    # live status strip only — the full queue is the Barangay Reports page
+    # (cswdo.damage_assessment), so this stays scoped exactly like that page
+    # (all non-draft reports, newest first) rather than to the active event —
+    # otherwise a request the user just acted on vanishes here if it belonged
+    # to an event that has since ended.
+    _STATUS_TAB = {
+        "pending": "queue", "returned": "queue", "approved": "approved",
+        "fulfilled": "fulfilled", "declined": "declined",
+    }
     relief_request_rows = []
     if lgu_barangay_ids:
-        requests_q = AllocationRecord.query.filter(
-            AllocationRecord.barangay_id.in_(lgu_barangay_ids)
-        )
-        if primary_event:
-            requests_q = requests_q.filter(db.or_(
-                AllocationRecord.event_id.is_(None),
-                AllocationRecord.event_id == primary_event.event_id,
-            ))
-        else:
-            requests_q = requests_q.filter(AllocationRecord.event_id.is_(None))
-        requests_q = requests_q.order_by(AllocationRecord.allocation_date.desc()).limit(5).all()
-        for r in requests_q:
-            active_distribution = next(
-                (d for d in r.distribution_records if d.dispatch_status != "delivered"), None
-            )
+        reports_q = BarangayReport.query.filter(
+            BarangayReport.barangay_id.in_(lgu_barangay_ids),
+            BarangayReport.status != "draft",
+        ).order_by(BarangayReport.submitted_at.desc()).limit(3).all()
+        for rep in reports_q:
+            alloc = rep.allocation
+            active_distribution = None
+            if alloc:
+                active_distribution = next(
+                    (d for d in alloc.distribution_records if d.dispatch_status != "delivered"), None
+                )
             relief_request_rows.append({
-                "record": r,
-                "ref": f"RR-{r.allocation_date.year}-{r.allocation_id:03d}",
-                "status": r.display_status,
+                "report": rep,
+                "record": alloc,
+                "ref": rep.ref,
+                "status": rep.status,
+                "tab": _STATUS_TAB.get(rep.status, "all"),
+                "barangay": rep.barangay,
+                "requested": rep.requested_food_packs,
                 "active_distribution": active_distribution,
                 "progress_pct": ROUTE_PROGRESS_BY_STATUS.get(active_distribution.dispatch_status, 0) if active_distribution else None,
             })
@@ -368,6 +374,7 @@ def dashboard():
         relief_request_rows=relief_request_rows,
         barangay_reports=barangay_reports,
         recent_activities=recent_activities,
+        status_labels=DAMAGE_STATUS_LABELS,
         dispatch_status_labels=DISPATCH_STATUS_LABELS,
         weather_cities=[lgu] if lgu else [],
     )
@@ -427,7 +434,6 @@ def _relief_request_row(report):
     return {
         "report": report,
         "barangay": report.barangay,
-        "priority": _priority_info(report.flood_level),
         "model_estimate": ml_predict.predict_quantity(report.barangay) or 0,
         "allocation": report.allocation,
     }
@@ -485,7 +491,7 @@ def damage_assessment():
         fulfilled_rows=fulfilled_rows, declined_rows=declined_rows,
         on_hand=on_hand, requested_pending=requested_pending, approved_packs=approved_packs,
         total_barangays=len(lgu_barangays),
-        status_labels=DAMAGE_STATUS_LABELS, situation_icons=SITUATION_ICONS,
+        status_labels=DAMAGE_STATUS_LABELS,
         dispatch_labels=DISPATCH_STATUS_LABELS,
         search_query=search_query,
     )
@@ -772,17 +778,17 @@ def damage_assessment_export():
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow([
-        "Request ID", "Barangay", "Situation", "Status", "Submitted By",
-        "Affected Families", "Totally Damaged Houses", "Severity",
+        "Request ID", "Barangay", "Typhoon Event", "Status", "Submitted By",
+        "Affected Families", "Totally Damaged Houses",
         "Requested Packs", "Allocated Packs", "Last Updated",
     ])
     for rep in reports:
         alloc = rep.allocation
         writer.writerow([
-            rep.ref, rep.barangay.barangay_name, rep.disaster_type or "",
+            rep.ref, rep.barangay.barangay_name,
+            rep.event.event_name if rep.event else "",
             DAMAGE_STATUS_LABELS.get(rep.status, rep.status),
             rep.submitted_by_name, rep.affected_families, rep.totally_damaged_houses,
-            _priority_info(rep.flood_level)["label"],
             rep.requested_food_packs, alloc.allocated_quantity if alloc else "",
             (rep.reviewed_at or rep.submitted_at).strftime("%Y-%m-%d %H:%M") if (rep.reviewed_at or rep.submitted_at) else "",
         ])
@@ -844,6 +850,7 @@ def deliveries():
         "rec": r,
         "ref": f"D-{r.distribution_date.year}-{r.distribution_id:03d}",
         "request_ref": (r.allocation.barangay_report.ref if r.allocation and r.allocation.barangay_report else None),
+        "event": (r.allocation.event.event_name if r.allocation and r.allocation.event else None),
         "progress_pct": ROUTE_PROGRESS_BY_STATUS.get(r.dispatch_status, 0),
         "awaiting_validation": r.dispatch_status in ("in_transit", "delivered") and r.status != "confirmed",
     } for r in recs]
@@ -867,15 +874,38 @@ def delivery_detail(distribution_id):
     rec = _own_delivery_or_404(distribution_id)
     alloc = rec.allocation
     report = alloc.barangay_report if alloc else None
+    office = current_user.office
     fp = _own_food_pack_inventory()
+    on_hand = fp.quantity_available if fp else 0
+
+    # This office deducts its warehouse the moment a request is approved (see
+    # _fulfil_barangay_request), so `on_hand` above is the LIVE total after
+    # every release. Reconstruct what the warehouse held right after THIS
+    # release by adding back everything released for a barangay since — so the
+    # figure is specific to this delivery instead of the same global number on
+    # every page. (Ignores mid-stream replenishment transfers — close enough
+    # for a review view.)
+    released_since = 0
+    if office:
+        released_since = db.session.query(
+            db.func.coalesce(db.func.sum(DistributionRecord.quantity_released), 0)
+        ).select_from(DistributionRecord).join(AllocationRecord).filter(
+            AllocationRecord.fulfilling_office_id == office.office_id,
+            AllocationRecord.source.in_(("barangay_request", "cswdo_direct")),
+            DistributionRecord.distribution_id > rec.distribution_id,
+        ).scalar() or 0
+    stock_after_release = on_hand + released_since
+    stock_before_release = stock_after_release + rec.quantity_released
+
     current_index = DISPATCH_STEPS.index(rec.dispatch_status) if rec.dispatch_status in DISPATCH_STEPS else 1
     attachments = rec.validation_file.split(",") if rec.validation_file else []
     return render_template(
         "cswdo/delivery_detail.html",
         rec=rec, alloc=alloc, report=report,
         ref=f"D-{rec.distribution_date.year}-{rec.distribution_id:03d}",
-        priority=_priority_info(report.flood_level if report else None),
-        on_hand=fp.quantity_available if fp else 0,
+        on_hand=on_hand,
+        stock_before_release=stock_before_release,
+        stock_after_release=stock_after_release,
         dispatch_steps=DISPATCH_STEPS, step_labels=STEP_LABELS,
         current_index=current_index, dispatch_labels=DISPATCH_STATUS_LABELS,
         route_progress=ROUTE_PROGRESS_BY_STATUS.get(rec.dispatch_status, 0),
@@ -1114,6 +1144,28 @@ def relief_request_save_draft():
     return redirect(url_for("cswdo.relief_requests", tab="create", draft_id=batch.batch_id))
 
 
+@cswdo_bp.route("/relief-requests/<int:batch_id>/delete", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def relief_request_delete_draft(batch_id):
+    batch = _own_batch_or_404(batch_id)
+    # Only an unsubmitted draft can be deleted — a submitted stock request stays
+    # on record so the PSWDO decision trail and any transfer tied to it are
+    # never orphaned.
+    if not batch.is_draft:
+        flash("Only a draft can be deleted. Submitted stock requests stay on record.", "error")
+        return redirect(url_for("cswdo.relief_requests"))
+    ref = batch.ref
+    upload_dir = os.path.join(
+        current_app.root_path, "static", "uploads", "relief_requests", str(batch.batch_id)
+    )
+    db.session.delete(batch)
+    db.session.commit()
+    shutil.rmtree(upload_dir, ignore_errors=True)
+    flash(f"Draft {ref} deleted.", "success")
+    return redirect(url_for("cswdo.relief_requests"))
+
+
 @cswdo_bp.route("/relief-requests/submit", methods=["POST"])
 @login_required
 @role_required("cswdo_admin", "system_admin")
@@ -1325,21 +1377,6 @@ def view_notification(log_id):
     db.session.commit()
     destination = _cswdo_notification_view(log)["link"]
     return redirect(destination or url_for("cswdo.notifications"))
-
-
-@cswdo_bp.route("/notifications/mark-all-read", methods=["POST"])
-@login_required
-@role_required("cswdo_admin", "system_admin")
-def mark_all_notifications_read():
-    filters = _own_activity_filters()
-    if filters:
-        known_types = list(NOTIFICATION_META.keys())
-        ActivityLog.query.filter(
-            db.or_(*filters), ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
-        ).update({"is_read": True}, synchronize_session=False)
-        db.session.commit()
-    flash("All notifications marked as read.", "success")
-    return redirect(request.referrer or url_for("cswdo.notifications"))
 
 
 # ---------------------------------------------------------------------------

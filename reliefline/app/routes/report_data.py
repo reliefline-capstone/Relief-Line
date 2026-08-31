@@ -393,8 +393,8 @@ def build_report(report_type, filters, user=None):
 
 BARANGAY_REPORT_TYPES = {
     "damage_reports": {
-        "title": "Damage Report History",
-        "description": "All damage reports this barangay has submitted, with review status.",
+        "title": "Barangay Report History",
+        "description": "All barangay reports this barangay has submitted, with review status.",
         "icon": "clipboard",
     },
     "relief_deliveries": {
@@ -407,8 +407,10 @@ BARANGAY_REPORT_TYPES = {
 BARANGAY_REPORT_STATUS_LABELS = {
     "draft": "Draft",
     "pending": "Submitted",
-    "verified": "Verified",
     "returned": "Returned",
+    "approved": "Approved",
+    "declined": "Declined",
+    "fulfilled": "Fulfilled",
 }
 
 

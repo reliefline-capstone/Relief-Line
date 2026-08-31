@@ -19,8 +19,8 @@ class BarangayReport(db.Model):
 
     Excludes evacuation-center/evacuee headcounts (manuscript: real-time
     evacuee monitoring not supported). Non-food item estimates
-    (drinking_water_cases, hygiene_kits_est, blankets_est) are included on
-    purpose — non-food requirements are "contingent on damage assessments."
+    (hygiene_kits_est, kitchen_kits_est) are included on purpose — these are
+    the two non-food item types the system tracks (manuscript scope).
     """
     __tablename__ = "barangay_reports"
 
@@ -44,14 +44,13 @@ class BarangayReport(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     submitted_at = db.Column(db.DateTime, nullable=True)
 
-    # Disaster Info step
-    disaster_type = db.Column(db.String(50), nullable=True)
+    # Incident step
     incident_date = db.Column(db.Date, nullable=True)
     incident_time = db.Column(db.Time, nullable=True)
-    flood_depth_m = db.Column(db.Numeric(4, 2), nullable=True)
-    # Same 4-tier vocabulary as BarangayDisasterStatus.status, so a report's
-    # flood level and the barangay's resulting priority tier are one concept
-    # rendered consistently everywhere (dashboard, GIS map, this page).
+    # Priority tier — COMPUTED server-side from the reported impact (see
+    # app.routes.barangay._compute_severity), never shown on the report itself.
+    # Internal signal only: same 4-tier vocabulary as BarangayDisasterStatus.
+    # status, drives the GIS map colours and the CSWDO priority list.
     flood_level = db.Column(
         db.Enum("normal", "monitoring", "needs_assistance", "high_priority"),
         default="normal"
@@ -62,24 +61,18 @@ class BarangayReport(db.Model):
     affected_individuals = db.Column(db.Integer, default=0)
     totally_damaged_houses = db.Column(db.Integer, default=0)
     partially_damaged_houses = db.Column(db.Integer, default=0)
-    # Situation-specific fields — only one branch is relevant per report,
-    # chosen by disaster_type (Typhoon / Wind / Flash Flood). The form shows/
-    # hides these; unused branch fields stay NULL/0.
+    # No longer collected by the form; left inert on new reports.
     roofs_damaged = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
-    wind_signal = db.Column(db.String(20), nullable=True)          # e.g. "Signal No. 3"
-    water_level_desc = db.Column(db.String(50), nullable=True)     # e.g. "Waist-deep"
-    missing_persons = db.Column(db.Integer, default=0)
-    casualties_deaths = db.Column(db.Integer, default=0)
+    wind_signal = db.Column(db.String(20), nullable=True)
 
     # Relief Needs step
     # Food packs the barangay is requesting — its own indication of need. The
     # model's estimate is shown next to this field as a reference only; the
     # barangay enters the figure, and CSWDO/MSWDO sets the final allocation.
     requested_food_packs = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
-    # Non-food item estimates (see class docstring)
-    drinking_water_cases = db.Column(db.Integer, default=0)
+    # Non-food item estimates — hygiene kits + kitchen kits only (see docstring)
     hygiene_kits_est = db.Column(db.Integer, default=0)
-    blankets_est = db.Column(db.Integer, default=0)
+    kitchen_kits_est = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
 
     # Evidence step
     remarks = db.Column(db.Text, nullable=True)

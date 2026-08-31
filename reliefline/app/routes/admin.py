@@ -391,45 +391,6 @@ def deny_password_reset_request(request_id):
 
 
 # ---------------------------------------------------------------------------
-# Roles & Permissions — static, read-only. Mirrors the @role_required(...)
-# checks actually enforced in app/routes/{pswdo,cswdo,barangay,prediction,
-# reports,admin}.py, so this page never drifts from what the code enforces.
-# ---------------------------------------------------------------------------
-
-PERMISSION_MATRIX = [
-    {"label": "Dashboard", "pswdo": True, "cswdo": True, "barangay": True, "admin": True},
-    {"label": "Predictive Analytics (barangay-level model)", "pswdo": False, "cswdo": True, "barangay": False, "admin": True},
-    {"label": "Recommendations (aggregated, read-only)", "pswdo": True, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "Geospatial Map", "pswdo": True, "cswdo": True, "barangay": False, "admin": True},
-    {"label": "Provincial Warehouse Inventory (Manage)", "pswdo": True, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "Municipal Warehouse Inventory (Manage)", "pswdo": False, "cswdo": True, "barangay": False, "admin": True},
-    {"label": "Barangay Inventory (+/- ledger)", "pswdo": False, "cswdo": False, "barangay": True, "admin": True},
-    {"label": "Barangay Relief Request (submit)", "pswdo": False, "cswdo": False, "barangay": True, "admin": True},
-    {"label": "Relief Request Inbox — approve + fulfil from own warehouse", "pswdo": False, "cswdo": True, "barangay": False, "admin": True},
-    {"label": "Deliveries (warehouse → barangay) + issuance confirmation", "pswdo": False, "cswdo": True, "barangay": False, "admin": True},
-    {"label": "Validation Record (barangay confirms receipt, photo/signature)", "pswdo": False, "cswdo": False, "barangay": True, "admin": True},
-    {"label": "Stock Request — CSWDO asks PSWDO to replenish", "pswdo": False, "cswdo": True, "barangay": False, "admin": True},
-    {"label": "Stock Request — review / decide", "pswdo": True, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "Stock Transfers (PSWDO depot → municipal warehouse) monitoring", "pswdo": True, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "Pre-positioning (PSWDO push to municipal warehouse)", "pswdo": True, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "Reports", "pswdo": True, "cswdo": True, "barangay": True, "admin": True},
-    {"label": "Notifications", "pswdo": True, "cswdo": True, "barangay": False, "admin": True},
-    {"label": "User Management", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "Office Management", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "Barangay Management", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "System Activity", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
-    {"label": "System Settings", "pswdo": False, "cswdo": False, "barangay": False, "admin": True},
-]
-
-
-@admin_bp.route("/roles-permissions")
-@login_required
-@role_required("system_admin")
-def roles_permissions():
-    return render_template("admin/roles_permissions.html", matrix=PERMISSION_MATRIX)
-
-
-# ---------------------------------------------------------------------------
 # Office Management
 # ---------------------------------------------------------------------------
 

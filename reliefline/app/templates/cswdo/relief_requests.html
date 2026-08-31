@@ -126,6 +126,11 @@
                 <button type="submit" formaction="{{ url_for('cswdo.relief_request_submit') }}" class="btn-decision btn-approve-full">{{ icon('arrow-right', 16, 'white') }} Submit to PSWDO</button>
             </div>
         </form>
+        {% if editing_draft %}
+        <form method="POST" action="{{ url_for('cswdo.relief_request_delete_draft', batch_id=editing_draft.batch_id) }}" class="rr-panel" style="margin-top:12px; padding:14px 18px;" onsubmit="return confirm('Delete draft {{ editing_draft.ref }}? This cannot be undone.');">
+            <button type="submit" class="btn-outline" style="border-color:#e0b4b4; color:#c0392b;">{{ icon('trash-2', 14, '#c0392b') }} Delete this draft</button>
+        </form>
+        {% endif %}
 
         {% elif tab == 'tracking' %}
         {% if selected %}
@@ -197,7 +202,7 @@
         </form>
         <div class="rr-panel rr-panel-flush">
             <table class="rr-table">
-                <thead><tr><th>Request ID</th><th>Event</th><th>Requested</th><th>Approved</th><th>Status</th><th>Date</th></tr></thead>
+                <thead><tr><th>Request ID</th><th>Event</th><th>Requested</th><th>Approved</th><th>Status</th><th>Date</th><th></th></tr></thead>
                 <tbody>
                     {% for b in rows %}
                     <tr>
@@ -207,9 +212,19 @@
                         <td>{{ "{:,}".format(b.approved_food_packs) if b.approved_food_packs else '—' }}</td>
                         <td><span class="badge-status status-{{ b.display_status }}">{{ status_labels.get(b.display_status, b.display_status) }}</span></td>
                         <td>{{ b.submitted_at.strftime('%b %d, %Y') if b.submitted_at else (b.created_at.strftime('%b %d, %Y') + ' (draft)') }}</td>
+                        <td style="white-space:nowrap;">
+                            {% if b.is_draft %}
+                            <a href="{{ url_for('cswdo.relief_requests', tab='create', draft_id=b.batch_id) }}" class="btn-view-sm">{{ icon('file-text', 12) }} Edit</a>
+                            <form method="POST" action="{{ url_for('cswdo.relief_request_delete_draft', batch_id=b.batch_id) }}" style="display:inline-flex;" onsubmit="return confirm('Delete draft {{ b.ref }}? This cannot be undone.');">
+                                <button type="submit" class="btn-view-sm" style="border:none; cursor:pointer; background:#c0392b; color:white;">{{ icon('trash-2', 12, 'white') }} Delete</button>
+                            </form>
+                            {% else %}
+                            <a href="{{ url_for('cswdo.relief_requests', tab='tracking', batch_id=b.batch_id) }}" class="btn-view-sm">{{ icon('eye', 12) }} View</a>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6"><p class="empty-note" style="padding:14px 0;">No stock requests yet. Use "New Request" when your warehouse runs low.</p></td></tr>
+                    <tr><td colspan="7"><p class="empty-note" style="padding:14px 0;">No stock requests yet. Use "New Request" when your warehouse runs low.</p></td></tr>
                     {% endfor %}
                 </tbody>
             </table>

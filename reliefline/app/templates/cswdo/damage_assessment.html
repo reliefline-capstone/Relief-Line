@@ -22,7 +22,7 @@
 <div class="rd-modal-overlay" id="rr-modal-{{ rep.report_id }}" hidden>
     <div class="rd-modal rr-review-modal">
         <div class="rd-modal-header">
-            <h3>{{ icon(situation_icons.get(rep.disaster_type, 'cloud-lightning'), 18, '#0f2547') }}
+            <h3>{{ icon('clipboard', 18, '#0f2547') }}
                 {{ rep.ref }} — Brgy. {{ r.barangay.barangay_name }}
                 <span class="badge-status status-{{ rep.status }}">{{ status_labels.get(rep.status, rep.status) }}</span>
             </h3>
@@ -30,7 +30,8 @@
         </div>
 
         <p class="form-hint">
-            {{ rep.disaster_type or 'Typhoon' }} · Submitted by {{ rep.submitted_by_name }}
+            {%- if rep.event %}{{ icon('cloud-lightning', 12) }} {{ rep.event.event_name }} · {% endif -%}
+            Submitted by {{ rep.submitted_by_name }}
             {%- if rep.submitted_by_designation %} ({{ rep.submitted_by_designation }}){% endif %}
             {%- if rep.submitted_at %} · {{ rep.submitted_at.strftime('%b %d, %Y %I:%M %p') }}{% endif %}
         </p>
@@ -38,14 +39,10 @@
         <div class="rr-review-body">
             <div class="rr-review-details">
                 <div class="rd-info-grid">
-                    <div><span>Assessed Severity</span><strong><span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span></strong></div>
                     <div><span>Affected Families</span><strong>{{ "{:,}".format(rep.affected_families or 0) }}</strong></div>
                     <div><span>Affected Individuals</span><strong>{{ "{:,}".format(rep.affected_individuals or 0) }}</strong></div>
                     <div><span>Totally Damaged Houses</span><strong>{{ rep.totally_damaged_houses or 0 }}</strong></div>
                     <div><span>Partially Damaged</span><strong>{{ rep.partially_damaged_houses or 0 }}</strong></div>
-                    <div><span>Flood/Surge Depth</span><strong>{{ '%.1f'|format(rep.flood_depth_m) + ' m' if rep.flood_depth_m is not none else '—' }}</strong></div>
-                    <div><span>Water Level</span><strong>{{ rep.water_level_desc or '—' }}</strong></div>
-                    <div><span>Casualties / Missing</span><strong>{{ rep.casualties_deaths or 0 }} / {{ rep.missing_persons or 0 }}</strong></div>
                 </div>
 
                 {% if rep.remarks %}<p class="da-remarks-box" style="margin-top:12px;">{{ rep.remarks }}</p>{% endif %}
@@ -174,7 +171,7 @@
             <table class="da-table">
                 <thead>
                     <tr>
-                        <th>Request ID</th><th>Barangay</th><th>Situation</th><th>Severity</th>
+                        <th>Request ID</th><th>Barangay</th><th>Typhoon Event</th>
                         <th>Affected Fam.</th><th>Requested</th><th>Status</th><th></th>
                     </tr>
                 </thead>
@@ -184,8 +181,7 @@
                     <tr>
                         <td>{{ rep.ref }}</td>
                         <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
-                        <td>{{ icon(situation_icons.get(rep.disaster_type, 'cloud-lightning'), 13, '#2c5aa0') }} {{ rep.disaster_type or 'Typhoon' }}</td>
-                        <td><span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span></td>
+                        <td>{{ rep.event.event_name if rep.event else '—' }}</td>
                         <td>{{ "{:,}".format(rep.affected_families or 0) }}</td>
                         <td>{{ "{:,}".format(rep.requested_food_packs or 0) }}<br><span class="rd-sub">model ~{{ "{:,}".format(r.model_estimate) }}</span></td>
                         <td><span class="status-dot-label status-{{ rep.status }}"><i class="status-dot status-{{ rep.status }}"></i> {{ status_labels.get(rep.status, rep.status) }}</span></td>
@@ -196,7 +192,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="8"><p class="empty-note" style="padding:14px 0;">No relief requests in this view.</p></td></tr>
+                    <tr><td colspan="7"><p class="empty-note" style="padding:14px 0;">No relief requests in this view.</p></td></tr>
                     {% endfor %}
                 </tbody>
             </table>

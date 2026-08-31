@@ -28,11 +28,27 @@
             {% endif %}
         </section>
 
+        {% set reviewer = report.reviewed_by_user.name ~ ' (MSWDO/CSWDO)' if report.reviewed_by_user else 'MSWDO/CSWDO' %}
         {% if report.status == 'returned' %}
         <section class="panel" style="border:1px solid #f6cfc9; background:#fdecea; margin-bottom:16px;">
-            <div class="panel-header"><h3 style="color:#c0392b;">{{ icon('chevron-left', 16, '#c0392b') }} Report Returned by MSWDO</h3></div>
-            <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks }}</p>
+            <div class="panel-header"><h3 style="color:#c0392b;">{{ icon('rotate-ccw', 16, '#c0392b') }} Returned for Revision by {{ reviewer }}</h3></div>
+            <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks or 'No reason was provided.' }}</p>
             <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-submit-final" style="background:#c0392b; text-decoration:none; margin-top:8px; display:inline-flex;">Correct &amp; Resubmit {{ icon('arrow-right', 14, 'white') }}</a>
+        </section>
+        {% elif report.status == 'declined' %}
+        <section class="panel" style="border:1px solid #f6cfc9; background:#fdecea; margin-bottom:16px;">
+            <div class="panel-header"><h3 style="color:#c0392b;">{{ icon('x-circle', 16, '#c0392b') }} Declined by {{ reviewer }}</h3></div>
+            <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks or 'No reason was provided.' }}</p>
+        </section>
+        {% elif report.status in ('approved', 'fulfilled') %}
+        <section class="panel" style="border:1px solid #cdebd7; background:#f0faf4; margin-bottom:16px;">
+            <div class="panel-header"><h3 style="color:#1e8449;">{{ icon('check-circle', 16, '#1e8449') }}
+                {{ 'Approved' if report.status == 'approved' else 'Fulfilled — delivery confirmed received' }} by {{ reviewer }}</h3></div>
+            <p style="font-size:13px; color:#1e5631;">
+                {% if report.allocation and report.allocation.allocated_quantity %}{{ "{:,}".format(report.allocation.allocated_quantity) }} food packs allocated to your barangay.{% endif %}
+                {% if report.review_remarks %} {{ report.review_remarks }}{% endif %}
+                Track the delivery on <a href="{{ url_for('barangay.relief_monitoring') }}">Relief Monitoring</a>.
+            </p>
         </section>
         {% endif %}
 
@@ -48,20 +64,30 @@
                     <div class="timeline-dot">{% if report.status != 'draft' %}{{ icon('check', 16) }}{% else %}2{% endif %}</div>
                     <span class="timeline-label">Submitted</span>
                 </div>
-                <div class="timeline-line {{ 'done' if report.status in ('verified', 'returned') }}"></div>
-                <div class="timeline-node {{ 'current-verified' if report.status == 'verified' else ('current-returned' if report.status == 'returned' else 'current-pending') }}">
+                <div class="timeline-line {{ 'done' if report.status not in ('draft', 'pending') }}"></div>
+                {% set decided = report.status in ('approved', 'fulfilled', 'declined', 'returned') %}
+                <div class="timeline-node
+                    {%- if report.status in ('approved', 'fulfilled') %} current-verified
+                    {%- elif report.status == 'declined' %} current-declined
+                    {%- elif report.status == 'returned' %} current-returned
+                    {%- else %} current-pending{% endif %}">
                     <div class="timeline-dot">
-                        {% if report.status == 'verified' %}{{ icon('check', 16) }}
+                        {% if report.status in ('approved', 'fulfilled') %}{{ icon('check', 16) }}
+                        {% elif report.status == 'declined' %}{{ icon('x', 16) }}
                         {% elif report.status == 'returned' %}!
                         {% else %}3{% endif %}
                     </div>
                     <span class="timeline-label">
-                        {% if report.status == 'verified' %}Verified
+                        {% if report.status == 'approved' %}Approved
+                        {% elif report.status == 'fulfilled' %}Fulfilled
+                        {% elif report.status == 'declined' %}Declined
                         {% elif report.status == 'returned' %}Returned for Revision
                         {% else %}Under Review{% endif %}
                     </span>
                     <span class="timeline-sub">
-                        {% if report.status in ('pending',) %}Current{% elif report.status == 'draft' %}Not yet submitted{% endif %}
+                        {% if report.status == 'pending' %}Current
+                        {% elif report.status == 'draft' %}Not yet submitted
+                        {% elif decided and report.reviewed_at %}{{ report.reviewed_at.strftime('%b %d, %Y') }}{% endif %}
                     </span>
                 </div>
             </div>
@@ -75,11 +101,8 @@
                 <div class="review-row"><span>Submitted By</span><strong>{{ report.submitted_by_name }}{% if report.submitted_by_designation %} ({{ report.submitted_by_designation }}){% endif %}</strong></div>
                 <div class="review-row"><span>Date Submitted</span><strong>{{ report.submitted_at.strftime('%B %d, %Y') if report.submitted_at else 'Not yet submitted' }}</strong></div>
                 <div class="review-row"><span>Typhoon Event</span><strong>{{ report.event.event_name if report.event else '—' }}</strong></div>
-                <div class="review-row"><span>Disaster Type</span><strong>{{ report.disaster_type or '—' }}</strong></div>
                 <div class="review-row"><span>Incident Date</span><strong>{{ report.incident_date.strftime('%B %d, %Y') if report.incident_date else '—' }}</strong></div>
                 <div class="review-row"><span>Incident Time</span><strong>{{ report.incident_time.strftime('%I:%M %p') if report.incident_time else '—' }}</strong></div>
-                <div class="review-row"><span>Flood Depth</span><strong>{{ report.flood_depth_m }}m</strong></div>
-                <div class="review-row"><span>Severity</span><strong>{{ priority_by_status.get(report.flood_level, {}).get('label', '—') }}</strong></div>
             </section>
 
             <div class="drv-side">
@@ -90,16 +113,13 @@
                         <div class="info-box"><span>Affected Individuals</span><strong>{{ "{:,}".format(report.affected_individuals) }}</strong></div>
                         <div class="info-box"><span>Totally Damaged</span><strong>{{ report.totally_damaged_houses }}</strong></div>
                         <div class="info-box"><span>Partially Damaged</span><strong>{{ report.partially_damaged_houses }}</strong></div>
-                        {% if report.missing_persons %}<div class="info-box"><span>Missing Persons</span><strong>{{ report.missing_persons }}</strong></div>{% endif %}
-                        {% if report.casualties_deaths %}<div class="info-box"><span>Casualties</span><strong>{{ report.casualties_deaths }}</strong></div>{% endif %}
                     </div>
                 </section>
 
                 <section class="panel">
                     <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Needs</h3></div>
-                    <div class="review-row"><span>Drinking Water (cases)</span><strong>{{ report.drinking_water_cases }}</strong></div>
                     <div class="review-row"><span>Hygiene Kits</span><strong>{{ report.hygiene_kits_est }}</strong></div>
-                    <div class="review-row"><span>Blankets</span><strong>{{ report.blankets_est }}</strong></div>
+                    <div class="review-row"><span>Kitchen Kits</span><strong>{{ report.kitchen_kits_est }}</strong></div>
                     <p class="form-hint" style="margin-top:8px;">Food pack allocation for this barangay is computed separately by ReliefLine's predictive model — see Relief Monitoring.</p>
                 </section>
             </div>

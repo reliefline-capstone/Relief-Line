@@ -27,6 +27,7 @@
             <div>
                 <h2>{{ ref }}</h2>
                 <p>Brgy. {{ rec.barangay.barangay_name }}
+                    {%- if alloc and alloc.event %} · {{ icon('cloud-lightning', 12) }} {{ alloc.event.event_name }}{% endif %}
                     {%- if report %} · Barangay Report {{ report.ref }}
                     {%- elif alloc and alloc.source == 'cswdo_direct' %} · Proactive Allocation (no barangay request){% endif %}
                     · {{ "{:,}".format(rec.quantity_released) }} food packs</p>
@@ -51,12 +52,12 @@
                 <div class="panel-header"><h3>Delivery</h3></div>
                 <div class="dd-kv-list">
                     <div><span>Status</span><strong>{{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}</strong></div>
-                    <div><span>Food Packs</span><strong>{{ "{:,}".format(rec.quantity_released) }}</strong></div>
+                    <div><span>Food Packs Released</span><strong>{{ "{:,}".format(rec.quantity_released) }}</strong></div>
                     <div><span>Scheduled</span><strong>{{ rec.distribution_date.strftime('%b %d, %Y') }}</strong></div>
-                    <div><span>Warehouse On Hand</span><strong>{{ "{:,}".format(on_hand) }}</strong></div>
+                    <div><span>Warehouse Before This Release</span><strong>{{ "{:,}".format(stock_before_release) }}</strong></div>
+                    <div><span>Warehouse After This Release</span><strong>{{ "{:,}".format(stock_after_release) }} <span class="rd-sub">now: {{ "{:,}".format(on_hand) }}</span></strong></div>
                     {% if report %}
                     <div><span>Barangay Requested</span><strong>{{ "{:,}".format(report.requested_food_packs or 0) }}</strong></div>
-                    <div><span>Assessed Severity</span><strong><span class="badge-priority tier-{{ priority.tier }}">{{ priority.label }}</span></strong></div>
                     {% elif alloc and alloc.source == 'cswdo_direct' %}
                     <div><span>Model Estimate</span><strong>~{{ "{:,}".format(alloc.predicted_quantity or 0) }} packs</strong> <span class="rd-sub">decision support</span></div>
                     {% if alloc.remarks %}<div><span>Justification</span><strong>{{ alloc.remarks }}</strong></div>{% endif %}

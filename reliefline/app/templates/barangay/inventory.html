@@ -9,6 +9,22 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
+{% macro movement_row(l) %}
+<div class="wh-movement-row">
+    <div class="wh-movement-icon {{ 'wh-move-out' if l.delta < 0 else 'wh-move-in' }}">
+        <span>{{ icon('arrow-right', 14) }}</span>
+    </div>
+    <div class="wh-movement-text">
+        <strong>{{ l.source_type|capitalize }}</strong>
+        <span>{{ l.reason or '—' }}</span>
+    </div>
+    <div class="wh-movement-amount">
+        <strong class="{{ 'text-red' if l.delta < 0 else 'text-green' }}">{{ '+' if l.delta > 0 }}{{ "{:,}".format(l.delta) }}</strong>
+        <span>{{ l.created_at.strftime('%b %d, %Y') if l.created_at }}</span>
+    </div>
+</div>
+{% endmacro %}
+
 {% block content %}
 <div class="dashboard-layout">
 
@@ -24,7 +40,7 @@
                 <p>Brgy. {{ barangay.barangay_name }} · food packs currently on hand</p>
             </div>
             <div style="display:flex; gap:10px;">
-                <button type="button" class="btn-add-warehouse" data-open-modal="bi-distribute">{{ icon('minus', 14, 'white') }} Record Distribution</button>
+                <button type="button" class="btn-add-warehouse" data-open-modal="bi-distribute">Record Distribution</button>
             </div>
         </div>
 
@@ -50,23 +66,19 @@
 
         <section class="panel">
             <div class="panel-header"><h3>Movement History</h3></div>
-            {% for l in logs %}
-            <div class="wh-movement-row">
-                <div class="wh-movement-icon {{ 'wh-move-out' if l.delta < 0 else 'wh-move-in' }}">
-                    <span>{{ icon('arrow-right', 14) }}</span>
-                </div>
-                <div class="wh-movement-text">
-                    <strong>{{ l.source_type|capitalize }}</strong>
-                    <span>{{ l.reason or '—' }}</span>
-                </div>
-                <div class="wh-movement-amount">
-                    <strong class="{{ 'text-red' if l.delta < 0 else 'text-green' }}">{{ '+' if l.delta > 0 }}{{ "{:,}".format(l.delta) }}</strong>
-                    <span>{{ l.created_at.strftime('%b %d, %Y') if l.created_at }}</span>
-                </div>
-            </div>
+            {% for l in logs[:3] %}
+            {{ movement_row(l) }}
             {% else %}
             <p class="empty-note">No movement yet. Your inventory grows when you validate a delivery on Relief Monitoring.</p>
             {% endfor %}
+            {% if logs|length > 3 %}
+            <details class="wh-movement-more">
+                <summary>{{ icon('list', 13) }} View all {{ logs|length }} movements</summary>
+                {% for l in logs[3:] %}
+                {{ movement_row(l) }}
+                {% endfor %}
+            </details>
+            {% endif %}
         </section>
 
     </main>
@@ -74,7 +86,7 @@
 
 <div class="rd-modal-overlay" id="bi-distribute" hidden>
     <div class="rd-modal">
-        <div class="rd-modal-header"><h3>{{ icon('minus', 18, '#0f2547') }} Record Distribution</h3>
+        <div class="rd-modal-header"><h3>Record Distribution</h3>
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
         <form method="POST" action="{{ url_for('barangay.inventory_record') }}" class="settings-form">
             <div class="form-row">

@@ -355,29 +355,22 @@ def run():
         from app.models.barangay_report import BarangayReport
         from app.routes.barangay import _compute_severity
         from app.ml import predict as ml_predict
-        HAZARDS = ["Strong Winds", "Flooding", "Storm Surge", "Combined"]
         report_fix = 0
         for rep in BarangayReport.query.all():
             b = barangay_by_id.get(rep.barangay_id) or Barangay.query.get(rep.barangay_id)
             if b is None:
                 continue
             rng = random.Random(f"report|{rep.report_id}")
-            if rep.disaster_type not in HAZARDS:
-                rep.disaster_type = rng.choice(HAZARDS)
             if not rep.requested_food_packs:
                 est = ml_predict.predict_quantity(b) or 0
                 rep.requested_food_packs = max(int(round(est * rng.uniform(0.8, 1.25))), 20)
                 report_fix += 1
             rep.flood_level = _compute_severity(
-                situation_type=rep.disaster_type,
-                flood_depth_m=rep.flood_depth_m,
                 affected_families=rep.affected_families or 0,
                 affected_individuals=rep.affected_individuals or 0,
                 totally_damaged_houses=rep.totally_damaged_houses or 0,
                 partially_damaged_houses=rep.partially_damaged_houses or 0,
                 roofs_damaged=rep.roofs_damaged or 0,
-                missing_persons=rep.missing_persons or 0,
-                casualties_deaths=rep.casualties_deaths or 0,
             )
         db.session.flush()
 
@@ -451,17 +444,15 @@ def run():
                 rep = BarangayReport(
                     barangay_id=b.barangay_id, event_id=active.event_id,
                     submitted_by_name="Barangay Captain", submitted_by_designation="Barangay Captain",
-                    submitted_at=datetime.utcnow(), disaster_type=hazard,
+                    submitted_at=datetime.utcnow(),
                     incident_date=active.start_date,
                     affected_families=fam, affected_individuals=fam * 4,
                     totally_damaged_houses=max(fam // 30, 1), partially_damaged_houses=fam // 8,
-                    flood_depth_m=(1.2 if hazard in ("Flooding", "Storm Surge", "Combined") else None),
                     roofs_damaged=(fam // 6 if hazard in ("Strong Winds", "Combined") else 0),
                     requested_food_packs=requested,
                     status="pending",
                 )
                 rep.flood_level = _compute_severity(
-                    situation_type=hazard, flood_depth_m=rep.flood_depth_m,
                     affected_families=fam, totally_damaged_houses=rep.totally_damaged_houses,
                     partially_damaged_houses=rep.partially_damaged_houses, roofs_damaged=rep.roofs_damaged,
                 )

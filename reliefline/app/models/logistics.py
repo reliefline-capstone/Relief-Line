@@ -40,7 +40,3 @@ class WarehouseTransfer(db.Model):
     @property
     def ref(self):
         return f"TR-{self.requested_at.year if self.requested_at else 2026}-{self.transfer_id:03d}"
-
-    @property
-    def is_replenishment(self):
-        return self.batch_id is not None

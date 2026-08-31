@@ -2,3 +2,7 @@
 __pycache__/
 *.pyc
 .env
+
+# Local DB dumps taken before manual cleanups — the tracked snapshot is
+# reliefline/database/reliefline_db.sql
+reliefline/database/backups/

@@ -43,10 +43,6 @@
                         <span>{{ icon('calendar', 14, '#8a94a6') }} Member Since</span>
                         <strong>{{ current_user.created_at.strftime('%B %Y') if current_user.created_at else '—' }}</strong>
                     </div>
-                    <div>
-                        <span>{{ icon('info', 14, '#8a94a6') }} System</span>
-                        <strong>ReliefLine v1.0</strong>
-                    </div>
                 </div>
             </section>
 
@@ -78,7 +74,7 @@
                         </form>
                         <aside class="settings-aside">
                             <h4>About your details</h4>
-                            <p>Your name, designation, and email identify your barangay on every relief request and damage report you submit, and are used for system notifications. Keep them current.</p>
+                            <p>Your name, designation, and email identify your barangay on every barangay report you submit, and are used for system notifications. Keep them current.</p>
                         </aside>
                     </div>
                 </section>

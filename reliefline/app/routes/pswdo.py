@@ -8,7 +8,7 @@ from math import radians, sin, cos, sqrt, atan2
 
 from flask import Blueprint, render_template, request, Response, redirect, url_for, flash, abort, current_app
 from flask_login import login_required, current_user
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.utils.decorators import role_required
@@ -85,40 +85,47 @@ ROUTE_PROGRESS_BY_STATUS = {
 # Every ActivityLog.action_type actually written anywhere in this app (see the
 # ActivityLog(...) call sites) — the Notifications page and dashboard mini
 # panel both render off of this, so a new action_type must be added here too.
+# `category` is the stable filter key (used in ?category= URLs); `category_label`
+# is the shared display name. Two roles show a category under a different name
+# than this shared default — CSWDO/PSWDO's "distribution" reads "Deliveries",
+# the barangay's reads "Relief Monitoring" — so those routes override the label
+# in their own _notification_view (see NOTIFICATION_CATEGORY_LABELS there).
 NOTIFICATION_META = {
-    "allocation_approved": {"icon": "check-circle", "color": "#1e8449", "category": "relief_requests", "category_label": "Relief Requests"},
-    "allocation_rejected": {"icon": "x-circle", "color": "#c0392b", "category": "relief_requests", "category_label": "Relief Requests"},
-    "relief_request_submitted": {"icon": "clipboard", "color": "#3867d6", "category": "relief_requests", "category_label": "Relief Requests"},
-    "distribution_status": {"icon": "truck", "color": "#2c5aa0", "category": "distribution", "category_label": "Distribution"},
-    "distribution_delivered": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Distribution"},
+    "allocation_approved": {"icon": "check-circle", "color": "#1e8449", "category": "relief_requests", "category_label": "Stock Requests"},
+    "allocation_rejected": {"icon": "x-circle", "color": "#c0392b", "category": "relief_requests", "category_label": "Stock Requests"},
+    "relief_request_submitted": {"icon": "clipboard", "color": "#3867d6", "category": "relief_requests", "category_label": "Stock Requests"},
+    "distribution_status": {"icon": "truck", "color": "#2c5aa0", "category": "distribution", "category_label": "Deliveries"},
+    "distribution_delivered": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Deliveries"},
     "warehouse_transfer_completed": {"icon": "rotate-ccw", "color": "#6c5ce7", "category": "warehouse", "category_label": "Warehouse"},
-    "damage_report_submitted": {"icon": "clipboard", "color": "#3867d6", "category": "damage_reports", "category_label": "Damage Reports"},
-    "damage_report_verified": {"icon": "check-circle", "color": "#1e8449", "category": "damage_reports", "category_label": "Damage Reports"},
-    "damage_report_returned": {"icon": "x-circle", "color": "#c0392b", "category": "damage_reports", "category_label": "Damage Reports"},
-    "distribution_receipt_confirmed": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Distribution"},
+    # Barangay Report lifecycle (Tier 1) — the barangay files a report/relief
+    # request, CSWDO/MSWDO reviews it (returns / approves / declines) and
+    # fulfils from its own municipal warehouse. CSWDO + barangay feeds only;
+    # PSWDO has no barangay-report page to click through to (see
+    # PSWDO_EXCLUDED_NOTIFICATION_TYPES below).
+    "damage_report_submitted": {"icon": "clipboard", "color": "#3867d6", "category": "barangay_reports", "category_label": "Barangay Reports"},
+    "damage_report_returned": {"icon": "x-circle", "color": "#c0392b", "category": "barangay_reports", "category_label": "Barangay Reports"},
+    "barangay_relief_approved": {"icon": "check-circle", "color": "#1e8449", "category": "barangay_reports", "category_label": "Barangay Reports"},
+    "barangay_relief_declined": {"icon": "x-circle", "color": "#c0392b", "category": "barangay_reports", "category_label": "Barangay Reports"},
+    "distribution_receipt_confirmed": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Deliveries"},
     "disaster_event_declared": {"icon": "cloud-lightning", "color": "#c0392b", "category": "disaster_events", "category_label": "Disaster Events"},
     "disaster_event_ended": {"icon": "check-circle", "color": "#1e8449", "category": "disaster_events", "category_label": "Disaster Events"},
-    "direct_allocation": {"icon": "package", "color": "#6c5ce7", "category": "relief_requests", "category_label": "Relief Requests"},
-    # Tier 1 (barangay -> CSWDO) — CSWDO + barangay feeds only, never PSWDO's.
-    "barangay_relief_approved": {"icon": "check-circle", "color": "#1e8449", "category": "relief_requests", "category_label": "Relief Requests"},
-    "barangay_relief_declined": {"icon": "x-circle", "color": "#c0392b", "category": "relief_requests", "category_label": "Relief Requests"},
+    "direct_allocation": {"icon": "package", "color": "#6c5ce7", "category": "relief_requests", "category_label": "Stock Requests"},
     # CSWDO -> barangay, model-driven, no request behind it (source='cswdo_direct'
-    # on AllocationRecord). Same tier as barangay_relief_approved above — CSWDO
-    # decides and fulfils entirely from its own warehouse, so this is CSWDO +
-    # barangay feeds only too; PSWDO has nothing to act on for it.
-    "cswdo_proactive_allocation": {"icon": "package", "color": "#6c5ce7", "category": "relief_requests", "category_label": "Relief Requests"},
+    # on AllocationRecord). CSWDO decides and fulfils entirely from its own
+    # warehouse and a delivery follows, so it rides the deliveries feed —
+    # CSWDO + barangay only; PSWDO has nothing to act on for it.
+    "cswdo_proactive_allocation": {"icon": "package", "color": "#6c5ce7", "category": "distribution", "category_label": "Deliveries"},
 }
 DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
 
-# Damage report review is entirely a CSWDO/MSWDO responsibility per the
-# manuscript — PSWDO has no damage-report page of its own to click through
-# to (see BarangayReport's own docstring: "reviewed/verified by the CSWDO/
-# MSWDO office"). Rather than show these as dead-end, non-clickable entries,
-# PSWDO's own notification feed excludes them outright; NOTIFICATION_META
-# itself stays the shared source of truth since CSWDO's and Barangay's own
-# notification feeds still need these 3 action_types.
+# Barangay Report review is entirely a CSWDO/MSWDO responsibility per the
+# manuscript — PSWDO has no barangay-report page of its own to click through
+# to. Rather than show these as dead-end, non-clickable entries, PSWDO's own
+# notification feed excludes them outright; NOTIFICATION_META itself stays the
+# shared source of truth since CSWDO's and Barangay's own notification feeds
+# still need these action_types.
 PSWDO_EXCLUDED_NOTIFICATION_TYPES = {
-    "damage_report_submitted", "damage_report_verified", "damage_report_returned",
+    "damage_report_submitted", "damage_report_returned",
     "barangay_relief_approved", "barangay_relief_declined",
     "cswdo_proactive_allocation",
 }
@@ -1525,17 +1532,19 @@ def _gis_scope_lgus():
 
 def _gis_config():
     """Client-side config for the GIS map shell (both the PSWDO and CSWDO page
-    templates) — resolves the role-specific "View Distribution" / "View Relief
-    Request" destinations once, server-side, instead of hardcoding PSWDO-only
-    routes in gis_map.js. CSWDO has no distribution/dispatch page of its own
-    (that stays a PSWDO responsibility per the manuscript), so distributionUrl
-    is None for them and gis_map.js hides that action entirely."""
+    templates) — resolves the role-specific panel actions once, server-side,
+    instead of hardcoding routes in gis_map.js. Each URL is None for the role
+    that shouldn't see that action, and gis_map.js hides the button entirely:
+      - distributionUrl:   PSWDO only — dispatch/distribution stays a PSWDO
+        responsibility per the manuscript; CSWDO has no distribution page.
+      - barangayReportsUrl: CSWDO only — reviewing barangay reports is entirely
+        a CSWDO/MSWDO responsibility; PSWDO has no barangay-report page."""
     is_pswdo = current_user.role in ("pswdo_admin", "system_admin")
     scope = _gis_scope_lgus()
     return {
         "role": current_user.role,
-        "reliefRequestsUrl": url_for("pswdo.relief_requests") if is_pswdo else url_for("cswdo.relief_requests"),
         "distributionUrl": url_for("pswdo.distribution") if is_pswdo else None,
+        "barangayReportsUrl": None if is_pswdo else url_for("cswdo.damage_assessment"),
         "defaultLgu": scope[0] if len(scope) == 1 else None,
     }
 
@@ -2266,7 +2275,6 @@ def transfer_issue(transfer_id):
     t.issued_by = current_user.user_id
     t.issued_at = datetime.utcnow()
     t.dispatch_status = "in_transit"
-    t.note = request.form.get("note", "").strip() or t.note
     ea = request.form.get("expected_arrival", "")
     if ea:
         try:
@@ -2821,8 +2829,8 @@ def notifications():
 
     categories = [
         {"value": "all", "label": "All"},
-        {"value": "relief_requests", "label": "Relief Requests"},
-        {"value": "distribution", "label": "Distribution"},
+        {"value": "relief_requests", "label": "Stock Requests"},
+        {"value": "distribution", "label": "Deliveries"},
         {"value": "warehouse", "label": "Warehouse"},
     ]
 
@@ -2852,19 +2860,6 @@ def view_notification(log_id):
     db.session.commit()
     destination = _notification_view(log)["link"]
     return redirect(destination or url_for("pswdo.notifications"))
-
-
-@pswdo_bp.route("/notifications/mark-all-read", methods=["POST"])
-@login_required
-@role_required("pswdo_admin", "system_admin")
-def mark_all_notifications_read():
-    known_types = PSWDO_NOTIFICATION_TYPES
-    ActivityLog.query.filter(
-        ActivityLog.action_type.in_(known_types), ActivityLog.is_read.is_(False)
-    ).update({"is_read": True}, synchronize_session=False)
-    db.session.commit()
-    flash("All notifications marked as read.", "success")
-    return redirect(request.referrer or url_for("pswdo.notifications"))
 
 
 @pswdo_bp.route("/settings/profile")

@@ -127,43 +127,38 @@
 
             <section class="panel requests-panel">
                 <div class="panel-header">
-                    <h3>Relief Request Status</h3>
-                    <a href="{{ url_for('cswdo.relief_requests') }}" class="link-manage">View All →</a>
+                    <h3>Barangay Reports</h3>
+                    <a href="{{ url_for('cswdo.damage_assessment') }}" class="link-manage">View All →</a>
                 </div>
 
                 {% for row in relief_request_rows %}
                 <div class="request-card">
                     <div class="request-top">
                         <strong>{{ row.ref }}</strong>
-                        <span class="badge-status status-{{ row.status }}">{{ row.status|replace('_', ' ')|title }}</span>
+                        <span class="badge-status status-{{ row.status }}">{{ status_labels.get(row.status, row.status|replace('_', ' ')|title) }}</span>
                     </div>
                     <div class="request-detail-grid">
-                        <span>Requested</span><strong>{{ "{:,}".format(row.record.predicted_quantity) }} packs</strong>
-                        <span>Warehouse</span><strong>{{ row.record.fulfilling_office.office_name if row.record.fulfilling_office else '—' }}</strong>
-                        <span>Date</span><strong>{{ row.record.allocation_date.strftime('%B %d') }}</strong>
-                        <span>ETA</span><strong>{{ row.record.expected_delivery_date.strftime('%B %d') if row.record.expected_delivery_date else 'Waiting' }}</strong>
+                        <span>Barangay</span><strong>{{ row.barangay.barangay_name }}</strong>
+                        <span>Requested</span><strong>{{ "{:,}".format(row.requested or 0) }} packs</strong>
+                        <span>Date</span><strong>{{ (row.report.submitted_at or row.report.created_at).strftime('%B %d') }}</strong>
+                        {% if row.record %}
+                        <span>Allocated</span><strong>{{ "{:,}".format(row.record.allocated_quantity or 0) }} packs</strong>
+                        {% endif %}
                     </div>
                     {% if row.active_distribution %}
                     <div class="request-progress-note">
                         {{ icon('truck', 12, '#3867d6') }}
                         {{ dispatch_status_labels.get(row.active_distribution.dispatch_status, row.active_distribution.dispatch_status) }}
-                        {% if row.record.fulfilling_office %}from {{ row.record.fulfilling_office.office_name }}{% endif %}
                     </div>
                     <div class="request-progress-track">
                         <div class="request-progress-fill" style="width: {{ row.progress_pct }}%;"></div>
                     </div>
                     {% endif %}
-                    {% if row.record.batch_id %}
-                    <a href="{{ url_for('cswdo.relief_requests', tab='tracking', batch_id=row.record.batch_id) }}" class="link-manage" style="display:block; margin-top:8px;">View Details →</a>
-                    {% else %}
-                    <a href="{{ url_for('cswdo.relief_requests') }}" class="link-manage" style="display:block; margin-top:8px;">View Details →</a>
-                    {% endif %}
+                    <a href="{{ url_for('cswdo.damage_assessment', tab=row.tab) }}" class="link-manage" style="display:block; margin-top:8px;">View Details →</a>
                 </div>
                 {% else %}
-                <p class="empty-note">No relief requests recorded yet.</p>
+                <p class="empty-note">No barangay reports yet.</p>
                 {% endfor %}
-
-                <a href="{{ url_for('cswdo.relief_requests', tab='create') }}" class="btn-approve dash-panel-cta" style="text-decoration:none;">{{ icon('plus', 14, 'white') }} Submit New Request</a>
             </section>
 
         </div>

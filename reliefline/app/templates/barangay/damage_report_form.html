@@ -79,19 +79,14 @@
                 <div class="wizard-nav"><span></span><button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button></div>
             </section>
 
-            <!-- Step 2: Situation -->
+            <!-- Step 2: Incident -->
             <section class="panel wizard-step" data-step="2" hidden>
-                <div class="panel-header"><h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Situation</h3></div>
+                <div class="panel-header"><h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Incident Details</h3></div>
                 <p class="form-hint">
                     This report is for the current <strong>typhoon-related event</strong>{% if active_events %} ({{ active_events[0].event_name }}){% endif %}.
-                    Record what you observed — flood impact, damage, and affected residents.
+                    When did the impact happen in your barangay?
                 </p>
 
-                {# No hazard picker — a typhoon can bring flooding, storm surge, and
-                   strong winds together, so every report now covers all of it
-                   (disaster_type is fixed to "Combined"; see HAZARD_OPTIONS[-1] in
-                   app.routes.barangay, which already defaulted here regardless). #}
-                <input type="hidden" name="disaster_type" value="Combined">
                 <div class="form-row-2col">
                     <div class="form-row">
                         <label for="incident_date">Date of Incident <span class="required-mark">*</span></label>
@@ -103,24 +98,6 @@
                         <input type="time" id="incident_time" name="incident_time"
                                value="{{ report.incident_time.strftime('%H:%M') if report and report.incident_time else '' }}">
                     </div>
-                </div>
-
-                <div class="form-row-2col">
-                    <div class="form-row">
-                        <label for="flood_depth_m">Flood / Surge Depth (meters)</label>
-                        <input type="number" id="flood_depth_m" name="flood_depth_m" min="0" step="0.1" placeholder="e.g. 1.2"
-                               value="{{ report.flood_depth_m if report and report.flood_depth_m is not none else '' }}">
-                    </div>
-                    <div class="form-row">
-                        <label for="water_level_desc">Water Level Description</label>
-                        <input type="text" id="water_level_desc" name="water_level_desc" placeholder="e.g. Waist-deep on main road"
-                               value="{{ report.water_level_desc or '' }}">
-                    </div>
-                </div>
-
-                <div class="autofill-box autofill-box-note">
-                    {{ icon('info', 14, '#2c5aa0') }}
-                    <span><strong>Severity is assessed automatically</strong> from what you report — depth, damaged houses, casualties, and affected families. You don't grade it yourself; the assessed level shows on the Review step.</span>
                 </div>
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
@@ -160,20 +137,6 @@
                         <span class="form-hint">Enter 0 if none</span>
                     </div>
                 </div>
-                <div class="form-row-2col">
-                    <div class="form-row">
-                        <label for="missing_persons">Missing Persons</label>
-                        <input type="number" id="missing_persons" name="missing_persons" min="0"
-                               value="{{ report.missing_persons if report else 0 }}">
-                        <span class="form-hint">Enter 0 if none</span>
-                    </div>
-                    <div class="form-row">
-                        <label for="casualties_deaths">Casualties / Deaths</label>
-                        <input type="number" id="casualties_deaths" name="casualties_deaths" min="0"
-                               value="{{ report.casualties_deaths if report else 0 }}">
-                        <span class="form-hint">Enter 0 if none</span>
-                    </div>
-                </div>
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
                     <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
@@ -203,20 +166,15 @@
                 <p class="form-hint" style="margin-top:14px;">Estimated non-food item needs (optional):</p>
                 <div class="form-row-2col">
                     <div class="form-row">
-                        <label for="drinking_water_cases">Drinking Water (cases)</label>
-                        <input type="number" id="drinking_water_cases" name="drinking_water_cases" min="0"
-                               value="{{ report.drinking_water_cases if report else 0 }}">
-                    </div>
-                    <div class="form-row">
                         <label for="hygiene_kits_est">Hygiene Kits</label>
                         <input type="number" id="hygiene_kits_est" name="hygiene_kits_est" min="0"
                                value="{{ report.hygiene_kits_est if report else 0 }}">
                     </div>
-                </div>
-                <div class="form-row">
-                    <label for="blankets_est">Blankets</label>
-                    <input type="number" id="blankets_est" name="blankets_est" min="0" style="max-width: calc(50% - 8px);"
-                           value="{{ report.blankets_est if report else 0 }}">
+                    <div class="form-row">
+                        <label for="kitchen_kits_est">Kitchen Kits</label>
+                        <input type="number" id="kitchen_kits_est" name="kitchen_kits_est" min="0"
+                               value="{{ report.kitchen_kits_est if report else 0 }}">
+                    </div>
                 </div>
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
@@ -255,11 +213,9 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                 <p class="form-hint">Review all information before submitting. Once submitted, this report cannot be edited unless returned by MSWDO/CSWDO.</p>
                 <div class="review-grid">
                     <div class="review-box">
-                        <span class="review-box-title">Disaster Info</span>
-                        <div class="review-row"><span>Type</span><strong id="rv-disaster-type"></strong></div>
-                        <div class="review-row"><span>Date</span><strong id="rv-date"></strong></div>
-                        <div class="review-row"><span>Depth</span><strong id="rv-depth"></strong></div>
-                        <div class="review-row"><span>Assessed Severity</span><strong id="rv-severity"></strong></div>
+                        <span class="review-box-title">Incident</span>
+                        <div class="review-row"><span>Typhoon Event</span><strong>{{ active_events[0].event_name if active_events else '—' }}</strong></div>
+                        <div class="review-row"><span>Date of Incident</span><strong id="rv-date"></strong></div>
                     </div>
                     <div class="review-box">
                         <span class="review-box-title">Damage Numbers</span>
@@ -267,15 +223,12 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                         <div class="review-row"><span>Individuals</span><strong id="rv-individuals"></strong></div>
                         <div class="review-row"><span>Totally Damaged</span><strong id="rv-totally"></strong></div>
                         <div class="review-row"><span>Partially Damaged</span><strong id="rv-partially"></strong></div>
-                        <div class="review-row"><span>Missing</span><strong id="rv-missing"></strong></div>
-                        <div class="review-row"><span>Casualties</span><strong id="rv-casualties"></strong></div>
                     </div>
                     <div class="review-box">
                         <span class="review-box-title">Relief Needs</span>
                         <div class="review-row"><span>Food Packs Requested</span><strong id="rv-requested-packs"></strong></div>
-                        <div class="review-row"><span>Drinking Water</span><strong id="rv-water"></strong></div>
                         <div class="review-row"><span>Hygiene Kits</span><strong id="rv-hygiene"></strong></div>
-                        <div class="review-row"><span>Blankets</span><strong id="rv-blankets"></strong></div>
+                        <div class="review-row"><span>Kitchen Kits</span><strong id="rv-kitchen"></strong></div>
                     </div>
                     <div class="review-box">
                         <span class="review-box-title">Evidence</span>
@@ -360,37 +313,6 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
     }
 
     function num(id) { return parseInt((document.getElementById(id) || {}).value || '0', 10) || 0; }
-    function fnum(id) { return parseFloat((document.getElementById(id) || {}).value || '0') || 0; }
-    // No hazard picker anymore — every report is filed as "Combined" (see the
-    // hidden disaster_type input above), so flood/wind fields are always shown
-    // and always scored together. Kept as a function (not a bare constant) so
-    // computeSeverity below still reads exactly like its Python mirror.
-    function hazard() { return 'combined'; }
-
-    var WATER_HAZARDS = {{ water_hazards|tojson }};
-
-    // Mirror of app.routes.barangay._compute_severity — keep the two in sync.
-    function computeSeverity() {
-        var h = hazard();
-        var depth = fnum('flood_depth_m');
-        var score = 0;
-        score += Math.min(num('casualties_deaths') * 25, 50);
-        score += Math.min(num('missing_persons') * 12, 24);
-        var isWater = h === '' || WATER_HAZARDS.indexOf(h) !== -1;
-        if (isWater && depth > 0) {
-            score += depth > 2 ? 32 : (depth > 1 ? 20 : (depth >= 0.5 ? 10 : 3));
-        }
-        var t = num('totally_damaged_houses');
-        var p = num('partially_damaged_houses');
-        score += t >= 50 ? 30 : (t >= 20 ? 20 : (t >= 5 ? 10 : (t >= 1 ? 4 : 0)));
-        score += p >= 100 ? 12 : (p >= 30 ? 7 : (p >= 1 ? 3 : 0));
-        var f = num('affected_families');
-        score += f >= 300 ? 14 : (f >= 100 ? 8 : (f >= 30 ? 4 : 0));
-        if (score >= 55) return 'Critical';
-        if (score >= 30) return 'High';
-        if (score >= 12) return 'Moderate';
-        return 'Low';
-    }
 
     document.querySelectorAll('.wizard-next').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -408,21 +330,14 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
     }
 
     function populateReview() {
-        document.getElementById('rv-disaster-type').textContent = 'Combined';
         document.getElementById('rv-date').textContent = (textOf('incident_date') || '—') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
-        var dv = textOf('flood_depth_m');
-        document.getElementById('rv-depth').textContent = dv ? dv + 'm' : '—';
-        document.getElementById('rv-severity').textContent = computeSeverity() + ' (auto-assessed)';
         document.getElementById('rv-requested-packs').textContent = (textOf('requested_food_packs') || '0') + ' packs';
         document.getElementById('rv-families').textContent = textOf('affected_families') || '0';
         document.getElementById('rv-individuals').textContent = textOf('affected_individuals') || '0';
         document.getElementById('rv-totally').textContent = textOf('totally_damaged_houses') || '0';
         document.getElementById('rv-partially').textContent = textOf('partially_damaged_houses') || '0';
-        document.getElementById('rv-missing').textContent = textOf('missing_persons') || '0';
-        document.getElementById('rv-casualties').textContent = textOf('casualties_deaths') || '0';
-        document.getElementById('rv-water').textContent = textOf('drinking_water_cases') || '0';
         document.getElementById('rv-hygiene').textContent = textOf('hygiene_kits_est') || '0';
-        document.getElementById('rv-blankets').textContent = textOf('blankets_est') || '0';
+        document.getElementById('rv-kitchen').textContent = textOf('kitchen_kits_est') || '0';
         var fileInput = document.getElementById('photo_files');
         document.getElementById('rv-photo-count').textContent = (fileInput && fileInput.files ? fileInput.files.length : 0) + ' photo(s) attached';
         document.getElementById('rv-remarks').textContent = textOf('remarks') || 'None';

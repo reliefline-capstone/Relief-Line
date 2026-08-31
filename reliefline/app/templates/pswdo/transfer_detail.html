@@ -65,10 +65,7 @@
                 {% elif can_issue %}
                 <form method="POST" action="{{ url_for('pswdo.transfer_issue', transfer_id=t.transfer_id) }}" class="settings-form">
                     <p class="form-hint">Confirm the {{ "{:,}".format(t.quantity) }} food packs have left the depot.</p>
-                    <div class="rd-form-row">
-                        <div class="form-row"><label for="ti-arrival">Expected Arrival</label><input type="date" name="expected_arrival" id="ti-arrival"></div>
-                        <div class="form-row"><label for="ti-note">Note</label><input type="text" name="note" id="ti-note" placeholder="e.g. Truck 2"></div>
-                    </div>
+                    <div class="form-row"><label for="ti-arrival">Expected Arrival</label><input type="date" name="expected_arrival" id="ti-arrival"></div>
                     <button type="submit" class="btn-decision btn-approve-full" style="margin-top:16px;">{{ icon('truck', 16, 'white') }} Confirm Issuance &amp; Dispatch</button>
                 </form>
                 {% else %}

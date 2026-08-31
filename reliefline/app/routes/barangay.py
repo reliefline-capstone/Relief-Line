@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import os
+import shutil
 import zipfile
 from datetime import date, datetime
 
@@ -27,8 +28,7 @@ from app.ml import predict as ml_predict
 # notification icon never drifts between the PSWDO/CSWDO screens and this
 # barangay-facing one — see app/routes/pswdo.py for the source of truth.
 from app.routes.pswdo import (
-    DISPATCH_STATUS_LABELS, PRIORITY_BY_STATUS,
-    DEFAULT_PRIORITY, NOTIFICATION_META, DEFAULT_NOTIFICATION_META, _priority_info,
+    DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
 )
 
 barangay_bp = Blueprint("barangay", __name__)
@@ -38,69 +38,39 @@ ALLOWED_UPLOAD_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 REPORT_STATUS_LABELS = {
     "draft": "Draft",
     "pending": "Submitted",
-    "verified": "Verified",
     "returned": "Returned",
+    "approved": "Approved",
+    "declined": "Declined",
+    "fulfilled": "Fulfilled",
 }
 
-# The report is always for a TYPHOON-RELATED event (the manuscript scopes the
-# system to typhoons; other disaster types are "future implementations"). This
-# field is a SUB-CLASSIFICATION of that event — which typhoon-related hazard
-# actually hit the barangay. No longer a user-facing picker (the form dropped
-# it — every typhoon can bring flooding, storm surge, and strong winds
-# together, so every report is filed as "Combined"); kept only as the fixed
-# value stored in the `disaster_type` column and the fallback _apply_report_form
-# uses if that hidden field is ever missing.
-HAZARD_OPTIONS = ["Strong Winds", "Flooding", "Storm Surge", "Combined"]
-# Hazards where flood-depth / water-level fields are relevant — still real
-# inputs on the form. "Combined" (the only value the form ever submits now)
-# is a member, so this branch is effectively always taken.
-_WATER_HAZARDS = {"flooding", "storm surge", "combined"}
+# Reports the barangay has nothing left to act on — MSWDO/CSWDO has decided
+# them: "approved" (accepted, delivery scheduled), "fulfilled" (delivery
+# confirmed received), "declined" (rejected). These fill the History tab.
+# Open items the barangay still works on are draft / pending / returned.
+# (There is no "verified" status — that wording predates the current enum.)
+DECIDED_REPORT_STATUSES = ("approved", "fulfilled", "declined")
+ACCEPTED_REPORT_STATUSES = ("approved", "fulfilled")
 
-# Severity (flood_level) is NOT picked by hand — the system computes it from
-# the entered impact data (see _compute_severity). These labels/order are used
-# only to *display* the computed tier back to the barangay, and match
-# PRIORITY_BY_STATUS (app/routes/pswdo.py) so the dashboard / GIS map / this
-# form all read the same 4-tier vocabulary.
-SEVERITY_LABELS = {
-    "high_priority": {"label": "Critical", "dot": "critical"},
-    "needs_assistance": {"label": "High", "dot": "high"},
-    "monitoring": {"label": "Moderate", "dot": "medium"},
-    "normal": {"label": "Low", "dot": "low"},
-}
-SEVERITY_ORDER = ["normal", "monitoring", "needs_assistance", "high_priority"]
+# The barangay's priority tier is COMPUTED server-side from the reported
+# impact (see _compute_severity) — never graded by hand. It stays an internal
+# signal only: it drives the GIS map colours, the CSWDO priority list, and the
+# BarangayDisasterStatus row, but it is not shown on the report itself. The
+# 4-tier vocabulary matches PRIORITY_BY_STATUS (app/routes/pswdo.py).
 
 
-def _compute_severity(*, situation_type=None, flood_depth_m=None, affected_families=0,
-                      affected_individuals=0, totally_damaged_houses=0,
-                      partially_damaged_houses=0, roofs_damaged=0,
-                      missing_persons=0, casualties_deaths=0):
-    """Derive the priority tier from what was actually reported, so the barangay
-    never has to grade its own emergency. Point-based, capped per factor:
+def _compute_severity(*, affected_families=0, affected_individuals=0,
+                      totally_damaged_houses=0, partially_damaged_houses=0,
+                      roofs_damaged=0):
+    """Derive the priority tier from what was actually reported. Point-based,
+    capped per factor:
 
-      life safety   casualties (25 each, cap 50) · missing persons (12 each, cap 24)
-      flooding      >2m 32 · 1-2m 20 · 0.5-1m 10 · <0.5m 3   (water hazards only)
-      housing       totally-damaged houses (heavier) + partial + roofs damaged
-      population    affected families reported
+      housing     totally-damaged houses (heavier) + partial + roofs damaged
+      population  affected families reported
 
-    Tiers: >=55 Critical · >=30 High · >=12 Moderate · else Low.
+    Tiers: >=42 Critical · >=24 High · >=10 Moderate · else Low.
     """
-    depth = float(flood_depth_m or 0)
-    hazard = (situation_type or "").lower()
     score = 0.0
-
-    score += min((casualties_deaths or 0) * 25, 50)
-    score += min((missing_persons or 0) * 12, 24)
-
-    is_water = (not hazard) or hazard in _WATER_HAZARDS
-    if is_water and depth > 0:
-        if depth > 2:
-            score += 32
-        elif depth > 1:
-            score += 20
-        elif depth >= 0.5:
-            score += 10
-        else:
-            score += 3
 
     total_dmg = totally_damaged_houses or 0
     part_dmg = (partially_damaged_houses or 0) + (roofs_damaged or 0)
@@ -121,17 +91,17 @@ def _compute_severity(*, situation_type=None, flood_depth_m=None, affected_famil
 
     fam = affected_families or 0
     if fam >= 300:
-        score += 14
-    elif fam >= 100:
-        score += 8
-    elif fam >= 30:
-        score += 4
+        score += 20
+    elif fam >= 120:
+        score += 13
+    elif fam >= 40:
+        score += 6
 
-    if score >= 55:
+    if score >= 42:
         return "high_priority"
-    if score >= 30:
+    if score >= 24:
         return "needs_assistance"
-    if score >= 12:
+    if score >= 10:
         return "monitoring"
     return "normal"
 
@@ -173,7 +143,7 @@ def _assert_own_activity(log):
 def _damage_report_notification_link(log):
     # No report_id FK on ActivityLog, so — same fallback pattern as PSWDO's
     # _relief_request_submitted_link when it can't resolve an exact record —
-    # this opens the Damage Report page in general rather than one report.
+    # this opens the Barangay Report page in general rather than one report.
     return url_for("barangay.damage_report")
 
 
@@ -188,7 +158,6 @@ def _relief_monitoring_notification_link(log):
 # only exposing a "Mark as Read" action.
 NOTIFICATION_LINK_BUILDERS = {
     "damage_report_submitted": _damage_report_notification_link,
-    "damage_report_verified": _damage_report_notification_link,
     "damage_report_returned": _damage_report_notification_link,
     "allocation_approved": _relief_monitoring_notification_link,
     "allocation_rejected": _relief_monitoring_notification_link,
@@ -201,12 +170,19 @@ NOTIFICATION_LINK_BUILDERS = {
 }
 
 
+# On the barangay side the "distribution" category is presented as
+# "Relief Monitoring" (matches the sidebar page of the same name) — the
+# shared NOTIFICATION_META label ("Deliveries") is CSWDO/PSWDO wording.
+NOTIFICATION_CATEGORY_LABELS = {"distribution": "Relief Monitoring"}
+
+
 def _notification_view(log):
     meta = NOTIFICATION_META.get(log.action_type, DEFAULT_NOTIFICATION_META)
     link_fn = NOTIFICATION_LINK_BUILDERS.get(log.action_type)
     return {
         "log": log, "icon": meta["icon"], "color": meta["color"],
-        "category": meta["category"], "category_label": meta["category_label"],
+        "category": meta["category"],
+        "category_label": NOTIFICATION_CATEGORY_LABELS.get(meta["category"], meta["category_label"]),
         "link": link_fn(log) if link_fn else None,
     }
 
@@ -230,21 +206,6 @@ def _own_submitted_reports(barangay_id):
     ).order_by(BarangayReport.created_at.desc()).all()
 
 
-def _open_report_for_event(barangay_id, event_id):
-    """The one report a barangay is still actively working on for this
-    event — a draft in progress, freshly submitted (pending), or bounced
-    back for correction (returned). Mirrors the one-active-report-per-
-    barangay-per-event assumption the CSWDO Damage Assessment screen already
-    relies on (app.routes.cswdo._damage_assessment_rows)."""
-    if not event_id:
-        return None
-    return BarangayReport.query.filter(
-        BarangayReport.barangay_id == barangay_id,
-        BarangayReport.event_id == event_id,
-        BarangayReport.status.in_(("draft", "pending", "returned")),
-    ).order_by(BarangayReport.created_at.desc()).first()
-
-
 def _get_own_report_or_404(report_id):
     report = BarangayReport.query.get_or_404(report_id)
     barangay = current_user.barangay
@@ -265,10 +226,12 @@ def dashboard():
     ).all()
     primary_event = active_events[0] if active_events else None
 
-    # Affected families — this barangay's own current status for the active
-    # event, plus the latest verified report's damaged-houses breakdown
-    # (Current Standing panel — folded into the dashboard now that the
-    # standalone Affected Families page is gone).
+    # Current Standing — this barangay's status for the active event. Prefer
+    # the MSWDO-synced BarangayDisasterStatus (set once a report is approved);
+    # before that, fall back to the barangay's own latest submitted report so
+    # the panel reflects what was filed instead of showing 0 next to the
+    # affected-individuals / damaged-houses figures pulled from that same
+    # report.
     status_row = None
     latest_report = None
     if primary_event:
@@ -280,8 +243,15 @@ def dashboard():
             BarangayReport.event_id == primary_event.event_id,
             BarangayReport.status != "draft",
         ).order_by(BarangayReport.created_at.desc()).first()
-    affected_families = status_row.affected_families if status_row else 0
-    priority = _priority_info(status_row.status if status_row else "normal")
+    if status_row:
+        affected_families = status_row.affected_families
+        standing_verified = True
+    elif latest_report:
+        affected_families = latest_report.affected_families
+        standing_verified = False
+    else:
+        affected_families = 0
+        standing_verified = False
 
     # My damage reports — needing attention (submitted/returned) vs. all-time count
     my_reports = _own_submitted_reports(barangay.barangay_id)
@@ -324,7 +294,7 @@ def dashboard():
         affected_families=affected_families,
         status_row=status_row,
         latest_report=latest_report,
-        priority=priority,
+        standing_verified=standing_verified,
         pending_reports_count=len(pending_reports),
         returned_reports_count=len(returned_reports),
         recent_reports=recent_reports,
@@ -381,105 +351,67 @@ def damage_report():
     tab = request.args.get("tab", "dashboard")
 
     all_reports = _own_reports_all(barangay.barangay_id)
+
+    # The Active Event Report tab owns the open items (draft/pending/returned)
+    # for the CURRENT event (or ones not yet tied to any event). Everything
+    # else — decided reports and anything left open on an event that has since
+    # ended — belongs in History, so a report the barangay can no longer act
+    # on is still visible for the record instead of disappearing.
+    active_event_ids = (primary_event.event_id, None) if primary_event else (None,)
+
+    def _is_active_open(r):
+        return r.event_id in active_event_ids and r.status in ("draft", "pending", "returned")
+
+    # Stat cards are all-time and identical on both tabs.
     ctx = {
         "barangay": barangay, "primary_event": primary_event, "tab": tab,
         "status_labels": REPORT_STATUS_LABELS,
         "total_count": len(all_reports),
         "draft_count": len([r for r in all_reports if r.status == "draft"]),
+        "pending_count": len([r for r in all_reports if r.status == "pending"]),
+        "approved_count": len([r for r in all_reports if r.status in ACCEPTED_REPORT_STATUSES]),
+        "returned_count": len([r for r in all_reports if r.status == "returned"]),
     }
 
     if tab == "history":
         search_query = request.args.get("q", "").strip().lower()
-        verified_reports = [r for r in all_reports if r.status == "verified"]
+        status_filter = request.args.get("status", "all")
+        history_reports = [r for r in all_reports if not _is_active_open(r)]
+        # Only offer filter options for statuses that actually appear here.
+        history_statuses = [
+            (s, REPORT_STATUS_LABELS.get(s, s.title()))
+            for s in ("pending", "returned", "approved", "declined", "fulfilled")
+            if any(r.status == s for r in history_reports)
+        ]
+        if status_filter != "all":
+            history_reports = [r for r in history_reports if r.status == status_filter]
         if search_query:
-            verified_reports = [
-                r for r in verified_reports
+            history_reports = [
+                r for r in history_reports
                 if search_query in r.ref.lower() or search_query in r.barangay.barangay_name.lower()
             ]
         ctx.update({
-            "verified_reports": verified_reports,
-            "search_query": search_query,
-            "pending_count": len([r for r in all_reports if r.status == "pending"]),
-            "verified_count": len(verified_reports),
-            "returned_count": len([r for r in all_reports if r.status == "returned"]),
-        })
-    else:
-        # Dashboard tab — this event's own open items (submitted/returned);
-        # a verified report for this event has nothing left to act on, so it
-        # moves to History instead of cluttering this table (see class docs).
-        # With no active event, "this context" means standing requests
-        # (event_id IS NULL) instead — not "match nothing".
-        if primary_event:
-            event_reports = [r for r in all_reports if r.event_id == primary_event.event_id]
-        else:
-            event_reports = [r for r in all_reports if r.event_id is None]
-        # Drafts included here too — otherwise a saved draft would only ever
-        # show up as a number on the stat card with no way to click back into it.
-        open_reports = [r for r in event_reports if r.status in ("draft", "pending", "returned")]
-        # Computed off the unfiltered set so the "returned" banner keeps showing
-        # even while the table below is filtered down to a different status.
-        returned_reports = [r for r in open_reports if r.status == "returned"]
-
-        search_query = request.args.get("q", "").strip().lower()
-        status_filter = request.args.get("status", "all")
-        filtered_open_reports = open_reports
-        if status_filter != "all":
-            filtered_open_reports = [r for r in filtered_open_reports if r.status == status_filter]
-        if search_query:
-            filtered_open_reports = [r for r in filtered_open_reports if search_query in r.ref.lower()]
-
-        open_rows = [{"report": r, "priority": _priority_info(r.flood_level)} for r in filtered_open_reports]
-
-        ctx.update({
-            "open_rows": open_rows,
-            "pending_count": len([r for r in event_reports if r.status == "pending"]),
-            "verified_count": len([r for r in event_reports if r.status == "verified"]),
-            "returned_count": len([r for r in event_reports if r.status == "returned"]),
-            "returned_reports": returned_reports,
+            "decided_reports": history_reports,
+            "history_statuses": history_statuses,
             "search_query": search_query,
             "status_filter": status_filter,
         })
+    else:
+        # Active Event Report tab — open items (draft/submitted/returned) for
+        # the active event, PLUS standing ones not yet tied to any event
+        # (event_id IS NULL) — a draft started before PSWDO declared an event
+        # still needs a way back in.
+        open_reports = [r for r in all_reports if _is_active_open(r)]
+        returned_reports = [r for r in open_reports if r.status == "returned"]
+
+        open_rows = [{"report": r} for r in open_reports]
+
+        ctx.update({
+            "open_rows": open_rows,
+            "returned_reports": returned_reports,
+        })
 
     return render_template("barangay/damage_report.html", **ctx)
-
-
-@barangay_bp.route("/damage-report/export-open")
-@login_required
-@role_required("barangay_user")
-def damage_report_export_open():
-    """CSV export for the Dashboard tab's own toolbar — same idea as
-    damage_report_export, but for this event's still-open (draft/pending/
-    returned) reports instead of the History tab's verified ones."""
-    barangay = _own_barangay_or_404()
-    primary_event = _active_event()
-    all_reports = _own_reports_all(barangay.barangay_id)
-    if primary_event:
-        event_reports = [r for r in all_reports if r.event_id == primary_event.event_id]
-    else:
-        event_reports = [r for r in all_reports if r.event_id is None]
-    open_reports = [r for r in event_reports if r.status in ("draft", "pending", "returned")]
-
-    search_query = request.args.get("q", "").strip().lower()
-    status_filter = request.args.get("status", "all")
-    if status_filter != "all":
-        open_reports = [r for r in open_reports if r.status == status_filter]
-    if search_query:
-        open_reports = [r for r in open_reports if search_query in r.ref.lower()]
-
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(["Report Ref", "Event", "Status", "Flood Level", "Submitted At"])
-    for r in open_reports:
-        writer.writerow([
-            r.ref, r.event.event_name if r.event else "", REPORT_STATUS_LABELS.get(r.status, r.status),
-            PRIORITY_BY_STATUS.get(r.flood_level, DEFAULT_PRIORITY)["label"],
-            r.submitted_at.strftime("%Y-%m-%d %H:%M") if r.submitted_at else "",
-        ])
-
-    return Response(
-        buffer.getvalue(), mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={barangay.barangay_name.replace(' ', '_')}_open_reports.csv"},
-    )
 
 
 @barangay_bp.route("/damage-report/export")
@@ -487,23 +419,26 @@ def damage_report_export_open():
 @role_required("barangay_user")
 def damage_report_export():
     barangay = _own_barangay_or_404()
-    verified_reports = [r for r in _own_reports_all(barangay.barangay_id) if r.status == "verified"]
+    decided_reports = [r for r in _own_reports_all(barangay.barangay_id) if r.status in DECIDED_REPORT_STATUSES]
 
+    status_filter = request.args.get("status", "all")
+    if status_filter != "all":
+        decided_reports = [r for r in decided_reports if r.status == status_filter]
     search_query = request.args.get("q", "").strip().lower()
     if search_query:
-        verified_reports = [
-            r for r in verified_reports
+        decided_reports = [
+            r for r in decided_reports
             if search_query in r.ref.lower() or search_query in r.barangay.barangay_name.lower()
         ]
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(["Report Ref", "Event", "Affected Families", "Affected Individuals",
-                      "Flood Level", "Verified By", "Submitted At"])
-    for r in verified_reports:
+                      "Status", "Reviewed By", "Submitted At"])
+    for r in decided_reports:
         writer.writerow([
             r.ref, r.event.event_name if r.event else "", r.affected_families, r.affected_individuals,
-            PRIORITY_BY_STATUS.get(r.flood_level, DEFAULT_PRIORITY)["label"],
+            REPORT_STATUS_LABELS.get(r.status, r.status),
             r.reviewed_by_user.name if r.reviewed_by_user else "",
             r.submitted_at.strftime("%Y-%m-%d %H:%M") if r.submitted_at else "",
         ])
@@ -522,7 +457,7 @@ def view_damage_report(report_id):
     return render_template(
         "barangay/damage_report_view.html",
         report=report, barangay=report.barangay,
-        status_labels=REPORT_STATUS_LABELS, priority_by_status=PRIORITY_BY_STATUS,
+        status_labels=REPORT_STATUS_LABELS,
     )
 
 
@@ -537,13 +472,6 @@ def _report_form_context(barangay, report=None):
         "barangay": barangay,
         "report": report,
         "active_events": active_events,
-        # hazard_options/hazard_icons dropped — no more hazard picker, every
-        # report is fixed to "Combined" (see the form's hidden disaster_type
-        # input + _apply_report_form's HAZARD_OPTIONS[-1] fallback). water_hazards
-        # stays: the form's JS still mirrors _compute_severity's water-depth
-        # scoring branch, which checks membership in it.
-        "water_hazards": list(_WATER_HAZARDS),
-        "severity_labels": SEVERITY_LABELS,
         "model_estimate": model_estimate,
         "today": date.today(),
     }
@@ -568,11 +496,28 @@ def edit_damage_report(report_id):
     return render_template("barangay/damage_report_form.html", **_report_form_context(report.barangay, report))
 
 
-def _apply_report_form(report):
-    hazard = request.form.get("disaster_type", "")
-    report.disaster_type = hazard if hazard in HAZARD_OPTIONS else HAZARD_OPTIONS[-1]
-    _hazard_lc = report.disaster_type.lower()
+@barangay_bp.route("/damage-report/<int:report_id>/delete", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def delete_damage_report(report_id):
+    report = _get_own_report_or_404(report_id)
+    # Only drafts can be deleted — a submitted report stays on record so the
+    # MSWDO review trail and any allocation tied to it are never orphaned.
+    if report.status != "draft":
+        flash("Only a draft can be deleted. Submitted reports stay on record.", "error")
+        return redirect(url_for("barangay.damage_report"))
+    ref = report.ref
+    upload_dir = os.path.join(
+        current_app.root_path, "static", "uploads", "barangay_reports", str(report.report_id)
+    )
+    db.session.delete(report)
+    db.session.commit()
+    shutil.rmtree(upload_dir, ignore_errors=True)
+    flash(f"Draft {ref} deleted.", "success")
+    return redirect(url_for("barangay.damage_report"))
 
+
+def _apply_report_form(report):
     incident_date = request.form.get("incident_date", "")
     if incident_date:
         try:
@@ -586,16 +531,8 @@ def _apply_report_form(report):
         except ValueError:
             pass
 
-    # Water-hazard branch fields
-    if _hazard_lc in _WATER_HAZARDS:
-        report.flood_depth_m = request.form.get("flood_depth_m", type=float)
-        report.water_level_desc = request.form.get("water_level_desc", "").strip() or None
-    else:
-        report.flood_depth_m = None
-        report.water_level_desc = None
     # Roofs Damaged / Wind Signal are no longer collected — the form dropped
-    # them (see damage_report_form.html Step 2). Left as inert zero/None on
-    # new reports; existing rows for old reports keep whatever they had.
+    # them. Left inert on new reports; old rows keep whatever they had.
     report.roofs_damaged = 0
     report.wind_signal = None
 
@@ -603,29 +540,24 @@ def _apply_report_form(report):
     report.affected_individuals = request.form.get("affected_individuals", type=int) or 0
     report.totally_damaged_houses = request.form.get("totally_damaged_houses", type=int) or 0
     report.partially_damaged_houses = request.form.get("partially_damaged_houses", type=int) or 0
-    report.missing_persons = request.form.get("missing_persons", type=int) or 0
-    report.casualties_deaths = request.form.get("casualties_deaths", type=int) or 0
 
-    # Severity is derived, never hand-picked (see _compute_severity).
+    # Priority tier is derived, never hand-picked (see _compute_severity) — an
+    # internal signal for the GIS map / CSWDO priority list, not shown on the
+    # report.
     report.flood_level = _compute_severity(
-        situation_type=report.disaster_type,
-        flood_depth_m=report.flood_depth_m,
         affected_families=report.affected_families,
         affected_individuals=report.affected_individuals,
         totally_damaged_houses=report.totally_damaged_houses,
         partially_damaged_houses=report.partially_damaged_houses,
         roofs_damaged=report.roofs_damaged,
-        missing_persons=report.missing_persons,
-        casualties_deaths=report.casualties_deaths,
     )
 
     # The barangay's own requested food-pack figure — decision support, not the
     # final allocation (CSWDO/MSWDO sets that when it acts on the request).
     report.requested_food_packs = max(request.form.get("requested_food_packs", type=int) or 0, 0)
 
-    report.drinking_water_cases = request.form.get("drinking_water_cases", type=int) or 0
     report.hygiene_kits_est = request.form.get("hygiene_kits_est", type=int) or 0
-    report.blankets_est = request.form.get("blankets_est", type=int) or 0
+    report.kitchen_kits_est = request.form.get("kitchen_kits_est", type=int) or 0
 
     report.remarks = request.form.get("remarks", "").strip() or None
     report.submitted_by_name = request.form.get("submitted_by_name", "").strip() or current_user.name
@@ -637,6 +569,11 @@ def _get_or_create_report(barangay, report_id, event_id):
         report = _get_own_report_or_404(report_id)
         if report.status not in ("draft", "pending", "returned"):
             abort(403)
+        # A report started before PSWDO declared an event carries no event_id —
+        # attach it to whatever event is active now that it's being saved or
+        # submitted, so it stops being a standing/orphan record.
+        if report.event_id is None and event_id is not None:
+            report.event_id = event_id
         return report, False
     report = BarangayReport(barangay_id=barangay.barangay_id, event_id=event_id)
     db.session.add(report)
@@ -1060,7 +997,7 @@ def reports():
     ).count()
     verified_count = len([
         r for r in my_reports
-        if r.status == "verified" and r.submitted_at and r.submitted_at.date() >= filters["start_date"]
+        if r.status in ACCEPTED_REPORT_STATUSES and r.submitted_at and r.submitted_at.date() >= filters["start_date"]
     ])
     packs_received = sum(d.quantity_released for d in delivered)
     completed_deliveries = len(delivered)
@@ -1256,11 +1193,11 @@ def reports_export():
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(["Report Ref", "Event", "Status", "Affected Families", "Affected Individuals",
-                      "Flood Level", "Submitted By", "Submitted At"])
+                      "Submitted By", "Submitted At"])
     for r in my_reports:
         writer.writerow([
             r.ref, r.event.event_name if r.event else "", REPORT_STATUS_LABELS.get(r.status, r.status),
-            r.affected_families, r.affected_individuals, PRIORITY_BY_STATUS.get(r.flood_level, DEFAULT_PRIORITY)["label"],
+            r.affected_families, r.affected_individuals,
             r.submitted_by_name, r.submitted_at.strftime("%Y-%m-%d %H:%M") if r.submitted_at else "",
         ])
 
@@ -1312,13 +1249,14 @@ def notifications():
         db.session.commit()
 
     # Only the categories this barangay's own ActivityLog rows can actually
-    # carry (see _own_activity_scope) — no "Warehouse" tab like PSWDO's,
-    # since warehouse-transfer notifications never carry a barangay_id.
+    # carry (see _own_activity_scope) — no "Warehouse" tab like PSWDO's, since
+    # warehouse-transfer notifications never carry a barangay_id, and no
+    # "Relief Requests" tab since the barangay's relief request IS its
+    # Barangay Report (Tier 1) and its whole lifecycle lives in that category.
     categories = [
         {"value": "all", "label": "All"},
-        {"value": "damage_reports", "label": "Damage Reports"},
-        {"value": "relief_requests", "label": "Relief Requests"},
-        {"value": "distribution", "label": "Distribution"},
+        {"value": "barangay_reports", "label": "Barangay Reports"},
+        {"value": "distribution", "label": "Relief Monitoring"},
     ]
 
     return render_template(
@@ -1341,20 +1279,6 @@ def view_notification(log_id):
     db.session.commit()
     destination = _notification_view(log)["link"]
     return redirect(destination or url_for("barangay.notifications"))
-
-
-@barangay_bp.route("/notifications/mark-all-read", methods=["POST"])
-@login_required
-@role_required("barangay_user")
-def mark_all_notifications_read():
-    scope = _own_activity_scope()
-    if scope is not None:
-        ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).update(
-            {"is_read": True}, synchronize_session=False
-        )
-        db.session.commit()
-    flash("All notifications marked as read.", "success")
-    return redirect(request.referrer or url_for("barangay.notifications"))
 
 
 # ---------------------------------------------------------------------------

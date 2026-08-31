@@ -64,21 +64,3 @@ class AllocationRecord(db.Model):
         if self.status == "approved" and self.allocated_quantity < self.predicted_quantity:
             return "partially_approved"
         return self.status
-
-
-class PrepositionRecord(db.Model):
-    __tablename__ = "preposition_records"
-
-    preposition_id = db.Column(db.Integer, primary_key=True)
-    from_office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=False)
-    to_barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
-    item_type = db.Column(db.Enum("food_pack"), default="food_pack")
-    quantity = db.Column(db.Integer, default=0)
-    status = db.Column(db.Enum("pending", "approved", "completed"), default="pending")
-    preposition_date = db.Column(db.Date, nullable=False)
-    disaster_event = db.Column(db.String(150), nullable=True)
-    event_id = db.Column(db.Integer, db.ForeignKey("disaster_events.event_id"), nullable=True)
-    created_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
-
-    barangay = db.relationship("Barangay", backref="preposition_records")
-    from_office = db.relationship("Office", backref="preposition_records")
