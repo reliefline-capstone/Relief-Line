@@ -11,7 +11,7 @@
         <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} <span class="sidebar-label">Dashboard</span></a>
         <a href="{{ url_for('admin.users') }}" class="{{ 'active' if active_page == 'users' }}">{{ icon('users', 18) }} <span class="sidebar-label">User Management</span></a>
         <a href="{{ url_for('admin.password_reset_requests') }}" class="sidebar-nav-compact {{ 'active' if active_page == 'password_reset_requests' }}">{{ icon('key', 18) }} <span class="sidebar-label">Password Reset Requests</span> {% if pending_password_resets %}<span class="nav-badge">{{ pending_password_resets }}</span>{% endif %}</a>
-        <a href="{{ url_for('admin.offices') }}" class="{{ 'active' if active_page == 'offices' }}">{{ icon('building', 18) }} <span class="sidebar-label">Office Management</span></a>
+        <a href="{{ url_for('admin.offices') }}" class="{{ 'active' if active_page == 'offices' }}">{{ icon('building', 18) }} <span class="sidebar-label">Warehouse Management</span></a>
         <a href="{{ url_for('admin.barangays') }}" class="{{ 'active' if active_page == 'barangays' }}">{{ icon('map-pin', 18) }} <span class="sidebar-label">Barangay Management</span></a>
         <a href="{{ url_for('admin.activity') }}" class="{{ 'active' if active_page == 'activity' }}">{{ icon('activity', 18) }} <span class="sidebar-label">System Activity</span></a>
         <a href="{{ url_for('admin.settings_page') }}" class="{{ 'active' if active_page == 'settings' }}">{{ icon('sliders', 18) }} <span class="sidebar-label">System Settings</span></a>

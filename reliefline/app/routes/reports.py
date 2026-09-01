@@ -3,6 +3,8 @@ import json
 import zipfile
 from datetime import datetime
 
+from app.utils.timezone import ph_now
+
 from flask import Blueprint, render_template, request, Response, abort, url_for, redirect, flash
 from flask_login import login_required, current_user
 
@@ -92,7 +94,7 @@ def _export(report_type, fmt):
     ))
     db.session.commit()
 
-    filename = f"{report_type}_{datetime.now().strftime('%Y%m%d')}.{EXTENSIONS[fmt]}"
+    filename = f"{report_type}_{ph_now().strftime('%Y%m%d')}.{EXTENSIONS[fmt]}"
     return Response(
         content, mimetype=MIME_TYPES[fmt],
         headers={"Content-Disposition": f"attachment; filename={filename}"},
@@ -153,6 +155,6 @@ def download_all():
     return Response(
         buffer.getvalue(), mimetype="application/zip",
         headers={
-            "Content-Disposition": f"attachment; filename=reliefline_reports_{datetime.now().strftime('%Y%m%d')}.zip"
+            "Content-Disposition": f"attachment; filename=reliefline_reports_{ph_now().strftime('%Y%m%d')}.zip"
         },
     )

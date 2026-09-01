@@ -67,7 +67,7 @@
             <div class="stat-card">
                 <div class="stat-icon brown">{{ icon('clipboard', 18, '#8d6e4b') }}</div>
                 <span class="stat-value">{{ pending_requests_count }}</span>
-                <span class="stat-label">Pending Requests</span>
+                <span class="stat-label">Pending Stock Requests</span>
                 <span class="stat-sub">Awaiting PSWDO approval</span>
             </div>
             <div class="stat-card">
@@ -79,10 +79,10 @@
                 </span>
             </div>
             <div class="stat-card">
-                <div class="stat-icon red">{{ icon('check-circle', 18, '#e74c3c') }}</div>
-                <span class="stat-value">{{ pending_validations_count }}</span>
-                <span class="stat-label">Pending Validations</span>
-                <span class="stat-sub">Awaiting barangay confirmation</span>
+                <div class="stat-icon red">{{ icon('file-text', 18, '#e74c3c') }}</div>
+                <span class="stat-value">{{ pending_barangay_reports_count }}</span>
+                <span class="stat-label">Pending Barangay Reports</span>
+                <span class="stat-sub">Awaiting your review</span>
             </div>
         </section>
 
@@ -139,7 +139,7 @@
                     </div>
                     <div class="request-detail-grid">
                         <span>Barangay</span><strong>{{ row.barangay.barangay_name }}</strong>
-                        <span>Requested</span><strong>{{ "{:,}".format(row.requested or 0) }} packs</strong>
+                        <span>Model est.</span><strong>~{{ "{:,}".format(row.model_estimate or 0) }} packs</strong>
                         <span>Date</span><strong>{{ (row.report.submitted_at or row.report.created_at).strftime('%B %d') }}</strong>
                         {% if row.record %}
                         <span>Allocated</span><strong>{{ "{:,}".format(row.record.allocated_quantity or 0) }} packs</strong>

@@ -6,6 +6,8 @@ import shutil
 import zipfile
 from datetime import date, datetime
 
+from app.utils.timezone import ph_now, ph_today
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, Response, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
@@ -22,7 +24,6 @@ from app.models.validation import DistributionRecord
 from app.models.activity_log import ActivityLog
 from app.models.user import User
 from app.utils import weather as weather_service
-from app.ml import predict as ml_predict
 
 # Reused from the PSWDO route module so a status label, priority tier, or
 # notification icon never drifts between the PSWDO/CSWDO screens and this
@@ -39,18 +40,20 @@ REPORT_STATUS_LABELS = {
     "draft": "Draft",
     "pending": "Submitted",
     "returned": "Returned",
+    "verified": "Verified",
     "approved": "Approved",
     "declined": "Declined",
     "fulfilled": "Fulfilled",
 }
 
 # Reports the barangay has nothing left to act on — MSWDO/CSWDO has decided
-# them: "approved" (accepted, delivery scheduled), "fulfilled" (delivery
-# confirmed received), "declined" (rejected). These fill the History tab.
-# Open items the barangay still works on are draft / pending / returned.
-# (There is no "verified" status — that wording predates the current enum.)
-DECIDED_REPORT_STATUSES = ("approved", "fulfilled", "declined")
-ACCEPTED_REPORT_STATUSES = ("approved", "fulfilled")
+# them: "verified" (situation acknowledged, no allocation), "approved"
+# (accepted, delivery scheduled), "fulfilled" (delivery confirmed received),
+# "declined" (rejected). These fill the History tab. Open items the barangay
+# still works on are draft / pending / returned.
+DECIDED_REPORT_STATUSES = ("verified", "approved", "fulfilled", "declined")
+# "Accepted" = the report was taken as valid, whether or not packs followed.
+ACCEPTED_REPORT_STATUSES = ("verified", "approved", "fulfilled")
 
 # The barangay's priority tier is COMPUTED server-side from the reported
 # impact (see _compute_severity) — never graded by hand. It stays an internal
@@ -163,6 +166,7 @@ NOTIFICATION_LINK_BUILDERS = {
     "allocation_rejected": _relief_monitoring_notification_link,
     "barangay_relief_approved": _relief_monitoring_notification_link,
     "barangay_relief_declined": _damage_report_notification_link,
+    "barangay_report_verified": _damage_report_notification_link,
     "cswdo_proactive_allocation": _relief_monitoring_notification_link,
     "distribution_status": _relief_monitoring_notification_link,
     "distribution_delivered": _relief_monitoring_notification_link,
@@ -218,7 +222,7 @@ def _get_own_report_or_404(report_id):
 @login_required
 @role_required("barangay_user")
 def dashboard():
-    now = datetime.now()
+    now = ph_now()
     barangay = _own_barangay_or_404()
 
     active_events = DisasterEvent.query.filter_by(status="active").order_by(
@@ -380,7 +384,7 @@ def damage_report():
         # Only offer filter options for statuses that actually appear here.
         history_statuses = [
             (s, REPORT_STATUS_LABELS.get(s, s.title()))
-            for s in ("pending", "returned", "approved", "declined", "fulfilled")
+            for s in ("pending", "returned", "verified", "approved", "declined", "fulfilled")
             if any(r.status == s for r in history_reports)
         ]
         if status_filter != "all":
@@ -465,15 +469,11 @@ def _report_form_context(barangay, report=None):
     active_events = DisasterEvent.query.filter_by(status="active").order_by(
         DisasterEvent.start_date.desc()
     ).all()
-    # Model estimate for THIS barangay — shown next to the "Food Packs
-    # Requested" field as decision support only. None when no model is trained.
-    model_estimate = ml_predict.predict_quantity(barangay)
     return {
         "barangay": barangay,
         "report": report,
         "active_events": active_events,
-        "model_estimate": model_estimate,
-        "today": date.today(),
+        "today": ph_today(),
     }
 
 
@@ -552,12 +552,9 @@ def _apply_report_form(report):
         roofs_damaged=report.roofs_damaged,
     )
 
-    # The barangay's own requested food-pack figure — decision support, not the
-    # final allocation (CSWDO/MSWDO sets that when it acts on the request).
-    report.requested_food_packs = max(request.form.get("requested_food_packs", type=int) or 0, 0)
-
-    report.hygiene_kits_est = request.form.get("hygiene_kits_est", type=int) or 0
-    report.kitchen_kits_est = request.form.get("kitchen_kits_est", type=int) or 0
+    # The barangay no longer states any relief-goods figure — the report is a
+    # pure situation report. CSWDO/MSWDO decides the food-pack allocation from
+    # the model estimate + the barangay's own stock (see app.routes.cswdo).
 
     report.remarks = request.form.get("remarks", "").strip() or None
     report.submitted_by_name = request.form.get("submitted_by_name", "").strip() or current_user.name
@@ -624,13 +621,9 @@ def submit_damage_report():
         flash("Affected Individuals must be greater than or equal to Affected Families.", "error")
         return redirect(url_for("barangay.edit_damage_report", report_id=report.report_id) if not is_new
                          else url_for("barangay.new_damage_report"))
-    if not report.requested_food_packs or report.requested_food_packs <= 0:
-        flash("Enter the number of food packs your barangay is requesting.", "error")
-        return redirect(url_for("barangay.edit_damage_report", report_id=report.report_id) if not is_new
-                         else url_for("barangay.new_damage_report"))
 
     was_returned = report.status == "returned"
-    report.submitted_at = datetime.utcnow()
+    report.submitted_at = ph_now()
     # Resubmitting a returned report puts it back in the review queue —
     # review_remarks/reviewed_by/reviewed_at are left as history of the prior review.
     report.status = "pending"
@@ -692,8 +685,11 @@ def _delivery_step_index(dist):
 def relief_monitoring():
     barangay = _own_barangay_or_404()
 
+    # Most recent first — distribution_date is date-only, so distribution_id
+    # breaks same-day ties to keep the newest delivery genuinely on top.
     distributions = DistributionRecord.query.filter_by(barangay_id=barangay.barangay_id).order_by(
-        DistributionRecord.distribution_date.desc()
+        DistributionRecord.distribution_date.desc(),
+        DistributionRecord.distribution_id.desc(),
     ).all()
 
     _CONFIRMABLE = ("dispatched", "in_transit", "delayed", "delivered")
@@ -717,21 +713,6 @@ def relief_monitoring():
             "is_delayed": d.dispatch_status == "delayed",
         })
 
-    # Requests still awaiting PSWDO/CSWDO approval or dispatch scheduling, or
-    # rejected outright — no DistributionRecord exists yet for these, so they
-    # never get a delivery card above; surfaced separately so a rejection or
-    # a still-pending request doesn't just silently disappear from this page.
-    dispatched_allocation_ids = {d.allocation_id for d in distributions}
-    other_allocations = AllocationRecord.query.filter(
-        AllocationRecord.barangay_id == barangay.barangay_id,
-        ~AllocationRecord.allocation_id.in_(dispatched_allocation_ids),
-    ).order_by(AllocationRecord.allocation_date.desc()).all()
-    other_rows = [{
-        "allocation": a,
-        "ref": f"RR-{a.allocation_date.year}-{a.allocation_id:03d}",
-        "status": a.display_status,
-    } for a in other_allocations]
-
     search_query = (request.args.get("q") or "").strip()
     if search_query:
         ql = search_query.lower()
@@ -743,9 +724,17 @@ def relief_monitoring():
             ))
 
         delivery_rows = [r for r in delivery_rows if _row_matches(r)]
-        other_rows = [r for r in other_rows if ql in r["ref"].lower()]
 
-    status_filter = request.args.get("status", "all")
+    # delivery_rows stays in the query's newest-first order — no status
+    # grouping, so "All statuses" reads strictly most-recent-first.
+
+    # Default view shows only what still needs the barangay's attention.
+    # Options: transit (default) · received · all. A bare search with no status
+    # picked spans everything so a lookup for a received delivery still lands.
+    default_status = "all" if search_query else "transit"
+    status_filter = request.args.get("status", default_status)
+    if status_filter not in ("transit", "received", "all"):
+        status_filter = default_status
     if status_filter == "transit":
         delivery_rows = [r for r in delivery_rows if r["distribution"].status != "confirmed"]
     elif status_filter == "received":
@@ -755,7 +744,6 @@ def relief_monitoring():
         "barangay/relief_monitoring.html",
         barangay=barangay,
         delivery_rows=delivery_rows,
-        other_rows=other_rows,
         search_query=search_query,
         status_filter=status_filter,
         total_deliveries=len(distributions),
@@ -819,7 +807,7 @@ def confirm_receipt(distribution_id):
 
     rec.received_by = received_by
     rec.condition = condition
-    rec.time_received = datetime.now().time()
+    rec.time_received = ph_now().time()
     rec.validation_type = validation_type
     if saved_names:
         rec.validation_file = ",".join(saved_names)
@@ -1024,7 +1012,7 @@ def reports():
         })
 
     coverage_range = "All Time" if filters["days"] == "all" else (
-        f"{filters['start_date'].strftime('%b %d')} - {date.today().strftime('%b %d, %Y')}"
+        f"{filters['start_date'].strftime('%b %d')} - {ph_today().strftime('%b %d, %Y')}"
     )
 
     # Report History table — moved here from the now-removed standalone
@@ -1097,7 +1085,7 @@ def _barangay_export_report(report_type, fmt):
     ))
     db.session.commit()
 
-    filename = f"{report_type}_{datetime.now().strftime('%Y%m%d')}.{REPORTS_EXTENSIONS[fmt]}"
+    filename = f"{report_type}_{ph_now().strftime('%Y%m%d')}.{REPORTS_EXTENSIONS[fmt]}"
     return Response(
         content, mimetype=REPORTS_MIME_TYPES[fmt],
         headers={"Content-Disposition": f"attachment; filename={filename}"},
@@ -1168,7 +1156,7 @@ def report_download_all():
     return Response(
         buffer.getvalue(), mimetype="application/zip",
         headers={
-            "Content-Disposition": f"attachment; filename={barangay.barangay_name.replace(' ', '_')}_reports_{datetime.now().strftime('%Y%m%d')}.zip"
+            "Content-Disposition": f"attachment; filename={barangay.barangay_name.replace(' ', '_')}_reports_{ph_now().strftime('%Y%m%d')}.zip"
         },
     )
 

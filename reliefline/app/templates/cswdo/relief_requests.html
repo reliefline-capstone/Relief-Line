@@ -45,9 +45,9 @@
                 <span class="stat-label">Warehouse On Hand</span>
             </div>
             <div class="stat-card">
-                <div class="stat-icon {{ 'red' if shortfall else 'purple' }}">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
-                <span class="stat-value">{{ "{:,}".format(shortfall) }}</span>
-                <span class="stat-label">Shortfall</span>
+                <div class="stat-icon {{ 'red' if shortage else 'purple' }}">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ "{:,}".format(shortage) }}</span>
+                <span class="stat-label">Shortage</span>
                 <span class="stat-sub">demand − on hand</span>
             </div>
             <div class="stat-card">
@@ -65,19 +65,17 @@
 
         {% if tab == 'create' %}
         <div class="rr-panel rr-panel-flush">
-            <div class="rr-panel-header"><div><h3>Demand vs Stock — barangay breakdown</h3><p>The number you request is grounded in this. PSWDO sees the same breakdown.</p></div></div>
+            <div class="rr-panel-header"><div><h3>Projected demand — barangay breakdown</h3><p>Municipal demand = Σ barangay model estimates. PSWDO sees the same breakdown.</p></div></div>
             <table class="rr-table">
-                <thead><tr><th>Barangay</th><th>Model Estimate</th><th>Barangay Request</th><th>Demand Used</th></tr></thead>
+                <thead><tr><th>Barangay</th><th>Model Estimate (demand)</th></tr></thead>
                 <tbody>
                     {% for r in breakdown %}
                     <tr>
                         <td>{{ r.barangay.barangay_name }}</td>
-                        <td>{{ "{:,}".format(r.model) }}</td>
-                        <td>{{ "{:,}".format(r.requested) if r.requested else '—' }}</td>
                         <td><strong>{{ "{:,}".format(r.demand) }}</strong></td>
                     </tr>
                     {% endfor %}
-                    <tr><td><strong>TOTAL</strong></td><td></td><td></td><td><strong>{{ "{:,}".format(predicted_demand) }}</strong></td></tr>
+                    <tr><td><strong>TOTAL</strong></td><td><strong>{{ "{:,}".format(predicted_demand) }}</strong></td></tr>
                 </tbody>
             </table>
         </div>
@@ -89,7 +87,7 @@
                 <div class="rr-field">
                     <label>Food Packs to Request from PSWDO <span class="required">*</span></label>
                     <input type="number" name="food_packs" min="1" value="{{ food_packs_value }}" required>
-                    <span class="form-hint" style="display:block; margin-top:6px;">Suggested = shortfall ({{ "{:,}".format(shortfall) }}). Warehouse holds {{ "{:,}".format(on_hand) }}.</span>
+                    <span class="form-hint" style="display:block; margin-top:6px;">Suggested = shortage ({{ "{:,}".format(shortage) }}). Warehouse holds {{ "{:,}".format(on_hand) }}.</span>
                 </div>
             </div>
             <label style="display:block; font-size:12.5px; font-weight:600; margin:4px 0 8px;">Priority <span class="required">*</span></label>

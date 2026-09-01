@@ -9,12 +9,14 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
-{% set TABS = [('queue','Queue', pending_rows), ('approved','Approved', approved_rows),
+{% set TABS = [('queue','Queue', pending_rows), ('verified','Verified', verified_rows),
+               ('approved','Approved', approved_rows),
                ('fulfilled','Fulfilled', fulfilled_rows), ('declined','Declined', declined_rows),
-               ('all','All Requests', rows)] %}
-{% set active_rows = (pending_rows if tab == 'queue' else (approved_rows if tab == 'approved'
+               ('all','All Reports', rows)] %}
+{% set active_rows = (pending_rows if tab == 'queue' else (verified_rows if tab == 'verified'
+                      else (approved_rows if tab == 'approved'
                       else (fulfilled_rows if tab == 'fulfilled'
-                      else (declined_rows if tab == 'declined' else rows)))) %}
+                      else (declined_rows if tab == 'declined' else rows))))) %}
 
 {% macro request_modal(r) %}
 {% set rep = r.report %}
@@ -38,6 +40,7 @@
 
         <div class="rr-review-body">
             <div class="rr-review-details">
+                <p style="font-size:11px; font-weight:700; color:#8a94a6; text-transform:uppercase; letter-spacing:0.4px; margin:0 0 10px;">Barangay Assessment</p>
                 <div class="rd-info-grid">
                     <div><span>Affected Families</span><strong>{{ "{:,}".format(rep.affected_families or 0) }}</strong></div>
                     <div><span>Affected Individuals</span><strong>{{ "{:,}".format(rep.affected_individuals or 0) }}</strong></div>
@@ -53,8 +56,11 @@
 
             <div class="rr-review-decision">
                 <div class="rd-amount-tile">
-                    <div><span>Barangay Requested</span><strong>{{ "{:,}".format(rep.requested_food_packs or 0) }} packs</strong></div>
                     <div><span>Model Estimate</span><strong>~{{ "{:,}".format(r.model_estimate) }} packs</strong> <span class="rd-sub">decision support</span></div>
+                    <div><span>Barangay Stock on Hand</span><strong>
+                        {%- if r.barangay_on_hand is none %}No stock reported{% else %}{{ "{:,}".format(r.barangay_on_hand) }} packs{% endif -%}
+                    </strong></div>
+                    <div><span>Suggested Allocation</span><strong>{{ "{:,}".format(r.suggested_allocation) }} packs</strong> <span class="rd-sub">model − on hand</span></div>
                 </div>
 
                 {% if r.allocation %}
@@ -75,9 +81,9 @@
                     <div class="form-row">
                         <label for="rr-q-{{ rep.report_id }}">Food packs to allocate *</label>
                         <input type="number" name="quantity" id="rr-q-{{ rep.report_id }}" min="1"
-                               value="{{ rep.requested_food_packs or r.model_estimate }}" required>
-                        <span class="form-hint">Barangay asked for {{ "{:,}".format(rep.requested_food_packs or 0) }} ·
-                            <a href="#" data-fill="#rr-q-{{ rep.report_id }}" data-value="{{ r.model_estimate }}">use model estimate ({{ "{:,}".format(r.model_estimate) }})</a>
+                               value="{{ r.suggested_allocation or r.model_estimate }}" required>
+                        <span class="form-hint">Suggested {{ "{:,}".format(r.suggested_allocation) }} (model − barangay stock) ·
+                            <a href="#" data-fill="#rr-q-{{ rep.report_id }}" data-value="{{ r.model_estimate }}">use full model estimate ({{ "{:,}".format(r.model_estimate) }})</a>
                             · your warehouse: {{ "{:,}".format(on_hand) }} on hand</span>
                     </div>
                     <div class="form-row">
@@ -91,11 +97,12 @@
 
         {% if can_decide %}
         <div class="rd-modal-actions rr-review-actions">
-            <button type="submit" form="rr-form-{{ rep.report_id }}" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Approve &amp; Fulfil</button>
+            <button type="submit" form="rr-form-{{ rep.report_id }}" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Allocate &amp; Fulfil</button>
+            <button type="submit" form="rr-form-{{ rep.report_id }}" formaction="{{ url_for('cswdo.verify_relief_request', report_id=rep.report_id) }}" class="btn-decision btn-verify-only" formnovalidate>{{ icon('check', 16, 'white') }} Verify Only</button>
             <button type="submit" form="rr-form-{{ rep.report_id }}" formaction="{{ url_for('cswdo.return_damage_report', report_id=rep.report_id) }}" class="btn-decision btn-partial" formnovalidate>{{ icon('rotate-ccw', 16, 'white') }} Return</button>
             <button type="submit" form="rr-form-{{ rep.report_id }}" formaction="{{ url_for('cswdo.decline_relief_request', report_id=rep.report_id) }}" class="btn-decision btn-reject" formnovalidate>{{ icon('x-circle', 16, 'white') }} Decline</button>
         </div>
-        <p class="form-hint rr-review-foot-hint">Return sends it back to the barangay to fix; Decline closes it. The remark above is used as the reason for both.</p>
+        <p class="form-hint rr-review-foot-hint"><strong>Verify Only</strong> acknowledges the report with no delivery (barangay has enough stock). Return sends it back to fix; Decline closes it. The remark above is the reason for Return and Decline.</p>
         {% endif %}
     </div>
 </div>
@@ -126,7 +133,7 @@
                 <div class="stat-icon amber">{{ icon('clock', 18, '#d68910') }}</div>
                 <span class="stat-value">{{ pending_rows|length }}</span>
                 <span class="stat-label">Awaiting Decision</span>
-                <span class="stat-sub">{{ "{:,}".format(requested_pending) }} packs requested</span>
+                <span class="stat-sub">{{ "{:,}".format(suggested_pending) }} packs suggested (model)</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('check-circle', 18, '#3867d6') }}</div>
@@ -140,17 +147,17 @@
                 <span class="stat-sub">{{ "{:,}".format(approved_packs) }} packs allocated</span>
             </div>
             <div class="stat-card">
-                <div class="stat-icon {{ 'red' if on_hand < requested_pending else 'purple' }}">{{ icon('building', 18, '#6c5ce7') }}</div>
+                <div class="stat-icon {{ 'red' if on_hand < suggested_pending else 'purple' }}">{{ icon('building', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(on_hand) }}</span>
                 <span class="stat-label">Warehouse On Hand</span>
                 <span class="stat-sub"><a href="{{ url_for('cswdo.municipal_inventory') }}">manage stock →</a></span>
             </div>
         </section>
 
-        {% if on_hand < requested_pending and pending_rows %}
+        {% if on_hand < suggested_pending and pending_rows %}
         <div class="da-banner da-banner-warning">
             {{ icon('alert-triangle', 16) }}
-            <span>Pending requests total <strong>{{ "{:,}".format(requested_pending) }} packs</strong> but your warehouse holds only <strong>{{ "{:,}".format(on_hand) }}</strong>. Submit a stock request to PSWDO or approve smaller quantities.</span>
+            <span>Pending reports suggest <strong>{{ "{:,}".format(suggested_pending) }} packs</strong> but your warehouse holds only <strong>{{ "{:,}".format(on_hand) }}</strong>. Submit a stock request to PSWDO or allocate smaller quantities.</span>
         </div>
         {% endif %}
 
@@ -171,8 +178,8 @@
             <table class="da-table">
                 <thead>
                     <tr>
-                        <th>Request ID</th><th>Barangay</th><th>Typhoon Event</th>
-                        <th>Affected Fam.</th><th>Requested</th><th>Status</th><th></th>
+                        <th>Report ID</th><th>Barangay</th><th>Typhoon Event</th>
+                        <th>Affected Fam.</th><th>Model / Brgy. stock</th><th>Status</th><th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -183,7 +190,9 @@
                         <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
                         <td>{{ rep.event.event_name if rep.event else '—' }}</td>
                         <td>{{ "{:,}".format(rep.affected_families or 0) }}</td>
-                        <td>{{ "{:,}".format(rep.requested_food_packs or 0) }}<br><span class="rd-sub">model ~{{ "{:,}".format(r.model_estimate) }}</span></td>
+                        <td>~{{ "{:,}".format(r.model_estimate) }}<br><span class="rd-sub">
+                            {%- if r.barangay_on_hand is none %}stock: none reported{% else %}stock: {{ "{:,}".format(r.barangay_on_hand) }}{% endif -%}
+                        </span></td>
                         <td><span class="status-dot-label status-{{ rep.status }}"><i class="status-dot status-{{ rep.status }}"></i> {{ status_labels.get(rep.status, rep.status) }}</span></td>
                         <td>
                             <button type="button" class="btn-view-sm" data-open-modal="rr-modal-{{ rep.report_id }}">

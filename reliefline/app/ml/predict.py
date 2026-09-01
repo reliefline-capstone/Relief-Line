@@ -14,6 +14,8 @@ better evidence than a model estimate.
 import json
 from datetime import date
 
+from app.utils.timezone import ph_today
+
 import joblib
 
 from app.ml.train import ARTIFACT_PATH, feature_row, historical_allocation_for
@@ -61,7 +63,7 @@ def log_prediction_once_per_day(barangay, predicted_quantity):
     existing = PredictionLog.query.filter(
         PredictionLog.barangay_id == barangay.barangay_id,
         PredictionLog.model_version == artifact["version"],
-        db.func.date(PredictionLog.predicted_at) == date.today(),
+        db.func.date(PredictionLog.predicted_at) == ph_today(),
     ).first()
     if existing:
         return existing

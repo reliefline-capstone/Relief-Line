@@ -6,6 +6,8 @@ to DEFAULT_MODULE_LABEL.
 """
 from datetime import datetime
 
+from app.utils.timezone import ph_now
+
 from flask import request
 from app.extensions import db
 from app.models.activity_log import ActivityLog
@@ -77,7 +79,7 @@ def log_admin_activity(actor_id, action_type, description, office_id=None, baran
         actor_id=actor_id, action_type=action_type, description=description,
         office_id=office_id, barangay_id=barangay_id,
         ip_address=request.remote_addr if request else None,
-        is_read=True, created_at=datetime.utcnow(),
+        is_read=True, created_at=ph_now(),
     )
     db.session.add(log)
     return log

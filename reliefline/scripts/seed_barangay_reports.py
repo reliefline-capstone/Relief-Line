@@ -14,9 +14,11 @@ Usage:
 """
 import sys
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.utils.timezone import ph_now
 
 from app import create_app
 from app.extensions import db
@@ -110,7 +112,7 @@ def run():
             return
 
         reviewers = {u.office_id: u for u in User.query.filter_by(role="cswdo_admin").all()}
-        now = datetime.utcnow()
+        now = ph_now()
         count = 0
 
         for lgu, rows in PLAN.items():

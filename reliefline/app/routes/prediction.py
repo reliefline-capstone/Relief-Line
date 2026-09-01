@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+from app.utils.timezone import ph_today
+
 from flask import Blueprint, render_template, request, Response, url_for
 from flask_login import login_required, current_user
 
@@ -9,14 +11,17 @@ from app.models.barangay_status import BarangayDisasterStatus
 from app.models.disaster_event import DisasterEvent
 from app.models.validation import DistributionRecord
 from app.models.prediction import ModelMetrics
+from app.models.barangay_inventory import food_pack_on_hand
+from app.models.barangay_report import BarangayReport
 from app.ml import predict as ml_predict
 
 # Reused rather than re-implemented — this is the same TARGET_LGUS scope,
-# priority-tier mapping, warehouse loader, and stock-transfer recommendation
+# warehouse loader, stock-transfer recommendation, and stock-adequacy tier
 # logic the Dashboard/GIS Map/Relief Requests pages already use.
 from app.routes.pswdo import (
-    TARGET_LGUS, PRIORITY_BY_STATUS, DEFAULT_PRIORITY,
-    _priority_info, _load_warehouses, _stock_recommendations, _relief_summary,
+    TARGET_LGUS,
+    _load_warehouses, _stock_recommendations, _relief_summary,
+    _stock_adequacy, _STOCK_TIER,
 )
 
 prediction_bp = Blueprint("prediction", __name__)
@@ -51,16 +56,31 @@ def _resolve_event(event_id):
 
 
 def _barangay_snapshot(barangay, status_row, event_id):
-    """One barangay's real profile + status + need figures. 'Estimated Need'
-    uses the real submitted request when one exists; otherwise it falls back
-    to the trained model's forecast (see app/ml — currently low-confidence,
-    see the Model Performance panel)."""
+    """One barangay's real profile + need figures. The priority tier here is
+    STOCK ADEQUACY (see app.routes.pswdo._stock_adequacy) — reported caseload
+    (affected families + individuals) vs the barangay's own food-pack stock —
+    the same lens the GIS map uses, so this page and the map agree. 'Estimated
+    Need' still uses the real submitted request/allocation when one exists,
+    else the trained model's forecast."""
     status_key = status_row.status if status_row else "normal"
-    priority = _priority_info(status_key)
 
     relief = _relief_summary([barangay.barangay_id], event_id)
     has_request = relief["requested"] > 0
     predicted = ml_predict.predict_quantity(barangay)
+    on_hand = food_pack_on_hand(barangay.barangay_id)
+
+    report_row = None
+    if event_id:
+        report_row = BarangayReport.query.filter(
+            BarangayReport.barangay_id == barangay.barangay_id,
+            BarangayReport.event_id == event_id,
+            BarangayReport.status != "draft",
+        ).order_by(
+            BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
+        ).first()
+    stock_need = ((report_row.affected_families or 0)
+                  + (report_row.affected_individuals or 0)) if report_row else 0
+    adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
 
     if has_request:
         packs_needed = relief["requested"]
@@ -76,15 +96,23 @@ def _barangay_snapshot(barangay, status_row, event_id):
         "name": barangay.barangay_name,
         "lgu": barangay.city_municipality,
         "status": status_key,
-        "priority_label": priority["label"],
-        "priority_tier": priority["tier"],
-        "priority_rank": priority["rank"],
-        "affected_families": status_row.affected_families if status_row else 0,
+        "priority_label": adeq["label"],
+        "priority_tier": adeq["tier"],
+        "priority_rank": adeq["rank"],
+        "stock_need": stock_need,
+        "stock_ratio_pct": ratio_pct,
+        "affected_families": (report_row.affected_families if report_row
+                              else (status_row.affected_families if status_row else 0)),
         "packs_needed": packs_needed,
         "released": released,
         "undelivered": max(packs_needed - released, 0),
         "need_source": source,
         "predicted_quantity": predicted,
+        # The barangay's own current food-pack stock — int, or None when the
+        # barangay has never reported any. Shown read-only in the ranking and
+        # used to prefill a proactive allocation (model estimate − on hand).
+        "on_hand_stock": on_hand,
+        "suggested_allocation": max((predicted or 0) - (on_hand or 0), 0),
     }
 
 
@@ -158,7 +186,7 @@ def index():
         packs_needed = sum(s["packs_needed"] for s in lgu_snaps)
         delivered = sum(s["released"] for s in lgu_snaps)
         worst_rank = max((s["priority_rank"] for s in lgu_snaps), default=0)
-        worst = next((v for v in PRIORITY_BY_STATUS.values() if v["rank"] == worst_rank), DEFAULT_PRIORITY)
+        worst = next((v for v in _STOCK_TIER.values() if v["rank"] == worst_rank), _STOCK_TIER["unrated"])
         forecast_by_lgu.append({
             "lgu": lgu,
             "packs_needed": packs_needed,
@@ -170,11 +198,14 @@ def index():
         })
     forecast_by_lgu.sort(key=lambda f: f["packs_needed"], reverse=True)
 
-    # ---- Priority ranking (barangay-level; real status data ranks first,
-    # model-only estimates fill remaining slots) ----
+    # ---- Priority ranking (barangay-level) — by STOCK SHORTFALL: the
+    # barangays least able to cover their own reported caseload from their own
+    # food-pack stock float to the top (same lens as the GIS map). Within a
+    # tier, the higher need-vs-stock ratio ranks first, then the larger
+    # estimated need. ----
     ranking = sorted(
         snapshots,
-        key=lambda s: (s["priority_rank"], s["affected_families"], s["packs_needed"]),
+        key=lambda s: (s["priority_rank"], s["stock_ratio_pct"] or 0, s["packs_needed"]),
         reverse=True,
     )[:8]
 
@@ -200,7 +231,7 @@ def index():
 
     # ---- Historical trend — real DistributionRecord history, whatever there
     # is of it (this deployment currently has activity on a single date) ----
-    since = datetime.now().date() - timedelta(days=days_filter)
+    since = ph_today() - timedelta(days=days_filter)
     history_rows = DistributionRecord.query.join(Barangay).filter(
         Barangay.city_municipality.in_(lgus),
         DistributionRecord.distribution_date >= since,
@@ -309,13 +340,17 @@ def export_forecast():
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow([
-        "Municipality", "Barangay", "Status", "Affected Families",
+        "Municipality", "Barangay", "Stock Adequacy", "Need (fam+indiv)",
+        "Barangay Stock", "Need/Stock %", "Affected Families",
         "Packs Needed", "Need Source", "Delivered", "Undelivered",
     ])
     for b in barangays:
         s = _barangay_snapshot(b, status_map.get(b.barangay_id), event_id)
         writer.writerow([
-            s["lgu"], s["name"], s["priority_label"], s["affected_families"],
+            s["lgu"], s["name"], s["priority_label"], s["stock_need"],
+            "" if s["on_hand_stock"] is None else s["on_hand_stock"],
+            "" if s["stock_ratio_pct"] is None else s["stock_ratio_pct"],
+            s["affected_families"],
             s["packs_needed"], s["need_source"], s["released"], s["undelivered"],
         ])
 

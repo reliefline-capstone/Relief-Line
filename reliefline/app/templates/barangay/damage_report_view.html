@@ -50,6 +50,14 @@
                 Track the delivery on <a href="{{ url_for('barangay.relief_monitoring') }}">Relief Monitoring</a>.
             </p>
         </section>
+        {% elif report.status == 'verified' %}
+        <section class="panel" style="border:1px solid #cfe0f0; background:#f0f6fc; margin-bottom:16px;">
+            <div class="panel-header"><h3 style="color:#2c5aa0;">{{ icon('check-circle', 16, '#2c5aa0') }} Verified by {{ reviewer }}</h3></div>
+            <p style="font-size:13px; color:#244b86;">
+                Your report has been reviewed and acknowledged. No relief delivery was scheduled — your barangay's current stock is considered sufficient for this situation.
+                {% if report.review_remarks %} {{ report.review_remarks }}{% endif %}
+            </p>
+        </section>
         {% endif %}
 
         <section class="panel">
@@ -65,20 +73,21 @@
                     <span class="timeline-label">Submitted</span>
                 </div>
                 <div class="timeline-line {{ 'done' if report.status not in ('draft', 'pending') }}"></div>
-                {% set decided = report.status in ('approved', 'fulfilled', 'declined', 'returned') %}
+                {% set decided = report.status in ('verified', 'approved', 'fulfilled', 'declined', 'returned') %}
                 <div class="timeline-node
-                    {%- if report.status in ('approved', 'fulfilled') %} current-verified
+                    {%- if report.status in ('verified', 'approved', 'fulfilled') %} current-verified
                     {%- elif report.status == 'declined' %} current-declined
                     {%- elif report.status == 'returned' %} current-returned
                     {%- else %} current-pending{% endif %}">
                     <div class="timeline-dot">
-                        {% if report.status in ('approved', 'fulfilled') %}{{ icon('check', 16) }}
+                        {% if report.status in ('verified', 'approved', 'fulfilled') %}{{ icon('check', 16) }}
                         {% elif report.status == 'declined' %}{{ icon('x', 16) }}
                         {% elif report.status == 'returned' %}!
                         {% else %}3{% endif %}
                     </div>
                     <span class="timeline-label">
-                        {% if report.status == 'approved' %}Approved
+                        {% if report.status == 'verified' %}Verified
+                        {% elif report.status == 'approved' %}Approved
                         {% elif report.status == 'fulfilled' %}Fulfilled
                         {% elif report.status == 'declined' %}Declined
                         {% elif report.status == 'returned' %}Returned for Revision
@@ -107,7 +116,7 @@
 
             <div class="drv-side">
                 <section class="panel">
-                    <div class="panel-header"><h3>{{ icon('users', 18, '#0f2547') }} Damage Summary</h3></div>
+                    <div class="panel-header"><h3>{{ icon('users', 18, '#0f2547') }} Barangay Assessment</h3></div>
                     <div class="info-grid">
                         <div class="info-box"><span>Affected Families</span><strong>{{ "{:,}".format(report.affected_families) }}</strong></div>
                         <div class="info-box"><span>Affected Individuals</span><strong>{{ "{:,}".format(report.affected_individuals) }}</strong></div>
@@ -117,10 +126,8 @@
                 </section>
 
                 <section class="panel">
-                    <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Needs</h3></div>
-                    <div class="review-row"><span>Hygiene Kits</span><strong>{{ report.hygiene_kits_est }}</strong></div>
-                    <div class="review-row"><span>Kitchen Kits</span><strong>{{ report.kitchen_kits_est }}</strong></div>
-                    <p class="form-hint" style="margin-top:8px;">Food pack allocation for this barangay is computed separately by ReliefLine's predictive model — see Relief Monitoring.</p>
+                    <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Allocation</h3></div>
+                    <p class="form-hint" style="margin-top:2px;">This is a situation report — it does not request a specific quantity. MSWDO/CSWDO decides any food-pack allocation from ReliefLine's predictive model and your barangay's current stock. Track anything sent to you on <a href="{{ url_for('barangay.relief_monitoring') }}">Relief Monitoring</a>.</p>
                 </section>
             </div>
         </div>

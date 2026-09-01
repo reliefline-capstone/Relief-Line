@@ -1,5 +1,5 @@
 from app.extensions import db
-from datetime import datetime
+from app.utils.timezone import ph_now
 
 class ActivityLog(db.Model):
     __tablename__ = "activity_logs"
@@ -22,7 +22,7 @@ class ActivityLog(db.Model):
     # app.utils.activity) — older/operational rows predate this column and
     # stay NULL, which the admin System Activity table renders as "—".
     ip_address = db.Column(db.String(45), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=ph_now)
 
     actor = db.relationship("User", foreign_keys=[actor_id])
     office = db.relationship("Office")

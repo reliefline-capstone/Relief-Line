@@ -81,6 +81,7 @@
 .badge-status.status-pending { background: #fef5e3; color: #d68910; }
 .badge-status.status-approved,
 .badge-status.status-fulfilled { background: #e8faf0; color: #1e8449; }
+.badge-status.status-verified { background: #eaf4fb; color: #2c5aa0; }
 .badge-status.status-returned,
 .badge-status.status-declined { background: #fdecea; color: #c0392b; }
 
@@ -92,6 +93,7 @@
 .badge-status-pending { background: #fef5e3; color: #d68910; }
 .badge-status-approved,
 .badge-status-fulfilled { background: #e8faf0; color: #1e8449; }
+.badge-status-verified { background: #eaf4fb; color: #2c5aa0; }
 .badge-status-returned,
 .badge-status-declined { background: #fdecea; color: #c0392b; }
 

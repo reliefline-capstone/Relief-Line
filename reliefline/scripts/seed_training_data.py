@@ -14,7 +14,10 @@ What it does
    per-barangay household size (so num_households is NOT a fixed ratio of
    population and the two carry independent signal), poverty incidence,
    disaster risk index and past-calamity frequency — all deterministic from
-   the barangay name, so re-runs are stable.
+   the barangay name, so re-runs are stable. Any barangay figure we have an
+   official record for (see scripts/real_profiles.py — currently Urdaneta
+   City population and household counts, PSA 2024) overrides the synthetic
+   value; fields with no real dataset yet stay synthetic.
 3. Creates six past (ended) typhoon events spanning 2023-2025 and, for each,
    a BarangayDisasterStatus + a released AllocationRecord for a large subset
    of barangays. The allocation quantity comes from an explicit generative
@@ -36,9 +39,14 @@ import json
 import os
 import random
 import sys
-from datetime import date
+from datetime import date, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/ — sibling modules
+
+from real_profiles import real_profile
+
+from app.utils.timezone import ph_now, ph_today
 
 from app import create_app
 from app.extensions import db
@@ -123,13 +131,17 @@ def profile_for(name, lgu):
     poverty_incidence = round(rng.uniform(12.0, 47.0), 2)
     disaster_risk_index = round(rng.uniform(3.6, 9.1), 2)
     past_calamity_freq = rng.randint(1, 9)
-    return {
+    profile = {
         "population": population,
         "num_households": num_households,
         "poverty_incidence": poverty_incidence,
         "disaster_risk_index": disaster_risk_index,
         "past_calamity_freq": past_calamity_freq,
     }
+    # Overlay any official figure on record (see scripts/real_profiles.py).
+    # Synthetic values survive only for fields with no real dataset yet.
+    profile.update(real_profile(lgu, name))
+    return profile
 
 
 def _affected_rate(b, severity):
@@ -226,6 +238,32 @@ def run():
                 all_barangays.append(row)
         db.session.flush()
         print(f"Roster: {len(all_barangays)} barangays ({added} newly added, profiles refreshed).")
+
+        # --- 2b. baseline barangay food-pack stock ------------------------
+        # Every barangay carries some on-hand stock so the CSWDO/MSWDO-facing
+        # views (Barangay Report review, Predictive Analytics, GIS map) have a
+        # real figure to weigh an allocation against. A barangay that later
+        # hands everything out drops to a genuine 0; only a barangay with NO
+        # inventory row at all reads as "none reported".
+        from app.models.barangay_inventory import BarangayInventory
+        BASELINE_BARANGAY_STOCK = 100
+        stocked = 0
+        for b in all_barangays:
+            inv = BarangayInventory.query.filter_by(
+                barangay_id=b.barangay_id, item_type="food_pack"
+            ).first()
+            if inv is None:
+                db.session.add(BarangayInventory(
+                    barangay_id=b.barangay_id, item_type="food_pack",
+                    item_name="Food Packs", unit="packs",
+                    quantity_available=BASELINE_BARANGAY_STOCK,
+                ))
+                stocked += 1
+            elif (inv.quantity_available or 0) == 0:
+                inv.quantity_available = BASELINE_BARANGAY_STOCK
+                stocked += 1
+        db.session.flush()
+        print(f"Barangay stock: {stocked} barangays set to a {BASELINE_BARANGAY_STOCK}-pack baseline.")
 
         # --- 3. decide which barangays each event hits ---------------------
         # Deterministic per barangay+event; then top up so every barangay is
@@ -404,7 +442,7 @@ def run():
                     office_id=office.office_id, item_type=item_type, item_name=item_name,
                     delta=delta, reason=reason, source_type=src, donor_name=donor,
                     updated_by=pswdo_admin.user_id if pswdo_admin else None,
-                    created_at=datetime.utcnow() - timedelta(days=days_ago),
+                    created_at=ph_now() - timedelta(days=days_ago),
                 ))
                 stock_logs += 1
         db.session.flush()
@@ -424,7 +462,7 @@ def run():
             AllocationRecord.event_id == (active.event_id if active else None)
         ).count()
         if active and _have_demo < 3:
-            today = date.today()
+            today = ph_today()
             # (barangay_name, lgu, hazard, families, requested, outcome)
             plan = [
                 ("Poblacion", "Urdaneta City", "Flooding", 210, 260, "pending"),
@@ -444,7 +482,7 @@ def run():
                 rep = BarangayReport(
                     barangay_id=b.barangay_id, event_id=active.event_id,
                     submitted_by_name="Barangay Captain", submitted_by_designation="Barangay Captain",
-                    submitted_at=datetime.utcnow(),
+                    submitted_at=ph_now(),
                     incident_date=active.start_date,
                     affected_families=fam, affected_individuals=fam * 4,
                     totally_damaged_houses=max(fam // 30, 1), partially_damaged_houses=fam // 8,
@@ -494,7 +532,7 @@ def run():
                     dist.condition = "complete"
                     dist.validation_type = "signature"
                     dist.issued_by = cadmin.user_id if cadmin else None
-                    dist.issued_at = datetime.utcnow()
+                    dist.issued_at = ph_now()
                     rep.status = "fulfilled"
                     binv = BarangayInventory.query.filter_by(barangay_id=b.barangay_id, item_type="food_pack").first()
                     if binv is None:
@@ -509,7 +547,7 @@ def run():
                     ))
                 else:
                     dist.issued_by = cadmin.user_id if cadmin else None
-                    dist.issued_at = datetime.utcnow()
+                    dist.issued_at = ph_now()
                 db.session.add(dist)
                 db.session.flush()
 
@@ -535,7 +573,7 @@ def run():
                     requested_food_packs=requested, priority="high",
                     reason="Barangay relief requests this week have drawn the municipal warehouse below projected demand.",
                     created_by=cadmin.user_id if cadmin else None,
-                    created_at=datetime.utcnow(), submitted_at=datetime.utcnow(),
+                    created_at=ph_now(), submitted_at=ph_now(),
                     status="pending",
                 )
                 db.session.add(batch)
@@ -550,14 +588,14 @@ def run():
                     batch.fulfilling_office_id = depot.office_id
                     pswdo_u = pswdo_admin
                     batch.decided_by = pswdo_u.user_id if pswdo_u else None
-                    batch.decided_at = datetime.utcnow()
+                    batch.decided_at = ph_now()
                     db.session.add(WarehouseTransfer(
                         from_office_id=depot.office_id, to_office_id=office.office_id,
                         item_type="food_pack", quantity=approved, batch_id=batch.batch_id,
                         status="pending", dispatch_status="in_transit",
-                        issued_by=pswdo_u.user_id if pswdo_u else None, issued_at=datetime.utcnow(),
+                        issued_by=pswdo_u.user_id if pswdo_u else None, issued_at=ph_now(),
                         requested_by=cadmin.user_id if cadmin else None,
-                        note="Truck 1", expected_arrival=date.today(),
+                        note="Truck 1", expected_arrival=ph_today(),
                     ))
         db.session.flush()
 

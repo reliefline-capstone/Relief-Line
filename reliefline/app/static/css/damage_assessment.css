@@ -425,7 +425,8 @@
 .rr-review-decision .settings-form { gap: 14px; }
 .rr-review-decision .settings-form textarea { min-height: 56px; }
 
-.rd-modal.rr-review-modal .rr-review-actions { margin-top: 18px; }
+.rd-modal.rr-review-modal .rr-review-actions { margin-top: 18px; flex-wrap: wrap; }
+.rd-modal.rr-review-modal .rr-review-actions .btn-decision { min-width: 140px; }
 .rd-modal.rr-review-modal > .rr-review-foot-hint { margin: 12px 0 0; }
 
 @media (max-width: 700px) {

@@ -9,11 +9,14 @@ from math import radians, sin, cos, sqrt, atan2
 from flask import Blueprint, render_template, request, Response, redirect, url_for, flash, abort, current_app
 from flask_login import login_required, current_user
 from datetime import date, datetime
+
+from app.utils.timezone import ph_now, ph_today
 from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.utils.decorators import role_required
 from app.models.office import Office
 from app.models.barangay import Barangay
+from app.models.barangay_inventory import food_pack_on_hand
 from app.models.warehouse import WarehouseInventory, WarehouseStockLog
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
@@ -59,6 +62,50 @@ PRIORITY_BY_STATUS = {
     "normal": {"label": "Low", "tier": "low", "detail": "Stable", "rank": 1},
 }
 DEFAULT_PRIORITY = {"label": "Unrated", "tier": "unrated", "detail": "No status on record", "rank": 0}
+
+
+# --- Stock-adequacy tiers -----------------------------------------------------
+# A DIFFERENT lens from PRIORITY_BY_STATUS (which grades disaster severity from
+# reported damage). Used ONLY by the GIS map and the Predictive Analytics
+# ranking: "can this barangay cover its own reported caseload from its own
+# food-pack stock right now?"
+#   need  = affected_families + affected_individuals  (latest report; 0 if none)
+#   ratio = need / barangay food-pack stock on hand
+#     ratio <= 50%      -> Low      (green)
+#     50% < ratio <= 80% -> Medium   (yellow)
+#     80% < ratio < 100% -> High     (orange)
+#     ratio >= 100%      -> Critical (red)
+#   no inventory row on record        -> Unrated (grey)  — can't be assessed
+#   0 stock while need > 0            -> Critical
+#   no need (0 impact / no report)   -> Low
+_STOCK_TIER = {
+    "critical": {"label": "Critical", "tier": "critical", "rank": 4},
+    "high":     {"label": "High",     "tier": "high",     "rank": 3},
+    "medium":   {"label": "Medium",   "tier": "medium",   "rank": 2},
+    "low":      {"label": "Low",      "tier": "low",      "rank": 1},
+    "unrated":  {"label": "Unrated",  "tier": "unrated",  "rank": 0},
+}
+
+
+def _stock_adequacy(need, on_hand):
+    """(_STOCK_TIER entry, ratio_pct or None) for the GIS / ranking colour."""
+    if on_hand is None:
+        return _STOCK_TIER["unrated"], None
+    if need <= 0:
+        return _STOCK_TIER["low"], 0.0
+    if on_hand == 0:
+        return _STOCK_TIER["critical"], None
+    ratio = need / on_hand
+    if ratio <= 0.50:
+        key = "low"
+    elif ratio <= 0.80:
+        key = "medium"
+    elif ratio < 1.00:
+        key = "high"
+    else:
+        key = "critical"
+    return _STOCK_TIER[key], round(ratio * 100, 1)
+
 
 DISPATCH_STATUS_LABELS = {
     "preparing": "Preparing",
@@ -106,6 +153,7 @@ NOTIFICATION_META = {
     "damage_report_returned": {"icon": "x-circle", "color": "#c0392b", "category": "barangay_reports", "category_label": "Barangay Reports"},
     "barangay_relief_approved": {"icon": "check-circle", "color": "#1e8449", "category": "barangay_reports", "category_label": "Barangay Reports"},
     "barangay_relief_declined": {"icon": "x-circle", "color": "#c0392b", "category": "barangay_reports", "category_label": "Barangay Reports"},
+    "barangay_report_verified": {"icon": "check-circle", "color": "#2c5aa0", "category": "barangay_reports", "category_label": "Barangay Reports"},
     "distribution_receipt_confirmed": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Deliveries"},
     "disaster_event_declared": {"icon": "cloud-lightning", "color": "#c0392b", "category": "disaster_events", "category_label": "Disaster Events"},
     "disaster_event_ended": {"icon": "check-circle", "color": "#1e8449", "category": "disaster_events", "category_label": "Disaster Events"},
@@ -127,6 +175,7 @@ DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "ot
 PSWDO_EXCLUDED_NOTIFICATION_TYPES = {
     "damage_report_submitted", "damage_report_returned",
     "barangay_relief_approved", "barangay_relief_declined",
+    "barangay_report_verified",
     "cswdo_proactive_allocation",
 }
 PSWDO_NOTIFICATION_TYPES = [k for k in NOTIFICATION_META if k not in PSWDO_EXCLUDED_NOTIFICATION_TYPES]
@@ -314,12 +363,27 @@ def _target_barangay_geojson(lgu, event_id):
     db_barangays = {b.barangay_name: b for b in Barangay.query.filter_by(city_municipality=lgu).all()}
 
     statuses = {}
+    reports = {}
     if event_id:
         rows = BarangayDisasterStatus.query.join(Barangay).filter(
             BarangayDisasterStatus.event_id == event_id,
             Barangay.city_municipality == lgu
         ).all()
         statuses = {r.barangay_id: r for r in rows}
+
+        # Latest non-draft report per barangay for this event — the basis for
+        # "affected barangay" counts and the affected-families figure, same as
+        # the CSWDO/MSWDO and PSWDO dashboards. Kept separate from the graded
+        # `status` tier below, which still drives the map colours.
+        report_rows = BarangayReport.query.join(Barangay).filter(
+            BarangayReport.event_id == event_id,
+            Barangay.city_municipality == lgu,
+            BarangayReport.status != "draft",
+        ).order_by(
+            BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
+        ).all()
+        for r in report_rows:
+            reports.setdefault(r.barangay_id, r)
 
     features = []
     for feature in raw["features"]:
@@ -328,20 +392,37 @@ def _target_barangay_geojson(lgu, event_id):
         if barangay:
             status_row = statuses.get(barangay.barangay_id)
             status_key = status_row.status if status_row else "normal"
-            priority = _priority_info(status_key)
+            report_row = reports.get(barangay.barangay_id)
+            on_hand = food_pack_on_hand(barangay.barangay_id)
+            # GIS colour = STOCK ADEQUACY, not disaster severity — "can this
+            # barangay cover its own reported caseload from its own stock?"
+            stock_need = ((report_row.affected_families or 0)
+                          + (report_row.affected_individuals or 0)) if report_row else 0
+            adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
             props = {
                 "name": name,
                 "barangay_id": barangay.barangay_id,
                 "has_data": True,
+                # disaster severity kept for reference / the affected count
                 "status": status_key,
-                "priority_label": priority["label"],
-                "priority_tier": priority["tier"],
-                "affected_families": status_row.affected_families if status_row else 0,
+                # priority_* now carry the stock-adequacy tier (drives colour)
+                "priority_label": adeq["label"],
+                "priority_tier": adeq["tier"],
+                "stock_need": stock_need,
+                "stock_ratio_pct": ratio_pct,
+                # "affected" = this barangay filed a report for the event;
+                # families = what that report stated. Not tied to the graded tier.
+                "is_affected": report_row is not None,
+                "affected_families": (report_row.affected_families or 0) if report_row else 0,
+                "affected_individuals": (report_row.affected_individuals or 0) if report_row else 0,
                 "population": barangay.population,
                 "num_households": barangay.num_households,
                 "poverty_incidence": float(barangay.poverty_incidence) if barangay.poverty_incidence is not None else None,
                 "disaster_risk_index": float(barangay.disaster_risk_index) if barangay.disaster_risk_index is not None else None,
                 "past_calamity_freq": barangay.past_calamity_freq,
+                # Barangay's own current food-pack stock — read-only context for
+                # whoever's weighing an allocation. None = never reported.
+                "barangay_on_hand": on_hand,
             }
             # Current calculated food-pack figure — the map's hover detail.
             # Real submitted request if this barangay has one for the event,
@@ -351,7 +432,10 @@ def _target_barangay_geojson(lgu, event_id):
             props["food_packs_current"] = packs_needed
             props["food_packs_source"] = packs_source
         else:
-            props = {"name": name, "has_data": False, "status": None, "priority_tier": "unrated"}
+            props = {"name": name, "has_data": False, "status": None,
+                     "priority_tier": "unrated", "priority_label": "Unrated",
+                     "stock_need": 0, "stock_ratio_pct": None, "barangay_on_hand": None,
+                     "is_affected": False, "affected_families": 0}
         features.append({"type": "Feature", "properties": props, "geometry": feature["geometry"]})
 
     return {"type": "FeatureCollection", "features": features}
@@ -444,13 +528,7 @@ def _load_warehouses():
         qty = food_pack.quantity_available if food_pack else 0
         capacity = office.capacity_food_pack or 20000
         pct = round((qty / capacity) * 100, 0) if capacity > 0 else 0
-
-        if pct >= _healthy_threshold() * 100:
-            health = "Healthy"
-        elif pct >= _moderate_threshold() * 100:
-            health = "Moderate"
-        else:
-            health = "Low"
+        health = _food_pack_health(qty, capacity)
 
         warehouses.append({
             "office": office, "food_pack_qty": qty, "capacity": capacity,
@@ -515,14 +593,31 @@ def _lgu_burn_rate(office, active_events):
 
 
 def _item_status(qty, min_level):
-    """Status relative to an item's own reorder point (min_stock_level) — distinct
-    from _load_warehouses()'s food-pack health, which is relative to max capacity."""
+    """Status of one inventory row against its admin-set reorder point
+    (min_stock_level). A row with no reorder point set (min_level 0) reads
+    Healthy while it has any stock. This is what the Inventory Management pages
+    show; the warehouse's own 'Low Stock' badge is a separate, capacity-based
+    rating (see _food_pack_health)."""
     if min_level <= 0:
         return "Healthy" if qty > 0 else "Low"
     pct = qty / min_level
     if pct >= 1.0:
         return "Healthy"
     elif pct >= 0.5:
+        return "Moderate"
+    return "Low"
+
+
+def _food_pack_health(qty, capacity):
+    """Warehouse-level food-pack rating — fill ratio against the warehouse's
+    storage capacity, using the admin-editable thresholds. Backs the warehouse
+    'Low Stock' badge, the capacity donut, and the dashboard 'Low Stock
+    Warehouses' card. NOT the per-item Inventory Management status (_item_status)."""
+    cap = capacity or 20000
+    pct = (qty / cap * 100) if cap > 0 else 0
+    if pct >= _healthy_threshold() * 100:
+        return "Healthy"
+    if pct >= _moderate_threshold() * 100:
         return "Moderate"
     return "Low"
 
@@ -673,14 +768,14 @@ def _resolve_dashboard_period():
     # switching the Monthly/Yearly tab resubmits the form without the field
     # that only the other tab renders (e.g. "month" doesn't exist while
     # Yearly is showing), and that toggle shouldn't silently drop the filter.
-    year = request.args.get("year", type=int) or date.today().year
+    year = request.args.get("year", type=int) or ph_today().year
 
     if period == "yearly":
         return period, date(year, 1, 1), date(year, 12, 31)
 
     month = request.args.get("month", type=int)
     if not month or not (1 <= month <= 12):
-        month = date.today().month
+        month = ph_today().month
     last_day = calendar.monthrange(year, month)[1]
     return period, date(year, month, 1), date(year, month, last_day)
 
@@ -690,16 +785,16 @@ def _dashboard_period_years():
     on record through the current year, so a past-dated seed event is never
     out of the dropdown's reach."""
     earliest = db.session.query(db.func.min(DisasterEvent.start_date)).scalar()
-    start_year = earliest.year if earliest else date.today().year
-    return list(range(date.today().year, start_year - 1, -1))
+    start_year = earliest.year if earliest else ph_today().year
+    return list(range(ph_today().year, start_year - 1, -1))
 
 
 @pswdo_bp.route("/dashboard")
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def dashboard():
-    today = date.today()
-    now = datetime.now()
+    today = ph_today()
+    now = ph_now()
 
     period, period_start, period_end = _resolve_dashboard_period()
     is_filtered = period is not None
@@ -748,17 +843,34 @@ def dashboard():
     pending_requests = pending_q.order_by(ReliefRequestBatch.submitted_at.desc()).limit(6).all()
     pending_requests_count = pending_q.count()
 
-    # Affected families + municipalities (3 target LGUs only)
+    # Affected families + municipalities — straight from what the barangays
+    # reported for the active event(s), across the 3 target LGUs. No severity
+    # grading and no approval gate (same basis as the CSWDO/MSWDO dashboard):
+    # any barangay with a non-draft report counts, and a barangay that filed
+    # more than one report for an event is counted once, on its latest report,
+    # so an updated figure replaces the earlier one instead of stacking.
     total_affected_families = 0
     affected_municipalities = set()
     if active_events:
         event_ids = [e.event_id for e in active_events]
-        affected_statuses = BarangayDisasterStatus.query.filter(
-            BarangayDisasterStatus.event_id.in_(event_ids),
-            BarangayDisasterStatus.status != "normal"
+        event_reports = BarangayReport.query.join(
+            Barangay, Barangay.barangay_id == BarangayReport.barangay_id
+        ).filter(
+            BarangayReport.event_id.in_(event_ids),
+            BarangayReport.status != "draft",
+            Barangay.city_municipality.in_(TARGET_LGUS),
+        ).order_by(
+            BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
         ).all()
-        total_affected_families = sum(s.affected_families for s in affected_statuses)
-        affected_municipalities = {s.barangay.city_municipality for s in affected_statuses}
+        latest_by_barangay = {}
+        for rep in event_reports:
+            latest_by_barangay.setdefault(rep.barangay_id, rep)
+        total_affected_families = sum(
+            (r.affected_families or 0) for r in latest_by_barangay.values()
+        )
+        affected_municipalities = {
+            r.barangay.city_municipality for r in latest_by_barangay.values()
+        }
 
     # Burn rate — based on affected families in the 3 target LGUs,
     # against TOTAL province-wide food pack stock (PSWDO can redistribute)
@@ -767,18 +879,13 @@ def dashboard():
     estimated_need = int(burn_rate * 3) if burn_rate > 0 else 0  # 3-day estimated need
     remaining_after_3days = max(total_food_packs - estimated_need, 0)
 
-    # Low stock — item-level only, all warehouses
-    all_inventory = WarehouseInventory.query.filter(
-        WarehouseInventory.office_id.in_([o.office_id for o in all_offices])
-    ).all()
-
-    # Reorder-point based, same as the Inventory Management page's status column —
-    # a flexible item catalog can't use a fixed per-type capacity table (that only
-    # ever covered food_pack/hygiene_kit/kitchen_kit).
-    low_stock_items = [
-        item for item in all_inventory
-        if _item_status(item.quantity_available, item.min_stock_level) == "Low"
-    ]
+    # Low stock warehouses — same "Low" health rating the Warehouse Inventory
+    # page shows in red: food-pack stock below the moderate % of capacity
+    # (see _load_warehouses / _moderate_threshold). Uses the `warehouses` list
+    # already loaded above so the card and that page can never disagree.
+    low_stock_warehouses = sorted(
+        w["office"].office_name for w in warehouses if w["health"] == "Low"
+    )
 
     # System Recommendations — simple threshold-based logic, food_pack only
     recommendations = _stock_recommendations(warehouses)
@@ -859,7 +966,7 @@ def dashboard():
         total_affected_families=total_affected_families,
         affected_municipalities_count=len(affected_municipalities),
         total_target_lgus=len(TARGET_LGUS),
-        low_stock_items=low_stock_items,
+        low_stock_warehouses=low_stock_warehouses,
         burn_rate=burn_rate,
         days_remaining=days_remaining,
         estimated_need=estimated_need,
@@ -931,9 +1038,9 @@ def declare_disaster_event():
 
     start_date_raw = request.form.get("start_date", "")
     try:
-        start_date = datetime.strptime(start_date_raw, "%Y-%m-%d").date() if start_date_raw else date.today()
+        start_date = datetime.strptime(start_date_raw, "%Y-%m-%d").date() if start_date_raw else ph_today()
     except ValueError:
-        start_date = date.today()
+        start_date = ph_today()
 
     weather_condition = request.form.get("weather_condition", "").strip() or None
 
@@ -967,7 +1074,7 @@ def end_disaster_event(event_id):
         return redirect(url_for("pswdo.dashboard"))
 
     event.status = "ended"
-    event.end_date = date.today()
+    event.end_date = ph_today()
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="disaster_event_ended",
         description=f"Marked {event.event_name} as ended.",
@@ -1000,7 +1107,7 @@ def warehouse_inventory():
     low_stock_count = len([w for w in warehouses if w["health"] == "Low"])
     recommendations = _stock_recommendations(warehouses)
 
-    today = date.today()
+    today = ph_today()
     transfers_today_count = WarehouseTransfer.query.filter(
         WarehouseTransfer.status == "completed",
         db.func.date(WarehouseTransfer.completed_at) == today
@@ -1104,13 +1211,7 @@ def warehouse_detail(office_id):
     food_pack_qty = food_pack_item.quantity_available if food_pack_item else 0
     capacity = office.capacity_food_pack or 20000
     pct = round((food_pack_qty / capacity) * 100, 0) if capacity > 0 else 0
-
-    if pct >= _healthy_threshold() * 100:
-        health = "Healthy"
-    elif pct >= _moderate_threshold() * 100:
-        health = "Moderate"
-    else:
-        health = "Low"
+    health = _food_pack_health(food_pack_qty, capacity)
 
     burn = _lgu_burn_rate(office, active_events)
     days_remaining = round(food_pack_qty / burn, 0) if burn else None
@@ -1226,9 +1327,13 @@ def warehouse_inventory_update(inventory_id):
     new_quantity = request.form.get("quantity", type=int)
     unit = request.form.get("unit", "").strip()
     reason = request.form.get("reason", "").strip() or None
+    min_stock_level = request.form.get("min_stock_level", type=int)
 
     if new_quantity is None or new_quantity < 0:
         flash("Enter a valid quantity.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
+    if min_stock_level is not None and min_stock_level < 0:
+        flash("Min stock level can't be negative.", "error")
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
 
     # Only a net *increase* is ever a "received" event with a source worth
@@ -1241,10 +1346,18 @@ def warehouse_inventory_update(inventory_id):
         if source_error:
             flash(source_error, "error")
             return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
+    elif request.form.get("source_type", "").strip() == "donation":
+        flash(
+            f"A donation adds stock — enter a new quantity higher than the "
+            f"current {item.quantity_available:,} to record it.", "error"
+        )
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
 
     item.quantity_available = new_quantity
     if unit:
         item.unit = unit
+    if min_stock_level is not None:
+        item.min_stock_level = min_stock_level
     item.updated_by = current_user.user_id
 
     if delta != 0:
@@ -1346,7 +1459,7 @@ def warehouse_stock_transfer_page():
             from_office_id=from_office_id, to_office_id=to_office_id,
             item_type="food_pack", quantity=quantity,
             status="completed", requested_by=current_user.user_id,
-            completed_at=datetime.utcnow(),
+            completed_at=ph_now(),
         ))
         db.session.add(ActivityLog(
             actor_id=current_user.user_id, action_type="warehouse_transfer_completed",
@@ -1490,7 +1603,7 @@ def warehouse_reports():
         })
 
     coverage_range = "All Time" if filters["days"] == "all" else (
-        f"{filters['start_date'].strftime('%b %d')} - {date.today().strftime('%b %d, %Y')}"
+        f"{filters['start_date'].strftime('%b %d')} - {ph_today().strftime('%b %d, %Y')}"
     )
 
     return render_template(
@@ -1666,13 +1779,18 @@ def gis_map_data():
                 "barangay": d.barangay.barangay_name,
             })
 
-    # Side-panel stats — real counts scoped to scope_lgus only.
+    # Side-panel stats — real counts scoped to scope_lgus only. "Affected" =
+    # the barangay filed a report for this event (same basis as the dashboards),
+    # not the graded status tier.
     barangay_props = [f["properties"] for f in target_features if f["properties"]["has_data"]]
-    affected = [p for p in barangay_props if p["status"] != "normal"]
+    affected = [p for p in barangay_props if p["is_affected"]]
     total_affected_families = sum(p["affected_families"] for p in affected)
+    # Ranked by stock adequacy (p["priority_tier"] now carries that tier), then
+    # by the size of the reported caseload.
     priority_barangays = sorted(
         affected,
-        key=lambda p: (_priority_info(p["status"])["rank"], p["affected_families"]),
+        key=lambda p: (_STOCK_TIER.get(p["priority_tier"], _STOCK_TIER["unrated"])["rank"],
+                       p["stock_need"]),
         reverse=True,
     )[:5]
 
@@ -1714,10 +1832,12 @@ def gis_map_data():
     municipalities = []
     for lgu in scope_lgus:
         lgu_props = [f["properties"] for f in target_features if f["properties"]["lgu"] == lgu and f["properties"]["has_data"]]
-        lgu_affected = [p for p in lgu_props if p["status"] != "normal"]
+        lgu_affected = [p for p in lgu_props if p["is_affected"]]
         barangay_ids = [p["barangay_id"] for p in lgu_props]
-        worst_rank = max((_priority_info(p["status"])["rank"] for p in lgu_props), default=0)
-        worst_tier = next((v for v in PRIORITY_BY_STATUS.values() if v["rank"] == worst_rank), DEFAULT_PRIORITY)
+        # Municipality colour = the worst stock-adequacy tier among its
+        # barangays (p["priority_tier"] now carries the stock tier).
+        worst_rank = max((_STOCK_TIER.get(p["priority_tier"], _STOCK_TIER["unrated"])["rank"] for p in lgu_props), default=0)
+        worst_tier = next((v for v in _STOCK_TIER.values() if v["rank"] == worst_rank), _STOCK_TIER["unrated"])
 
         current_route = DistributionRecord.query.join(Barangay).filter(
             Barangay.city_municipality == lgu,
@@ -1839,12 +1959,25 @@ def gis_map_barangay_detail(barangay_id):
     event_id = _resolve_event_id(request.args.get("event_id", type=int))
 
     status_row = None
+    report_row = None
     if event_id:
         status_row = BarangayDisasterStatus.query.filter_by(
             barangay_id=barangay_id, event_id=event_id
         ).first()
+        # Affected-families figure comes from what the barangay reported for
+        # this event (latest non-draft report), same as everywhere else.
+        report_row = BarangayReport.query.filter(
+            BarangayReport.barangay_id == barangay_id,
+            BarangayReport.event_id == event_id,
+            BarangayReport.status != "draft",
+        ).order_by(
+            BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
+        ).first()
     status_key = status_row.status if status_row else "normal"
-    priority = _priority_info(status_key)
+    on_hand = food_pack_on_hand(barangay_id)
+    stock_need = ((report_row.affected_families or 0)
+                  + (report_row.affected_individuals or 0)) if report_row else 0
+    adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
 
     relief = _relief_summary([barangay_id], event_id)
 
@@ -1873,9 +2006,14 @@ def gis_map_barangay_detail(barangay_id):
         "disaster_risk_index": float(barangay.disaster_risk_index) if barangay.disaster_risk_index is not None else None,
         "past_calamity_freq": barangay.past_calamity_freq,
         "status": status_key,
-        "priority_label": priority["label"],
-        "priority_tier": priority["tier"],
-        "affected_families": status_row.affected_families if status_row else 0,
+        "priority_label": adeq["label"],
+        "priority_tier": adeq["tier"],
+        "stock_need": stock_need,
+        "stock_ratio_pct": ratio_pct,
+        "is_affected": report_row is not None,
+        "affected_families": (report_row.affected_families or 0) if report_row else 0,
+        "affected_individuals": (report_row.affected_individuals or 0) if report_row else 0,
+        "barangay_on_hand": on_hand,
         "relief": relief,
         "distribution_history": distribution_history,
     }
@@ -1894,18 +2032,22 @@ def gis_map_municipality_report(lgu):
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow([
-        "Barangay", "Status", "Affected Families", "Population", "Households",
+        "Barangay", "Stock Adequacy", "Need (fam+indiv)", "Barangay Stock",
+        "Need/Stock %", "Affected Families", "Population", "Households",
         "Poverty Incidence (%)", "Disaster Risk Index",
         "Food Packs Requested", "Food Packs Approved", "Food Packs Released",
     ])
     for feature in fc["features"]:
         p = feature["properties"]
         if not p["has_data"]:
-            writer.writerow([p["name"], "No data on record", "", "", "", "", "", "", "", ""])
+            writer.writerow([p["name"], "No stock on record"] + [""] * 11)
             continue
         relief = _relief_summary([p["barangay_id"]], event_id)
         writer.writerow([
-            p["name"], p["priority_label"], p["affected_families"], p["population"],
+            p["name"], p["priority_label"], p["stock_need"],
+            "" if p["barangay_on_hand"] is None else p["barangay_on_hand"],
+            "" if p["stock_ratio_pct"] is None else p["stock_ratio_pct"],
+            p["affected_families"], p["population"],
             p["num_households"], p["poverty_incidence"], p["disaster_risk_index"],
             relief["requested"], relief["approved"], relief["released"],
         ])
@@ -1951,23 +2093,15 @@ def _stock_request_rows(status_filter="all", municipality_filter="all", search="
 
 def _municipal_demand_for(office, event):
     """Sum of the barangay-level model outputs for an office's LGU — the exact
-    figure PSWDO sees (aggregation traceability). Real active-event barangay
-    request where one exists, else the model estimate."""
+    figure PSWDO sees (aggregation traceability). Barangays no longer state a
+    figure of their own, so this is purely the aggregated model estimate."""
     lgu = office.area_covered if office else None
     if not lgu:
         return [], 0
-    event_id = event.event_id if event else None
     rows = []
     for b in Barangay.query.filter_by(city_municipality=lgu).order_by(Barangay.barangay_name).all():
-        req = None
-        if event_id:
-            rep = BarangayReport.query.filter_by(barangay_id=b.barangay_id, event_id=event_id).filter(
-                BarangayReport.status.in_(("pending", "approved", "fulfilled"))
-            ).first()
-            req = rep.requested_food_packs if rep else None
         model = ml_predict.predict_quantity(b) or 0
-        demand = req if (req and req > 0) else model
-        rows.append({"barangay": b, "model": model, "requested": req, "demand": demand})
+        rows.append({"barangay": b, "model": model, "requested": None, "demand": model})
     return rows, sum(r["demand"] for r in rows)
 
 
@@ -2057,7 +2191,7 @@ def relief_request_detail(batch_id):
     return render_template(
         "pswdo/relief_request_detail.html",
         batch=batch, breakdown=breakdown, predicted_demand=predicted_demand,
-        cswdo_on_hand=cswdo_on_hand, shortfall=max(predicted_demand - cswdo_on_hand, 0),
+        cswdo_on_hand=cswdo_on_hand, shortage=max(predicted_demand - cswdo_on_hand, 0),
         depots=depots, transfer=transfer,
         status_labels=RR_STATUS_LABELS, priority_labels={"high": "High", "medium": "Medium", "low": "Low"},
         dispatch_labels={"preparing": "Preparing", "in_transit": "In Transit", "delivered": "Delivered"},
@@ -2109,7 +2243,7 @@ def approve_relief_request(batch_id):
     batch.approved_food_packs = quantity
     batch.fulfilling_office_id = depot.office_id
     batch.decided_by = current_user.user_id
-    batch.decided_at = datetime.utcnow()
+    batch.decided_at = ph_now()
     batch.decision_remarks = remarks
 
     label = "Partially approved" if quantity < batch.requested_food_packs else "Approved"
@@ -2139,7 +2273,7 @@ def reject_relief_request(batch_id):
     batch.status = "declined"
     batch.decision_remarks = reason
     batch.decided_by = current_user.user_id
-    batch.decided_at = datetime.utcnow()
+    batch.decided_at = ph_now()
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="allocation_rejected",
         description=f"Declined stock request {batch.ref} from {batch.office.office_name}: {reason}",
@@ -2185,7 +2319,7 @@ def direct_allocation():
         from_office_id=depot.office_id, to_office_id=to_office.office_id,
         item_type="food_pack", quantity=quantity, batch_id=None,
         status="pending", dispatch_status="in_transit",
-        issued_by=current_user.user_id, issued_at=datetime.utcnow(),
+        issued_by=current_user.user_id, issued_at=ph_now(),
         note=request.form.get("remarks", "").strip() or "Proactive pre-positioning",
         requested_by=current_user.user_id,
     )
@@ -2273,7 +2407,7 @@ def transfer_issue(transfer_id):
         flash("This transfer can't be dispatched right now.", "error")
         return redirect(url_for("pswdo.transfer_detail", transfer_id=transfer_id))
     t.issued_by = current_user.user_id
-    t.issued_at = datetime.utcnow()
+    t.issued_at = ph_now()
     t.dispatch_status = "in_transit"
     ea = request.form.get("expected_arrival", "")
     if ea:
@@ -2310,15 +2444,15 @@ def recommendations_page():
     healthiest = max(depots, key=lambda w: w["food_pack_qty"], default=None)
 
     municipalities = []
-    total_demand = total_shortfall = 0
+    total_demand = total_shortage = 0
     for lgu in TARGET_LGUS:
         office = Office.query.filter_by(office_type="cswdo", area_covered=lgu).first()
         breakdown, demand = _municipal_demand_for(office, active_event)
         fp = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first() if office else None
         on_hand = fp.quantity_available if fp else 0
-        shortfall = max(demand - on_hand, 0)
+        shortage = max(demand - on_hand, 0)
         total_demand += demand
-        total_shortfall += shortfall
+        total_shortage += shortage
         # any open stock request for this municipality?
         open_req = ReliefRequestBatch.query.filter(
             ReliefRequestBatch.office_id == (office.office_id if office else 0),
@@ -2326,27 +2460,27 @@ def recommendations_page():
         ).order_by(ReliefRequestBatch.submitted_at.desc()).first() if office else None
         municipalities.append({
             "lgu": lgu, "office": office, "demand": demand, "on_hand": on_hand,
-            "shortfall": shortfall, "coverage_pct": round(min(on_hand / demand * 100, 100)) if demand else 100,
+            "shortage": shortage, "coverage_pct": round(min(on_hand / demand * 100, 100)) if demand else 100,
             "barangay_count": len(breakdown), "open_request": open_req,
         })
 
     recs = []
-    for m in sorted(municipalities, key=lambda x: x["shortfall"], reverse=True):
-        if m["shortfall"] <= 0:
+    for m in sorted(municipalities, key=lambda x: x["shortage"], reverse=True):
+        if m["shortage"] <= 0:
             continue
         src = healthiest["office"].office_name if healthiest else "a provincial depot"
         if m["open_request"] and m["open_request"].status == "pending":
-            action = f"Stock request {m['open_request'].ref} is pending — approve up to {m['shortfall']:,} packs."
+            action = f"Stock request {m['open_request'].ref} is pending — approve up to {m['shortage']:,} packs."
             link = url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id)
         elif m["open_request"]:
             action = f"Stock request {m['open_request'].ref} already approved — monitor the transfer."
             link = url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id)
         else:
-            action = f"No request on file yet. Consider pre-positioning ~{m['shortfall']:,} packs from {src}."
+            action = f"No request on file yet. Consider pre-positioning ~{m['shortage']:,} packs from {src}."
             link = url_for("pswdo.relief_requests")
         recs.append({
             "type": "critical" if m["coverage_pct"] < 50 else "warning",
-            "title": f"{m['lgu']}: {m['demand']:,} predicted demand vs {m['on_hand']:,} on hand → short {m['shortfall']:,}",
+            "title": f"{m['lgu']}: {m['demand']:,} predicted demand vs {m['on_hand']:,} on hand → short {m['shortage']:,}",
             "detail": action, "link": link,
         })
     for w in depots:
@@ -2364,14 +2498,14 @@ def recommendations_page():
     return render_template(
         "pswdo/recommendations.html",
         active_event=active_event, municipalities=municipalities, recommendations=recs,
-        total_demand=total_demand, total_shortfall=total_shortfall,
+        total_demand=total_demand, total_shortage=total_shortage,
         total_food_packs=total_food_packs,
     )
 
 
 def _filtered_distributions():
     """Shared filter logic for the distribution page and its CSV export."""
-    today = date.today()
+    today = ph_today()
     status_filter = request.args.get("status", "all")
     search_query = request.args.get("q", "").strip()
 
@@ -2477,7 +2611,7 @@ def distribution():
         dispatch_labels=DISPATCH_STATUS_LABELS,
         eligible_allocations=eligible_allocations,
         municipality_counts=municipality_counts,
-        today_str=date.today().isoformat(),
+        today_str=ph_today().isoformat(),
         **ctx,
     )
 
@@ -2516,7 +2650,7 @@ def create_distribution():
         )
         return redirect(url_for("pswdo.distribution"))
 
-    distribution_date = date.today()
+    distribution_date = ph_today()
     date_str = request.form.get("distribution_date", "")
     if date_str:
         try:
@@ -2669,7 +2803,7 @@ def advance_distribution(distribution_id):
 
     rec.dispatch_status = target
     if target == "dispatched" and not rec.departure_time:
-        rec.departure_time = datetime.now().time()
+        rec.departure_time = ph_now().time()
 
     db.session.add(ActivityLog(
         actor_id=current_user.user_id,

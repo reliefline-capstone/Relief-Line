@@ -121,13 +121,16 @@
             <section class="panel" data-ranking>
                 <div class="panel-header">
                     <h3>Barangay Priority Ranking</h3>
-                    <span class="rd-sub">Real status &amp; requests first</span>
+                    <span class="rd-sub">By stock shortfall — least able to cover its own caseload first</span>
                 </div>
                 {% for r in ranking %}
                 <div class="gis-priority-row {{ 'pa-rank-extra' if loop.index > 5 }}">
                     <div>
                         <strong>{{ loop.index }}. {{ r.name }}</strong>
-                        <span>{{ r.lgu }} · {{ "{:,}".format(r.affected_families) }} families</span>
+                        <span>{{ r.lgu }} ·
+                            {% if r.on_hand_stock is none %}stock: none reported
+                            {%- elif r.stock_ratio_pct is none %}need {{ "{:,}".format(r.stock_need) }} vs 0 stock
+                            {%- else %}need {{ "{:,}".format(r.stock_need) }} / stock {{ "{:,}".format(r.on_hand_stock) }} ({{ r.stock_ratio_pct }}%){% endif %}</span>
                     </div>
                     <div class="gis-priority-row-right">
                         <span class="badge-priority badge-priority-{{ r.priority_tier }}"><i class="priority-dot"></i> {{ r.priority_label }}</span>
@@ -135,7 +138,9 @@
                         {% if can_allocate and event and r.need_source == 'model' and r.undelivered > 0 %}
                         <button type="button" class="btn-view-sm" data-open-modal="pa-allocate-modal"
                                 data-barangay-id="{{ r.barangay_id }}" data-barangay-name="{{ r.name }}"
-                                data-predicted="{{ r.undelivered }}">
+                                data-predicted="{{ r.suggested_allocation or r.undelivered }}"
+                                data-onhand="{{ '' if r.on_hand_stock is none else r.on_hand_stock }}"
+                                data-model="{{ r.predicted_quantity or 0 }}">
                             {{ icon('package', 13) }} Allocate
                         </button>
                         {% endif %}
@@ -150,7 +155,7 @@
                     <span data-rank-label>View all {{ ranking|length }} barangays</span> {{ icon('chevron-down', 14) }}
                 </button>
                 {% endif %}
-                {% if ranking %}<p class="rd-sub" style="margin-top:10px;">* model-estimated — no barangay report submitted yet. When a barangay files a Barangay Report, act on it from the Barangay Reports inbox. Use "Allocate" here to push packs proactively instead, ahead of any request.</p>{% endif %}
+                {% if ranking %}<p class="rd-sub" style="margin-top:10px;">Tier = reported caseload (affected families + individuals) ÷ barangay food-pack stock: ≤50% Low · ≤80% Medium · &lt;100% High · ≥100% Critical · no stock on record = Unrated. &nbsp;* packs figure is model-estimated — no barangay report submitted yet; use "Allocate" to push packs proactively.</p>{% endif %}
             </section>
 
 
@@ -294,7 +299,7 @@
                     <div class="form-row">
                         <label for="pa-am-quantity">Food packs to allocate *</label>
                         <input type="number" name="quantity" id="pa-am-quantity" min="1" required>
-                        <span class="form-hint">Prefilled with the model's estimate (decision support only) ·
+                        <span class="form-hint" id="pa-am-hint">Prefilled with the model's estimate net of the barangay's own stock (decision support only) ·
                             your warehouse: {{ "{:,}".format(total_food_packs) }} on hand · event: {{ event.event_name }}</span>
                     </div>
                     <div class="form-row">
@@ -327,6 +332,13 @@
             document.getElementById('pa-am-barangay-id').value = btn.dataset.barangayId;
             document.getElementById('pa-am-barangay-name').textContent = btn.dataset.barangayName;
             document.getElementById('pa-am-quantity').value = btn.dataset.predicted;
+            var hint = document.getElementById('pa-am-hint');
+            if (hint) {
+                var model = btn.dataset.model || '0';
+                var stock = btn.dataset.onhand === '' ? 'none reported' : btn.dataset.onhand + ' packs';
+                hint.textContent = 'Model estimate ' + model + ' · barangay stock ' + stock +
+                    ' · suggested ' + btn.dataset.predicted + ' (decision support only)';
+            }
         });
     });
 

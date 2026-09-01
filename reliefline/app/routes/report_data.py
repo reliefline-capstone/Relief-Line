@@ -7,6 +7,8 @@ without a per-type template.
 """
 from datetime import date, datetime, timedelta
 
+from app.utils.timezone import ph_now, ph_today
+
 from app.extensions import db
 from app.models.barangay import Barangay
 from app.models.allocation import AllocationRecord
@@ -115,7 +117,7 @@ def resolve_filters(args):
         "days": days,
         # date.min acts as "no lower bound" everywhere start_date is used in
         # a >= comparison, so "All Time" needs no special-casing in builders.
-        "start_date": date.today() - timedelta(days=days) if days != "all" else date.min,
+        "start_date": ph_today() - timedelta(days=days) if days != "all" else date.min,
     }
 
 
@@ -375,7 +377,7 @@ def build_report(report_type, filters, user=None):
         "coverage": coverage,
         "event_name": filters["event"].event_name if filters["event"] else "No active event",
         "municipality_label": filters["municipality"] if filters["municipality"] != "all" else "All Municipalities",
-        "date_generated": datetime.now(),
+        "date_generated": ph_now(),
         "prepared_by": user.name if user else "PSWDO Officer",
         "prepared_by_role": ROLE_LABELS.get(user.role, user.role) if user else "PSWDO Officer",
     }
@@ -408,6 +410,7 @@ BARANGAY_REPORT_STATUS_LABELS = {
     "draft": "Draft",
     "pending": "Submitted",
     "returned": "Returned",
+    "verified": "Verified",
     "approved": "Approved",
     "declined": "Declined",
     "fulfilled": "Fulfilled",
@@ -430,7 +433,7 @@ def resolve_barangay_filters(args):
         "event": event,
         "event_id": event.event_id if event else None,
         "days": days,
-        "start_date": date.today() - timedelta(days=days) if days != "all" else date.min,
+        "start_date": ph_today() - timedelta(days=days) if days != "all" else date.min,
     }
 
 
@@ -507,7 +510,7 @@ def build_barangay_report(report_type, barangay, filters, user=None):
         "coverage": coverage,
         "event_name": filters["event"].event_name if filters["event"] else "No active event",
         "municipality_label": f"Brgy. {barangay.barangay_name}, {barangay.city_municipality}",
-        "date_generated": datetime.now(),
+        "date_generated": ph_now(),
         "prepared_by": user.name if user else "Barangay User",
         "prepared_by_role": ROLE_LABELS.get(user.role, user.role) if user else "Barangay User",
     }

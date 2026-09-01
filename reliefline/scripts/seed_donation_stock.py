@@ -22,9 +22,11 @@ Usage:
 """
 import sys
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.utils.timezone import ph_now
 
 from app import create_app
 from app.extensions import db
@@ -65,7 +67,7 @@ def run():
             return
 
         pswdo_admin = User.query.filter_by(role="pswdo_admin").first() or User.query.filter_by(role="system_admin").first()
-        now = datetime.utcnow()
+        now = ph_now()
         seeded = 0
 
         for office_name, item_type, delta, source_type, donor_name, reason, days_ago in ENTRIES:

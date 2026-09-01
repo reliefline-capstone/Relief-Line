@@ -41,7 +41,7 @@
                         <div><span>Priority</span><strong>{{ priority_labels.get(batch.priority, batch.priority) }}</strong></div>
                         <div><span>Predicted municipal demand</span><strong>{{ "{:,}".format(predicted_demand) }}</strong></div>
                         <div><span>CSWDO warehouse on hand</span><strong>{{ "{:,}".format(cswdo_on_hand) }}</strong></div>
-                        <div><span>Shortfall</span><strong>{{ "{:,}".format(shortfall) }}</strong></div>
+                        <div><span>Shortage</span><strong>{{ "{:,}".format(shortage) }}</strong></div>
                         {% if batch.approved_food_packs %}<div><span>Approved</span><strong>{{ "{:,}".format(batch.approved_food_packs) }} from {{ batch.fulfilling_office.office_name if batch.fulfilling_office }}</strong></div>{% endif %}
                     </div>
                     {% if batch.reason %}<p class="da-remarks-box" style="margin-top:10px;">{{ batch.reason }}</p>{% endif %}
@@ -93,15 +93,14 @@
             <section class="panel rd-request-panel">
                 <div class="panel-header"><h3>Aggregation Traceability</h3><span class="rd-sub">municipal figure = Σ barangay model outputs</span></div>
                 <table class="rr-table" id="rd-breakdown-table">
-                    <thead><tr><th>Barangay</th><th>Model</th><th>Barangay Req.</th><th>Demand</th></tr></thead>
+                    <thead><tr><th>Barangay</th><th>Model Estimate (demand)</th></tr></thead>
                     <tbody>
                         {% for r in breakdown %}
                         <tr{% if loop.index > 8 %} class="rd-breakdown-row-extra" style="display:none;"{% endif %}>
-                            <td>{{ r.barangay.barangay_name }}</td><td>{{ "{:,}".format(r.model) }}</td>
-                            <td>{{ "{:,}".format(r.requested) if r.requested else '—' }}</td>
+                            <td>{{ r.barangay.barangay_name }}</td>
                             <td><strong>{{ "{:,}".format(r.demand) }}</strong></td></tr>
                         {% endfor %}
-                        <tr class="rd-breakdown-total"><td><strong>TOTAL</strong></td><td></td><td></td><td><strong>{{ "{:,}".format(predicted_demand) }}</strong></td></tr>
+                        <tr class="rd-breakdown-total"><td><strong>TOTAL</strong></td><td><strong>{{ "{:,}".format(predicted_demand) }}</strong></td></tr>
                     </tbody>
                 </table>
                 {% if breakdown|length > 8 %}

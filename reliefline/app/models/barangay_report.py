@@ -1,26 +1,36 @@
 from app.extensions import db
 
 class BarangayReport(db.Model):
-    """Barangay-submitted disaster impact report + relief request, reviewed by
-    the CSWDO/MSWDO office. Verifying a report upserts the matching
-    BarangayDisasterStatus row for the same barangay+event, so the priority
-    tier shown here, on the dashboard, and on the GIS map all stay driven by
-    one source of truth once a report is verified.
+    """Barangay-submitted disaster *situation report*, reviewed by the
+    CSWDO/MSWDO office. It is a pure impact/status report — the barangay no
+    longer states a food-pack figure. Deciding an allocation is entirely a
+    CSWDO/MSWDO call, informed by the Linear Regression model's recommended
+    quantity and the barangay's own current stock (manuscript Ch.1/Scope:
+    "allocation ... based on predictive model outputs and CSWDO/MSWDO
+    operational decisions").
 
-    The barangay states `requested_food_packs` — its own indication of need.
-    The Linear Regression model (app.ml.predict) is shown alongside as
-    *decision support*, never as the final figure: the manuscript (Ch.2) is
-    explicit that "ReliefLine treats the predicted output as decision support
-    rather than an automatic final allocation." CSWDO/MSWDO sets the final
-    allocated quantity when it acts on the request.
+    CSWDO/MSWDO acts on a submitted report one of three ways:
+      * verified  — situation acknowledged, no allocation needed (barangay has
+                    enough stock, or the impact doesn't warrant a delivery)
+      * approved  — an AllocationRecord + DistributionRecord is created
+      * declined / returned — as before
+
+    Both `verified` and `approved` upsert the matching BarangayDisasterStatus
+    row for the same barangay+event, so the priority tier shown here, on the
+    dashboards, and on the GIS map all stay driven by one source of truth.
 
     Severity (`flood_level`) is COMPUTED server-side from the entered impact
     data (see app.routes.barangay._compute_severity) — not picked by hand.
+    A zero-impact report (all damage figures 0) is allowed on purpose: a
+    barangay may just want to post a status update ("we're fine").
 
     Excludes evacuation-center/evacuee headcounts (manuscript: real-time
-    evacuee monitoring not supported). Non-food item estimates
-    (hygiene_kits_est, kitchen_kits_est) are included on purpose — these are
-    the two non-food item types the system tracks (manuscript scope).
+    evacuee monitoring not supported).
+
+    `requested_food_packs`, `hygiene_kits_est`, `kitchen_kits_est` are
+    retained as columns for historical rows only — the form no longer collects
+    them and nothing in the app reads them. Non-food items stay
+    warehouse-monitoring-only per the manuscript Scope.
     """
     __tablename__ = "barangay_reports"
 
@@ -65,12 +75,9 @@ class BarangayReport(db.Model):
     roofs_damaged = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
     wind_signal = db.Column(db.String(20), nullable=True)
 
-    # Relief Needs step
-    # Food packs the barangay is requesting — its own indication of need. The
-    # model's estimate is shown next to this field as a reference only; the
-    # barangay enters the figure, and CSWDO/MSWDO sets the final allocation.
+    # Legacy — no longer collected by the form, not read anywhere. Kept so
+    # historical rows keep their values (same treatment as roofs_damaged).
     requested_food_packs = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
-    # Non-food item estimates — hygiene kits + kitchen kits only (see docstring)
     hygiene_kits_est = db.Column(db.Integer, default=0)
     kitchen_kits_est = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
 
@@ -80,10 +87,11 @@ class BarangayReport(db.Model):
     photo_paths = db.Column(db.String(500), nullable=True)
 
     # draft -> pending -> {returned (barangay fixes & resubmits) |
+    #   verified (situation acknowledged, no allocation) |
     #   approved (CSWDO will fulfil, an AllocationRecord + delivery is created) |
     #   declined (CSWDO won't fulfil)} -> fulfilled (delivery confirmed received)
     status = db.Column(
-        db.Enum("draft", "pending", "returned", "approved", "declined", "fulfilled"),
+        db.Enum("draft", "pending", "returned", "approved", "declined", "verified", "fulfilled"),
         default="draft"
     )
     review_remarks = db.Column(db.Text, nullable=True)

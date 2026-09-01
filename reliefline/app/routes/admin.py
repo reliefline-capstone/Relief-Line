@@ -11,11 +11,12 @@ from app.utils.decorators import role_required
 from app.utils.activity import log_admin_activity, module_for_action, module_badge_class
 from app.utils.presence import is_online, ONLINE_THRESHOLD
 from app.utils.settings import SETTINGS_SCHEMA, get_setting, set_setting
-from app.utils.timezone import ph_time
+from app.utils.timezone import ph_time, ph_now, ph_today
 from app.utils.roles import ROLE_LABELS
 from app.utils.mail import send_email
 from app.models.user import User
 from app.models.office import Office
+from app.models.warehouse import WarehouseInventory
 from app.models.barangay import Barangay
 from app.models.activity_log import ActivityLog
 from app.models.password_reset_request import PasswordResetRequest, DEFAULT_RESET_PASSWORD
@@ -94,9 +95,9 @@ def _risk_level(disaster_risk_index):
 @role_required("system_admin")
 def dashboard():
     total_users = User.query.count()
-    active_sessions = User.query.filter(User.last_activity >= datetime.utcnow() - ONLINE_THRESHOLD).count()
+    active_sessions = User.query.filter(User.last_activity >= ph_now() - ONLINE_THRESHOLD).count()
     inactive_accounts = User.query.filter_by(is_active=False).count()
-    month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    month_start = ph_now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     activity_entries_this_month = ActivityLog.query.filter(ActivityLog.created_at >= month_start).count()
 
     recent_users = User.query.order_by(
@@ -104,7 +105,7 @@ def dashboard():
     ).limit(5).all()
 
     return render_template(
-        "admin/dashboard.html", now=datetime.now(),
+        "admin/dashboard.html", now=ph_now(),
         total_users=total_users, active_sessions=active_sessions,
         inactive_accounts=inactive_accounts, activity_entries_this_month=activity_entries_this_month,
         recent_users=recent_users, is_online=is_online,
@@ -357,7 +358,7 @@ def approve_password_reset_request(request_id):
     user.must_change_password = True
     reset_request.status = "approved"
     reset_request.reviewed_by = current_user.user_id
-    reset_request.reviewed_at = datetime.utcnow()
+    reset_request.reviewed_at = ph_now()
 
     log_admin_activity(
         current_user.user_id, "password_reset_request_approved",
@@ -379,7 +380,7 @@ def deny_password_reset_request(request_id):
 
     reset_request.status = "denied"
     reset_request.reviewed_by = current_user.user_id
-    reset_request.reviewed_at = datetime.utcnow()
+    reset_request.reviewed_at = ph_now()
 
     log_admin_activity(
         current_user.user_id, "password_reset_request_denied",
@@ -403,9 +404,14 @@ def offices():
         db.session.query(User.office_id, db.func.count(User.user_id))
         .filter(User.office_id.isnot(None)).group_by(User.office_id).all()
     )
+    food_pack_mins = dict(
+        db.session.query(WarehouseInventory.office_id, WarehouseInventory.min_stock_level)
+        .filter(WarehouseInventory.item_type == "food_pack").all()
+    )
     rows = [{
         "office": o, "code": _office_code(o), "type_label": _office_type_label(o),
         "user_count": user_counts.get(o.office_id, 0),
+        "food_pack_min": food_pack_mins.get(o.office_id, 0),
     } for o in office_list]
 
     return render_template("admin/offices.html", rows=rows)
@@ -423,6 +429,27 @@ def _apply_office_form(office):
     office.email = request.form.get("email", "").strip() or None
 
 
+def _apply_food_pack_min(office):
+    """Set this warehouse's food-pack reorder point (WarehouseInventory row for
+    item_type='food_pack'). Drives the 'Low Stock' status on the Inventory
+    Management pages. Left blank on the form = no change. Call after the office
+    is flushed so office_id exists."""
+    raw = request.form.get("food_pack_min_stock", type=int)
+    if raw is None:
+        return
+    fp = WarehouseInventory.query.filter_by(
+        office_id=office.office_id, item_type="food_pack"
+    ).first()
+    if fp is None:
+        fp = WarehouseInventory(
+            office_id=office.office_id, item_type="food_pack",
+            item_name="Food Packs", unit="packs", quantity_available=0,
+        )
+        db.session.add(fp)
+    fp.min_stock_level = max(raw, 0)
+    fp.updated_by = current_user.user_id
+
+
 @admin_bp.route("/offices/add", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -431,11 +458,12 @@ def add_office():
     _apply_office_form(office)
 
     if not office.office_name or not office.area_covered:
-        flash("Enter an office name and area covered.", "error")
+        flash("Enter a warehouse name and area covered.", "error")
         return redirect(url_for("admin.offices"))
 
     db.session.add(office)
     db.session.flush()
+    _apply_food_pack_min(office)
     log_admin_activity(current_user.user_id, "office_created", f"{current_user.name} added office {office.office_name}", office_id=office.office_id)
     db.session.commit()
     flash(f"{office.office_name} added.", "success")
@@ -450,9 +478,10 @@ def edit_office(office_id):
     _apply_office_form(office)
 
     if not office.office_name or not office.area_covered:
-        flash("Enter an office name and area covered.", "error")
+        flash("Enter a warehouse name and area covered.", "error")
         return redirect(url_for("admin.offices"))
 
+    _apply_food_pack_min(office)
     log_admin_activity(current_user.user_id, "office_updated", f"{current_user.name} updated office {office.office_name}", office_id=office.office_id)
     db.session.commit()
     flash(f"{office.office_name} updated.", "success")
@@ -619,7 +648,7 @@ def _apply_actor_group_filter(query, group_key):
 def _groups_with_online_flag():
     """Role tabs, each flagged with whether anyone in that role is
     currently active (green dot) — see app.utils.presence."""
-    online_cutoff = datetime.utcnow() - ONLINE_THRESHOLD
+    online_cutoff = ph_now() - ONLINE_THRESHOLD
     groups = _actor_groups()
     for g in groups:
         g["online"] = _group_user_filter(

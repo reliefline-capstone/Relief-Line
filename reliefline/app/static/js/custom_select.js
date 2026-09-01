@@ -86,6 +86,7 @@
     function enhance(select) {
         if (select.closest('.csel-wrap')) return; // already enhanced
         if ('noCustomSelect' in select.dataset) return; // explicit opt-out
+        if (select.hidden) return; // a hidden <select> must not get a visible custom trigger
 
         var wrap = document.createElement('div');
         wrap.className = 'csel-wrap' + (select.disabled ? ' is-disabled' : '');

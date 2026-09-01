@@ -29,8 +29,8 @@
         <section class="stat-cards stat-cards-3">
             <div class="stat-card"><div class="stat-icon blue">{{ icon('trending-up', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_demand) }}</span><span class="stat-label">Predicted Demand (all target LGUs)</span></div>
-            <div class="stat-card"><div class="stat-icon {{ 'red' if total_shortfall else 'green' }}">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
-                <span class="stat-value">{{ "{:,}".format(total_shortfall) }}</span><span class="stat-label">Total Shortfall</span></div>
+            <div class="stat-card"><div class="stat-icon {{ 'red' if total_shortage else 'green' }}">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_shortage) }}</span><span class="stat-label">Total Shortage</span></div>
             <div class="stat-card"><div class="stat-icon green">{{ icon('building', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span><span class="stat-label">Provincial Stock (all warehouses)</span></div>
         </section>
@@ -63,7 +63,7 @@
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header"><h3>Per-Municipality Breakdown</h3><span class="rd-sub">municipal demand = Σ barangay model outputs</span></div>
             <table class="rr-table">
-                <thead><tr><th>Municipality</th><th>Barangays</th><th>Predicted Demand</th><th>Warehouse On Hand</th><th>Coverage</th><th>Shortfall</th><th></th></tr></thead>
+                <thead><tr><th>Municipality</th><th>Barangays</th><th>Predicted Demand</th><th>Warehouse On Hand</th><th>Coverage</th><th>Shortage</th><th></th></tr></thead>
                 <tbody>
                     {% for m in municipalities %}
                     <tr>
@@ -75,7 +75,7 @@
                             <div class="warehouse-bar" style="width:110px;"><div class="warehouse-bar-fill {{ 'fill-low' if m.coverage_pct < 50 else ('fill-moderate' if m.coverage_pct < 100 else 'fill-healthy') }}" style="width: {{ m.coverage_pct }}%;"></div></div>
                             <span class="rd-sub">{{ m.coverage_pct }}%</span>
                         </td>
-                        <td>{% if m.shortfall %}<strong class="text-red">{{ "{:,}".format(m.shortfall) }}</strong>{% else %}<span class="text-green">covered</span>{% endif %}</td>
+                        <td>{% if m.shortage %}<strong class="text-red">{{ "{:,}".format(m.shortage) }}</strong>{% else %}<span class="text-green">covered</span>{% endif %}</td>
                         <td>
                             {% if m.open_request %}<a href="{{ url_for('pswdo.relief_request_detail', batch_id=m.open_request.batch_id) }}" class="btn-view-sm">{{ m.open_request.ref }}</a>
                             {% else %}<span class="rd-sub">no request</span>{% endif %}

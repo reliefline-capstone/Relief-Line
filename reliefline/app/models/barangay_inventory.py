@@ -24,6 +24,21 @@ class BarangayInventory(db.Model):
     barangay = db.relationship("Barangay", backref="inventory_items")
 
 
+def food_pack_on_hand(barangay_id):
+    """This barangay's own current food-pack stock, or None when there is no
+    inventory row on record at all.
+
+    The distinction matters for the CSWDO/MSWDO-facing views (Barangay Report
+    review, Predictive Analytics, GIS map): a real 0 means "we've handed
+    everything out", while None means "the barangay has never reported any
+    stock" — those must not read the same to someone deciding an allocation.
+    """
+    row = BarangayInventory.query.filter_by(
+        barangay_id=barangay_id, item_type="food_pack"
+    ).first()
+    return row.quantity_available if row else None
+
+
 class BarangayStockLog(db.Model):
     """Movement ledger behind BarangayInventory — one row per +/- change.
 

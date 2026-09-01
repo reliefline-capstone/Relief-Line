@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from app.utils.timezone import ph_now
+
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required, current_user
 
@@ -50,7 +52,7 @@ def login():
 
         if user and user.check_password(password):
             login_user(user)
-            user.last_login = datetime.utcnow()
+            user.last_login = ph_now()
             log_admin_activity(user.user_id, "login", f"{user.name} logged in")
             db.session.commit()
             if user.must_change_password:

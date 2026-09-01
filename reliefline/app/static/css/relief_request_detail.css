@@ -165,6 +165,8 @@
    #3d7a63 / #a85450 read flat next to those and next to the new shadow. */
 .btn-approve-full { background: #1e8449; }
 .btn-approve-full:hover { background: #196f3d; }
+.btn-verify-only { background: #2c5aa0; }
+.btn-verify-only:hover { background: #244b86; }
 .btn-partial { background: #24456b; }
 .btn-partial:hover { background: #1c3656; }
 .btn-reject { background: #c0392b; }

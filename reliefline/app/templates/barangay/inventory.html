@@ -20,7 +20,7 @@
     </div>
     <div class="wh-movement-amount">
         <strong class="{{ 'text-red' if l.delta < 0 else 'text-green' }}">{{ '+' if l.delta > 0 }}{{ "{:,}".format(l.delta) }}</strong>
-        <span>{{ l.created_at.strftime('%b %d, %Y') if l.created_at }}</span>
+        <span>{{ l.created_at|ph_time('%b %d, %Y · %I:%M %p') if l.created_at }}</span>
     </div>
 </div>
 {% endmacro %}

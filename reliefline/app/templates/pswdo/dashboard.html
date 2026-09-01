@@ -111,17 +111,14 @@
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('clipboard', 18, '#f39c12') }}</div>
                 <span class="stat-value">{{ pending_requests_count }}</span>
-                <span class="stat-label">Pending Requests</span>
+                <span class="stat-label">Pending Stock Requests</span>
                 <span class="stat-sub">{{ 'Submitted this period, still awaiting approval' if is_filtered else 'Awaiting approval' }}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
                 {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot — this is always today's actual figure.">LIVE</span>{% endif %}
-                <span class="stat-value">{{ low_stock_items|length }}</span>
-                <span class="stat-label">Low Stock Items</span>
-                <span class="stat-sub">
-                    {% for item in low_stock_items[:3] %}{{ item.item_type|replace('_',' ')|title }}{% if not loop.last %} · {% endif %}{% endfor %}
-                </span>
+                <span class="stat-value">{{ low_stock_warehouses|length }}</span>
+                <span class="stat-label">Low Stock Warehouses</span>
             </div>
         </section>
 
@@ -186,7 +183,7 @@
             </div>
         </div>
 
-        <!-- GIS Map + Pending Requests -->
+        <!-- GIS Map + Pending Stock Requests -->
         <div class="main-grid dash-grid-even">
 
             <section class="panel map-panel">

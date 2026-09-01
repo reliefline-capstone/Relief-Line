@@ -1488,6 +1488,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .status-pending { background: #fef5e3; color: #d68910; }
 .status-approved { background: #e8faf0; color: #1e8449; }
+.status-verified { background: #eaf4fb; color: #2c5aa0; }
 .status-released { background: #eaf0fd; color: #2c5aa0; }
 .status-rejected { background: #fdecea; color: #c0392b; }
 .status-partially_approved { background: #eaf0fd; color: #2c5aa0; }

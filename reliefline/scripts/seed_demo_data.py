@@ -19,6 +19,8 @@ from datetime import date, datetime, timedelta, time as dtime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.utils.timezone import ph_today
+
 from app import create_app
 from app.extensions import db
 from app.models.barangay import Barangay
@@ -44,7 +46,7 @@ def run():
                   "Delete existing rows first if you want to reseed.")
             return
 
-        today = date.today()
+        today = ph_today()
         barangays = {b.barangay_name: b for b in Barangay.query.filter(
             Barangay.city_municipality.in_(TARGET_LGUS)
         ).all()}

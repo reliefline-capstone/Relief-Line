@@ -22,7 +22,9 @@
 .leaflet-control-zoom a:hover { background: #f4f6fa !important; }
 .leaflet-control-zoom-in { border-bottom: 1px solid #f0f2f6 !important; }
 
-/* Filters */
+/* Filters — sit on the right of the page header (same short "Barangay stock
+   adequacy" subtitle on both the PSWDO and CSWDO/MSWDO maps, so they line up
+   the same on each). */
 .gis-filters {
     display: flex;
     align-items: center;

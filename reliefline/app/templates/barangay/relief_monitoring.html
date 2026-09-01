@@ -28,11 +28,6 @@
             </div>
         </section>
 
-        <div class="wizard-important-note">
-            {{ icon('info', 16, '#7d5a12') }}
-            <span>This module is <strong>read-only</strong>. You can view incoming relief and confirm receipt when goods arrive. You cannot request or edit distribution details.</span>
-        </div>
-
         <section class="stat-cards" style="grid-template-columns: repeat(4, 1fr);">
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
@@ -68,9 +63,9 @@
                     <input type="text" name="q" value="{{ search_query }}" placeholder="Search delivery or warehouse…">
                 </div>
                 <select name="status" onchange="this.form.submit()">
-                    <option value="all" {{ 'selected' if status_filter == 'all' }}>All statuses</option>
                     <option value="transit" {{ 'selected' if status_filter == 'transit' }}>In Transit</option>
                     <option value="received" {{ 'selected' if status_filter == 'received' }}>Received</option>
+                    <option value="all" {{ 'selected' if status_filter == 'all' }}>All statuses</option>
                 </select>
             </form>
         </div>
@@ -135,34 +130,14 @@
             {% endif %}
         </div>
         {% endfor %}
-        {% elif search_query or status_filter != 'all' %}
-        <section class="panel"><p class="empty-note">No deliveries match your search or filter. <a href="{{ url_for('barangay.relief_monitoring') }}">Clear</a></p></section>
+        {% elif search_query %}
+        <section class="panel"><p class="empty-note">No deliveries match your search. <a href="{{ url_for('barangay.relief_monitoring') }}">Clear</a></p></section>
+        {% elif status_filter == 'transit' %}
+        <section class="panel"><p class="empty-note">No in-transit deliveries — nothing is awaiting your confirmation right now. <a href="{{ url_for('barangay.relief_monitoring', status='received') }}">View received</a></p></section>
+        {% elif status_filter == 'received' %}
+        <section class="panel"><p class="empty-note">No received deliveries yet. <a href="{{ url_for('barangay.relief_monitoring') }}">View in transit</a></p></section>
         {% else %}
         <section class="panel"><p class="empty-note">No relief deliveries have been recorded for your barangay yet.</p></section>
-        {% endif %}
-
-        {% if other_rows %}
-        <section class="panel" style="margin-top:8px;">
-            <div class="panel-header"><h3>Other Requests</h3></div>
-            {% for row in other_rows %}
-            <div class="request-card" style="margin-bottom:10px;">
-                <div class="request-top">
-                    <strong>{{ row.ref }}</strong>
-                    <span class="badge-status status-{{ row.status }}">{{ row.status|replace('_', ' ')|title }}</span>
-                </div>
-                <div class="request-detail-grid">
-                    <span>Requested</span><strong>{{ "{:,}".format(row.allocation.predicted_quantity) }} packs</strong>
-                    <span>Date</span><strong>{{ row.allocation.allocation_date.strftime('%B %d, %Y') }}</strong>
-                </div>
-                {% if row.allocation.is_rejected %}
-                <div class="stock-warning">
-                    {{ icon('x-circle', 14, '#c0392b') }}
-                    <span>{{ row.allocation.rejection_reason }}</span>
-                </div>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </section>
         {% endif %}
 
     </main>

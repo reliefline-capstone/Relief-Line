@@ -504,7 +504,7 @@
 
 .wh-movement-amount { text-align: right; flex-shrink: 0; }
 .wh-movement-amount strong { display: block; font-size: 13px; }
-.wh-movement-amount span { font-size: 10px; color: #8a94a6; }
+.wh-movement-amount span { font-size: 10px; color: #8a94a6; white-space: nowrap; }
 
 /* Pending transfers */
 .wh-pending-transfer {

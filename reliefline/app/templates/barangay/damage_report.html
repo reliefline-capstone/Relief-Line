@@ -29,7 +29,7 @@
         </section>
 
         <div class="notif-filter-tabs">
-            <a href="{{ url_for('barangay.damage_report', tab='dashboard') }}" class="notif-filter-tab {{ 'active' if tab != 'history' }}">{{ icon('grid', 14) }} Active Event Report</a>
+            <a href="{{ url_for('barangay.damage_report', tab='dashboard') }}" class="notif-filter-tab {{ 'active' if tab != 'history' }}">{{ icon('grid', 14) }} Active Report</a>
             <a href="{{ url_for('barangay.damage_report', tab='history') }}" class="notif-filter-tab {{ 'active' if tab == 'history' }}">{{ icon('file-text', 14) }} History</a>
         </div>
 
@@ -47,7 +47,7 @@
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('check', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ approved_count }}</span>
-                <span class="stat-label">Approved</span>
+                <span class="stat-label">Reviewed</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon red">{{ icon('chevron-left', 18, '#c0392b') }}</div>

@@ -239,6 +239,8 @@
                     <input type="text" name="unit" id="mi-u-{{ item.inventory_id }}" value="{{ item.unit }}">
                 </div>
             </div>
+            <label for="mi-min-{{ item.inventory_id }}">Min Stock Level <span class="rd-sub">(reorder point — drives the status badge)</span></label>
+            <input type="number" name="min_stock_level" id="mi-min-{{ item.inventory_id }}" min="0" value="{{ item.min_stock_level }}">
             <label for="mi-s-{{ item.inventory_id }}">Source <span class="rd-sub">(only applies when increasing stock)</span></label>
             <select name="source_type" id="mi-s-{{ item.inventory_id }}" data-toggle-select>
                 <option value="standard">Standard / Provincial Supply</option>

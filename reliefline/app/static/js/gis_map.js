@@ -143,9 +143,16 @@ document.addEventListener('DOMContentLoaded', function () {
         onEachFeature: function (feature, layer) {
             var p = feature.properties;
             if (p.has_data) {
-                var sourceLabel = p.food_packs_source === 'request' ? 'requested' : 'estimated';
+                var sourceLabel = p.food_packs_source === 'request' ? 'allocated' : 'estimated';
+                var stockLine = p.barangay_on_hand == null
+                    ? '<br>Barangay stock: none reported'
+                    : '<br>Barangay stock: ' + fmt(p.barangay_on_hand) + ' packs';
+                var adequacyLine = p.stock_ratio_pct == null
+                    ? (p.barangay_on_hand === 0 ? '<br>Need vs stock: ' + fmt(p.stock_need) + ' vs 0 — critical' : '')
+                    : '<br>Need vs stock: ' + fmt(p.stock_need) + ' / ' + fmt(p.barangay_on_hand) + ' (' + p.stock_ratio_pct + '%)';
                 layer.bindTooltip(
-                    '<strong>' + escapeHtml(p.name) + '</strong><br>' + escapeHtml(p.priority_label) +
+                    '<strong>' + escapeHtml(p.name) + '</strong><br>Stock adequacy: ' + escapeHtml(p.priority_label) +
+                    adequacyLine + stockLine +
                     '<br>' + fmt(p.food_packs_current) + ' food packs ' + sourceLabel,
                     { sticky: true }
                 );
@@ -511,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     html += '<div class="gis-barangay-list">';
                     lguBarangays.forEach(function (p) {
                         html += '<div class="gis-priority-row">' +
-                            '<div><strong>' + escapeHtml(p.name) + '</strong><span>' + (p.food_packs_source === 'request' ? 'submitted request' : 'model estimate') + '</span></div>' +
+                            '<div><strong>' + escapeHtml(p.name) + '</strong><span>' + (p.food_packs_source === 'request' ? 'allocated' : 'model estimate') + '</span></div>' +
                             '<div class="gis-priority-row-right"><strong>' + fmt(p.food_packs_current) + ' packs</strong>' + tierBadge(p.priority_tier, p.priority_label) + '</div>' +
                             '</div>';
                     });
@@ -559,10 +566,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderBarangayListPanel(lgu) {
         var statusFilter = document.getElementById('filter-status').value;
         var features = currentData.target_barangays.features.filter(function (f) {
-            return f.properties.lgu === lgu && (!statusFilter || f.properties.status === statusFilter);
+            return f.properties.lgu === lgu && (!statusFilter || f.properties.priority_tier === statusFilter);
         });
         var withData = features.filter(function (f) { return f.properties.has_data; });
-        var affected = withData.filter(function (f) { return f.properties.status !== 'normal'; });
+        // "affected" = the barangay filed a report for this event (same basis as
+        // the dashboards), not the graded status tier.
+        var affected = withData.filter(function (f) { return f.properties.is_affected; });
 
         withData.sort(function (a, b) {
             var ra = TIER_RANK[a.properties.priority_tier] || 0;
@@ -601,6 +610,14 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '<span class="rd-sub" style="display:block; margin-top:-10px; margin-bottom:14px;">Barangay · ' + escapeHtml(b.lgu) + '</span>';
         html += '<div class="dd-kv-list">';
         html += '<div><span>Affected Families</span><strong>' + fmt(b.affected_families) + '</strong></div>';
+        html += '<div><span>Affected Individuals</span><strong>' + fmt(b.affected_individuals) + '</strong></div>';
+        html += '<div><span>Barangay Stock on Hand</span><strong>' +
+            (b.barangay_on_hand == null ? 'None reported' : fmt(b.barangay_on_hand) + ' packs') + '</strong></div>';
+        html += '<div><span>Need vs Stock</span><strong>' +
+            (b.stock_ratio_pct == null
+                ? (b.barangay_on_hand === 0 && b.stock_need > 0 ? fmt(b.stock_need) + ' / 0 — critical' : '—')
+                : fmt(b.stock_need) + ' / ' + fmt(b.barangay_on_hand) + ' (' + b.stock_ratio_pct + '%)') +
+            '</strong></div>';
         html += '<div><span>Population</span><strong>' + fmt(b.population) + '</strong></div>';
         html += '<div><span>Households</span><strong>' + fmt(b.num_households) + '</strong></div>';
         html += '<div><span>Poverty Incidence</span><strong>' + (b.poverty_incidence != null ? b.poverty_incidence + '%' : '—') + '</strong></div>';
@@ -753,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var filtered = currentData.target_barangays.features.filter(function (f) {
             if (lgu && f.properties.lgu !== lgu) return false;
-            if (status && f.properties.status !== status) return false;
+            if (status && f.properties.priority_tier !== status) return false;
             return true;
         });
         barangayLayer.addData({ type: 'FeatureCollection', features: filtered });
@@ -868,7 +885,8 @@ document.addEventListener('DOMContentLoaded', function () {
         applyClientFilters();
         if (state.level === 'barangay-list') renderPanel();
     });
-    document.getElementById('btn-refresh').addEventListener('click', loadData);
+    var refreshBtn = document.getElementById('btn-refresh');
+    if (refreshBtn) refreshBtn.addEventListener('click', loadData);
 
     // Only present on the PSWDO template — CSWDO/MSWDO's single-LGU scope
     // has no real "province overview" to reset back to.

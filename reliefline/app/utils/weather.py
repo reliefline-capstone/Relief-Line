@@ -31,6 +31,8 @@ dashboard page load. Routes should treat every field here as optional.
 import time
 from datetime import datetime
 
+from app.utils.timezone import ph_now
+
 import requests
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
@@ -192,7 +194,7 @@ def get_weather(city, force_refresh=False):
                 "icon": icon,
             },
             "forecast": forecast,
-            "fetched_at": datetime.now().isoformat(timespec="seconds"),
+            "fetched_at": ph_now().isoformat(timespec="seconds"),
             "source": "Open-Meteo",
         }
         _weather_cache[city] = (time.time(), payload)
@@ -262,7 +264,7 @@ def get_typhoon_watch(force_refresh=False):
             "available": True,
             "active": len(storms) > 0,
             "storms": storms,
-            "fetched_at": datetime.now().isoformat(timespec="seconds"),
+            "fetched_at": ph_now().isoformat(timespec="seconds"),
             "source": "GDACS",
         }
         _typhoon_cache["fetched_at"] = time.time()

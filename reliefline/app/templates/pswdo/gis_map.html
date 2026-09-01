@@ -26,7 +26,7 @@
         <section class="page-header">
             <div>
                 <h2>GIS Map</h2>
-                <p>Municipality-level food pack demand — {{ target_lgus|join(', ') }}</p>
+                <p>Barangay stock adequacy</p>
             </div>
             <div class="gis-filters">
                 <select id="filter-event">
@@ -43,7 +43,6 @@
                 </select>
                 <select id="filter-status" hidden></select>
                 <button type="button" class="btn-outline" id="btn-reset-map" title="Reset Map">{{ icon('home', 14) }} Reset Map</button>
-                <button type="button" class="btn-icon" id="btn-refresh" title="Refresh">{{ icon('rotate-ccw', 16, '#555') }}</button>
             </div>
         </section>
 
@@ -60,12 +59,12 @@
                     <button type="button" class="gis-fullscreen-btn" id="gis-fullscreen-btn" title="Toggle fullscreen">{{ icon('maximize', 16, '#555') }}</button>
                     <div id="gis-map"></div>
                     <div class="map-legend-box">
-                        <span class="map-legend-title">Municipality Status</span>
-                        <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
-                        <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
-                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
-                        <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
-                        <div class="map-legend-row"><i class="legend-square no-data"></i> Unrated</div>
+                        <span class="map-legend-title">Stock Adequacy</span>
+                        <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical &mdash; need &ge; stock</div>
+                        <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High &mdash; 80&ndash;100%</div>
+                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium &mdash; 50&ndash;80%</div>
+                        <div class="map-legend-row"><i class="legend-square normal"></i> Low &mdash; &le; 50%</div>
+                        <div class="map-legend-row"><i class="legend-square no-data"></i> Unrated &mdash; no stock on record</div>
                         <div class="map-legend-divider"></div>
                         <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
                         <div class="map-legend-row"><i class="legend-mark legend-route"></i> In Transit (schematic)</div>
