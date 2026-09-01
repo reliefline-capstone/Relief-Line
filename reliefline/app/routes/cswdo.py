@@ -450,14 +450,21 @@ def _own_food_pack_inventory():
 def _relief_request_row(report):
     model_estimate = ml_predict.predict_quantity(report.barangay) or 0
     on_hand = food_pack_on_hand(report.barangay_id)  # int, or None when unreported
+    # What the model says the barangay is short by, netting out its own stock.
+    suggested = max(model_estimate - (on_hand or 0), 0)
+    # Optional barangay-stated figure (0 = not stated).
+    requested = report.requested_food_packs or 0
     return {
         "report": report,
         "barangay": report.barangay,
         "model_estimate": model_estimate,
         "barangay_on_hand": on_hand,
-        # What the model says the barangay is short by, netting out its own
-        # stock — the figure CSWDO/MSWDO prefills the allocation with.
-        "suggested_allocation": max(model_estimate - (on_hand or 0), 0),
+        "suggested_allocation": suggested,
+        "requested": requested,
+        # The number the allocation form starts at: the barangay's own request
+        # when it gave one, else the model-minus-stock suggestion, else the raw
+        # model estimate. Always adjustable — decision support only.
+        "prefill_quantity": requested or suggested or model_estimate,
         "allocation": report.allocation,
     }
 
@@ -538,9 +545,10 @@ def _fulfil_barangay_request(report, quantity, office):
 
     alloc = AllocationRecord(
         barangay_id=report.barangay_id, office_id=office.office_id,
-        # The barangay no longer states a figure — the CSWDO/MSWDO decision IS
-        # the label the demand model learns from (never the model's own
-        # estimate, which would make training circular).
+        # `quantity` is whatever the CSWDO/MSWDO admin confirmed on the form. It
+        # starts prefilled from the barangay's optional request (or the model
+        # estimate when none was given), but the admin's final figure — not the
+        # model's own estimate — is the label the demand model learns from.
         predicted_quantity=quantity,
         allocated_quantity=quantity,
         historical_allocation=ml_predict.historical_allocation_for(report.barangay_id),
@@ -897,7 +905,7 @@ def _own_delivery_or_404(distribution_id):
 @role_required("cswdo_admin", "system_admin")
 def deliveries():
     lgu, lgu_barangays = _own_lgu_barangays()
-    status_filter = request.args.get("status", "all")
+    status_filter = request.args.get("status", "preparing")
     search_query = request.args.get("q", "").strip().lower()
     barangay_ids = [b.barangay_id for b in lgu_barangays]
 
@@ -906,7 +914,17 @@ def deliveries():
     # covers both a barangay's own Relief Request and a proactive,
     # model-driven push with no request behind it.
     q = q.join(AllocationRecord).filter(AllocationRecord.source.in_(("barangay_request", "cswdo_direct")))
-    all_recs = q.order_by(DistributionRecord.distribution_date.desc()).all()
+    # Newest approval first, down to the very first one ever approved. The
+    # allocation is created already-approved, so its date/created_at/id order
+    # is the approval order; allocation_id.desc() is the reliable same-day tiebreak.
+    # distribution_id.desc() last so a replacement delivery (same allocation as
+    # the original) still sorts above the delivery it replaces.
+    all_recs = q.order_by(
+        AllocationRecord.allocation_date.desc(),
+        AllocationRecord.created_at.desc(),
+        AllocationRecord.allocation_id.desc(),
+        DistributionRecord.distribution_id.desc(),
+    ).all()
 
     def _counts(status):
         return sum(1 for r in all_recs if r.dispatch_status == status)
@@ -1044,6 +1062,72 @@ def confirm_issuance(distribution_id):
     db.session.commit()
     flash(f"Issuance confirmed — {rec.quantity_released:,} packs released. Awaiting barangay validation of receipt.", "success")
     return redirect(url_for("cswdo.delivery_detail", distribution_id=distribution_id))
+
+
+@cswdo_bp.route("/deliveries/<int:distribution_id>/replace", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def replace_delivery(distribution_id):
+    """Dispatch a follow-up delivery to make the barangay whole after a
+    validated delivery arrived short or with damaged packs. Reuses the original
+    allocation (not a new decision) and deducts this office's warehouse the
+    same way _fulfil_barangay_request does."""
+    rec = _own_delivery_or_404(distribution_id)
+    if not rec.is_validated:
+        flash("A replacement can only be sent once the barangay has validated the original delivery.", "error")
+        return redirect(url_for("cswdo.delivery_detail", distribution_id=distribution_id))
+
+    owed = rec.outstanding_deficit
+    if owed <= 0:
+        flash("Nothing outstanding on this delivery — no replacement needed.", "error")
+        return redirect(url_for("cswdo.delivery_detail", distribution_id=distribution_id))
+
+    quantity = request.form.get("quantity", type=int) or owed
+    if quantity <= 0 or quantity > owed:
+        flash(f"Enter a replacement quantity between 1 and {owed:,} (packs still owed).", "error")
+        return redirect(url_for("cswdo.delivery_detail", distribution_id=distribution_id))
+
+    office = current_user.office
+    fp = _own_food_pack_inventory()
+    available = fp.quantity_available if fp else 0
+    if quantity > available:
+        flash(f"{office.office_name if office else 'This office'} only has {available:,} food packs on hand — "
+              f"request a stock replenishment from PSWDO or send a smaller replacement.", "error")
+        return redirect(url_for("cswdo.delivery_detail", distribution_id=distribution_id))
+
+    replacement = DistributionRecord(
+        barangay_id=rec.barangay_id, allocation_id=rec.allocation_id,
+        quantity_released=quantity, distribution_date=ph_today(),
+        dispatch_status="preparing", submitted_by=current_user.user_id,
+        replacement_of_id=rec.distribution_id,
+    )
+    db.session.add(replacement)
+
+    fp.quantity_available -= quantity
+    fp.updated_by = current_user.user_id
+    db.session.add(WarehouseStockLog(
+        office_id=office.office_id, item_type="food_pack", item_name="Food Packs",
+        delta=-quantity,
+        reason=f"Replacement for D-{rec.distribution_date.year}-{rec.distribution_id:03d} "
+               f"(Brgy. {rec.barangay.barangay_name}) — "
+               + (f"{rec.shortage_count:,} short" if rec.shortage_count else "")
+               + (", " if rec.shortage_count and rec.damaged_count else "")
+               + (f"{rec.damaged_count:,} damaged" if rec.damaged_count else ""),
+        source_type="standard", updated_by=current_user.user_id,
+    ))
+    db.session.flush()
+
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="distribution_replacement",
+        description=f"{office.office_name if office else 'MSWDO'} dispatched a {quantity:,}-pack replacement "
+                    f"(D-{replacement.distribution_date.year}-{replacement.distribution_id:03d}) for "
+                    f"D-{rec.distribution_date.year}-{rec.distribution_id:03d} — Brgy. {rec.barangay.barangay_name}",
+        office_id=office.office_id if office else None,
+        barangay_id=rec.barangay_id, distribution_id=replacement.distribution_id,
+    ))
+    db.session.commit()
+    flash(f"Replacement delivery created — {quantity:,} food packs for Brgy. {rec.barangay.barangay_name}, now preparing.", "success")
+    return redirect(url_for("cswdo.delivery_detail", distribution_id=replacement.distribution_id))
 
 
 # ---------------------------------------------------------------------------

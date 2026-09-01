@@ -155,7 +155,7 @@
                 <div class="barangay-report-row">
                     <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}">
                         <strong>{{ r.ref }}</strong>
-                        <span>{{ r.event.event_name if r.event else '—' }} · {{ r.submitted_at.strftime('%B %d, %Y') if r.submitted_at }}</span>
+                        <span>{{ r.event.event_name if r.event else '—' }} · {{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at }}</span>
                     </a>
                     <span class="badge-status status-{{ r.status }}">{{ report_status_labels.get(r.status, r.status) }}</span>
                 </div>

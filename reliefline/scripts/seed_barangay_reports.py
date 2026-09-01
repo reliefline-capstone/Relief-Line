@@ -149,6 +149,13 @@ def run():
                     report.reviewed_by = office_reviewer.user_id if office_reviewer else None
                     report.reviewed_at = now - timedelta(hours=max(hours_ago - 1, 0))
 
+                # Optional barangay-stated food-pack request. Populate it for
+                # roughly half the still-open reports so the CSWDO queue
+                # exercises both the "requested a figure" and "left it blank"
+                # states. It's only decision support — CSWDO can adjust it.
+                if status in ("pending", "returned") and count % 2 == 0:
+                    report.requested_food_packs = int(round(families * 1.15 / 5) * 5)
+
                 db.session.add(report)
                 count += 1
 

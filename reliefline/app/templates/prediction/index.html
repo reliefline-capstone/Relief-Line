@@ -121,7 +121,7 @@
             <section class="panel" data-ranking>
                 <div class="panel-header">
                     <h3>Barangay Priority Ranking</h3>
-                    <span class="rd-sub">By stock shortfall — least able to cover its own caseload first</span>
+                    <span class="rd-sub">By stock shortage — least able to cover its own caseload first</span>
                 </div>
                 {% for r in ranking %}
                 <div class="gis-priority-row {{ 'pa-rank-extra' if loop.index > 5 }}">
@@ -310,7 +310,7 @@
                     <div class="rd-modal-actions">
                         <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Allocate</button>
                     </div>
-                    <p class="form-hint">Recorded as a proactive, model-informed allocation. The barangay still confirms receipt with a photo/signature once delivered — same accountability trail as every other delivery.</p>
+                    <p class="form-hint">Recorded as a proactive, model-informed allocation. The barangay still confirms receipt once delivered — recording how many packs arrived and their condition — same accountability trail as every other delivery.</p>
                 </form>
                 {% else %}
                 <p class="empty-note">Select an active disaster event above before allocating proactively.</p>

@@ -71,6 +71,9 @@
                 <div class="timeline-node {{ 'done' if report.status != 'draft' else '' }} {{ 'current-pending' if report.status == 'draft' }}">
                     <div class="timeline-dot">{% if report.status != 'draft' %}{{ icon('check', 16) }}{% else %}2{% endif %}</div>
                     <span class="timeline-label">Submitted</span>
+                    <span class="timeline-sub">
+                        {%- if report.submitted_at %}{{ report.submitted_at.strftime('%b %d, %Y · %I:%M %p') }}{% endif -%}
+                    </span>
                 </div>
                 <div class="timeline-line {{ 'done' if report.status not in ('draft', 'pending') }}"></div>
                 {% set decided = report.status in ('verified', 'approved', 'fulfilled', 'declined', 'returned') %}
@@ -96,7 +99,7 @@
                     <span class="timeline-sub">
                         {% if report.status == 'pending' %}Current
                         {% elif report.status == 'draft' %}Not yet submitted
-                        {% elif decided and report.reviewed_at %}{{ report.reviewed_at.strftime('%b %d, %Y') }}{% endif %}
+                        {% elif decided and report.reviewed_at %}{{ report.reviewed_at.strftime('%b %d, %Y · %I:%M %p') }}{% endif %}
                     </span>
                 </div>
             </div>
@@ -108,7 +111,7 @@
                 <div class="review-row"><span>Report ID</span><strong>{{ report.ref }}</strong></div>
                 <div class="review-row"><span>Barangay</span><strong>{{ report.barangay.barangay_name }}</strong></div>
                 <div class="review-row"><span>Submitted By</span><strong>{{ report.submitted_by_name }}{% if report.submitted_by_designation %} ({{ report.submitted_by_designation }}){% endif %}</strong></div>
-                <div class="review-row"><span>Date Submitted</span><strong>{{ report.submitted_at.strftime('%B %d, %Y') if report.submitted_at else 'Not yet submitted' }}</strong></div>
+                <div class="review-row"><span>Date Submitted</span><strong>{{ report.submitted_at.strftime('%B %d, %Y · %I:%M %p') if report.submitted_at else 'Not yet submitted' }}</strong></div>
                 <div class="review-row"><span>Typhoon Event</span><strong>{{ report.event.event_name if report.event else '—' }}</strong></div>
                 <div class="review-row"><span>Incident Date</span><strong>{{ report.incident_date.strftime('%B %d, %Y') if report.incident_date else '—' }}</strong></div>
                 <div class="review-row"><span>Incident Time</span><strong>{{ report.incident_time.strftime('%I:%M %p') if report.incident_time else '—' }}</strong></div>
@@ -127,7 +130,10 @@
 
                 <section class="panel">
                     <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Allocation</h3></div>
-                    <p class="form-hint" style="margin-top:2px;">This is a situation report — it does not request a specific quantity. MSWDO/CSWDO decides any food-pack allocation from ReliefLine's predictive model and your barangay's current stock. Track anything sent to you on <a href="{{ url_for('barangay.relief_monitoring') }}">Relief Monitoring</a>.</p>
+                    <div class="info-grid">
+                        <div class="info-box"><span>Food Packs Requested</span><strong>{% if report.requested_food_packs %}{{ "{:,}".format(report.requested_food_packs) }}{% else %}Not specified{% endif %}</strong></div>
+                        <div class="info-box"><span>Food Packs Allocated</span><strong>{% if report.allocation %}{{ "{:,}".format(report.allocation.allocated_quantity) }}{% else %}—{% endif %}</strong></div>
+                    </div>
                 </section>
             </div>
         </div>

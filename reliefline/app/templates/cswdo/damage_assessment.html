@@ -56,6 +56,9 @@
 
             <div class="rr-review-decision">
                 <div class="rd-amount-tile">
+                    <div><span>Barangay Requested</span><strong>
+                        {%- if r.requested %}{{ "{:,}".format(r.requested) }} packs{% else %}Not specified{% endif -%}
+                    </strong> <span class="rd-sub">barangay's own estimate</span></div>
                     <div><span>Model Estimate</span><strong>~{{ "{:,}".format(r.model_estimate) }} packs</strong> <span class="rd-sub">decision support</span></div>
                     <div><span>Barangay Stock on Hand</span><strong>
                         {%- if r.barangay_on_hand is none %}No stock reported{% else %}{{ "{:,}".format(r.barangay_on_hand) }} packs{% endif -%}
@@ -81,8 +84,10 @@
                     <div class="form-row">
                         <label for="rr-q-{{ rep.report_id }}">Food packs to allocate *</label>
                         <input type="number" name="quantity" id="rr-q-{{ rep.report_id }}" min="1"
-                               value="{{ r.suggested_allocation or r.model_estimate }}" required>
-                        <span class="form-hint">Suggested {{ "{:,}".format(r.suggested_allocation) }} (model − barangay stock) ·
+                               value="{{ r.prefill_quantity }}" required>
+                        <span class="form-hint">
+                            {%- if r.requested %}Prefilled with the barangay's request of {{ "{:,}".format(r.requested) }} · {% endif -%}
+                            Suggested {{ "{:,}".format(r.suggested_allocation) }} (model − barangay stock) ·
                             <a href="#" data-fill="#rr-q-{{ rep.report_id }}" data-value="{{ r.model_estimate }}">use full model estimate ({{ "{:,}".format(r.model_estimate) }})</a>
                             · your warehouse: {{ "{:,}".format(on_hand) }} on hand</span>
                     </div>
@@ -179,7 +184,7 @@
                 <thead>
                     <tr>
                         <th>Report ID</th><th>Barangay</th><th>Typhoon Event</th>
-                        <th>Affected Fam.</th><th>Model / Brgy. stock</th><th>Status</th><th></th>
+                        <th>Affected Fam.</th><th>Requested</th><th>Model / Brgy. stock</th><th>Status</th><th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -190,6 +195,7 @@
                         <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
                         <td>{{ rep.event.event_name if rep.event else '—' }}</td>
                         <td>{{ "{:,}".format(rep.affected_families or 0) }}</td>
+                        <td>{% if r.requested %}{{ "{:,}".format(r.requested) }}{% else %}<span class="rd-sub">—</span>{% endif %}</td>
                         <td>~{{ "{:,}".format(r.model_estimate) }}<br><span class="rd-sub">
                             {%- if r.barangay_on_hand is none %}stock: none reported{% else %}stock: {{ "{:,}".format(r.barangay_on_hand) }}{% endif -%}
                         </span></td>
@@ -201,7 +207,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="7"><p class="empty-note" style="padding:14px 0;">No relief requests in this view.</p></td></tr>
+                    <tr><td colspan="8"><p class="empty-note" style="padding:14px 0;">No relief requests in this view.</p></td></tr>
                     {% endfor %}
                 </tbody>
             </table>

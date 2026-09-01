@@ -72,11 +72,20 @@
                     {% for row in rows %}
                     {% set r = row.rec %}
                     <tr>
-                        <td>{{ row.ref }}</td>
+                        <td>{{ row.ref }}{% if r.replaces %}<span class="rr-sub" style="color:#1f3a63;">replacement for D-{{ r.replaces.distribution_date.year }}-{{ '%03d' % r.replaces.distribution_id }}</span>{% endif %}</td>
                         <td>{{ row.request_ref or '—' }}</td>
                         <td>{{ row.event or '—' }}</td>
                         <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
-                        <td><strong>{{ "{:,}".format(r.quantity_released) }}</strong></td>
+                        <td><strong>{{ "{:,}".format(r.quantity_released) }}</strong>
+                            {% if r.is_validated and (r.shortage_count or r.damaged_count) %}
+                            <span class="rr-sub" style="color:#c0392b;">
+                                {%- if r.shortage_count %}{{ r.shortage_count }} short{% endif -%}
+                                {%- if r.shortage_count and r.damaged_count %}, {% endif -%}
+                                {%- if r.damaged_count %}{{ r.damaged_count }} damaged{% endif -%}
+                                {%- if r.outstanding_deficit %} · {{ r.outstanding_deficit }} owed{% else %} · replaced{% endif -%}
+                            </span>
+                            {% endif %}
+                        </td>
                         <td>
                             <span class="badge-status status-{{ 'validated' if r.status == 'confirmed' else ('delayed' if r.dispatch_status == 'delayed' else r.dispatch_status) }}">
                                 {{ 'Validated Received' if r.status == 'confirmed' else dispatch_labels.get(r.dispatch_status, r.dispatch_status) }}

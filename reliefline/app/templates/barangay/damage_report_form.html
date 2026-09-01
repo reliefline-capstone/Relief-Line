@@ -137,6 +137,13 @@
                         <span class="form-hint">Enter 0 if none</span>
                     </div>
                 </div>
+                <div class="form-row">
+                    <label for="requested_food_packs">Food Packs Requested <span style="font-weight:400; color:#8a94a6;">(optional)</span></label>
+                    <input type="number" id="requested_food_packs" name="requested_food_packs" min="0"
+                           value="{{ report.requested_food_packs if report and report.requested_food_packs else '' }}"
+                           placeholder="Leave blank if unsure">
+                    <span class="form-hint">If you have an estimate of how many food packs your barangay needs, enter it here.</span>
+                </div>
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
                     <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
@@ -184,6 +191,7 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                         <div class="review-row"><span>Individuals</span><strong id="rv-individuals"></strong></div>
                         <div class="review-row"><span>Totally Damaged</span><strong id="rv-totally"></strong></div>
                         <div class="review-row"><span>Partially Damaged</span><strong id="rv-partially"></strong></div>
+                        <div class="review-row"><span>Food Packs Requested</span><strong id="rv-requested"></strong></div>
                     </div>
                     <div class="review-box">
                         <span class="review-box-title">Evidence</span>
@@ -283,6 +291,7 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
         document.getElementById('rv-individuals').textContent = textOf('affected_individuals') || '0';
         document.getElementById('rv-totally').textContent = textOf('totally_damaged_houses') || '0';
         document.getElementById('rv-partially').textContent = textOf('partially_damaged_houses') || '0';
+        document.getElementById('rv-requested').textContent = textOf('requested_food_packs') || 'Not specified';
         var fileInput = document.getElementById('photo_files');
         document.getElementById('rv-photo-count').textContent = (fileInput && fileInput.files ? fileInput.files.length : 0) + ' photo(s) attached';
         document.getElementById('rv-remarks').textContent = textOf('remarks') || 'None';

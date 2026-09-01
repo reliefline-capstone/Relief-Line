@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, validation_attachments with context %}
 
 {% block title %}Relief Monitoring - ReliefLine{% endblock %}
 
@@ -81,8 +81,9 @@
                         {{ icon('check-circle', 20, 'white') if confirmed else icon('truck', 20, 'white') }}
                     </div>
                     <div>
-                        <strong>{{ row.label }}</strong>
-                        <span class="dm-delivery-sub">{{ row.ref|upper }} · From: {{ row.fulfilling_office.office_name if row.fulfilling_office else '—' }}</span>
+                        <strong>{{ row.label }}{% if d.replaces %} <span class="rr-sub" style="color:#1f3a63;">· Replacement</span>{% endif %}</strong>
+                        <span class="dm-delivery-sub">{{ row.ref|upper }} · From: {{ row.fulfilling_office.office_name if row.fulfilling_office else '—' }}
+                            {%- if d.replaces %} · covers short/damaged packs from D-{{ d.replaces.distribution_date.year }}-{{ '%03d' % d.replaces.distribution_id }}{% endif %}</span>
                     </div>
                 </div>
                 <div class="dm-delivery-status">
@@ -114,14 +115,23 @@
             {% endif %}
 
             <div class="dm-delivery-info-grid">
-                <div><span>Food Packs</span><strong>{{ "{:,}".format(d.quantity_released) }}</strong></div>
+                <div><span>Food Packs {{ 'Released' if confirmed }}</span><strong>{{ "{:,}".format(d.quantity_released) }}</strong></div>
                 {% if confirmed %}
+                <div><span>Food Packs Received</span><strong>{{ "{:,}".format(d.received_count) }}{% if d.damaged_count %} <span style="color:#c0392b; font-weight:600;">({{ d.damaged_count }} damaged)</span>{% endif %}</strong></div>
                 <div><span>Date Received</span><strong>{{ d.distribution_date.strftime('%B %d, %Y') }}{% if d.time_received %} at {{ d.time_received.strftime('%I:%M %p') }}{% endif %}</strong></div>
                 <div><span>Received By</span><strong>{{ d.received_by or '—' }}</strong></div>
+                <div><span>Condition</span><strong style="text-transform:capitalize;">{{ d.condition or '—' }}</strong></div>
                 {% else %}
                 <div><span>ETA</span><strong>{{ d.expected_arrival_time.strftime('%I:%M %p') if d.expected_arrival_time else 'Not yet available' }}</strong></div>
                 {% endif %}
             </div>
+
+            {% if confirmed and d.validation_file %}
+            <div style="margin-top:10px;">
+                <span class="form-hint">Photo proof you submitted:</span>
+                {{ validation_attachments(d.distribution_id, d.validation_file.split(',')) }}
+            </div>
+            {% endif %}
 
             {% if row.can_confirm %}
             <button type="button" class="dm-confirm-btn" data-open-modal="confirm-modal-{{ d.distribution_id }}">
@@ -156,35 +166,47 @@
             Confirm that Brgy. {{ barangay.barangay_name }} received {{ "{:,}".format(d.quantity_released) }} food packs
             from {{ row.fulfilling_office.office_name if row.fulfilling_office else 'the dispatching office' }}.
         </p>
-        <form method="POST" action="{{ url_for('barangay.confirm_receipt', distribution_id=d.distribution_id) }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ url_for('barangay.confirm_receipt', distribution_id=d.distribution_id) }}" enctype="multipart/form-data" class="confirm-receipt-form" data-dist="{{ d.distribution_id }}">
             <label for="received_by-{{ d.distribution_id }}">Received By</label>
             <input type="text" id="received_by-{{ d.distribution_id }}" name="received_by" value="{{ current_user.name }}" required>
 
             <label for="condition-{{ d.distribution_id }}">Condition on Arrival</label>
-            <select id="condition-{{ d.distribution_id }}" name="condition" required>
-                <option value="complete">Complete — all packs received in good condition</option>
+            <select id="condition-{{ d.distribution_id }}" name="condition" class="confirm-condition" data-dist="{{ d.distribution_id }}" required>
+                <option value="complete">Complete — all {{ "{:,}".format(d.quantity_released) }} packs received in good condition</option>
                 <option value="partial">Partial — fewer packs than expected</option>
-                <option value="damaged">Damaged — some packs damaged</option>
+                <option value="damaged">Damaged — some packs arrived damaged</option>
             </select>
 
-            <label>Confirmation Type</label>
-            <div style="display:flex; gap:16px; margin-bottom:14px;">
-                <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px;">
-                    <input type="radio" name="validation_type" value="photo" class="validation-type-radio" data-target="photo-proof-{{ d.distribution_id }}" checked style="width:auto;"> Photo proof
-                </label>
-                <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px;">
-                    <input type="radio" name="validation_type" value="signature" class="validation-type-radio" data-target="photo-proof-{{ d.distribution_id }}" style="width:auto;"> Signature only
-                </label>
+            {# Complete: nothing to enter — all released packs received, none damaged. #}
+            <div class="confirm-qty confirm-qty-partial" data-dist="{{ d.distribution_id }}" hidden>
+                <label for="qty-received-{{ d.distribution_id }}">Food Packs Received</label>
+                <input type="number" id="qty-received-{{ d.distribution_id }}" name="quantity_received"
+                       min="1" max="{{ d.quantity_released }}" placeholder="e.g. {{ d.quantity_released }}">
+                <span class="form-hint">Out of {{ "{:,}".format(d.quantity_released) }} released. CSWDO/MSWDO will see this shortage.</span>
+            </div>
+            <div class="confirm-qty confirm-qty-damaged" data-dist="{{ d.distribution_id }}" hidden>
+                <div style="display:flex; gap:12px;">
+                    <div style="flex:1;">
+                        <label for="qty-good-{{ d.distribution_id }}">Packs in Good Condition</label>
+                        <input type="number" id="qty-good-{{ d.distribution_id }}" name="quantity_good" min="0" max="{{ d.quantity_released }}" placeholder="0">
+                    </div>
+                    <div style="flex:1;">
+                        <label for="qty-damaged-{{ d.distribution_id }}">Packs Damaged</label>
+                        <input type="number" id="qty-damaged-{{ d.distribution_id }}" name="quantity_damaged" min="0" max="{{ d.quantity_released }}" placeholder="0">
+                    </div>
+                </div>
+                <span class="form-hint">Good + damaged should total the packs that arrived (up to {{ "{:,}".format(d.quantity_released) }}). Only the good ones are added to your stock.</span>
             </div>
 
+            <label>Photo Proof <span class="confirm-photo-tag" data-dist="{{ d.distribution_id }}" style="font-weight:400; color:#8a94a6;">(optional)</span></label>
             <div id="photo-proof-{{ d.distribution_id }}">
                 <label for="proof-{{ d.distribution_id }}" class="upload-dropzone">
                     <div class="qa-icon" style="background:#eaf0fd; width:52px; height:52px; margin:0 auto 10px;">{{ icon('file-text', 22, '#2c5aa0') }}</div>
                     <strong>Tap to upload photo proof</strong>
                     <span>JPG, PNG, or PDF — up to 10MB each · multiple files allowed</span>
-                    <input type="file" id="proof-{{ d.distribution_id }}" name="proof_files" accept=".jpg,.jpeg,.png,.pdf" multiple style="display:none;">
+                    <input type="file" id="proof-{{ d.distribution_id }}" name="proof_files" class="confirm-photo-input" data-dist="{{ d.distribution_id }}" accept=".jpg,.jpeg,.png,.pdf" multiple style="display:none;">
                 </label>
-                <span class="form-hint">Required if confirming with photo proof.</span>
+                <span class="form-hint confirm-photo-hint" data-dist="{{ d.distribution_id }}">Attach a photo of the received goods if you have one — not required.</span>
             </div>
 
             <div class="rd-modal-actions">
@@ -203,13 +225,51 @@
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
 <script>
 (function () {
-    // Confirmation Type radios show/hide the matching Photo Proof dropzone —
-    // same field, scoped per-modal via data-target since a barangay can have
-    // several deliveries (and therefore several confirm modals) on this page.
-    document.querySelectorAll('.validation-type-radio').forEach(function (radio) {
-        radio.addEventListener('change', function () {
-            var target = document.getElementById(radio.dataset.target);
-            if (target) target.style.display = radio.value === 'photo' ? '' : 'none';
+    // Condition selector reveals the matching quantity inputs — scoped per
+    // modal via data-dist since a barangay can have several confirm modals on
+    // this page. "Complete" needs no input (all released packs, none damaged).
+    document.querySelectorAll('.confirm-condition').forEach(function (sel) {
+        function sync() {
+            var id = sel.dataset.dist;
+            var partial = document.querySelector('.confirm-qty-partial[data-dist="' + id + '"]');
+            var damaged = document.querySelector('.confirm-qty-damaged[data-dist="' + id + '"]');
+            if (partial) {
+                partial.hidden = sel.value !== 'partial';
+                partial.querySelectorAll('input').forEach(function (i) { i.required = !partial.hidden; });
+            }
+            if (damaged) {
+                damaged.hidden = sel.value !== 'damaged';
+                damaged.querySelectorAll('input').forEach(function (i) { i.required = !damaged.hidden; });
+            }
+            // Photo proof is required for partial/damaged, optional for complete.
+            var photoRequired = sel.value === 'partial' || sel.value === 'damaged';
+            var tag = document.querySelector('.confirm-photo-tag[data-dist="' + id + '"]');
+            var hint = document.querySelector('.confirm-photo-hint[data-dist="' + id + '"]');
+            if (tag) { tag.textContent = photoRequired ? '(required)' : '(optional)'; tag.style.color = photoRequired ? '#c0392b' : '#8a94a6'; }
+            if (hint) {
+                hint.textContent = photoRequired
+                    ? 'A photo is required when packs are short or damaged — CSWDO/MSWDO uses it to verify before sending a replacement.'
+                    : 'Attach a photo of the received goods if you have one — not required.';
+                hint.classList.remove('hint-error');
+            }
+        }
+        sel.addEventListener('change', sync);
+        sync();
+    });
+
+    // The photo input lives in a hidden dropzone, so native `required` can't
+    // surface — guard on submit instead.
+    document.querySelectorAll('.confirm-receipt-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            var id = form.dataset.dist;
+            var cond = (form.querySelector('.confirm-condition') || {}).value;
+            var file = form.querySelector('.confirm-photo-input');
+            if ((cond === 'partial' || cond === 'damaged') && file && file.files.length === 0) {
+                e.preventDefault();
+                var hint = document.querySelector('.confirm-photo-hint[data-dist="' + id + '"]');
+                if (hint) hint.classList.add('hint-error');
+                file.closest('.upload-dropzone').scrollIntoView({ block: 'center' });
+            }
         });
     });
 
@@ -219,6 +279,10 @@
         input.addEventListener('change', function () {
             var label = input.closest('.upload-dropzone').querySelector('strong');
             if (label) label.textContent = input.files.length ? input.files.length + ' file(s) selected' : 'Tap to upload photo proof';
+            if (input.classList.contains('confirm-photo-input') && input.files.length) {
+                var hint = document.querySelector('.confirm-photo-hint[data-dist="' + input.dataset.dist + '"]');
+                if (hint) hint.classList.remove('hint-error');
+            }
         });
     });
 })();

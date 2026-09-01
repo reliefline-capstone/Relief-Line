@@ -552,9 +552,12 @@ def _apply_report_form(report):
         roofs_damaged=report.roofs_damaged,
     )
 
-    # The barangay no longer states any relief-goods figure — the report is a
-    # pure situation report. CSWDO/MSWDO decides the food-pack allocation from
-    # the model estimate + the barangay's own stock (see app.routes.cswdo).
+    # Optional barangay-stated food-pack request. Left at 0 when blank — it is
+    # only decision support for CSWDO/MSWDO, never a binding figure (see
+    # app.routes.cswdo._relief_request_row / approve_relief_request).
+    report.requested_food_packs = request.form.get("requested_food_packs", type=int) or 0
+    if report.requested_food_packs < 0:
+        report.requested_food_packs = 0
 
     report.remarks = request.form.get("remarks", "").strip() or None
     report.submitted_by_name = request.form.get("submitted_by_name", "").strip() or current_user.name
@@ -780,13 +783,37 @@ def confirm_receipt(distribution_id):
 
     received_by = request.form.get("received_by", "").strip() or current_user.name
     condition = request.form.get("condition", "")
-    validation_type = request.form.get("validation_type", "photo")
 
     if condition not in ("complete", "partial", "damaged"):
         flash("Select the condition the delivery arrived in.", "error")
         return redirect(url_for("barangay.relief_monitoring"))
-    if validation_type not in ("photo", "signature"):
-        validation_type = "photo"
+
+    # Receipt breakdown — what actually arrived, per the barangay:
+    #   complete → all released packs, none damaged
+    #   partial  → the count the barangay entered, none damaged
+    #   damaged  → good + damaged counts the barangay entered
+    expected = rec.quantity_released or 0
+    if condition == "complete":
+        quantity_received, quantity_damaged = expected, 0
+    elif condition == "partial":
+        quantity_received = request.form.get("quantity_received", type=int) or 0
+        quantity_damaged = 0
+        if quantity_received <= 0:
+            flash("Enter how many food packs the barangay actually received.", "error")
+            return redirect(url_for("barangay.relief_monitoring"))
+    else:  # damaged
+        quantity_good = request.form.get("quantity_good", type=int) or 0
+        quantity_damaged = request.form.get("quantity_damaged", type=int) or 0
+        quantity_received = quantity_good + quantity_damaged
+        if quantity_received <= 0:
+            flash("Enter how many food packs arrived in good condition and how many were damaged.", "error")
+            return redirect(url_for("barangay.relief_monitoring"))
+        if quantity_damaged <= 0:
+            flash("For a damaged delivery, enter how many packs were damaged (or pick a different condition).", "error")
+            return redirect(url_for("barangay.relief_monitoring"))
+    if quantity_received > expected:
+        flash(f"The barangay can't receive more than the {expected:,} food packs that were released.", "error")
+        return redirect(url_for("barangay.relief_monitoring"))
 
     saved_names = []
     files = [f for f in request.files.getlist("proof_files") if f and f.filename]
@@ -801,16 +828,23 @@ def confirm_receipt(distribution_id):
             f.save(os.path.join(upload_dir, safe_name))
             saved_names.append(safe_name)
 
-    if not saved_names and validation_type == "photo":
-        flash("Attach at least one photo, or switch to signature confirmation.", "error")
+    # Photo proof: REQUIRED when the barangay reports a partial or damaged
+    # delivery (CSWDO/MSWDO needs evidence before sending a replacement);
+    # OPTIONAL when everything arrived complete.
+    if condition in ("partial", "damaged") and not saved_names:
+        flash("Attach a photo of the delivery — proof is required when packs are short or damaged.", "error")
         return redirect(url_for("barangay.relief_monitoring"))
 
     rec.received_by = received_by
     rec.condition = condition
+    rec.quantity_received = quantity_received
+    rec.quantity_damaged = quantity_damaged
     rec.time_received = ph_now().time()
-    rec.validation_type = validation_type
     if saved_names:
+        rec.validation_type = "photo"
         rec.validation_file = ",".join(saved_names)
+    else:
+        rec.validation_type = None
     rec.status = "confirmed"
     # The barangay's validation closes out the trip.
     rec.dispatch_status = "delivered"
@@ -820,7 +854,10 @@ def confirm_receipt(distribution_id):
 
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="distribution_receipt_confirmed",
-        description=f"{rec.barangay.barangay_name} confirmed receipt of D-{rec.distribution_date.year}-{rec.distribution_id:03d} ({rec.quantity_released:,} food packs), received by {received_by}",
+        description=f"{rec.barangay.barangay_name} confirmed receipt of D-{rec.distribution_date.year}-{rec.distribution_id:03d} — "
+                    f"{rec.received_count:,} of {rec.quantity_released or 0:,} food packs received"
+                    + (f", {rec.damaged_count:,} damaged" if rec.damaged_count else "")
+                    + f" ({condition}), received by {received_by}",
         barangay_id=rec.barangay_id, distribution_id=rec.distribution_id,
     ))
     db.session.commit()
@@ -845,13 +882,22 @@ def _record_barangay_receipt(rec):
             item_name="Food Packs", unit="packs", quantity_available=0,
         )
         db.session.add(inv)
-    inv.quantity_available = (inv.quantity_available or 0) + (rec.quantity_released or 0)
+    # Only usable packs enter stock — what physically arrived, minus any the
+    # barangay flagged as damaged (see DistributionRecord.good_count).
+    usable = rec.good_count
+    ref = f"D-{rec.distribution_date.year}-{rec.distribution_id:03d}"
+    detail = ""
+    if rec.received_count != (rec.quantity_released or 0):
+        detail += f", {rec.received_count:,} of {rec.quantity_released or 0:,} released received"
+    if rec.damaged_count:
+        detail += f", {rec.damaged_count:,} damaged"
+    inv.quantity_available = (inv.quantity_available or 0) + usable
     inv.updated_by = current_user.user_id
     db.session.add(BarangayStockLog(
         barangay_id=rec.barangay_id, item_type="food_pack", item_name="Food Packs",
-        delta=rec.quantity_released or 0, source_type="delivery",
+        delta=usable, source_type="delivery",
         distribution_id=rec.distribution_id, updated_by=current_user.user_id,
-        reason=f"Received delivery D-{rec.distribution_date.year}-{rec.distribution_id:03d}",
+        reason=f"Received delivery {ref}{detail}",
     ))
     alloc = rec.allocation
     if alloc and alloc.barangay_report_id:

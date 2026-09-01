@@ -89,7 +89,7 @@
                     <tr>
                         <td><strong>{{ r.ref }}</strong><span class="rr-sub">Brgy. {{ r.barangay.barangay_name }}</span></td>
                         <td>{{ r.event.event_name if r.event else '—' }}</td>
-                        <td>{{ r.submitted_at.strftime('%B %d, %Y') if r.submitted_at else '—' }}</td>
+                        <td>{{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at else '—' }}</td>
                         <td><span class="badge-status badge-status-{{ r.status }}"><i class="priority-dot"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
                         <td>{{ r.reviewed_by_user.name if r.reviewed_by_user else '—' }} {% if r.reviewed_by_user %}(MSWDO){% endif %}</td>
                         <td>
@@ -133,7 +133,7 @@
                     <tr>
                         <td><strong>{{ r.ref }}</strong><span class="rr-sub">Brgy. {{ r.barangay.barangay_name }}</span></td>
                         <td>{{ r.event.event_name if r.event else '—' }}</td>
-                        <td>{{ r.submitted_at.strftime('%B %d, %Y') if r.submitted_at else '—' }}</td>
+                        <td>{{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at else '—' }}</td>
                         <td><span class="badge-status badge-status-{{ r.status }}"><i class="priority-dot"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
                         <td>
                             {% if r.status != 'draft' %}

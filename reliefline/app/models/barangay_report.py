@@ -27,10 +27,16 @@ class BarangayReport(db.Model):
     Excludes evacuation-center/evacuee headcounts (manuscript: real-time
     evacuee monitoring not supported).
 
-    `requested_food_packs`, `hygiene_kits_est`, `kitchen_kits_est` are
-    retained as columns for historical rows only — the form no longer collects
-    them and nothing in the app reads them. Non-food items stay
-    warehouse-monitoring-only per the manuscript Scope.
+    `requested_food_packs` is collected again but OPTIONAL — a barangay may
+    state how many food packs it thinks it needs, or leave it blank (0). When
+    given, CSWDO/MSWDO sees it and it pre-fills the allocation quantity, but it
+    is purely decision support: the CSWDO/MSWDO admin can adjust it freely and
+    the model estimate + barangay stock are still shown alongside it.
+
+    `hygiene_kits_est`, `kitchen_kits_est` are retained as columns for
+    historical rows only — the form no longer collects them and nothing in the
+    app reads them. Non-food items stay warehouse-monitoring-only per the
+    manuscript Scope.
     """
     __tablename__ = "barangay_reports"
 
@@ -75,9 +81,12 @@ class BarangayReport(db.Model):
     roofs_damaged = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
     wind_signal = db.Column(db.String(20), nullable=True)
 
+    # Optional barangay-stated food-pack request. 0 = the barangay did not
+    # state a figure. When > 0 it is shown to CSWDO/MSWDO and pre-fills the
+    # allocation quantity as decision support (still fully adjustable).
+    requested_food_packs = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
     # Legacy — no longer collected by the form, not read anywhere. Kept so
     # historical rows keep their values (same treatment as roofs_damaged).
-    requested_food_packs = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
     hygiene_kits_est = db.Column(db.Integer, default=0)
     kitchen_kits_est = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
 

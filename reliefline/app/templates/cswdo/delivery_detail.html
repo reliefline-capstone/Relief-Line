@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, validation_attachments with context %}
 
 {% block title %}{{ ref }} - ReliefLine{% endblock %}
 
@@ -34,6 +34,15 @@
             </div>
         </div>
 
+        {% if rec.replaces %}
+        <div class="stock-warning" style="background:#eef4ff; border-color:#c7d8f5; color:#1f3a63;">
+            {{ icon('rotate-ccw', 14, '#1f3a63') }}
+            <span>Replacement delivery for
+                <a href="{{ url_for('cswdo.delivery_detail', distribution_id=rec.replaces.distribution_id) }}">D-{{ rec.replaces.distribution_date.year }}-{{ '%03d' % rec.replaces.distribution_id }}</a>
+                — {{ "{:,}".format(rec.replaces.missing_or_damaged) }} pack(s) were short or damaged there.</span>
+        </div>
+        {% endif %}
+
         <!-- Lifecycle stepper -->
         <section class="panel dd-stepper-panel">
             <div class="dd-stepper">
@@ -53,6 +62,12 @@
                 <div class="dd-kv-list">
                     <div><span>Status</span><strong>{{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}</strong></div>
                     <div><span>Food Packs Released</span><strong>{{ "{:,}".format(rec.quantity_released) }}</strong></div>
+                    {% if rec.is_validated %}
+                    <div><span>Food Packs Received</span><strong>{{ "{:,}".format(rec.received_count) }}
+                        {%- if rec.shortage_count %} <span class="rd-sub" style="color:#c0392b;">{{ rec.shortage_count }} short</span>{% endif -%}
+                        {%- if rec.damaged_count %} <span class="rd-sub" style="color:#c0392b;">{{ rec.damaged_count }} damaged</span>{% endif -%}
+                    </strong></div>
+                    {% endif %}
                     <div><span>Scheduled</span><strong>{{ rec.distribution_date.strftime('%b %d, %Y') }}</strong></div>
                     <div><span>Warehouse Before This Release</span><strong>{{ "{:,}".format(stock_before_release) }}</strong></div>
                     <div><span>Warehouse After This Release</span><strong>{{ "{:,}".format(stock_after_release) }} <span class="rd-sub">now: {{ "{:,}".format(on_hand) }}</span></strong></div>
@@ -95,9 +110,18 @@
                             {% if rec.is_validated %}
                             <span class="dd-confirm-meta">Received by {{ rec.received_by }}{% if rec.time_received %} · {{ rec.time_received.strftime('%I:%M %p') }}{% endif %}
                                 · condition: {{ rec.condition }}</span>
-                            {% if attachments and attachments[0] %}<span class="dd-confirm-note">{{ attachments|length }} proof file(s) attached</span>{% endif %}
+                            <span class="dd-confirm-meta">
+                                {{ "{:,}".format(rec.received_count) }} of {{ "{:,}".format(rec.quantity_released) }} food packs received
+                                {%- if rec.shortage_count %} · <span style="color:#c0392b; font-weight:600;">{{ "{:,}".format(rec.shortage_count) }} short</span>{% endif -%}
+                                {%- if rec.damaged_count %} · <span style="color:#c0392b; font-weight:600;">{{ "{:,}".format(rec.damaged_count) }} damaged</span>{% endif -%}
+                                · {{ "{:,}".format(rec.good_count) }} added to barangay stock
+                            </span>
+                            {% if attachments and attachments[0] %}
+                            <span class="dd-confirm-note">{{ attachments|length }} proof file(s) attached — tap to open:</span>
+                            {{ validation_attachments(rec.distribution_id, attachments) }}
+                            {% else %}<span class="dd-confirm-note">No photo attached{{ ' (optional for a complete delivery)' if rec.condition == 'complete' }}.</span>{% endif %}
                             {% else %}
-                            <span class="dd-confirm-meta">Only the barangay can validate receipt, with a photo or signature.</span>
+                            <span class="dd-confirm-meta">Only the barangay can validate receipt. A photo is required if packs are short or damaged.</span>
                             {% endif %}
                         </div>
                     </div>
@@ -107,7 +131,33 @@
             <section class="panel">
                 <div class="panel-header"><h3>Update Delivery</h3></div>
                 {% if rec.is_validated %}
-                <p class="empty-note">This delivery is complete — the barangay has validated receipt.</p>
+                    {% if rec.outstanding_deficit %}
+                    <p class="form-hint" style="margin-top:0;">
+                        The barangay received {{ "{:,}".format(rec.received_count) }} of {{ "{:,}".format(rec.quantity_released) }} packs
+                        {%- if rec.shortage_count %} · {{ rec.shortage_count }} short{% endif -%}
+                        {%- if rec.damaged_count %} · {{ rec.damaged_count }} damaged{% endif -%}.
+                        {% if rec.replacement_sent %}{{ "{:,}".format(rec.replacement_sent) }} already sent as replacement — {% endif %}
+                        <strong>{{ "{:,}".format(rec.outstanding_deficit) }} pack(s) still owed.</strong>
+                    </p>
+                    <form method="POST" action="{{ url_for('cswdo.replace_delivery', distribution_id=rec.distribution_id) }}" class="settings-form">
+                        <div class="form-row">
+                            <label for="replace-qty">Replacement food packs</label>
+                            <input type="number" id="replace-qty" name="quantity" min="1" max="{{ rec.outstanding_deficit }}"
+                                   value="{{ rec.outstanding_deficit }}" required>
+                            <span class="form-hint">Sent as a new delivery under the same allocation · your warehouse: {{ "{:,}".format(on_hand) }} on hand</span>
+                        </div>
+                        <button type="submit" class="btn-decision btn-approve-full">{{ icon('rotate-ccw', 16, 'white') }} Send Replacement</button>
+                    </form>
+                    {% else %}
+                    <p class="empty-note">This delivery is complete — the barangay has validated receipt{% if rec.replacements %} (replacement sent){% endif %}.</p>
+                    {% endif %}
+                    {% if rec.replacements %}
+                    <p class="form-hint" style="margin-top:12px;">Replacement deliveries:
+                        {% for c in rec.replacements %}
+                        <a href="{{ url_for('cswdo.delivery_detail', distribution_id=c.distribution_id) }}">D-{{ c.distribution_date.year }}-{{ '%03d' % c.distribution_id }}</a> ({{ "{:,}".format(c.quantity_released) }} packs, {{ dispatch_labels.get(c.dispatch_status, c.dispatch_status) if not c.is_validated else 'received' }}){% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+                    {% endif %}
                 {% elif next_status %}
                 <form method="POST" action="{{ url_for('cswdo.advance_delivery', distribution_id=rec.distribution_id) }}" style="display:inline;">
                     <input type="hidden" name="target" value="{{ next_status }}">
