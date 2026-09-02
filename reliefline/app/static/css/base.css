@@ -4,6 +4,16 @@
     box-sizing: border-box;
 }
 
+:root {
+    /* One knob for the whole authenticated UI's size. Bumps every icon and
+       text size together a notch (adviser feedback: "palakihin nang konti").
+       Applied as `zoom` on .dashboard-layout only — the public/landing pages
+       use their own vh-based responsive scale and are left untouched. The
+       calc(100vh / --ui-scale) on the full-height shells below divides it
+       back out so they still fill exactly one viewport. Tune this number. */
+    --ui-scale: 1.05;
+}
+
 /* Icons render as raw <svg> (see _macros.html's icon() macro) with no
    vertical-align of their own, so a plain inline icon-then-text pairing sits
    on the text baseline — visibly low relative to the text's cap-height.
@@ -81,9 +91,18 @@ input {
 
 /* Every role's main content area (dashboard-main wraps the page body
    in all PSWDO/CSWDO/barangay/admin templates) settles in on load or
-   navigation instead of just snapping into view. */
+   navigation instead of just snapping into view.
+
+   fill-mode is deliberately `backwards`, NOT `both`/`forwards`: retaining
+   the final keyframe's transform (even translateY(0) — an identity matrix
+   still counts) leaves .dashboard-main a *permanent* containing block for
+   position:fixed descendants, per spec. That traps .rd-modal-overlay & co.
+   inside the content column, so their full-viewport backdrop stops at the
+   sidebar's edge instead of dimming the whole screen. `backwards` still
+   applies the pre-start state (no first-frame flash) without keeping any
+   transform once the animation has finished. */
 .dashboard-main {
-    animation: fadeInUp 0.28s ease-out both;
+    animation: fadeInUp 0.28s ease-out backwards;
 }
 
 /* Consistent hover/focus feedback on every clickable or card-like

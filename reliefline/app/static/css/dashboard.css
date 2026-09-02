@@ -1,6 +1,10 @@
 .dashboard-layout {
     display: flex;
-    height: 100vh;
+    /* zoom enlarges every icon/label inside by --ui-scale (see base.css);
+       the height is divided by it so the zoomed shell still spans one
+       viewport exactly instead of overflowing by that percentage. */
+    zoom: var(--ui-scale);
+    height: calc(100vh / var(--ui-scale));
     background: #f4f6fa;
     overflow: hidden;
 }
@@ -18,7 +22,10 @@
     top: 0;
     left: 0;
     width: 250px;
-    height: 100vh;
+    /* Divided by --ui-scale for the same reason as .dashboard-layout — zoom
+       (inherited here even though this is position:fixed) would otherwise
+       render it --ui-scale taller than the viewport and clip the Logout row. */
+    height: calc(100vh / var(--ui-scale));
     background: white;
     border-right: 1px solid #e5e9f0;
     display: flex;
@@ -272,7 +279,8 @@ html.sidebar-collapsed .sidebar-nav a {
 
 .dashboard-main {
     flex: 1;
-    height: 100vh;
+    /* Divided by --ui-scale — see .dashboard-layout. */
+    height: calc(100vh / var(--ui-scale));
     overflow-y: auto;
     /* Explicit — otherwise setting only overflow-y makes overflow-x compute to
        `auto`, so any 1px/sub-pixel horizontal spill (a card shadow, a grid
@@ -554,15 +562,28 @@ html.sidebar-collapsed .dashboard-main {
 .banner-event-badge {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    background: rgba(192, 57, 43, 0.28);
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    gap: 8px;
+    /* Matches the geometry of .weather-header-conditions (the live-weather
+       chip right above it) so the two read as one stacked set — just tinted
+       a clean warm red instead of translucent white, to mark it as an alert
+       without the muddy maroon + hard white outline it had before. */
+    max-width: 320px;
+    font-size: 12.5px;
+    font-weight: 600;
     color: white;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 5px 12px;
+    background: rgba(255, 107, 92, 0.16);
+    border: 1px solid rgba(255, 107, 92, 0.42);
+    padding: 5px 13px;
     border-radius: 20px;
     width: fit-content;
+}
+
+/* Long event names ellipsize rather than wrapping the pill onto two lines. */
+.banner-event-badge-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 
 .banner-event-badge-dot {
@@ -571,12 +592,14 @@ html.sidebar-collapsed .dashboard-main {
     border-radius: 50%;
     background: #ff6b5c;
     flex-shrink: 0;
-    animation: bannerEventPulse 1.6s infinite;
+    /* Gentle "still live" pulse — slower and lower-contrast than a strobe.
+       prefers-reduced-motion zeroes all animation globally (see base.css). */
+    animation: bannerEventPulse 2.6s ease-out infinite;
 }
 
 @keyframes bannerEventPulse {
-    0% { box-shadow: 0 0 0 0 rgba(255, 107, 92, 0.6); }
-    70% { box-shadow: 0 0 0 6px rgba(255, 107, 92, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(255, 107, 92, 0.5); }
+    70% { box-shadow: 0 0 0 5px rgba(255, 107, 92, 0); }
     100% { box-shadow: 0 0 0 0 rgba(255, 107, 92, 0); }
 }
 
@@ -1721,7 +1744,12 @@ html.sidebar-collapsed .dashboard-main {
 
 .weather-declare-cta-btn:hover { background: #fdecea; }
 
-.typhoon-watch-active { align-items: flex-start; }
+/* The PSWDO "Declare Event" CTA drops to its own row beneath the storm
+   cards rather than being squeezed into a grid track next to them. */
+.typhoon-watch-active .weather-declare-cta-btn {
+    grid-column: 1 / -1;
+    justify-self: start;
+}
 
 .weather-empty {
     font-size: 13px;
@@ -1745,7 +1773,15 @@ html.sidebar-collapsed .dashboard-main {
 .typhoon-watch-clear { background: #e8faf0; color: #1e8449; }
 .typhoon-watch-unknown { background: #f4f6fa; color: #8a94a6; }
 
-.typhoon-watch-active { display: flex; flex-direction: column; gap: 8px; }
+/* Storm cards fan out across the panel's full width — same responsive grid
+   as .weather-cities below — instead of stacking in a narrow left column
+   that leaves most of the panel empty. */
+.typhoon-watch-active {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+    align-items: start;
+}
 
 .typhoon-storm {
     display: flex;
@@ -1762,7 +1798,10 @@ html.sidebar-collapsed .dashboard-main {
 .typhoon-storm.typhoon-alert-red { background: #fdecea; color: #a12b1f; }
 .typhoon-storm.typhoon-alert-green { background: #fef5e3; color: #8a6d1f; }
 
-.typhoon-storm strong { display: block; font-size: 13px; }
+/* Let the text column shrink inside its grid track so a long severity
+   string wraps instead of stretching the card past 1fr. */
+.typhoon-storm > div { min-width: 0; }
+.typhoon-storm strong { display: block; font-size: 13px; overflow-wrap: break-word; }
 .typhoon-storm-meta { display: block; font-size: 11.5px; opacity: 0.85; }
 .typhoon-storm a { font-size: 11.5px; color: inherit; text-decoration: underline; }
 

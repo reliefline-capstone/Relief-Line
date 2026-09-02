@@ -112,7 +112,9 @@
 }
 .gis-map-panel:fullscreen #gis-map,
 .gis-map-panel.gis-map-panel-fullscreen #gis-map {
-    height: calc(100vh - 56px);
+    /* /--ui-scale: the .dashboard-layout zoom (see base.css) still applies to
+       this element in the Fullscreen API's top layer. */
+    height: calc((100vh - 56px) / var(--ui-scale));
     border-radius: 0;
 }
 

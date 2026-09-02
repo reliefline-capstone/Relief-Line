@@ -24,8 +24,9 @@ class User(UserMixin, db.Model):
     # Set True when a System Administrator grants this user's pending
     # PasswordResetRequest — the account's password is now
     # password_reset_request.DEFAULT_RESET_PASSWORD, so app.__init__'s
-    # before_request hook routes every request to auth.force_change_password
-    # until the user picks a password of their own.
+    # before_request hook holds the user on the landing page (which
+    # auto-opens the "Set a New Password" modal) until they pick a
+    # password of their own.
     must_change_password = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("0"))
     last_login = db.Column(db.DateTime, nullable=True)
     # Heartbeat updated on every authenticated request (see app.__init__'s

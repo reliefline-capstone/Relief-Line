@@ -223,7 +223,8 @@
     border-radius: 14px;
     width: 100%;
     max-width: 640px;
-    max-height: 90vh;
+    /* /--ui-scale — see .dashboard-layout zoom in base.css. */
+    max-height: calc(90vh / var(--ui-scale));
     display: flex;
     flex-direction: column;
     overflow: hidden;

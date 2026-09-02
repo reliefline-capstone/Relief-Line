@@ -247,7 +247,9 @@ html.rd-modal-open { overflow: hidden; }
     max-width: 420px;
     padding: 24px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    max-height: 90vh;
+    /* /--ui-scale so the .dashboard-layout zoom (base.css) doesn't push a
+       tall modal past the viewport. */
+    max-height: calc(90vh / var(--ui-scale));
     overflow-y: auto;
     /* @keyframes modalPopIn lives in base.css (loaded on every page) so it
        still applies to .da-modal on pages that never load this stylesheet. */

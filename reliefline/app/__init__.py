@@ -78,16 +78,19 @@ def create_app():
         # Set on User.must_change_password when a System Administrator
         # grants a PasswordResetRequest (see app.routes.admin) — the account
         # now holds the shared default password, so every page but the
-        # change-password screen itself (and logout) redirects here until
-        # the user replaces it with one of their own.
+        # landing page (which auto-opens the "Set a New Password" modal),
+        # that modal's POST target, and logout redirects to the landing
+        # page until the user replaces it with one of their own.
         from flask import request, redirect, url_for
         from flask_login import current_user
 
-        allowed_endpoints = {"auth.force_change_password", "auth.logout", "static"}
+        allowed_endpoints = {
+            "auth.landing", "auth.force_change_password", "auth.logout", "static",
+        }
         if not current_user.is_authenticated or request.endpoint in allowed_endpoints:
             return
         if current_user.must_change_password:
-            return redirect(url_for("auth.force_change_password"))
+            return redirect(url_for("auth.landing"))
 
     @app.context_processor
     def inject_icons():

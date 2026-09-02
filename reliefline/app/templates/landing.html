@@ -70,6 +70,7 @@
                 <p class="subtext">Sign in to continue to ReliefLine.</p>
                 <p class="subtext-small">Enter your credentials to access the system.</p>
 
+                {% if not force_password_change %}
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -81,6 +82,7 @@
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
+                {% endif %}
 
                 <form method="POST" action="{{ url_for('auth.login') }}">
                     <input type="hidden" name="origin" value="landing">
@@ -317,6 +319,55 @@
         </div>
     </div>
 
+    {# Set a New Password — shown to a user whose password was reset by a
+       System Administrator. No close control and data-no-dismiss: they stay
+       locked here (see app.__init__'s _enforce_forced_password_change) until
+       they replace the shared default password. #}
+    {% if force_password_change %}
+    <div class="auth-modal-overlay" id="set-password-modal" data-no-dismiss>
+        <div class="login-card auth-modal-card">
+            <div class="lock-badge">{{ icon('lock', 28, '#0f2547') }}</div>
+            <h2>Set a New Password</h2>
+            <p class="subtext">Your password was reset by a System Administrator. Choose a new password to continue to ReliefLine.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}" role="alert">
+                            {% if category == 'success' %}{{ icon('check-circle', 15) }}{% elif category == 'error' %}{{ icon('alert-triangle', 15) }}{% else %}{{ icon('info', 15) }}{% endif %}
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.force_change_password') }}">
+                <label for="set-new-password">New Password</label>
+                <div class="input-wrapper">
+                    {{ icon('lock', 18, '#8a94a6') }}
+                    <input type="password" id="set-new-password" name="new_password" placeholder="At least 8 characters" minlength="8" required>
+                    <button type="button" class="toggle-password" data-target="set-new-password" aria-label="Show password">
+                        <span class="icon-eye">{{ icon('eye', 18, '#8a94a6') }}</span>
+                        <span class="icon-eye-off">{{ icon('eye-off', 18, '#8a94a6') }}</span>
+                    </button>
+                </div>
+
+                <label for="set-confirm-password">Confirm New Password</label>
+                <div class="input-wrapper">
+                    {{ icon('lock', 18, '#8a94a6') }}
+                    <input type="password" id="set-confirm-password" name="confirm_password" placeholder="Re-enter new password" minlength="8" required>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    {{ icon('check-circle', 16, 'white') }} SET NEW PASSWORD
+                </button>
+            </form>
+
+            <a href="{{ url_for('auth.logout') }}" class="back-to-login">{{ icon('log-out', 14) }} Log Out</a>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}
 
@@ -371,6 +422,9 @@
         });
     });
     document.querySelectorAll('.auth-modal-overlay').forEach(function (overlay) {
+        // [data-no-dismiss] modals (the forced "Set a New Password" step) can't
+        // be clicked away or Escape'd out of — the user has to complete them.
+        if (overlay.hasAttribute('data-no-dismiss')) return;
         overlay.addEventListener('click', function (e) {
             if (e.target === overlay) overlay.hidden = true;
         });
@@ -380,7 +434,7 @@
     });
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
-            document.querySelectorAll('.auth-modal-overlay').forEach(function (overlay) {
+            document.querySelectorAll('.auth-modal-overlay:not([data-no-dismiss])').forEach(function (overlay) {
                 overlay.hidden = true;
             });
         }

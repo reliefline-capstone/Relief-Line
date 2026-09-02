@@ -37,8 +37,7 @@
                 {% if primary_event %}
                 <div class="banner-event-badge" title="Currently active disaster event">
                     <span class="banner-event-badge-dot"></span>
-                    {{ icon('cloud-lightning', 13, 'white') }}
-                    Active Event: {{ primary_event.event_name }}{% if primary_event.weather_condition %} · {{ primary_event.weather_condition }}{% endif %}
+                    <span class="banner-event-badge-label">Active Event: {{ primary_event.event_name }}{% if primary_event.weather_condition %} · {{ primary_event.weather_condition }}{% endif %}</span>
                 </div>
                 {% endif %}
             </div>

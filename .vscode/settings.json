@@ -1,5 +1,5 @@
 {
   "python.terminal.activateEnvironment": true,
-  "python.defaultInterpreterPath": "${workspaceFolder}/reliefline/.venv/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/reliefline/.venv/Scripts/python.exe",
   "terminal.integrated.cwd": "${workspaceFolder}/reliefline"
 }
