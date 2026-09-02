@@ -321,19 +321,37 @@
 .btn-review-sm {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 6px 12px;
+    /* Explicit 1px border on every variant (see .btn-sm-primary/-danger below)
+       and line-height:1 so an <a> and a <button> with the same label render
+       the exact same box — a <button> otherwise keeps line-height:normal and
+       comes out shorter. */
+    border: 1px solid transparent;
+    line-height: 1;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
 }
-.btn-view-sm { border: 1px solid #d8dee8; background: white; color: #333; }
+.btn-view-sm { border-color: #d8dee8; background: white; color: #333; }
 .btn-view-sm:hover { background: #f8f9fc; }
 .btn-review-sm { background: #0f2547; color: white; }
 .btn-review-sm:hover { background: #16305e; }
 
+/* Filled colour variants for draft-row Edit / Delete */
+.btn-sm-primary { background: #2c5aa0; border-color: #2c5aa0; color: #fff; }
+.btn-sm-primary:hover { background: #244b86; border-color: #244b86; }
+.btn-sm-danger { background: #c0392b; border-color: #c0392b; color: #fff; }
+.btn-sm-danger:hover { background: #a53125; border-color: #a53125; }
+
 .rr-table .da-barangay-name { font-weight: 700; color: #1a1a1a; }
+
+/* Draft row actions (Edit + Delete) — keep the two buttons the same size,
+   on one baseline, evenly spaced, matching the barangay damage-report draft row. */
+.rr-row-actions { display: inline-flex; align-items: stretch; gap: 6px; }
+.rr-row-actions form { display: inline-flex; }
 
 /* Generic status badge colours — markup is class="badge-status status-X"
    (the older single-class .badge-status-X rules above stay for legacy pages) */

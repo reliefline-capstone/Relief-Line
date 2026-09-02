@@ -480,8 +480,15 @@
 }
 .wh-movement-more > summary::-webkit-details-marker { display: none; }
 .wh-movement-more > summary:hover { color: #1e3a6b; }
-.wh-movement-more[open] > summary { margin-bottom: 4px; }
 .wh-movement-more .wh-movement-row:first-of-type { border-top: none; }
+
+/* When expanded, drop the toggle to the bottom of the revealed rows so it
+   reads as one continuous list instead of a link stranded mid-list. */
+.wh-movement-more[open] { display: flex; flex-direction: column; }
+.wh-movement-more[open] > summary { order: 99; margin-bottom: 0; padding: 12px 0 0; }
+.wh-movement-more > summary .wh-more-close { display: none; }
+.wh-movement-more[open] > summary .wh-more-open { display: none; }
+.wh-movement-more[open] > summary .wh-more-close { display: inline; }
 
 .wh-movement-icon {
     flex-shrink: 0;

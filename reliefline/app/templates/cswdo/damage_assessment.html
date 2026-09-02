@@ -67,14 +67,20 @@
                 </div>
 
                 {% if r.allocation %}
+                {% set d = r.allocation.distribution_records[0] if r.allocation.distribution_records else none %}
                 <div class="rd-decision-summary">
-                    {{ icon('truck', 14, '#1e8449') }}
-                    <div>
-                        <strong>Allocated {{ "{:,}".format(r.allocation.allocated_quantity) }} food packs</strong>
-                        {% set d = r.allocation.distribution_records[0] if r.allocation.distribution_records else none %}
-                        {% if d %}<span>Delivery {{ dispatch_labels.get(d.dispatch_status, d.dispatch_status) }} —
-                            <a href="{{ url_for('cswdo.delivery_detail', distribution_id=d.distribution_id) }}">track it →</a></span>{% endif %}
+                    <div class="rr-allocation-info">
+                        {{ icon('truck', 16, '#1e8449') }}
+                        <div>
+                            <strong>Allocated {{ "{:,}".format(r.allocation.allocated_quantity) }} food packs</strong>
+                            {% if d %}<span>Delivery {{ dispatch_labels.get(d.dispatch_status, d.dispatch_status) }}</span>{% endif %}
+                        </div>
                     </div>
+                    {% if d %}
+                    <a href="{{ url_for('cswdo.delivery_detail', distribution_id=d.distribution_id) }}" class="btn-view-sm rr-allocation-track">
+                        {{ icon('map-pin', 13, '#1e8449') }} Track delivery
+                    </a>
+                    {% endif %}
                 </div>
                 {% endif %}
 

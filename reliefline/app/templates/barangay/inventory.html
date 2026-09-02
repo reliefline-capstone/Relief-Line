@@ -73,7 +73,10 @@
             {% endfor %}
             {% if logs|length > 3 %}
             <details class="wh-movement-more">
-                <summary>{{ icon('list', 13) }} View all {{ logs|length }} movements</summary>
+                <summary>{{ icon('list', 13) }}
+                    <span class="wh-more-open">View all {{ logs|length }} movements</span>
+                    <span class="wh-more-close">Show fewer</span>
+                </summary>
                 {% for l in logs[3:] %}
                 {{ movement_row(l) }}
                 {% endfor %}

@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}?v={{ asset_version('css/notifications.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/damage_assessment.css') }}?v={{ asset_version('css/damage_assessment.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -143,7 +144,7 @@
                             <a href="{{ url_for('barangay.edit_damage_report', report_id=r.report_id) }}" class="btn-view-sm" style="text-decoration:none; background:#2c5aa0; color:white;">{{ icon('file-text', 12, 'white') }} {{ 'Resume' if r.status == 'draft' else 'Edit' }}</a>
                             {% endif %}
                             {% if r.status == 'draft' %}
-                            <form method="POST" action="{{ url_for('barangay.delete_damage_report', report_id=r.report_id) }}" style="display:inline-flex;" onsubmit="return confirm('Delete draft {{ r.ref }}? This cannot be undone.');">
+                            <form method="POST" action="{{ url_for('barangay.delete_damage_report', report_id=r.report_id) }}" style="display:inline-flex;" class="draft-delete-form" data-ref="{{ r.ref }}">
                                 <button type="submit" class="btn-view-sm" style="border:none; cursor:pointer; background:#c0392b; color:white;">{{ icon('trash-2', 12, 'white') }} Delete</button>
                             </form>
                             {% endif %}
@@ -162,4 +163,67 @@
 
     </main>
 </div>
+
+<!-- Delete-draft confirmation — replaces the native confirm() dialog. A single
+     modal serves every draft row; the delete button stashes its form here. -->
+<div class="rd-modal-overlay" id="delete-draft-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('trash-2', 18, '#c0392b') }} Delete Draft</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <p class="form-hint">Delete draft <strong id="delete-draft-ref"></strong>? This cannot be undone.</p>
+        <div class="rd-modal-actions">
+            <button type="button" class="btn-decision btn-reject" id="delete-draft-confirm-btn">{{ icon('trash-2', 16, 'white') }} Delete Draft</button>
+            <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var modal = document.getElementById('delete-draft-modal');
+    if (!modal) return;
+    var refEl = document.getElementById('delete-draft-ref');
+    var confirmBtn = document.getElementById('delete-draft-confirm-btn');
+    var pendingForm = null;
+
+    // Reparent to <body> so position:fixed pins to the viewport, not the
+    // animated .dashboard-main (same reasoning as relief_request_detail.js).
+    if (modal.parentNode !== document.body) document.body.appendChild(modal);
+
+    function openModal(form) {
+        pendingForm = form;
+        refEl.textContent = form.dataset.ref || '';
+        modal.hidden = false;
+        document.documentElement.classList.add('rd-modal-open');
+    }
+    function closeModal() {
+        modal.hidden = true;
+        pendingForm = null;
+        document.documentElement.classList.remove('rd-modal-open');
+    }
+
+    document.querySelectorAll('.draft-delete-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            openModal(form);
+        });
+    });
+
+    confirmBtn.addEventListener('click', function () {
+        if (pendingForm) pendingForm.submit();
+    });
+
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    modal.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+        btn.addEventListener('click', closeModal);
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.hidden) closeModal();
+    });
+})();
+</script>
 {% endblock %}

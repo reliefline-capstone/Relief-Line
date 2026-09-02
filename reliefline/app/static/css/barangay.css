@@ -241,6 +241,9 @@
 .wizard-step > .form-row { margin-bottom: 10px; }
 .wizard-step > .form-row input { max-width: 332px; }
 .wizard-step > .form-row textarea { max-width: 680px; }
+/* Remarks textarea sits under the full-width upload dropzone (Step 4) — let it
+   span the panel too so their edges line up. */
+.wizard-step[data-step="4"] > .form-row textarea { max-width: none; width: 100%; }
 /* Consistent spacing under every step's guidance line — a bit more room here
    than between fields, so the intro reads as separate from the form. Some
    steps set an inline margin-top on the next block, some don't. */
