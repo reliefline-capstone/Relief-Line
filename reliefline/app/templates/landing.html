@@ -281,9 +281,9 @@
 
             <div class="lp-footer-col">
                 <h5>Legal</h5>
-                <a href="{{ url_for('auth.privacy_page') }}">Privacy Notice</a>
-                <a href="{{ url_for('auth.terms_page') }}">Terms of Use</a>
-                <a href="{{ url_for('auth.contact_page') }}">Contact Support</a>
+                <a href="{{ url_for('auth.privacy_page') }}" data-open-modal="privacy-notice-modal">Privacy Notice</a>
+                <a href="{{ url_for('auth.terms_page') }}" data-open-modal="terms-of-use-modal">Terms of Use</a>
+                <a href="{{ url_for('auth.contact_page') }}" data-open-modal="contact-support-modal">Contact Support</a>
             </div>
         </div>
 
@@ -316,6 +316,79 @@
             </form>
 
             <button type="button" class="back-to-login" data-close-modal>{{ icon('arrow-left', 14) }} Back to Login</button>
+        </div>
+    </div>
+
+    <!-- Privacy Notice / Terms of Use / Contact Support — opened from the
+         footer's Legal column in place, without leaving the landing page.
+         Content mirrors app.templates.privacy/terms/contact.html, which stay
+         reachable directly (e.g. their own real URL, no-JS) via the same
+         href each footer link still carries. -->
+    <div class="auth-modal-overlay" id="privacy-notice-modal" hidden>
+        <div class="login-card auth-modal-card static-page-modal-card">
+            <button type="button" class="auth-modal-close" data-close-modal aria-label="Close">{{ icon('x', 18) }}</button>
+            <div class="static-page-header">
+                <div class="lock-badge">{{ icon('shield', 28, '#0f2547') }}</div>
+                <h2>Privacy Notice</h2>
+            </div>
+            <div class="static-page-body">
+                <p>ReliefLine is a restricted-access system used by the Provincial Social Welfare and Development Office (PSWDO), City/Municipal Social Welfare and Development Offices (CSWDO/MSWDO), and authorized barangay personnel of the Province of Pangasinan to coordinate typhoon-related relief operations.</p>
+
+                <h3>What we collect</h3>
+                <ul>
+                    <li>Account information for authorized users — name, email, and office or barangay assignment.</li>
+                    <li>Disaster response records submitted through the system — barangay damage reports, relief requests, allocation and distribution records, and warehouse stock levels.</li>
+                    <li>Basic system activity logs (who approved or updated a record, and when) kept for accountability.</li>
+                </ul>
+
+                <h3>How it's used</h3>
+                <p>Data in ReliefLine is used solely to plan, coordinate, and monitor food pack allocation, pre-positioning, and distribution during typhoon-related disaster response in the Province of Pangasinan. It is not shared outside the PSWDO, CSWDO/MSWDO, and barangay offices involved in relief operations.</p>
+
+                <h3>Access</h3>
+                <p>Access is limited to authorized personnel with an assigned account. Every account's actions are logged for accountability, consistent with the system's role-based design.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-modal-overlay" id="terms-of-use-modal" hidden>
+        <div class="login-card auth-modal-card static-page-modal-card">
+            <button type="button" class="auth-modal-close" data-close-modal aria-label="Close">{{ icon('x', 18) }}</button>
+            <div class="static-page-header">
+                <div class="lock-badge">{{ icon('file-text', 28, '#0f2547') }}</div>
+                <h2>Terms of Use</h2>
+            </div>
+            <div class="static-page-body">
+                <p>By accessing ReliefLine, you agree to use the system only for the authorized disaster-response coordination duties assigned to your role — PSWDO, CSWDO/MSWDO, or barangay-level personnel — in the Province of Pangasinan.</p>
+
+                <h3>Account use</h3>
+                <ul>
+                    <li>Accounts are personal and must not be shared.</li>
+                    <li>Reports submitted through the system — damage assessments, relief requests, and distribution/validation records — must reflect actual, good-faith information.</li>
+                    <li>Unauthorized access or use of ReliefLine outside of official relief operations is prohibited.</li>
+                </ul>
+
+                <h3>System availability</h3>
+                <p>ReliefLine requires an active internet connection. It is provided as a decision-support tool — its predictions and recommendations are estimates and do not replace the professional judgment of PSWDO, CSWDO/MSWDO, and barangay personnel.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-modal-overlay" id="contact-support-modal" hidden>
+        <div class="login-card auth-modal-card static-page-modal-card">
+            <button type="button" class="auth-modal-close" data-close-modal aria-label="Close">{{ icon('x', 18) }}</button>
+            <div class="static-page-header">
+                <div class="lock-badge">{{ icon('phone', 28, '#0f2547') }}</div>
+                <h2>Contact Support</h2>
+            </div>
+            <div class="static-page-body">
+                <p>For account access, password issues, or technical support with ReliefLine, reach out through your own office's usual chain:</p>
+                <ul>
+                    <li><strong>Barangay-level users</strong> — contact your City/Municipal Social Welfare and Development Office (CSWDO/MSWDO).</li>
+                    <li><strong>CSWDO/MSWDO personnel</strong> — contact the Provincial Social Welfare and Development Office (PSWDO).</li>
+                    <li><strong>PSWDO personnel</strong> — contact your ReliefLine System Administrator.</li>
+                </ul>
+                <p>Locked out of your account? Use the <strong>Forgot Password?</strong> link on the login card above to send a reset request to a System Administrator.</p>
+            </div>
         </div>
     </div>
 
@@ -416,9 +489,16 @@
     // pattern used elsewhere in the app (e.g. relief_request_detail.js), scoped
     // to .auth-modal-overlay here since this page doesn't load that script.
     document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', function (e) {
+            // Footer legal links keep a real href (Privacy Notice etc. stay
+            // reachable at their own URL with JS off, or ctrl/cmd/shift-click
+            // to open in a new tab as usual) — a plain click opens the modal
+            // in place instead of navigating away.
+            if (e.metaKey || e.ctrlKey || e.shiftKey) return;
             var modal = document.getElementById(btn.dataset.openModal);
-            if (modal) modal.hidden = false;
+            if (!modal) return;
+            e.preventDefault();
+            modal.hidden = false;
         });
     });
     document.querySelectorAll('.auth-modal-overlay').forEach(function (overlay) {

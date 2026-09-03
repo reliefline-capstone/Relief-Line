@@ -449,6 +449,14 @@ html { scroll-behavior: smooth; }
     animation: modalPopIn 0.18s ease-out both;
 }
 
+/* Privacy Notice / Terms of Use / Contact Support run longer than a login
+   form, so unlike the other .auth-modal-card uses, this one needs its own
+   scroll region instead of just growing past the viewport. */
+.static-page-modal-card {
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
 .auth-modal-close {
     position: absolute;
     top: 14px;

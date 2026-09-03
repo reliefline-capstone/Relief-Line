@@ -593,6 +593,15 @@ def save_damage_report_draft():
     event_id = active_event.event_id if active_event else None
 
     report, is_new = _get_or_create_report(barangay, report_id, event_id)
+    # Once a report has left draft state (sent to MSWDO/CSWDO as "pending", or
+    # bounced back as "returned"), editing it must not quietly demote it back
+    # to "draft" — that would pull it out of the CSWDO review queue / drop its
+    # place in the resubmission trail. Only a still-draft (or brand-new)
+    # report can be saved as a draft.
+    if not is_new and report.status != "draft":
+        flash(f"{report.ref} has already been submitted and can't be saved as a draft again. Use Submit instead.", "error")
+        return redirect(url_for("barangay.edit_damage_report", report_id=report.report_id))
+
     _apply_report_form(report)
     report.status = "draft"
 
@@ -923,16 +932,31 @@ def inventory():
     ).first()
     on_hand = inv.quantity_available if inv else 0
 
-    logs = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id).order_by(
-        BarangayStockLog.created_at.desc()
-    ).all()
-    received = sum(l.delta for l in logs if l.delta > 0)
-    given_out = sum(-l.delta for l in logs if l.delta < 0)
+    # Lifetime totals for the stat cards — unaffected by the Movement History
+    # filters below, same convention as the CSWDO/PSWDO warehouse pages (the
+    # filter narrows the list, not the running totals).
+    all_logs = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id).all()
+    received = sum(l.delta for l in all_logs if l.delta > 0)
+    given_out = sum(-l.delta for l in all_logs if l.delta < 0)
+
+    type_filter = request.args.get("type", "all")
+    date_filter = request.args.get("date", "")
+    logs_q = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id)
+    if type_filter != "all":
+        logs_q = logs_q.filter(BarangayStockLog.source_type == type_filter)
+    if date_filter:
+        try:
+            day = datetime.strptime(date_filter, "%Y-%m-%d").date()
+            logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) == day)
+        except ValueError:
+            date_filter = ""
+    logs = logs_q.order_by(BarangayStockLog.created_at.desc()).limit(30).all()
 
     return render_template(
         "barangay/inventory.html",
-        barangay=barangay, on_hand=on_hand, logs=logs[:30],
+        barangay=barangay, on_hand=on_hand, logs=logs,
         received=received, given_out=given_out,
+        type_filter=type_filter, date_filter=date_filter,
     )
 
 
@@ -1014,9 +1038,10 @@ def reports():
 
     barangay = _own_barangay_or_404()
     filters = resolve_barangay_filters(request.args)
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    # Every event, not just the currently-active one — a report is almost
+    # always generated *after* a typhoon has ended, so scoping this filter to
+    # status="active" would make every past event unselectable.
+    active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
 
     my_reports = _own_submitted_reports(barangay.barangay_id)
     delivered = DistributionRecord.query.filter(
@@ -1036,7 +1061,11 @@ def reports():
     packs_received = sum(d.quantity_released for d in delivered)
     completed_deliveries = len(delivered)
 
-    query_params = {"event_id": filters["event_id"], "days": filters["days"]}
+    # "" not None — url_for() drops a None param outright, which would make
+    # the generated link carry no event_id at all instead of an explicit
+    # "no event filter", and resolve_barangay_filters() would then treat that
+    # as "not chosen yet" and silently default back to the active event.
+    query_params = {"event_id": filters["event_id"] or "", "days": filters["days"]}
     report_cards = [
         {"slug": slug, **info, "generate_url": url_for("barangay.report_view", report_type=slug, **query_params)}
         for slug, info in BARANGAY_REPORT_TYPES.items()

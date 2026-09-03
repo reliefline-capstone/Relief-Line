@@ -1501,23 +1501,27 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 .badge-status {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
-    padding: 2px 9px;
-    border-radius: 10px;
+    padding: 5px 13px;
+    border-radius: 12px;
     text-transform: capitalize;
     white-space: nowrap;
 }
 
-.status-pending { background: #fef5e3; color: #d68910; }
-.status-approved { background: #e8faf0; color: #1e8449; }
-.status-verified { background: #eaf4fb; color: #2c5aa0; }
-.status-released { background: #eaf0fd; color: #2c5aa0; }
-.status-rejected { background: #fdecea; color: #c0392b; }
-.status-partially_approved { background: #eaf0fd; color: #2c5aa0; }
-.status-returned { background: #fef5e3; color: #d68910; }
-.status-fulfilled { background: #e8faf0; color: #1e8449; }
-.status-declined { background: #fdecea; color: #c0392b; }
+/* Scoped to .badge-status specifically (not bare .status-X) — damage_assessment.css's
+   .status-dot-label uses these same status-name classes for its dot/text
+   colors only, with no pill background of its own by design; a bare rule
+   here would leak this background onto that different component too. */
+.badge-status.status-pending { background: #fef5e3; color: #d68910; }
+.badge-status.status-approved { background: #e8faf0; color: #1e8449; }
+.badge-status.status-verified { background: #eaf4fb; color: #2c5aa0; }
+.badge-status.status-released { background: #eaf0fd; color: #2c5aa0; }
+.badge-status.status-rejected { background: #fdecea; color: #c0392b; }
+.badge-status.status-partially_approved { background: #eaf0fd; color: #2c5aa0; }
+.badge-status.status-returned { background: #fdecea; color: #c0392b; }
+.badge-status.status-fulfilled { background: #e8faf0; color: #1e8449; }
+.badge-status.status-declined { background: #fdecea; color: #c0392b; }
 
 .request-detail-grid {
     display: grid;
@@ -1725,31 +1729,6 @@ html.sidebar-collapsed .dashboard-main {
 .weather-declare-btn:hover { background: #fbdcd8; }
 .weather-end-btn { background: #e8faf0; color: #1e8449; }
 .weather-end-btn:hover { background: #d7f5e4; }
-
-.weather-declare-cta-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    align-self: flex-start;
-    margin-top: 4px;
-    background: white;
-    border: 1px solid currentColor;
-    color: #c0392b;
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.weather-declare-cta-btn:hover { background: #fdecea; }
-
-/* The PSWDO "Declare Event" CTA drops to its own row beneath the storm
-   cards rather than being squeezed into a grid track next to them. */
-.typhoon-watch-active .weather-declare-cta-btn {
-    grid-column: 1 / -1;
-    justify-self: start;
-}
 
 .weather-empty {
     font-size: 13px;

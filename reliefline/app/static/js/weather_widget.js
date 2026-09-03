@@ -102,8 +102,7 @@
         );
     }
 
-    function renderTyphoonWatch(watch, declareOpts) {
-        declareOpts = declareOpts || {};
+    function renderTyphoonWatch(watch) {
         if (!watch || !watch.available) {
             return (
                 '<div class="typhoon-watch typhoon-watch-unknown">' +
@@ -134,23 +133,13 @@
             );
         }).join("");
 
-        // Live-detected system + PSWDO viewing + nothing already declared —
-        // the one moment this data should turn into an action, not just a
-        // reading. Pre-fills the modal from the first detected storm so
-        // declaring it is a one-click confirm rather than retyping what's
-        // already on screen.
-        var cta = "";
-        if (declareOpts.canDeclare && !declareOpts.hasActiveEvent) {
-            var first = watch.storms[0] || {};
-            cta = (
-                '<button type="button" class="weather-declare-cta-btn" ' +
-                'data-prefill-name="' + escapeHtml(first.name || "") + '" ' +
-                'data-prefill-condition="' + escapeHtml(first.severity_text || "") + '">' +
-                svgIcon("cloud-lightning", 13) + ' Declare as Disaster Event' +
-                "</button>"
-            );
-        }
-        return '<div class="typhoon-watch typhoon-watch-active">' + storms + cta + '</div>';
+        // The "Declare Disaster Event" action itself now lives in the panel
+        // header (see eventActionHtml) instead of a second button dropped in
+        // here — one button, and this grid keeps only real storm cards as
+        // its items, so a lone card's auto-fit column properly collapses
+        // its unused siblings and stretches to use the panel's full width
+        // rather than a fixed-width card next to blank space.
+        return '<div class="typhoon-watch typhoon-watch-active">' + storms + '</div>';
     }
 
     // --- Declare/End Disaster Event header action ---------------------------
@@ -160,7 +149,8 @@
     // DisasterEvent as the current one everywhere, so both being available
     // at once would be misleading.
 
-    function eventActionHtml(container) {
+    function eventActionHtml(container, opts) {
+        opts = opts || {};
         if (container.dataset.canDeclareEvents !== "true") return "";
         var activeEventId = container.dataset.activeEventId;
         if (activeEventId) {
@@ -170,8 +160,14 @@
                 "</form>"
             );
         }
+        // Pre-fills from the first live-detected storm when there is one, so
+        // declaring it is a one-click confirm rather than retyping what's
+        // already on screen — same single button either way, just with or
+        // without prefill data attributes.
         return (
-            '<button type="button" class="weather-declare-btn" data-declare-open>' +
+            '<button type="button" class="weather-declare-btn" data-declare-open ' +
+            'data-prefill-name="' + escapeHtml(opts.prefillName || "") + '" ' +
+            'data-prefill-condition="' + escapeHtml(opts.prefillCondition || "") + '">' +
             svgIcon("cloud-lightning", 14) + ' Declare Disaster Event' +
             "</button>"
         );
@@ -191,13 +187,10 @@
         }
         var declareBtn = container.querySelector(".weather-declare-btn");
         if (declareBtn) {
-            declareBtn.addEventListener("click", function () { openDeclareModal("", ""); });
-        }
-        container.querySelectorAll(".weather-declare-cta-btn").forEach(function (btn) {
-            btn.addEventListener("click", function () {
-                openDeclareModal(btn.dataset.prefillName, btn.dataset.prefillCondition);
+            declareBtn.addEventListener("click", function () {
+                openDeclareModal(declareBtn.dataset.prefillName || "", declareBtn.dataset.prefillCondition || "");
             });
-        });
+        }
     }
 
     function openEndEventModal(form, name) {
@@ -233,16 +226,17 @@
     }
 
     function renderWidget(container, data) {
-        var canDeclare = container.dataset.canDeclareEvents === "true";
-        var hasActiveEvent = !!container.dataset.activeEventId;
+        var watch = data.typhoon_watch;
+        var firstStorm = (watch && watch.available && watch.active && watch.storms[0]) || {};
         var citiesHtml = (data.cities || []).map(renderCity).join("");
-        var typhoonHtml = renderTyphoonWatch(data.typhoon_watch, { canDeclare: canDeclare, hasActiveEvent: hasActiveEvent });
-        var stamp = (data.typhoon_watch && data.typhoon_watch.fetched_at) || "";
+        var typhoonHtml = renderTyphoonWatch(watch);
+        var stamp = (watch && watch.fetched_at) || "";
 
         container.innerHTML = (
             '<div class="weather-widget-header">' +
             '<span class="weather-widget-title">' + svgIcon("cloud", 16) + ' Weather &amp; Typhoon Watch</span>' +
-            '<div class="weather-widget-actions">' + eventActionHtml(container) +
+            '<div class="weather-widget-actions">' +
+            eventActionHtml(container, { prefillName: firstStorm.name, prefillCondition: firstStorm.severity_text }) +
             '<button type="button" class="weather-refresh-btn" aria-label="Refresh weather">↻ Refresh</button></div>' +
             "</div>" +
             typhoonHtml +

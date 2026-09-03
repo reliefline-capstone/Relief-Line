@@ -72,6 +72,8 @@
 }
 
 .rd-sub { font-size: 11px; color: #8a94a6; }
+.rd-stock-preview { margin: 6px 0 0; line-height: 1.5; }
+.rd-stock-preview strong { font-weight: 700; color: #1a1a1a; font-size: 12.5px; }
 .rd-mt { margin-top: 14px; }
 .rd-big { display: block; font-size: 20px; margin: 2px 0; }
 .rd-danger { color: #c0392b; }

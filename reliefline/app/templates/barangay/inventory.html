@@ -65,11 +65,24 @@
         </section>
 
         <section class="panel">
-            <div class="panel-header"><h3>Movement History</h3></div>
+            <div class="panel-header">
+                <h3>Movement History</h3>
+                <form method="GET" class="wh-movement-filters">
+                    <select name="type" onchange="this.form.submit()">
+                        <option value="all" {{ 'selected' if type_filter == 'all' }}>All Types</option>
+                        <option value="delivery" {{ 'selected' if type_filter == 'delivery' }}>Received</option>
+                        <option value="distribution" {{ 'selected' if type_filter == 'distribution' }}>Given Out</option>
+                    </select>
+                    <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
+                </form>
+            </div>
             {% for l in logs[:3] %}
             {{ movement_row(l) }}
             {% else %}
-            <p class="empty-note">No movement yet. Your inventory grows when you validate a delivery on Relief Monitoring.</p>
+            <p class="empty-note">
+                {% if type_filter != 'all' or date_filter %}No movement matches the selected filters.
+                {% else %}No movement yet. Your inventory grows when you validate a delivery on Relief Monitoring.{% endif %}
+            </p>
             {% endfor %}
             {% if logs|length > 3 %}
             <details class="wh-movement-more">

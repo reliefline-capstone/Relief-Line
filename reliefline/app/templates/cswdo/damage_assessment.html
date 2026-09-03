@@ -205,7 +205,7 @@
                         <td>~{{ "{:,}".format(r.model_estimate) }}<br><span class="rd-sub">
                             {%- if r.barangay_on_hand is none %}stock: none reported{% else %}stock: {{ "{:,}".format(r.barangay_on_hand) }}{% endif -%}
                         </span></td>
-                        <td><span class="status-dot-label status-{{ rep.status }}"><i class="status-dot status-{{ rep.status }}"></i> {{ status_labels.get(rep.status, rep.status) }}</span></td>
+                        <td><span class="badge-status status-{{ rep.status }}">{{ status_labels.get(rep.status, rep.status) }}</span></td>
                         <td>
                             <button type="button" class="btn-view-sm" data-open-modal="rr-modal-{{ rep.report_id }}">
                                 {{ icon('eye', 13) }} {{ 'Review' if rep.status in ('pending','returned') else 'View' }}

@@ -32,10 +32,7 @@
                     <option value="transferred_out" {{ 'selected' if type_filter == 'transferred_out' }}>Transferred Out</option>
                     <option value="received" {{ 'selected' if type_filter == 'received' }}>Received</option>
                 </select>
-                <div class="date-input-wrapper">
-                    {{ icon('calendar', 14, '#8a94a6') }}
-                    <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
-                </div>
+                <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
             </form>
             <div class="wh-header-actions">
                 <span class="wh-sub">{{ movements|length }} record{{ 's' if movements|length != 1 }}</span>

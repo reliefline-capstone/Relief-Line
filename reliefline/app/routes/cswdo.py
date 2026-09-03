@@ -858,7 +858,7 @@ def damage_assessment_export():
     writer.writerow([
         "Report ID", "Barangay", "Typhoon Event", "Status", "Submitted By",
         "Affected Families", "Totally Damaged Houses",
-        "Model Estimate", "Allocated Packs", "Last Updated",
+        "Allocated Packs", "Last Updated",
     ])
     for rep in reports:
         alloc = rep.allocation
@@ -867,14 +867,13 @@ def damage_assessment_export():
             rep.event.event_name if rep.event else "",
             DAMAGE_STATUS_LABELS.get(rep.status, rep.status),
             rep.submitted_by_name, rep.affected_families, rep.totally_damaged_houses,
-            ml_predict.predict_quantity(rep.barangay) or 0,
             alloc.allocated_quantity if alloc else "",
             (rep.reviewed_at or rep.submitted_at).strftime("%Y-%m-%d %H:%M") if (rep.reviewed_at or rep.submitted_at) else "",
         ])
 
     return Response(
         buffer.getvalue(), mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={(lgu or 'relief_requests').replace(' ', '_')}_relief_requests.csv"},
+        headers={"Content-Disposition": f"attachment; filename={(lgu or 'barangay_reports').replace(' ', '_')}_barangay_reports.csv"},
     )
 
 
@@ -1046,6 +1045,13 @@ def confirm_issuance(distribution_id):
     if rec.dispatch_status != "loaded" or rec.is_issued:
         flash("Issuance can only be confirmed once the delivery is loaded.", "error")
         return redirect(url_for("cswdo.delivery_detail", distribution_id=distribution_id))
+
+    eta_raw = request.form.get("eta", "").strip()
+    if eta_raw:
+        try:
+            rec.expected_arrival_time = datetime.strptime(eta_raw, "%H:%M").time()
+        except ValueError:
+            pass
 
     rec.issued_by = current_user.user_id
     rec.issued_at = ph_now()
@@ -1653,9 +1659,10 @@ def reports():
         abort(404)
 
     filters = _resolve_cswdo_report_filters(lgu)
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    # Every event, not just the currently-active one — a report is almost
+    # always generated *after* a typhoon has ended, so scoping this filter to
+    # status="active" would make every past event unselectable.
+    active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
 
     barangay_ids = [b.barangay_id for b in Barangay.query.filter_by(city_municipality=lgu).all()]
 
@@ -1685,7 +1692,11 @@ def reports():
     packs_distributed = sum(d.quantity_released for d in delivered_q.all())
     completed_deliveries = delivered_q.count()
 
-    query_params = {"event_id": filters["event_id"], "days": filters["days"]}
+    # "" not None — url_for() drops a None param outright, which would make
+    # the generated link carry no event_id at all instead of an explicit
+    # "no event filter", and resolve_filters() would then treat that as "not
+    # chosen yet" and silently default back to the active event.
+    query_params = {"event_id": filters["event_id"] or "", "days": filters["days"]}
     report_cards = [
         {"slug": slug, **info, "generate_url": url_for("cswdo.report_view", report_type=slug, **query_params)}
         for slug, info in REPORT_TYPES.items()
@@ -1973,13 +1984,23 @@ def municipal_inventory_add():
 @role_required("cswdo_admin", "system_admin")
 def municipal_inventory_update(inventory_id):
     item = _own_inventory_item_or_403(inventory_id)
-    new_quantity = request.form.get("quantity", type=int)
+    # The form takes the amount being added/removed (e.g. a donation's actual
+    # quantity), not the resulting total — the server does that addition, so
+    # nobody has to compute item.quantity_available + delta by hand.
+    delta = request.form.get("delta", type=int)
     unit = request.form.get("unit", "").strip()
     reason = request.form.get("reason", "").strip() or None
     min_stock_level = request.form.get("min_stock_level", type=int)
 
-    if new_quantity is None or new_quantity < 0:
-        flash("Enter a valid quantity.", "error")
+    if delta is None:
+        flash("Enter a quantity to add or remove.", "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+    new_quantity = item.quantity_available + delta
+    if new_quantity < 0:
+        flash(
+            f"That would take {item.item_name} below zero — current stock is "
+            f"{item.quantity_available:,}.", "error"
+        )
         return redirect(url_for("cswdo.municipal_inventory"))
     if min_stock_level is not None and min_stock_level < 0:
         flash("Min stock level can't be negative.", "error")
@@ -1987,7 +2008,6 @@ def municipal_inventory_update(inventory_id):
 
     # Same rule as the PSWDO side — a source tag only applies to a net increase
     # (incoming stock); a decrease is a manual correction (recount, spoilage).
-    delta = new_quantity - item.quantity_available
     source_type, donor_name = "standard", None
     if delta > 0:
         source_type, donor_name, source_error = _parse_stock_source(request.form)
@@ -1995,10 +2015,7 @@ def municipal_inventory_update(inventory_id):
             flash(source_error, "error")
             return redirect(url_for("cswdo.municipal_inventory"))
     elif request.form.get("source_type", "").strip() == "donation":
-        flash(
-            f"A donation adds stock — enter a new quantity higher than the "
-            f"current {item.quantity_available:,} to record it.", "error"
-        )
+        flash("A donation adds stock — enter a positive quantity to record it.", "error")
         return redirect(url_for("cswdo.municipal_inventory"))
 
     item.quantity_available = new_quantity

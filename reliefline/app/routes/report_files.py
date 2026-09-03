@@ -47,7 +47,7 @@ def generate_pdf(report):
     meta_rows = [
         ["Coverage:", report["coverage"], "Typhoon Event:", report["event_name"]],
         ["Municipality:", report["municipality_label"], "Prepared By:", report["prepared_by_role"]],
-        ["Date Generated:", report["date_generated"].strftime("%B %d, %Y"), "System:", "ReliefLine v1.0"],
+        ["Date Generated:", report["date_generated"].strftime("%B %d, %Y"), "System:", "ReliefLine"],
     ]
     meta_table = Table(meta_rows, colWidths=[80, 170, 80, 170])
     meta_table.setStyle(TableStyle([
@@ -136,7 +136,7 @@ def generate_excel(report):
         f"Municipality: {report['municipality_label']}",
         f"Date Generated: {report['date_generated'].strftime('%B %d, %Y')}",
         f"Prepared By: {report['prepared_by_role']}",
-        "System: ReliefLine v1.0",
+        "System: ReliefLine",
     ]
     row = 2
     for line in meta_lines:

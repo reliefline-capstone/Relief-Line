@@ -209,9 +209,11 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                 </div>
             </section>
 
+            {% if not report or report.status == 'draft' %}
             <div class="wizard-save-draft-row">
                 <button type="submit" formaction="{{ url_for('barangay.save_damage_report_draft') }}" formnovalidate class="btn-outline">{{ icon('file-text', 14) }} Save Draft</button>
             </div>
+            {% endif %}
         </form>
 
     </main>

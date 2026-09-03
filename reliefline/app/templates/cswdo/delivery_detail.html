@@ -166,6 +166,10 @@
                 {% elif can_issue %}
                 <form method="POST" action="{{ url_for('cswdo.confirm_issuance', distribution_id=rec.distribution_id) }}" class="settings-form">
                     <p class="form-hint">Confirm the {{ "{:,}".format(rec.quantity_released) }} food packs have been released from your warehouse and handed to transport.</p>
+                    <div class="form-row">
+                        <label for="issue-eta-{{ rec.distribution_id }}">Estimated Arrival Time <span class="rd-sub">(optional — shown to the barangay)</span></label>
+                        <input type="time" name="eta" id="issue-eta-{{ rec.distribution_id }}">
+                    </div>
                     <button type="submit" class="btn-decision btn-approve-full">{{ icon('package', 16, 'white') }} Confirm Issuance</button>
                 </form>
                 {% else %}

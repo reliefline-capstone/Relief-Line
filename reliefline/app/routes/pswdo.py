@@ -1324,13 +1324,23 @@ def warehouse_inventory_add(office_id):
 @role_required("pswdo_admin", "system_admin")
 def warehouse_inventory_update(inventory_id):
     item = WarehouseInventory.query.get_or_404(inventory_id)
-    new_quantity = request.form.get("quantity", type=int)
+    # The form takes the amount being added/removed (e.g. a donation's actual
+    # quantity), not the resulting total — the server does that addition, so
+    # nobody has to compute item.quantity_available + delta by hand.
+    delta = request.form.get("delta", type=int)
     unit = request.form.get("unit", "").strip()
     reason = request.form.get("reason", "").strip() or None
     min_stock_level = request.form.get("min_stock_level", type=int)
 
-    if new_quantity is None or new_quantity < 0:
-        flash("Enter a valid quantity.", "error")
+    if delta is None:
+        flash("Enter a quantity to add or remove.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
+    new_quantity = item.quantity_available + delta
+    if new_quantity < 0:
+        flash(
+            f"That would take {item.item_name} below zero — current stock is "
+            f"{item.quantity_available:,}.", "error"
+        )
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
     if min_stock_level is not None and min_stock_level < 0:
         flash("Min stock level can't be negative.", "error")
@@ -1339,7 +1349,6 @@ def warehouse_inventory_update(inventory_id):
     # Only a net *increase* is ever a "received" event with a source worth
     # tagging — a decrease is a manual correction (e.g. recount, spoilage),
     # not incoming stock, so donation/standard source doesn't apply to it.
-    delta = new_quantity - item.quantity_available
     source_type, donor_name = "standard", None
     if delta > 0:
         source_type, donor_name, source_error = _parse_stock_source(request.form)
@@ -1347,10 +1356,7 @@ def warehouse_inventory_update(inventory_id):
             flash(source_error, "error")
             return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
     elif request.form.get("source_type", "").strip() == "donation":
-        flash(
-            f"A donation adds stock — enter a new quantity higher than the "
-            f"current {item.quantity_available:,} to record it.", "error"
-        )
+        flash("A donation adds stock — enter a positive quantity to record it.", "error")
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
 
     item.quantity_available = new_quantity
@@ -1558,9 +1564,10 @@ def warehouse_reports():
     from app.routes.report_data import REPORT_TYPES, resolve_filters
 
     filters = resolve_filters(request.args)
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    # Every event, not just the currently-active one — a report is almost
+    # always generated *after* a typhoon has ended, so scoping this filter to
+    # status="active" would make every past event unselectable.
+    active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
 
     barangay_ids = [b.barangay_id for b in Barangay.query.filter(
         Barangay.city_municipality.in_(filters["lgus"])
@@ -1585,7 +1592,11 @@ def warehouse_reports():
     packs_distributed = sum(d.quantity_released for d in delivered_q.all())
     completed_deliveries = delivered_q.count()
 
-    query_params = {"event_id": filters["event_id"], "municipality": filters["municipality"], "days": filters["days"]}
+    # "" not None — url_for() drops a None param outright, which would make
+    # the generated link carry no event_id at all instead of an explicit
+    # "no event filter", and resolve_filters() would then treat that as "not
+    # chosen yet" and silently default back to the active event.
+    query_params = {"event_id": filters["event_id"] or "", "municipality": filters["municipality"], "days": filters["days"]}
     report_cards = [
         {"slug": slug, **info, "generate_url": url_for("reports.view", report_type=slug, **query_params)}
         for slug, info in REPORT_TYPES.items()

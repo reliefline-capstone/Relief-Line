@@ -99,7 +99,8 @@
         input.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    function baseWrap(input, kind) {
+    function baseWrap(input, kind, opts) {
+        opts = opts || {};
         var wrap = document.createElement('div');
         wrap.className = 'cdt-wrap cdt-' + kind + (input.disabled ? ' is-disabled' : '');
         input.parentNode.insertBefore(wrap, input);
@@ -107,13 +108,34 @@
         input.classList.add('cdt-native');
         input.tabIndex = -1;
 
-        var trigger = document.createElement('button');
-        trigger.type = 'button';
-        trigger.className = 'cdt-trigger';
-        trigger.setAttribute('aria-haspopup', 'dialog');
-        trigger.setAttribute('aria-expanded', 'false');
-        if (input.disabled) trigger.disabled = true;
-        wrap.appendChild(trigger);
+        var trigger, icon = null;
+        if (opts.typeable) {
+            // A real text input — lets someone type the value directly
+            // (e.g. "2:30 PM") instead of only picking from the popup. The
+            // clock/calendar icon can't live inside an <input>'s markup, so
+            // it's a separate, click-through sibling laid over it.
+            trigger = document.createElement('input');
+            trigger.type = 'text';
+            trigger.className = 'cdt-trigger cdt-trigger-typeable';
+            trigger.autocomplete = 'off';
+            trigger.spellcheck = false;
+            trigger.placeholder = opts.placeholder || '';
+            if (input.disabled) trigger.disabled = true;
+            wrap.appendChild(trigger);
+
+            icon = document.createElement('span');
+            icon.className = 'cdt-trigger-icon';
+            icon.innerHTML = opts.icon || '';
+            wrap.appendChild(icon);
+        } else {
+            trigger = document.createElement('button');
+            trigger.type = 'button';
+            trigger.className = 'cdt-trigger';
+            trigger.setAttribute('aria-haspopup', 'dialog');
+            trigger.setAttribute('aria-expanded', 'false');
+            if (input.disabled) trigger.disabled = true;
+            wrap.appendChild(trigger);
+        }
 
         var popup = document.createElement('div');
         popup.className = 'cdt-popup';
@@ -123,28 +145,44 @@
         wrap._trig = trigger;
         wrap._pop = popup;
 
-        trigger.addEventListener('click', function () {
-            if (wrap.classList.contains('is-open')) close(wrap);
-            else open(wrap);
-        });
-        trigger.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && wrap.classList.contains('is-open')) { e.preventDefault(); close(wrap); }
-            else if ((e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') && !wrap.classList.contains('is-open')) {
-                e.preventDefault(); open(wrap);
-            }
-        });
+        if (opts.typeable) {
+            trigger.addEventListener('focus', function () { open(wrap); });
+            trigger.addEventListener('blur', function () {
+                if (opts.onCommitText) opts.onCommitText();
+                close(wrap);
+            });
+            trigger.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && wrap.classList.contains('is-open')) { e.preventDefault(); trigger.blur(); }
+                else if (e.key === 'Enter') { e.preventDefault(); if (opts.onCommitText) opts.onCommitText(); }
+            });
+            // Selecting a popup item moves focus away from the input, which
+            // would otherwise blur (and close) it before the item's own
+            // click handler runs — keep focus on the input instead.
+            popup.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        } else {
+            trigger.addEventListener('click', function () {
+                if (wrap.classList.contains('is-open')) close(wrap);
+                else open(wrap);
+            });
+            trigger.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && wrap.classList.contains('is-open')) { e.preventDefault(); close(wrap); }
+                else if ((e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') && !wrap.classList.contains('is-open')) {
+                    e.preventDefault(); open(wrap);
+                }
+            });
+        }
 
         if (input.id) {
             var lab = document.querySelector('label[for="' + input.id + '"]');
             if (lab) lab.addEventListener('click', function (e) {
-                e.preventDefault(); trigger.focus(); open(wrap);
+                e.preventDefault(); trigger.focus(); if (!opts.typeable) open(wrap);
             });
         }
 
         input.addEventListener('invalid', function () { trigger.classList.add('cdt-invalid'); });
         input.addEventListener('change', function () { trigger.classList.remove('cdt-invalid'); });
 
-        return { wrap: wrap, trigger: trigger, popup: popup };
+        return { wrap: wrap, trigger: trigger, popup: popup, icon: icon };
     }
 
     // ---------------------------------------------------------------- DATE
@@ -236,9 +274,28 @@
         syncLabel();
     }
 
+    // Accepts what someone would naturally type: "2:30 PM", "2:30PM",
+    // "14:30" (24h), "2 PM" / "14" (hour only, minutes default to 0).
+    // Returns null for anything it can't confidently parse — the caller
+    // just leaves the field's last valid value in place rather than
+    // guessing wrong.
+    function parseTypedTime(text) {
+        var m = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i.exec((text || '').trim());
+        if (!m) return null;
+        var h = parseInt(m[1], 10);
+        var mins = m[2] !== undefined ? parseInt(m[2], 10) : 0;
+        var period = m[3] ? m[3].toUpperCase() : null;
+        if (mins > 59) return null;
+        if (period) {
+            if (h < 1 || h > 12) return null;
+            return { h: h, m: mins, p: period };
+        }
+        if (h >= 0 && h <= 23) return { h: (h % 12) || 12, m: mins, p: h < 12 ? 'AM' : 'PM' };
+        return null;
+    }
+
     // ---------------------------------------------------------------- TIME
     function enhanceTime(input) {
-        var b = baseWrap(input, 'time');
         var state = { h: null, m: null, p: null }; // h 1-12, m 0-59, p AM/PM
 
         function fromValue() {
@@ -257,11 +314,31 @@
             commit(input, pad(H) + ':' + pad(mm));
         }
         function syncLabel() {
-            var has = state.h != null;
-            var txt = has ? (state.h + ':' + pad(state.m == null ? 0 : state.m) + ' ' + (state.p || 'AM')) : 'Select time';
-            b.trigger.innerHTML = '<span class="cdt-value' + (has ? '' : ' cdt-placeholder') + '">' +
-                txt + '</span>' + CLOCK_ICON;
+            b.trigger.value = state.h != null ?
+                (state.h + ':' + pad(state.m == null ? 0 : state.m) + ' ' + (state.p || 'AM')) : '';
         }
+        // Runs when the user types directly into the field instead of (or
+        // alongside) picking from the columns — on blur or Enter, not on
+        // every keystroke, so it never fights an in-progress edit.
+        function commitTypedText() {
+            var raw = b.trigger.value.trim();
+            if (!raw) {
+                state = { h: null, m: null, p: null };
+                commit(input, '');
+            } else {
+                var parsed = parseTypedTime(raw);
+                if (parsed) { state = parsed; writeIfReady(); }
+                // Unparseable text: fall through and re-render the last
+                // good value below, rather than accepting garbage.
+            }
+            syncLabel();
+            if (b.wrap._render) b.wrap._render();
+        }
+
+        var b = baseWrap(input, 'time', {
+            typeable: true, placeholder: 'Select time', icon: CLOCK_ICON,
+            onCommitText: commitTypedText,
+        });
 
         function column(name, items, current, fmt) {
             var h = '<ul class="cdt-col" data-col="' + name + '">';
@@ -276,7 +353,9 @@
             var hrs = [], mins = [], i;
             for (i = 1; i <= 12; i++) hrs.push(i);
             for (i = 0; i < 60; i++) mins.push(i);
-            b.popup.innerHTML = '<div class="cdt-time-cols">' +
+            b.popup.innerHTML =
+                '<div class="cdt-time-head"><span>Hour</span><span>Min</span><span>AM/PM</span></div>' +
+                '<div class="cdt-time-cols">' +
                 column('h', hrs, state.h) +
                 column('m', mins, state.m, pad) +
                 column('p', ['AM', 'PM'], state.p) +

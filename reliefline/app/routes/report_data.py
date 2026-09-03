@@ -27,12 +27,12 @@ from app.utils.roles import ROLE_LABELS
 
 REPORT_TYPES = {
     "relief_requests": {
-        "title": "Relief Request Report",
-        "description": "All relief requests submitted by municipalities with approval status.",
+        "title": "Barangay Reports",
+        "description": "All barangay reports submitted, with impact figures, model estimate, and allocation status.",
         "icon": "clipboard",
     },
     "distribution": {
-        "title": "Distribution Report",
+        "title": "Deliveries Report",
         "description": "Complete history of all food pack deliveries per warehouse and destination.",
         "icon": "truck",
     },
@@ -57,18 +57,10 @@ REPORT_TYPES = {
         "icon": "cloud-lightning",
     },
     "analytics": {
-        "title": "Analytics Report",
+        "title": "Predictive Analytics Report",
         "description": "Demand forecast, burn rate analysis, warehouse forecast, and system recommendations.",
         "icon": "trending-up",
     },
-}
-
-STATUS_LABELS = {
-    "pending": "Pending",
-    "approved": "Approved",
-    "released": "Released",
-    "partially_approved": "Partially Approved",
-    "rejected": "Rejected",
 }
 
 
@@ -95,8 +87,17 @@ def _parse_days(raw):
 def resolve_filters(args):
     """Shared filter parsing for the Reports listing page and every report type."""
     event_id = args.get("event_id", type=int)
-    event = DisasterEvent.query.get(event_id) if event_id else None
-    if not event:
+    if event_id:
+        event = DisasterEvent.query.get(event_id)
+    elif "event_id" in args:
+        # The event dropdown's "All Events" option submits event_id="" — an
+        # explicit choice to clear the filter, not "no selection made yet".
+        # Falling back to the active event here would make that option
+        # unselectable whenever a disaster event happens to be active.
+        event = None
+    else:
+        # No event param at all (e.g. a fresh visit to the Reports page) —
+        # default to whichever disaster event is currently active, if any.
         event = DisasterEvent.query.filter_by(status="active").order_by(
             DisasterEvent.start_date.desc()
         ).first()
@@ -122,27 +123,42 @@ def resolve_filters(args):
 
 
 def _build_relief_requests(filters):
-    q = AllocationRecord.query.join(Barangay).filter(
+    """Barangay Reports — same rows/columns as the CSV export on the Barangay
+    Reports page (app.routes.cswdo.damage_assessment_export), just scoped to
+    every municipality in filters["lgus"] instead of one CSWDO's own LGU, plus
+    a leading Municipality column so a province-wide run stays readable.
+    """
+    q = BarangayReport.query.join(Barangay).filter(
         Barangay.city_municipality.in_(filters["lgus"]),
-        AllocationRecord.allocation_date >= filters["start_date"],
+        BarangayReport.status != "draft",
+        BarangayReport.submitted_at >= filters["start_date"],
     )
     if filters["event_id"]:
-        q = q.filter(AllocationRecord.event_id == filters["event_id"])
-    records = q.order_by(AllocationRecord.allocation_date.desc()).all()
+        q = q.filter(BarangayReport.event_id == filters["event_id"])
+    records = q.order_by(BarangayReport.submitted_at.desc()).all()
 
     rows = []
-    for i, r in enumerate(records, start=1):
+    for i, rep in enumerate(records, start=1):
+        alloc = rep.allocation
         rows.append([
             i,
-            r.barangay.city_municipality,
-            f"RR-{r.allocation_date.year}-{r.allocation_id:03d}",
-            _fmt_date(r.allocation_date),
-            f"{r.predicted_quantity or 0:,}",
-            f"{r.allocated_quantity:,}" if r.status in ("approved", "released") else "—",
-            STATUS_LABELS.get(r.display_status, r.display_status.replace("_", " ").title()),
+            rep.barangay.city_municipality,
+            rep.ref,
+            rep.barangay.barangay_name,
+            rep.event.event_name if rep.event else "—",
+            BARANGAY_REPORT_STATUS_LABELS.get(rep.status, rep.status.title()),
+            rep.submitted_by_name,
+            f"{rep.affected_families:,}",
+            f"{rep.totally_damaged_houses:,}",
+            f"{alloc.allocated_quantity:,}" if alloc else "—",
+            _fmt_date(rep.reviewed_at or rep.submitted_at),
         ])
     return {
-        "columns": ["#", "Municipality", "Request ID", "Date", "Requested Packs", "Approved Packs", "Status"],
+        "columns": [
+            "#", "Municipality", "Report ID", "Barangay", "Typhoon Event", "Status",
+            "Submitted By", "Affected Families", "Totally Damaged Houses",
+            "Allocated Packs", "Last Updated",
+        ],
         "rows": rows,
     }
 
@@ -375,7 +391,7 @@ def build_report(report_type, filters, user=None):
         "record_count": len(data["rows"]),
         "notes": data.get("notes"),
         "coverage": coverage,
-        "event_name": filters["event"].event_name if filters["event"] else "No active event",
+        "event_name": filters["event"].event_name if filters["event"] else "All Events",
         "municipality_label": filters["municipality"] if filters["municipality"] != "all" else "All Municipalities",
         "date_generated": ph_now(),
         "prepared_by": user.name if user else "PSWDO Officer",
@@ -421,8 +437,12 @@ def resolve_barangay_filters(args):
     """Same shape as resolve_filters(), minus the municipality/lgus concept —
     a barangay is always scoped to itself, never to a query-param choice."""
     event_id = args.get("event_id", type=int)
-    event = DisasterEvent.query.get(event_id) if event_id else None
-    if not event:
+    if event_id:
+        event = DisasterEvent.query.get(event_id)
+    elif "event_id" in args:
+        # Explicit "All Events" choice — see resolve_filters() above.
+        event = None
+    else:
         event = DisasterEvent.query.filter_by(status="active").order_by(
             DisasterEvent.start_date.desc()
         ).first()
@@ -508,7 +528,7 @@ def build_barangay_report(report_type, barangay, filters, user=None):
         "record_count": len(data["rows"]),
         "notes": data.get("notes"),
         "coverage": coverage,
-        "event_name": filters["event"].event_name if filters["event"] else "No active event",
+        "event_name": filters["event"].event_name if filters["event"] else "All Events",
         "municipality_label": f"Brgy. {barangay.barangay_name}, {barangay.city_municipality}",
         "date_generated": ph_now(),
         "prepared_by": user.name if user else "Barangay User",

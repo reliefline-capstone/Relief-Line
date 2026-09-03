@@ -68,9 +68,10 @@ def view(report_type):
         abort(404)
     filters = resolve_filters(request.args)
     report = build_report(report_type, filters, current_user)
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    # Every event, not just the currently-active one — a report is almost
+    # always generated *after* a typhoon has ended, so scoping this filter to
+    # status="active" would make every past event unselectable.
+    active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
     return render_template(
         "pswdo/report_view.html",
         report=report,
