@@ -9,6 +9,23 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}?v={{ asset_version('css/profile_settings.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v={{ asset_version('css/admin.css') }}">
+<style>
+    .confirm-modal { max-width: 400px; text-align: center; }
+    .confirm-modal-icon {
+        width: 48px; height: 48px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 14px;
+    }
+    .confirm-modal h3 { font-size: 17px; color: #0f2547; margin-bottom: 6px; }
+    .confirm-modal p { font-size: 13px; color: #5b6472; line-height: 1.55; margin-bottom: 18px; }
+    .confirm-modal .rd-modal-actions { margin-top: 0; }
+    #confirm-modal[data-tone="danger"] .confirm-modal-icon { background: #fdecea; color: #c0392b; }
+    #confirm-modal[data-tone="success"] .confirm-modal-icon { background: #e8faf0; color: #1e8449; }
+    #confirm-modal[data-tone="danger"] [data-confirm-ok] { background: #c0392b; }
+    #confirm-modal[data-tone="danger"] [data-confirm-ok]:hover { background: #a53125; }
+    #confirm-modal[data-tone="success"] [data-confirm-ok] { background: #1e8449; }
+    #confirm-modal[data-tone="success"] [data-confirm-ok]:hover { background: #196f3d; }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -56,8 +73,14 @@
                         <td>
                             <div class="admin-row-actions">
                                 <button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-office-modal-{{ office.office_id }}">Edit</button>
-                                <form method="POST" action="{{ url_for('admin.toggle_office_active', office_id=office.office_id) }}" onsubmit="return confirm('{{ 'Deactivate' if office.is_active else 'Activate' }} {{ office.office_name }}?');">
-                                    <button type="submit" class="admin-btn {{ 'admin-btn-danger' if office.is_active else 'admin-btn-success' }}">{{ 'Deactivate' if office.is_active else 'Activate' }}</button>
+                                <form method="POST" action="{{ url_for('admin.toggle_office_active', office_id=office.office_id) }}">
+                                    <button type="button" class="admin-btn {{ 'admin-btn-danger' if office.is_active else 'admin-btn-success' }}"
+                                            data-open-modal="confirm-modal"
+                                            data-confirm-trigger
+                                            data-confirm-tone="{{ 'danger' if office.is_active else 'success' }}"
+                                            data-confirm-title="{{ 'Deactivate' if office.is_active else 'Activate' }} warehouse?"
+                                            data-confirm-message="{{ office.office_name }} will {{ 'be hidden from stock operations and dashboards' if office.is_active else 'be restored to active status' }}."
+                                            data-confirm-label="{{ 'Deactivate' if office.is_active else 'Activate' }}">{{ 'Deactivate' if office.is_active else 'Activate' }}</button>
                                 </form>
                             </div>
                         </td>
@@ -197,8 +220,45 @@
 </div>
 {% endfor %}
 
+<!-- Shared confirmation modal (Activate / Deactivate) -->
+<div class="rd-modal-overlay" id="confirm-modal" data-tone="danger" hidden>
+    <div class="rd-modal confirm-modal">
+        <div class="confirm-modal-icon" data-confirm-icon>{{ icon('alert-triangle', 22) }}</div>
+        <h3 data-confirm-title-target>Are you sure?</h3>
+        <p data-confirm-message-target></p>
+        <div class="rd-modal-actions">
+            <button type="button" class="btn-decision" data-confirm-ok>Confirm</button>
+            <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('confirm-modal');
+        if (!modal) return;
+        var titleEl = modal.querySelector('[data-confirm-title-target]');
+        var msgEl = modal.querySelector('[data-confirm-message-target]');
+        var okBtn = modal.querySelector('[data-confirm-ok]');
+        var pendingForm = null;
+
+        document.querySelectorAll('[data-confirm-trigger]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                pendingForm = btn.closest('form');
+                modal.dataset.tone = btn.dataset.confirmTone === 'success' ? 'success' : 'danger';
+                titleEl.textContent = btn.dataset.confirmTitle || 'Are you sure?';
+                msgEl.textContent = btn.dataset.confirmMessage || '';
+                okBtn.textContent = btn.dataset.confirmLabel || 'Confirm';
+            });
+        });
+
+        okBtn.addEventListener('click', function () {
+            if (pendingForm) pendingForm.submit();
+        });
+    });
+</script>
 {% endblock %}

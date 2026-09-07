@@ -324,7 +324,7 @@ html.sidebar-collapsed .dashboard-main {
    system. */
 .flash-stack {
     position: fixed;
-    bottom: 20px;
+    top: 20px;
     right: 20px;
     z-index: 4000;
     display: flex;
@@ -384,12 +384,12 @@ html.sidebar-collapsed .dashboard-main {
 .flash-info { background: #f3f7fe; color: #2c5aa0; border-left-color: #2c5aa0; }
 
 @keyframes flashToastIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 480px) {
-    .flash-stack { left: 16px; right: 16px; bottom: 16px; width: auto; }
+    .flash-stack { left: 16px; right: 16px; top: 16px; width: auto; }
 }
 
 /* Shared page header (non-dashboard pages) */

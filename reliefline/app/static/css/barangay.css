@@ -445,7 +445,13 @@
 .drv-grid > .panel { display: flex; flex-direction: column; }
 .drv-side { display: flex; flex-direction: column; gap: 16px; }
 .drv-side > .panel:last-child { flex: 1; }
+/* The sidebar column is too narrow for auto-fit to ever place a second
+   tile, so pin these to two columns regardless. */
+.drv-side .info-grid { grid-template-columns: 1fr 1fr; }
 @media (max-width: 1200px) {
     .drv-grid { align-items: start; }
     .drv-side > .panel:last-child { flex: none; }
+}
+@media (max-width: 480px) {
+    .drv-side .info-grid { grid-template-columns: 1fr; }
 }
