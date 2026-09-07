@@ -80,6 +80,21 @@ body { overflow-x: hidden; }
 
 .lp-nav-links a:hover::after { transform: scaleX(1); }
 
+/* "Log In" — the nav's one call to action, styled as a solid button rather
+   than a plain link (and no underline-grow on hover). */
+.lp-nav-login {
+    display: inline-flex;
+    align-items: center;
+    background: var(--lp-blue);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+.lp-nav-login:hover { background: var(--lp-blue-light); color: white; }
+.lp-nav-login::after { display: none; }
+
 /* ---- Hero ---- */
 html { scroll-behavior: smooth; }
 
@@ -116,12 +131,47 @@ html { scroll-behavior: smooth; }
 
 .lp-hero-split {
     display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 40px;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 48px;
     align-items: center;
 }
 
 .lp-hero-copy { text-align: left; }
+
+/* Coverage map, right column of the hero. The child #lp-map is clipped (in
+   JS) to the outline of Pangasinan; the drop shadow lives here on the
+   parent so it hugs that clipped silhouette instead of being clipped away
+   with it (clip-path applies after filter on the same element). */
+.lp-hero-map {
+    animation: lp-fade-in 0.7s ease 0.2s both;
+    filter: drop-shadow(0 24px 34px rgba(15, 37, 71, 0.34))
+            drop-shadow(0 6px 12px rgba(15, 37, 71, 0.2));
+}
+
+#lp-map {
+    width: 100%;
+    /* ~matches Pangasinan's own wide aspect ratio, so the silhouette fills
+       the column with little empty space above/below. */
+    height: 360px;
+    background: transparent;
+}
+
+/* Calm the OSM basemap so it sits back as a backdrop. */
+#lp-map .leaflet-tile-pane {
+    filter: saturate(0.62) brightness(1.04) contrast(0.96);
+}
+
+/* Soft lift on the highlighted LGUs so they read on top of the basemap. */
+#lp-map .leaflet-pane.leaflet-lpTarget-pane {
+    filter: drop-shadow(0 2px 6px rgba(15, 37, 71, 0.5));
+}
+
+.lp-map-failed { display: flex; align-items: center; justify-content: center; }
+.lp-map-failed::after {
+    content: "Map unavailable";
+    color: var(--lp-text-muted);
+    font-size: 13px;
+}
 
 .lp-hero-lockup {
     display: flex;
@@ -132,7 +182,6 @@ html { scroll-behavior: smooth; }
 
 .lp-hero-desc { animation: lp-fade-up 0.7s ease 0.12s both; }
 .lp-hero-actions { animation: lp-fade-up 0.7s ease 0.22s both; }
-#login-card { animation: lp-fade-in 0.7s ease 0.15s both; }
 
 .lp-hero-logo { width: 72px; flex-shrink: 0; }
 
@@ -162,8 +211,6 @@ html { scroll-behavior: smooth; }
     gap: 14px;
     flex-wrap: wrap;
 }
-
-#login-card { scroll-margin-top: 90px; }
 
 .lp-btn {
     display: inline-flex;
@@ -468,7 +515,7 @@ html { scroll-behavior: smooth; }
 
 /* Motion-sensitive users get the same content with no animation. */
 @media (prefers-reduced-motion: reduce) {
-    .lp-hero-lockup, .lp-hero-desc, .lp-hero-actions, #login-card {
+    .lp-hero-lockup, .lp-hero-desc, .lp-hero-actions {
         animation: none;
     }
     .lp-reveal {
@@ -486,13 +533,15 @@ html { scroll-behavior: smooth; }
 @media (max-width: 980px) {
     .lp-hero-split {
         grid-template-columns: 1fr;
+        gap: 32px;
         justify-items: center;
-        text-align: center;
     }
     .lp-hero-copy { text-align: center; }
     .lp-hero-lockup { flex-direction: column; gap: 10px; }
     .lp-hero-desc { margin-left: auto; margin-right: auto; }
     .lp-hero-actions { justify-content: center; }
+    .lp-hero-map { width: 100%; max-width: 460px; }
+    #lp-map { height: 320px; }
 }
 
 @media (max-width: 900px) {

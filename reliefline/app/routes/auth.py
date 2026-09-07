@@ -27,16 +27,7 @@ def _dashboard_endpoint(role):
 
 @auth_bp.route("/")
 def landing():
-    # A user whose password was just reset by a System Administrator is held
-    # here by app.__init__'s _enforce_forced_password_change hook — the
-    # "Set a New Password" step is a modal on this page now, not a separate
-    # screen, so flag it for the template to auto-open (and lock) that modal.
-    force_password_change = (
-        current_user.is_authenticated and current_user.must_change_password
-    )
-    return render_template(
-        "landing.html", force_password_change=force_password_change
-    )
+    return render_template("landing.html")
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -47,7 +38,7 @@ def login():
         # Which page the form was submitted from, so a failed attempt lands the
         # user back where they were instead of bouncing them to a different
         # login screen. "landing" = the marketing page's hero login card;
-        # anything else = the standalone /login page.
+        # anything else = the standalone /login page (templates/login.html).
         origin = request.form.get("origin", "login")
         retry = (
             redirect(url_for("auth.landing") + "#login-card")
@@ -65,18 +56,26 @@ def login():
             log_admin_activity(user.user_id, "login", f"{user.name} logged in")
             db.session.commit()
             if user.must_change_password:
-                # The forced "Set a New Password" step is a modal on the
-                # landing page now — _enforce_forced_password_change keeps
-                # the user there until they replace the default password.
-                return redirect(url_for("auth.landing"))
+                # The forced "Set a New Password" step is a locked modal on
+                # the /login page — _enforce_forced_password_change keeps the
+                # user there until they replace the default password.
+                return redirect(url_for("auth.login"))
             return redirect(url_for(_dashboard_endpoint(user.role)))
         flash("Invalid username/email or password.", "error")
         return retry
 
-    # The standalone login page has been retired — the landing page's hero
-    # already has a full login form (origin=landing), so a bare GET here
-    # just lands the user there instead of a separate page.
-    return redirect(url_for("auth.landing") + "#login-card")
+    if current_user.is_authenticated and not current_user.must_change_password:
+        # Already signed in — no reason to show the login screen again.
+        return redirect(url_for(_dashboard_endpoint(current_user.role)))
+
+    # current_user set + must_change_password: render with the locked
+    # "Set a New Password" modal (see templates/login.html).
+    return render_template(
+        "login.html",
+        force_password_change=(
+            current_user.is_authenticated and current_user.must_change_password
+        ),
+    )
 
 
 @auth_bp.route("/logout")
@@ -90,6 +89,9 @@ def logout():
 def forgot_password():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
+        # Back to whichever screen's modal this came from (see auth.login).
+        origin = request.form.get("origin", "landing")
+        back = url_for("auth.login") if origin == "login" else url_for("auth.landing")
         user = User.query.filter_by(email=email).first()
 
         if user:
@@ -107,11 +109,11 @@ def forgot_password():
             "to a System Administrator for approval.",
             "success",
         )
-        return redirect(url_for("auth.landing"))
+        return redirect(back)
 
-    # Forgot Password is now a modal on the landing page (opened by the
+    # Forgot Password is a modal on the landing / login pages (opened by the
     # "Forgot Password?" button) rather than its own standalone page.
-    return redirect(url_for("auth.landing"))
+    return redirect(url_for("auth.login"))
 
 
 @auth_bp.route("/force-change-password", methods=["GET", "POST"])
@@ -138,9 +140,9 @@ def force_change_password():
             return redirect(url_for(_dashboard_endpoint(current_user.role)))
 
     # This endpoint only serves the modal's POST now. A GET (or a POST that
-    # failed validation) goes back to the landing page, where the modal
+    # failed validation) goes back to /login, where the locked modal
     # re-opens with the flashed message.
-    return redirect(url_for("auth.landing"))
+    return redirect(url_for("auth.login"))
 
 
 @auth_bp.route("/help")

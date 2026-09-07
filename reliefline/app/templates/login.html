@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Sign In - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}?v={{ asset_version('css/login.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login_page.css') }}?v={{ asset_version('css/login_page.css') }}">
+{% endblock %}
+
+<!-- The login card shows its own inline .flash-message; base.html's corner
+     toast would otherwise render the same message a second time. -->
+{% block global_flash %}{% endblock %}
+
+{% block content %}
+<div class="lpg">
+
+    <header class="lpg-topbar">
+        <a href="{{ url_for('auth.landing') }}" class="lpg-brand">
+            <img src="{{ url_for('static', filename='img/province-seal.png') }}" alt="Province of Pangasinan Seal">
+            <span class="lpg-brand-text">
+                <strong>Province of Pangasinan</strong>
+                <span>Provincial Social Welfare and Development Office</span>
+            </span>
+        </a>
+    </header>
+
+    <main class="lpg-main">
+        <section class="lpg-intro">
+            <div class="lpg-intro-lockup">
+                <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="ReliefLine">
+                <div>
+                    <h1>ReliefLine</h1>
+                    <p>Disaster Relief Management System</p>
+                </div>
+            </div>
+            <p class="lpg-intro-desc">
+                A Data-Driven Relief Supplies Pipeline System for the Province of
+                Pangasinan — transforming fragmented, manual relief planning into a
+                structured, centralized, and evidence-based platform.
+            </p>
+        </section>
+
+        <div class="login-card">
+            <div class="lock-badge">{{ icon('lock', 28, '#0f2547') }}</div>
+            <h2>Welcome Back!</h2>
+            <p class="subtext">Sign in to continue to ReliefLine.</p>
+            <p class="subtext-small">Enter your credentials to access the system.</p>
+
+            {% if not force_password_change %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}" role="alert" data-flash-auto-dismiss>
+                            {% if category == 'success' %}{{ icon('check-circle', 15) }}{% elif category == 'error' %}{{ icon('alert-triangle', 15) }}{% else %}{{ icon('info', 15) }}{% endif %}
+                            <span>{{ message }}</span>
+                            <button type="button" class="flash-dismiss" aria-label="Dismiss">{{ icon('x', 13) }}</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <input type="hidden" name="origin" value="login">
+                <label for="login-username">Username</label>
+                <div class="input-wrapper">
+                    {{ icon('user', 18, '#8a94a6') }}
+                    <input type="text" id="login-username" name="email" placeholder="Enter username" required autofocus>
+                </div>
+
+                <label for="login-password">Password</label>
+                <div class="input-wrapper">
+                    {{ icon('lock', 18, '#8a94a6') }}
+                    <input type="password" id="login-password" name="password" placeholder="Enter password" required>
+                    <button type="button" class="toggle-password" data-target="login-password" aria-label="Show password">
+                        <span class="icon-eye">{{ icon('eye', 18, '#8a94a6') }}</span>
+                        <span class="icon-eye-off">{{ icon('eye-off', 18, '#8a94a6') }}</span>
+                    </button>
+                </div>
+
+                <div class="form-row">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember">
+                        Remember me
+                    </label>
+                    <button type="button" class="forgot-link" data-open-modal="forgot-password-modal">Forgot Password?</button>
+                </div>
+
+                <button type="submit" class="login-btn">Sign in</button>
+            </form>
+
+            <div class="secured-note">
+                {{ icon('shield', 16, '#8a94a6') }}
+                <span>Authorized government system. Unauthorized access is prohibited.</span>
+            </div>
+        </div>
+    </main>
+
+    <footer class="lpg-footer">
+        <span>© 2026 Province of Pangasinan. All rights reserved.</span>
+    </footer>
+
+    <!-- Forgot Password modal — opened by the "Forgot Password?" button, in
+         place, without navigating to a separate page. -->
+    <div class="auth-modal-overlay" id="forgot-password-modal" hidden>
+        <div class="login-card auth-modal-card">
+            <button type="button" class="auth-modal-close" data-close-modal aria-label="Close">{{ icon('x', 18) }}</button>
+
+            <div class="lock-badge">{{ icon('mail', 28, '#0f2547') }}</div>
+            <h2>Forgot Password?</h2>
+            <p class="subtext">Enter your account email and we'll send a password reset request to a System Administrator for approval.</p>
+
+            <form method="POST" action="{{ url_for('auth.forgot_password') }}">
+                <input type="hidden" name="origin" value="login">
+                <label for="forgot-email">Username/Email</label>
+                <div class="input-wrapper">
+                    {{ icon('user', 18, '#8a94a6') }}
+                    <input type="text" id="forgot-email" name="email" placeholder="Enter your account email" required>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    {{ icon('mail', 16, 'white') }} SEND RESET REQUEST
+                </button>
+            </form>
+
+            <button type="button" class="back-to-login" data-close-modal>{{ icon('arrow-left', 14) }} Back to Login</button>
+        </div>
+    </div>
+
+    {# Set a New Password — shown to a user whose password was reset by a
+       System Administrator. No close control and data-no-dismiss: they stay
+       locked here (see app.__init__'s _enforce_forced_password_change) until
+       they replace the shared default password. #}
+    {% if force_password_change %}
+    <div class="auth-modal-overlay" id="set-password-modal" data-no-dismiss>
+        <div class="login-card auth-modal-card">
+            <div class="lock-badge">{{ icon('lock', 28, '#0f2547') }}</div>
+            <h2>Set a New Password</h2>
+            <p class="subtext">Your password was reset by a System Administrator. Choose a new password to continue to ReliefLine.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}" role="alert">
+                            {% if category == 'success' %}{{ icon('check-circle', 15) }}{% elif category == 'error' %}{{ icon('alert-triangle', 15) }}{% else %}{{ icon('info', 15) }}{% endif %}
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.force_change_password') }}">
+                <label for="set-new-password">New Password</label>
+                <div class="input-wrapper">
+                    {{ icon('lock', 18, '#8a94a6') }}
+                    <input type="password" id="set-new-password" name="new_password" placeholder="At least 8 characters" minlength="8" required>
+                    <button type="button" class="toggle-password" data-target="set-new-password" aria-label="Show password">
+                        <span class="icon-eye">{{ icon('eye', 18, '#8a94a6') }}</span>
+                        <span class="icon-eye-off">{{ icon('eye-off', 18, '#8a94a6') }}</span>
+                    </button>
+                </div>
+
+                <label for="set-confirm-password">Confirm New Password</label>
+                <div class="input-wrapper">
+                    {{ icon('lock', 18, '#8a94a6') }}
+                    <input type="password" id="set-confirm-password" name="confirm_password" placeholder="Re-enter new password" minlength="8" required>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    {{ icon('check-circle', 16, 'white') }} SET NEW PASSWORD
+                </button>
+            </form>
+
+            <a href="{{ url_for('auth.logout') }}" class="back-to-login">{{ icon('log-out', 14) }} Log Out</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+<script>
+(function () {
+    // Same generic [data-open-modal]/[data-close-modal] pattern as landing.html.
+    document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var modal = document.getElementById(btn.dataset.openModal);
+            if (modal) modal.hidden = false;
+        });
+    });
+    document.querySelectorAll('.auth-modal-overlay').forEach(function (overlay) {
+        // [data-no-dismiss] (the forced "Set a New Password" step) can't be
+        // clicked away or Escape'd out of — the user has to complete it.
+        if (overlay.hasAttribute('data-no-dismiss')) return;
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) overlay.hidden = true;
+        });
+        overlay.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+            btn.addEventListener('click', function () { overlay.hidden = true; });
+        });
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.auth-modal-overlay:not([data-no-dismiss])').forEach(function (overlay) {
+                overlay.hidden = true;
+            });
+        }
+    });
+
+    // When the locked "Set a New Password" modal is present, drop focus into
+    // it rather than the sign-in field behind it.
+    var lockedField = document.querySelector('#set-password-modal #set-new-password');
+    if (lockedField) lockedField.focus();
+})();
+</script>
+{% endblock %}

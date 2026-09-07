@@ -511,8 +511,11 @@ def _current_packs_needed(barangay, event_id, relief=None):
 
 
 def _load_warehouses():
-    """ALL warehouses (province-wide infrastructure, PSWDO-managed) with current food-pack stock."""
+    """ALL active warehouses (province-wide infrastructure, PSWDO-managed) with
+    current food-pack stock. Deactivated offices (admin.toggle_office_active)
+    drop off every warehouse view."""
     all_offices = Office.query.filter(
+        Office.is_active.is_(True),
         db.or_(
             Office.office_type == "pswdo",
             db.and_(Office.office_type == "cswdo", Office.area_covered.in_(TARGET_LGUS))
