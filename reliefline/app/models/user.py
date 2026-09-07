@@ -15,14 +15,14 @@ class User(UserMixin, db.Model):
     )
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=True)
-    # Position title, e.g. "Barangay Captain" — same free-text convention as
+    # Position title, e.g. "Barangay Captain" - same free-text convention as
     # BarangayReport.submitted_by_designation. Only meaningful for
     # role="barangay_user"; NULL for PSWDO/CSWDO/admin accounts, which are
     # identified by office instead.
     designation = db.Column(db.String(100), nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))
     # Set True when a System Administrator grants this user's pending
-    # PasswordResetRequest — the account's password is now
+    # PasswordResetRequest - the account's password is now
     # password_reset_request.DEFAULT_RESET_PASSWORD, so app.__init__'s
     # before_request hook holds the user on the landing page (which
     # auto-opens the "Set a New Password" modal) until they pick a
@@ -30,7 +30,7 @@ class User(UserMixin, db.Model):
     must_change_password = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("0"))
     last_login = db.Column(db.DateTime, nullable=True)
     # Heartbeat updated on every authenticated request (see app.__init__'s
-    # before_request hook) — distinct from last_login, which only moves at
+    # before_request hook) - distinct from last_login, which only moves at
     # sign-in. app.utils.presence.is_online() compares this against "now" to
     # decide whether someone is genuinely online right now, not just logged
     # in at some point today.
@@ -45,7 +45,7 @@ class User(UserMixin, db.Model):
 
     # flask_login.UserMixin.is_active is a settable property by default, but
     # our own `is_active` DB column shadows it automatically as an instance
-    # attribute — no override needed, this comment just documents why.
+    # attribute - no override needed, this comment just documents why.
 
     def set_password(self, raw_password):
         self.password = generate_password_hash(raw_password)

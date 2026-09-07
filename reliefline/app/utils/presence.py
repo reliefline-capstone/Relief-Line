@@ -1,4 +1,4 @@
-"""Real "currently online" presence — separate from User.is_active (an
+"""Real "currently online" presence - separate from User.is_active (an
 admin-set account enable/disable flag) and from User.last_login (only moves
 at sign-in). A user counts as online only while their session has produced a
 request within ONLINE_THRESHOLD, per the before_request heartbeat in

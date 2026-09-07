@@ -89,10 +89,10 @@
                     {% for r in decided_reports %}
                     <tr>
                         <td><strong>{{ r.ref }}</strong><span class="rr-sub">Brgy. {{ r.barangay.barangay_name }}</span></td>
-                        <td>{{ r.event.event_name if r.event else '—' }}</td>
-                        <td>{{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at else '—' }}</td>
+                        <td>{{ r.event.event_name if r.event else '-' }}</td>
+                        <td>{{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at else '-' }}</td>
                         <td><span class="badge-status badge-status-{{ r.status }}"><i class="priority-dot"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
-                        <td>{{ r.reviewed_by_user.name if r.reviewed_by_user else '—' }} {% if r.reviewed_by_user %}(MSWDO){% endif %}</td>
+                        <td>{{ r.reviewed_by_user.name if r.reviewed_by_user else '-' }} {% if r.reviewed_by_user %}(MSWDO){% endif %}</td>
                         <td>
                             {% if r.status == 'draft' %}
                             <a href="{{ url_for('barangay.edit_damage_report', report_id=r.report_id) }}" class="btn-view-sm" style="text-decoration:none; background:#2c5aa0; color:white;">{{ icon('file-text', 12, 'white') }} Resume</a>
@@ -133,8 +133,8 @@
                     {% set r = row.report %}
                     <tr>
                         <td><strong>{{ r.ref }}</strong><span class="rr-sub">Brgy. {{ r.barangay.barangay_name }}</span></td>
-                        <td>{{ r.event.event_name if r.event else '—' }}</td>
-                        <td>{{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at else '—' }}</td>
+                        <td>{{ r.event.event_name if r.event else '-' }}</td>
+                        <td>{{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at else '-' }}</td>
                         <td><span class="badge-status badge-status-{{ r.status }}"><i class="priority-dot"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
                         <td>
                             {% if r.status != 'draft' %}
@@ -164,7 +164,7 @@
     </main>
 </div>
 
-<!-- Delete-draft confirmation — replaces the native confirm() dialog. A single
+<!-- Delete-draft confirmation - replaces the native confirm() dialog. A single
      modal serves every draft row; the delete button stashes its form here. -->
 <div class="rd-modal-overlay" id="delete-draft-modal" hidden>
     <div class="rd-modal">

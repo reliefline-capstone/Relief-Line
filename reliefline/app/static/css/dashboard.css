@@ -10,8 +10,8 @@
 }
 
 /* Click-to-toggle sidebar (see .sidebar-toggle + the early-run script in
-   base.html, which applies the "sidebar-collapsed" class to <html> — before
-   first paint, from a saved localStorage preference — so there's no flash
+   base.html, which applies the "sidebar-collapsed" class to <html> - before
+   first paint, from a saved localStorage preference - so there's no flash
    of the wrong state on load). Expanded (icons + labels) is the default;
    toggling adds .sidebar-collapsed to <html> for a persistent icon-only
    rail. Fixed positioning keeps it in view while .dashboard-main scrolls;
@@ -22,7 +22,7 @@
     top: 0;
     left: 0;
     width: 250px;
-    /* Divided by --ui-scale for the same reason as .dashboard-layout — zoom
+    /* Divided by --ui-scale for the same reason as .dashboard-layout - zoom
        (inherited here even though this is position:fixed) would otherwise
        render it --ui-scale taller than the viewport and clip the Logout row. */
     height: calc(100vh / var(--ui-scale));
@@ -42,10 +42,10 @@ html.sidebar-collapsed .sidebar {
     padding: 20px 12px;
 }
 
-/* Floating round toggle button anchored to the sidebar's right edge —
+/* Floating round toggle button anchored to the sidebar's right edge -
    half in, half out of the border, like a tab. The chevron itself just
    rotates 180° between states instead of swapping icons. */
-/* A sibling of .sidebar (see _sidebar.html), not a child — .sidebar has
+/* A sibling of .sidebar (see _sidebar.html), not a child - .sidebar has
    overflow-x: hidden (needed so labels don't cause a horizontal scrollbar
    mid-collapse-animation), which was clipping this button in half when it
    lived inside that box, straddling the edge. As its own fixed-position
@@ -68,8 +68,8 @@ html.sidebar-collapsed .sidebar {
     color: #555;
     z-index: 501;
     flex-shrink: 0;
-    /* Hidden until the pointer is near the sidebar's edge — kept out of the
-       way rather than sitting on screen permanently — then a quick fade-in.
+    /* Hidden until the pointer is near the sidebar's edge - kept out of the
+       way rather than sitting on screen permanently - then a quick fade-in.
        pointer-events stays off while hidden so it can never intercept a
        click meant for whatever's underneath it. */
     opacity: 0;
@@ -102,7 +102,7 @@ html.sidebar-collapsed .sidebar-toggle svg {
 }
 
 /* A label (nav link text, the brand wordmark, the user name/role block)
-   that only makes sense once the rail has room for it — visible by
+   that only makes sense once the rail has room for it - visible by
    default, collapsed to zero-width/invisible once .sidebar-collapsed is
    set, with the reveal-on-expand transition delayed slightly so text
    doesn't render squashed mid-animation. Applies to .sidebar-label (added
@@ -127,9 +127,9 @@ html.sidebar-collapsed .sidebar-user-info {
     transition: opacity 0.12s ease, max-width 0.22s ease;
 }
 
-/* Notification/pending-count badges stay visible even while collapsed —
+/* Notification/pending-count badges stay visible even while collapsed -
    they're the one thing on a collapsed icon that still needs to be seen
-   without expanding — as a small corner dot on the icon instead of their
+   without expanding - as a small corner dot on the icon instead of their
    normal inline position next to the (currently hidden) label. */
 html.sidebar-collapsed .sidebar-nav a { position: relative; }
 html.sidebar-collapsed .nav-badge {
@@ -233,7 +233,7 @@ html.sidebar-collapsed .sidebar-brand {
 }
 
 /* Icon sits centered in the narrow collapsed rail; expanded, it settles
-   back to a normal left-aligned icon+label row. gap: 0 matters here too —
+   back to a normal left-aligned icon+label row. gap: 0 matters here too -
    flexbox's gap reserves space between items even when one of them (the
    zero-width label) is invisible, which was pushing the icon off-center
    inside its own active/hover highlight. */
@@ -242,7 +242,7 @@ html.sidebar-collapsed .sidebar-nav a {
     gap: 0;
 }
 
-/* Flex items shrink to fit by default — without this, a long label (e.g.
+/* Flex items shrink to fit by default - without this, a long label (e.g.
    "Password Reset Requests") squeezes the icon down to nothing before the
    text itself starts truncating, since the icon has a smaller min-content
    size than the text run. Keeping the icon fixed-size means the text is
@@ -251,7 +251,7 @@ html.sidebar-collapsed .sidebar-nav a {
     flex-shrink: 0;
 }
 
-/* "Password Reset Requests" is the longest label in the sidebar — a
+/* "Password Reset Requests" is the longest label in the sidebar - a
    touch smaller than the other links so it comfortably fits one line
    alongside its icon and badge without crowding them. */
 .sidebar-nav a.sidebar-nav-compact {
@@ -279,10 +279,10 @@ html.sidebar-collapsed .sidebar-nav a {
 
 .dashboard-main {
     flex: 1;
-    /* Divided by --ui-scale — see .dashboard-layout. */
+    /* Divided by --ui-scale - see .dashboard-layout. */
     height: calc(100vh / var(--ui-scale));
     overflow-y: auto;
-    /* Explicit — otherwise setting only overflow-y makes overflow-x compute to
+    /* Explicit - otherwise setting only overflow-y makes overflow-x compute to
        `auto`, so any 1px/sub-pixel horizontal spill (a card shadow, a grid
        track rounding up) shows a page-wide horizontal scrollbar. Wide content
        that genuinely needs to scroll sideways (data tables, the GIS map) has
@@ -316,7 +316,7 @@ html.sidebar-collapsed .dashboard-main {
 .user-name { font-weight: 700; color: #1a1a1a; font-size: 13px; }
 .user-role { color: #8a94a6; font-size: 11.5px; }
 
-/* Flash messages — floating toast stack, bottom-right, above everything
+/* Flash messages - floating toast stack, bottom-right, above everything
    else (including modals). Auto-dismiss + manual close wired up in
    base.html's inline script, which toggles .is-leaving (transitioned
    here) then removes the element once that transition ends. Every role's
@@ -346,7 +346,7 @@ html.sidebar-collapsed .dashboard-main {
     border-left: 3px solid transparent;
     background: white;
     /* Elevation has to read as "floating above the page" rather than the
-       soft, barely-there shadow an inline banner needed — this sits on
+       soft, barely-there shadow an inline banner needed - this sits on
        top of everything, corner-anchored, so it needs to look like it. */
     box-shadow: 0 12px 32px rgba(15, 37, 71, 0.22);
     overflow: hidden;
@@ -423,7 +423,7 @@ html.sidebar-collapsed .dashboard-main {
 /* Label-above-field modal/settings form layout, used across admin, pswdo,
    cswdo and barangay forms. Moved here (from profile_settings.css) since
    this is the one stylesheet essentially every page using it actually
-   loads — pages that only loaded profile_settings.css for this one rule
+   loads - pages that only loaded profile_settings.css for this one rule
    set are unaffected, and pages that never loaded it (e.g. the transfer
    issuance form on relief_request_detail.html) now get it too. */
 .settings-forms {
@@ -451,7 +451,7 @@ html.sidebar-collapsed .dashboard-main {
     color: #333;
 }
 
-/* select/textarea included alongside input — .form-row already wraps
+/* select/textarea included alongside input - .form-row already wraps
    dropdowns and textareas in several forms (e.g. Add User's Role/Office
    selects, Decline's reason textarea), which had no border/padding of
    their own before and fell back to the bare browser control. */
@@ -482,7 +482,7 @@ html.sidebar-collapsed .dashboard-main {
     color: #8a94a6;
 }
 
-/* Small muted caption/hint text and a light callout box for remarks —
+/* Small muted caption/hint text and a light callout box for remarks -
    moved here (from profile_settings.css / damage_assessment.css
    respectively) for the same reason as .settings-form/.form-row above:
    this is the one stylesheet essentially every page using them loads. On
@@ -502,7 +502,7 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 /* Solid primary page-header action (e.g. "Add Warehouse", "Pre-position
-   Stock") — moved here from warehouse_inventory.css since dashboard.css is
+   Stock") - moved here from warehouse_inventory.css since dashboard.css is
    the one stylesheet every page using this button actually loads; it was
    rendering unstyled (no background/padding) on pages like Stock Requests
    that never pulled in warehouse_inventory.css. */
@@ -555,7 +555,7 @@ html.sidebar-collapsed .dashboard-main {
 .greeting-banner h2 { font-size: 22px; margin: 0 0 10px; font-weight: 700; letter-spacing: -0.02em; }
 
 /* Active-event badge, right column of the greeting banner (below the live
-   weather chip) — shown on all three dashboards (PSWDO, CSWDO/MSWDO,
+   weather chip) - shown on all three dashboards (PSWDO, CSWDO/MSWDO,
    barangay) whenever a DisasterEvent is currently active, so no role has to
    dig into a report or the Weather & Typhoon Watch panel just to notice one
    is live. */
@@ -564,7 +564,7 @@ html.sidebar-collapsed .dashboard-main {
     align-items: center;
     gap: 8px;
     /* Matches the geometry of .weather-header-conditions (the live-weather
-       chip right above it) so the two read as one stacked set — just tinted
+       chip right above it) so the two read as one stacked set - just tinted
        a clean warm red instead of translucent white, to mark it as an alert
        without the muddy maroon + hard white outline it had before. */
     max-width: 320px;
@@ -592,7 +592,7 @@ html.sidebar-collapsed .dashboard-main {
     border-radius: 50%;
     background: #ff6b5c;
     flex-shrink: 0;
-    /* Gentle "still live" pulse — slower and lower-contrast than a strobe.
+    /* Gentle "still live" pulse - slower and lower-contrast than a strobe.
        prefers-reduced-motion zeroes all animation globally (see base.css). */
     animation: bannerEventPulse 2.6s ease-out infinite;
 }
@@ -605,7 +605,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .greeting-main { display: flex; flex-direction: column; }
 
-/* Forecast strip in the greeting banner — sits where a manually-logged
+/* Forecast strip in the greeting banner - sits where a manually-logged
    DisasterEvent badge used to (see static/js/weather_widget.js's
    [data-weather-forecast] renderer for why that badge was removed from
    here: it's a logged record, not live weather, and didn't belong beside
@@ -664,7 +664,7 @@ html.sidebar-collapsed .dashboard-main {
 .banner-time span { font-size: 12px; opacity: 0.72; display: block; margin-top: 2px; }
 
 /* Live conditions chip in the greeting banner (static text version lived
-   here before app/utils/weather.py existed — see static/js/weather_widget.js
+   here before app/utils/weather.py existed - see static/js/weather_widget.js
    for the [data-weather-header] renderer that now fills this in). */
 .banner-weather-live { text-align: right; min-width: 180px; }
 
@@ -796,7 +796,7 @@ html.sidebar-collapsed .dashboard-main {
 /* Stat cards */
 .stat-cards {
     display: grid;
-    /* minmax(0, 1fr) — not a bare 1fr — so a long .stat-sub (event names
+    /* minmax(0, 1fr) - not a bare 1fr - so a long .stat-sub (event names
        joined by " · ", "N,NNN packs requested", …) can't set a track's
        min-width to its content size and push the whole grid wider than
        .dashboard-main, which showed as a page-level horizontal scrollbar. */
@@ -838,7 +838,7 @@ html.sidebar-collapsed .dashboard-main {
     margin-bottom: 6px;
     /* Soft shadow tinted toward the card's own navy rather than plain
        black, plus a subtle scale-up riding on .stat-card's existing
-       hover lift (base.css) — small touches that read as considered
+       hover lift (base.css) - small touches that read as considered
        rather than the flat, plain solid-colour square this used to be. */
     box-shadow: 0 2px 6px rgba(15, 37, 71, 0.08);
     transition: transform 0.15s ease;
@@ -865,7 +865,7 @@ html.sidebar-collapsed .dashboard-main {
     gap: 16px;
     /* CSS Grid's own default (stretch) kept forcing whichever panel had
        less content to match its taller sibling's height, leaving a wall
-       of blank space under the short one — this has come up enough times
+       of blank space under the short one - this has come up enough times
        across enough different pages (relief request detail, warehouse
        inventory, distribution progress, and now transfer detail's sparse
        "Update" panel) that it's clearly never the wanted behavior here;
@@ -873,7 +873,7 @@ html.sidebar-collapsed .dashboard-main {
     align-items: start;
 }
 
-/* Dashboard rows — each row's two panels stretch to equal height so the
+/* Dashboard rows - each row's two panels stretch to equal height so the
    layout reads as aligned pairs, never one panel floating short beside a
    taller one. Scoped to .dash-grid-even (pswdo + cswdo dashboards) so every
    other page's plain .main-grid keeps its size-to-content behavior. */
@@ -893,7 +893,7 @@ html.sidebar-collapsed .dashboard-main {
     margin-top: auto;
 }
 /* Standalone CTA at the foot of a dashboard panel (e.g. "Submit New Request")
-   — a normal gap when the panel sizes to content, pushed to the bottom edge
+   - a normal gap when the panel sizes to content, pushed to the bottom edge
    when the panel is stretched inside a .dash-grid-even row. */
 .dash-panel-cta { margin-top: 12px; }
 /* If the map panel is the shorter one in its row, let the map box take the
@@ -1011,7 +1011,7 @@ html.sidebar-collapsed .dashboard-main {
     /* Leaflet's own internal panes (markerPane 600, tooltipPane 650,
        popupPane 700) sit in the same ambient stacking context as this box
        whenever the map container itself has no explicit z-index of its own
-       — so a low value here (e.g. 2) can end up visually buried under the
+       - so a low value here (e.g. 2) can end up visually buried under the
        map despite being later in the DOM. 1000 matches Leaflet's own
        convention for its control layer, guaranteeing this stays on top. */
     z-index: 1000;
@@ -1198,7 +1198,7 @@ html.sidebar-collapsed .dashboard-main {
 @media (max-width: 700px) {
     /* The collapse toggle doesn't buy much on a narrow touch screen, so the
        rail reverts to its old full-width, in-flow, always-expanded behavior
-       here regardless of the saved collapsed preference — the !important
+       here regardless of the saved collapsed preference - the !important
        pair is a deliberate, narrow override of html.sidebar-collapsed's
        higher specificity, scoped to just this breakpoint. */
     .dashboard-layout { flex-direction: column; }
@@ -1223,7 +1223,7 @@ html.sidebar-collapsed .dashboard-main {
 .link-manage { color: #0f2547; font-size: 12px; font-weight: 600; }
 
 /* Now an <a> (links to that warehouse's detail page) rather than a bare
-   <div> — the hover/focus tint plus the cursor make that discoverable
+   <div> - the hover/focus tint plus the cursor make that discoverable
    instead of the row silently doing nothing when clicked. Negative margin
    +matching padding lets the hover fill bleed to the panel's own edges. */
 .warehouse-status-row {
@@ -1383,7 +1383,7 @@ html.sidebar-collapsed .dashboard-main {
 .rec-warning { background: #fef5e3; color: #b7791f; }
 .rec-critical { background: #fdecea; color: #c0392b; }
 
-/* Distribution progress — inside a .main-grid (a CSS grid with the default
+/* Distribution progress - inside a .main-grid (a CSS grid with the default
    align-items: stretch) this panel would stretch to match a much taller
    sibling, leaving a large empty gap below the municipality list. Scoped to
    .main-grid so it stays a no-op in the pswdo dashboard's .dash-columns
@@ -1459,7 +1459,7 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 /* Color reads as "how much is left to do", same red/amber/green language as
-   demand-tier colors elsewhere in the system — low completion (more work
+   demand-tier colors elsewhere in the system - low completion (more work
    remaining) is the one that should catch the eye first. */
 .municipality-bar-fill.bar-low { background: #e74c3c; }
 .municipality-bar-fill.bar-mid { background: #f1c40f; }
@@ -1492,7 +1492,7 @@ html.sidebar-collapsed .dashboard-main {
 .notification-row strong { display: block; font-size: 12px; }
 .notification-row span { font-size: 11px; color: #8a94a6; }
 
-/* CSWDO/MSWDO dashboard — relief request status cards */
+/* CSWDO/MSWDO dashboard - relief request status cards */
 .request-top {
     display: flex;
     justify-content: space-between;
@@ -1509,7 +1509,7 @@ html.sidebar-collapsed .dashboard-main {
     white-space: nowrap;
 }
 
-/* Scoped to .badge-status specifically (not bare .status-X) — damage_assessment.css's
+/* Scoped to .badge-status specifically (not bare .status-X) - damage_assessment.css's
    .status-dot-label uses these same status-name classes for its dot/text
    colors only, with no pill background of its own by design; a bare rule
    here would leak this background onto that different component too. */
@@ -1707,7 +1707,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .weather-refresh-btn:hover { background: #e8ecf3; }
 
-/* Declare/End Disaster Event — PSWDO-only header action, see
+/* Declare/End Disaster Event - PSWDO-only header action, see
    static/js/weather_widget.js's eventActionHtml/wireEventActions. */
 .weather-widget-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .weather-end-form { display: inline; }
@@ -1752,8 +1752,8 @@ html.sidebar-collapsed .dashboard-main {
 .typhoon-watch-clear { background: #e8faf0; color: #1e8449; }
 .typhoon-watch-unknown { background: #f4f6fa; color: #8a94a6; }
 
-/* Storm cards fan out across the panel's full width — same responsive grid
-   as .weather-cities below — instead of stacking in a narrow left column
+/* Storm cards fan out across the panel's full width - same responsive grid
+   as .weather-cities below - instead of stacking in a narrow left column
    that leaves most of the panel empty. */
 .typhoon-watch-active {
     display: grid;

@@ -16,7 +16,7 @@
     </div>
     <div class="wh-movement-text">
         <strong>{{ l.source_type|capitalize }}</strong>
-        <span>{{ l.reason or '—' }}</span>
+        <span>{{ l.reason or '-' }}</span>
     </div>
     <div class="wh-movement-amount">
         <strong class="{{ 'text-red' if l.delta < 0 else 'text-green' }}">{{ '+' if l.delta > 0 }}{{ "{:,}".format(l.delta) }}</strong>

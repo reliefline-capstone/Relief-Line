@@ -72,12 +72,12 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('clock', 18, '#1e8449') }}</div>
-                <span class="stat-value">{{ days_remaining|int if days_remaining is not none else '—' }} Days</span>
+                <span class="stat-value">{{ days_remaining|int if days_remaining is not none else '-' }} Days</span>
                 <span class="stat-label">Days of Supply</span>
                 <span class="stat-sub">
                     {%- if burn_rate %}Burn rate ~{{ burn_rate|int }} packs/day ({{ "{:,}".format(total_affected_families) }} families ÷ 3)
-                    {%- elif event %}No affected-families data yet — burn rate not computed
-                    {%- else %}No active event — burn rate not computed{% endif -%}
+                    {%- elif event %}No affected-families data yet - burn rate not computed
+                    {%- else %}No active event - burn rate not computed{% endif -%}
                 </span>
             </div>
             <div class="stat-card">
@@ -121,7 +121,7 @@
             <section class="panel" data-ranking>
                 <div class="panel-header">
                     <h3>Barangay Priority Ranking</h3>
-                    <span class="rd-sub">By stock shortage — least able to cover its own caseload first</span>
+                    <span class="rd-sub">By stock shortage - least able to cover its own caseload first</span>
                 </div>
                 {% for r in ranking %}
                 <div class="gis-priority-row {{ 'pa-rank-extra' if loop.index > 5 }}">
@@ -155,7 +155,7 @@
                     <span data-rank-label>View all {{ ranking|length }} barangays</span> {{ icon('chevron-down', 14) }}
                 </button>
                 {% endif %}
-                {% if ranking %}<p class="rd-sub" style="margin-top:10px;">Tier = reported caseload (affected families + individuals) ÷ barangay food-pack stock: ≤50% Low · ≤80% Medium · &lt;100% High · ≥100% Critical · no stock on record = Unrated. &nbsp;* packs figure is model-estimated — no barangay report submitted yet; use "Allocate" to push packs proactively.</p>{% endif %}
+                {% if ranking %}<p class="rd-sub" style="margin-top:10px;">Tier = reported caseload (affected families + individuals) ÷ barangay food-pack stock: ≤50% Low · ≤80% Medium · &lt;100% High · ≥100% Critical · no stock on record = Unrated. &nbsp;* packs figure is model-estimated - no barangay report submitted yet; use "Allocate" to push packs proactively.</p>{% endif %}
             </section>
 
 
@@ -180,7 +180,7 @@
                     </div>
                     <div class="pa-wh-card-bottom">
                         <span>{{ w.pct|int }}% capacity</span>
-                        <span>{{ w.days_left|int if w.days_left is not none else '—' }} days left</span>
+                        <span>{{ w.days_left|int if w.days_left is not none else '-' }} days left</span>
                     </div>
                     <span class="rd-sub">Burn rate: {{ w.burn_rate|int }}/day</span>
                     {% if w.health != 'Healthy' %}
@@ -230,7 +230,7 @@
                     </svg>
                 </div>
                 {% elif historical_trend|length == 1 %}
-                <p class="empty-note">Only one day of delivery history on record so far ({{ historical_trend[0].date }}: {{ "{:,}".format(historical_trend[0].packs) }} packs delivered) — not enough to chart a trend yet. This will fill in as more distributions are completed.</p>
+                <p class="empty-note">Only one day of delivery history on record so far ({{ historical_trend[0].date }}: {{ "{:,}".format(historical_trend[0].packs) }} packs delivered) - not enough to chart a trend yet. This will fill in as more distributions are completed.</p>
                 {% else %}
                 <p class="empty-note">No delivered distributions in the selected time range yet.</p>
                 {% endif %}
@@ -251,7 +251,7 @@
                     </div>
                 </div>
                 {% else %}
-                <p class="empty-note">No recommendations right now — stock levels are healthy.</p>
+                <p class="empty-note">No recommendations right now - stock levels are healthy.</p>
                 {% endfor %}
 
                 {{ prediction_disclaimer() }}
@@ -266,13 +266,13 @@
             </div>
             {% if latest_metrics %}
             <div class="pa-model-rows">
-                <div class="pa-decision-tile"><span class="rd-sub">MAE</span><strong>{{ "%.1f"|format(latest_metrics.mae) if latest_metrics.mae is not none else '—' }}</strong><span class="rd-sub">packs</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">RMSE</span><strong>{{ "%.1f"|format(latest_metrics.rmse) if latest_metrics.rmse is not none else '—' }}</strong><span class="rd-sub">packs</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">MAPE</span><strong>{{ "%.1f"|format(latest_metrics.mape) if latest_metrics.mape is not none else '—' }}%</strong><span class="rd-sub">error</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">R²</span><strong>{{ "%.3f"|format(latest_metrics.r_squared) if latest_metrics.r_squared is not none else '—' }}</strong><span class="rd-sub">fit</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">Training rows</span><strong>{{ latest_metrics.training_samples or '—' }}</strong><span class="rd-sub">{{ latest_metrics.model_version }}</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">MAE</span><strong>{{ "%.1f"|format(latest_metrics.mae) if latest_metrics.mae is not none else '-' }}</strong><span class="rd-sub">packs</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">RMSE</span><strong>{{ "%.1f"|format(latest_metrics.rmse) if latest_metrics.rmse is not none else '-' }}</strong><span class="rd-sub">packs</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">MAPE</span><strong>{{ "%.1f"|format(latest_metrics.mape) if latest_metrics.mape is not none else '-' }}%</strong><span class="rd-sub">error</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">R²</span><strong>{{ "%.3f"|format(latest_metrics.r_squared) if latest_metrics.r_squared is not none else '-' }}</strong><span class="rd-sub">fit</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">Training rows</span><strong>{{ latest_metrics.training_samples or '-' }}</strong><span class="rd-sub">{{ latest_metrics.model_version }}</span></div>
             </div>
-            <p class="rd-sub" style="margin-top:10px;">Trained {{ latest_metrics.trained_at.strftime('%b %d, %Y') if latest_metrics.trained_at else '—' }}. Current dataset is synthetic seed data — figures will change once real PSWDO/CSWDO records are loaded.</p>
+            <p class="rd-sub" style="margin-top:10px;">Trained {{ latest_metrics.trained_at.strftime('%b %d, %Y') if latest_metrics.trained_at else '-' }}. Current dataset is synthetic seed data - figures will change once real PSWDO/CSWDO records are loaded.</p>
             {% elif model_available %}
             <p class="empty-note">A model is trained but no evaluation metrics were recorded. Re-run <code>scripts/train_model.py</code>.</p>
             {% else %}
@@ -284,12 +284,12 @@
         <div class="rd-modal-overlay" id="pa-allocate-modal" hidden>
             <div class="rd-modal" style="max-width:560px;">
                 <div class="rd-modal-header">
-                    <h3>{{ icon('package', 18, '#0f2547') }} Proactive Allocation — <span id="pa-am-barangay-name"></span></h3>
+                    <h3>{{ icon('package', 18, '#0f2547') }} Proactive Allocation - <span id="pa-am-barangay-name"></span></h3>
                     <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
                 </div>
                 <p class="form-hint">
                     No Barangay Report has been filed by this barangay yet. This releases food packs from
-                    your own warehouse ahead of one, based on the model's estimate below — the number is
+                    your own warehouse ahead of one, based on the model's estimate below - the number is
                     yours to set; the model only supports the decision, it doesn't make it.
                 </p>
                 {% if event %}
@@ -310,7 +310,7 @@
                     <div class="rd-modal-actions">
                         <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Allocate</button>
                     </div>
-                    <p class="form-hint">Recorded as a proactive, model-informed allocation. The barangay still confirms receipt once delivered — recording how many packs arrived and their condition — same accountability trail as every other delivery.</p>
+                    <p class="form-hint">Recorded as a proactive, model-informed allocation. The barangay still confirms receipt once delivered - recording how many packs arrived and their condition - same accountability trail as every other delivery.</p>
                 </form>
                 {% else %}
                 <p class="empty-note">Select an active disaster event above before allocating proactively.</p>
@@ -342,7 +342,7 @@
         });
     });
 
-    // Barangay Priority Ranking — show the top 5, reveal the rest on click.
+    // Barangay Priority Ranking - show the top 5, reveal the rest on click.
     document.querySelectorAll('[data-ranking-toggle]').forEach(function (btn) {
         btn.addEventListener('click', function () {
             var expanded = btn.closest('[data-ranking]').classList.toggle('is-expanded');

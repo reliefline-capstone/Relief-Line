@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
             opt.classList.add('is-selected');
             hiddenAllocationId.value = radio.value;
 
-            // The double-check is here first, before submit — create_distribution()
+            // The double-check is here first, before submit - create_distribution()
             // still re-verifies server-side since stock can move again before the
             // form is actually submitted.
             var stockOk = opt.dataset.stockOk === 'true';

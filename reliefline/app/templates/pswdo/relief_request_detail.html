@@ -65,7 +65,7 @@
                     <p class="form-hint" style="margin-top:10px;">
                         {{ "{:,}".format(transfer.quantity) }} packs from {{ transfer.from_office.office_name }} → {{ transfer.to_office.office_name }}.
                         {% if transfer.status == 'completed' %}Received {{ transfer.received_at.strftime('%b %d, %I:%M %p') if transfer.received_at }} by {{ transfer.received_by }}.
-                        {% elif transfer.dispatch_status == 'in_transit' %}In transit — awaiting CSWDO receipt confirmation.
+                        {% elif transfer.dispatch_status == 'in_transit' %}In transit - awaiting CSWDO receipt confirmation.
                         {% else %}Awaiting dispatch.{% endif %}
                     </p>
                     {% if transfer.dispatch_status == 'preparing' %}
@@ -133,7 +133,7 @@
                         <label for="ap-depot">From Provincial Depot *</label>
                         <select name="fulfilling_office_id" id="ap-depot" required data-transfer-source>
                             <option value="">Select…</option>
-                            {% for w in depots %}<option value="{{ w.office.office_id }}" data-available="{{ w.food_pack_qty }}">{{ w.office.office_name }} — {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
+                            {% for w in depots %}<option value="{{ w.office.office_id }}" data-available="{{ w.food_pack_qty }}">{{ w.office.office_name }} - {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
                         </select>
                     </div>
                     <div class="transfer-calc-preview" data-transfer-preview hidden></div>

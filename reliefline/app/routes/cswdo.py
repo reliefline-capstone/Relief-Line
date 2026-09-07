@@ -29,7 +29,7 @@ from app.models.user import User
 from app.ml import predict as ml_predict
 
 # Reused from the PSWDO route module rather than redefined, so the two offices
-# never drift apart on stock thresholds, priority labels, or status wording —
+# never drift apart on stock thresholds, priority labels, or status wording -
 # see app/routes/pswdo.py for the source of truth.
 from app.routes.pswdo import (
     DISPATCH_STATUS_LABELS,
@@ -42,12 +42,12 @@ from app.routes.pswdo import (
 )
 from app.models.warehouse import WarehouseStockLog
 
-# CSWDO's own link targets for notification "View" buttons — deliberately NOT
+# CSWDO's own link targets for notification "View" buttons - deliberately NOT
 # the pswdo.* links NOTIFICATION_LINK_BUILDERS (app/routes/pswdo.py) resolves
 # to, since those point at pages role_required("pswdo_admin", "system_admin")
-# would 403 a cswdo_admin out of. Both resolve down to the same destination —
+# would 403 a cswdo_admin out of. Both resolve down to the same destination -
 # the Relief Requests Tracking tab for the specific batch a record belongs
-# to — since that's the one CSWDO screen that shows an individual request's
+# to - since that's the one CSWDO screen that shows an individual request's
 # full status, distribution stepper, and history in one place. warehouse-
 # category notifications (inter-warehouse transfers between PSWDO-managed
 # offices) never reach a CSWDO office's own office_id/barangay_id scope in
@@ -140,7 +140,7 @@ def _own_lgu_barangays():
 
 
 def _assert_own_lgu(report):
-    """A cswdo_admin may only act on reports from their own LGU's barangays —
+    """A cswdo_admin may only act on reports from their own LGU's barangays -
     role_required() only checks the role, not the office/LGU boundary."""
     office = current_user.office
     lgu = office.area_covered if office else None
@@ -150,7 +150,7 @@ def _assert_own_lgu(report):
 
 def _own_activity_filters():
     """Same office_id/barangay_id OR-scoping the dashboard already applies to
-    ActivityLog — the single source of truth for "this CSWDO office's own
+    ActivityLog - the single source of truth for "this CSWDO office's own
     activity," reused by the dashboard's notification preview, the full
     Notifications page, and its mark-as-read actions so all three always
     agree on the same scoped set."""
@@ -168,7 +168,7 @@ def _own_activity_filters():
 
 def _assert_own_activity(log):
     """A cswdo_admin may only act on notifications scoped to their own office
-    or their own LGU's barangays — mirrors _assert_own_lgu's role/office
+    or their own LGU's barangays - mirrors _assert_own_lgu's role/office
     boundary check for the notifications module."""
     office = current_user.office
     lgu = office.area_covered if office else None
@@ -208,7 +208,7 @@ def dashboard():
     lgu_barangay_ids = [b.barangay_id for b in lgu_barangays]
     total_barangays = len(lgu_barangays)
 
-    # Affected barangays + families — straight from what the barangays reported
+    # Affected barangays + families - straight from what the barangays reported
     # for the current active event (this LGU only). No severity grading and no
     # approval gate: any barangay with a non-draft report for the event counts,
     # and the family total is the plain sum of those reports as filed. A barangay
@@ -233,7 +233,7 @@ def dashboard():
             (r.affected_families or 0) for r in latest_by_barangay.values()
         )
 
-    # Municipal food-pack stock — own office only (province-wide warehouse
+    # Municipal food-pack stock - own office only (province-wide warehouse
     # management stays a PSWDO responsibility; see Table 10 of the manuscript).
     food_pack_item = None
     other_items = []
@@ -259,7 +259,7 @@ def dashboard():
     stock_pct = round((food_pack_qty / capacity) * 100, 0) if capacity > 0 else 0
     stock_health = _food_pack_health(food_pack_qty, capacity)
 
-    # Pending stock requests — municipal warehouse replenishment this office has
+    # Pending stock requests - municipal warehouse replenishment this office has
     # submitted to PSWDO and PSWDO has not yet decided on. Same set the Stock
     # Requests page counts as "pending" (see relief_requests()), so the card and
     # that page always agree.
@@ -270,7 +270,7 @@ def dashboard():
             ReliefRequestBatch.status == "pending",
         ).count()
 
-    # Incoming deliveries — approved allocations already dispatched toward this LGU
+    # Incoming deliveries - approved allocations already dispatched toward this LGU
     incoming_distributions = []
     if lgu_barangay_ids:
         incoming_distributions = DistributionRecord.query.filter(
@@ -280,7 +280,7 @@ def dashboard():
     incoming_deliveries_count = len(incoming_distributions)
     next_delivery = incoming_distributions[0] if incoming_distributions else None
 
-    # Pending barangay reports — Relief Requests from this LGU's barangays still
+    # Pending barangay reports - Relief Requests from this LGU's barangays still
     # waiting for this office's first review (status "pending"). Not event-
     # scoped, same as the Barangay Reports page. "returned" reports are excluded
     # on purpose: those have already been reviewed once and are now back with
@@ -292,12 +292,12 @@ def dashboard():
             BarangayReport.status == "pending",
         ).count()
 
-    # Barangay Relief Requests — Tier-1 requests from this LGU's barangays (a
+    # Barangay Relief Requests - Tier-1 requests from this LGU's barangays (a
     # BarangayReport carrying a food-pack ask). CSWDO/MSWDO reviews and fulfils
     # these from its own municipal warehouse; PSWDO is not involved. This is a
-    # live status strip only — the full queue is the Barangay Reports page
+    # live status strip only - the full queue is the Barangay Reports page
     # (cswdo.damage_assessment), so this stays scoped exactly like that page
-    # (all non-draft reports, newest first) rather than to the active event —
+    # (all non-draft reports, newest first) rather than to the active event -
     # otherwise a request the user just acted on vanishes here if it belonged
     # to an event that has since ended.
     _STATUS_TAB = {
@@ -329,7 +329,7 @@ def dashboard():
                 "progress_pct": ROUTE_PROGRESS_BY_STATUS.get(active_distribution.dispatch_status, 0) if active_distribution else None,
             })
 
-    # Barangay status reports — real priority tiers for this LGU (no "verified/
+    # Barangay status reports - real priority tiers for this LGU (no "verified/
     # pending" concept exists in the data model, so this uses the same
     # normal/monitoring/needs_assistance/high_priority tiers the GIS map uses).
     barangay_reports = []
@@ -351,7 +351,7 @@ def dashboard():
         barangay_reports.sort(key=lambda r: (r["priority"]["rank"], r["affected_families"]), reverse=True)
         barangay_reports = barangay_reports[:5]
 
-    # Recent activity + notifications — scoped to this office and/or this LGU's
+    # Recent activity + notifications - scoped to this office and/or this LGU's
     # barangays, same scope the full Notifications page and mark-as-read
     # actions use (see _own_activity_filters).
     activity_filters = _own_activity_filters()
@@ -359,7 +359,7 @@ def dashboard():
     recent_activities = []
     if activity_filters:
         # Also restricted to NOTIFICATION_META's known operational action_types
-        # (see app.routes.pswdo.notifications) — the office/barangay OR-scope
+        # (see app.routes.pswdo.notifications) - the office/barangay OR-scope
         # above already excludes most System Administration rows since those
         # carry no office_id/barangay_id, but this makes that exclusion
         # explicit instead of incidental.
@@ -401,9 +401,9 @@ def dashboard():
 @login_required
 @role_required("cswdo_admin", "system_admin")
 def dashboard_weather():
-    """JSON feed for the dashboard's Weather & Typhoon Watch widget — this
+    """JSON feed for the dashboard's Weather & Typhoon Watch widget - this
     office's own LGU only (province-wide monitoring is a PSWDO concern, same
-    scoping as the rest of this dashboard — see Table 10 of the manuscript)."""
+    scoping as the rest of this dashboard - see Table 10 of the manuscript)."""
     office = current_user.office
     lgu = office.area_covered if office else None
     return weather_service.get_dashboard_snapshot([lgu] if lgu else [])
@@ -414,7 +414,7 @@ def dashboard_weather():
 @role_required("cswdo_admin", "system_admin")
 def gis_map():
     """Own-page shell so a CSWDO/MSWDO admin gets the CSWDO sidebar/nav (not
-    PSWDO's) — same convention as every other page this office has its own
+    PSWDO's) - same convention as every other page this office has its own
     template for. The actual map data comes from app.routes.pswdo's gis-map
     endpoints, which is fine to share: those are now scoped per-user via
     _gis_scope_lgus(), so a CSWDO admin hitting them only ever gets their own
@@ -431,7 +431,7 @@ def gis_map():
 
 
 # ---------------------------------------------------------------------------
-# Relief Requests inbox — barangay Relief Requests come here. CSWDO/MSWDO
+# Relief Requests inbox - barangay Relief Requests come here. CSWDO/MSWDO
 # reviews each, approves + fulfils from its OWN municipal warehouse (creates
 # the AllocationRecord + the delivery), or declines / returns for correction.
 # PSWDO is not involved in this tier. (Route name kept as `damage_assessment`
@@ -463,7 +463,7 @@ def _relief_request_row(report):
         "requested": requested,
         # The number the allocation form starts at: the barangay's own request
         # when it gave one, else the model-minus-stock suggestion, else the raw
-        # model estimate. Always adjustable — decision support only.
+        # model estimate. Always adjustable - decision support only.
         "prefill_quantity": requested or suggested or model_estimate,
         "allocation": report.allocation,
     }
@@ -508,7 +508,7 @@ def damage_assessment():
     fp = _own_food_pack_inventory()
     on_hand = fp.quantity_available if fp else 0
 
-    # No barangay-stated figure any more — this is what the model recommends
+    # No barangay-stated figure any more - this is what the model recommends
     # for the barangays still awaiting a decision, net of their own stock.
     suggested_pending = sum(r["suggested_allocation"] for r in pending_rows)
     approved_packs = sum(
@@ -539,7 +539,7 @@ def _fulfil_barangay_request(report, quantity, office):
     available = fp.quantity_available if fp else 0
     if quantity > available:
         return None, (
-            f"{office.office_name} only has {available:,} food packs on hand — "
+            f"{office.office_name} only has {available:,} food packs on hand - "
             f"request a stock replenishment from PSWDO or approve a smaller quantity."
         )
 
@@ -547,8 +547,8 @@ def _fulfil_barangay_request(report, quantity, office):
         barangay_id=report.barangay_id, office_id=office.office_id,
         # `quantity` is whatever the CSWDO/MSWDO admin confirmed on the form. It
         # starts prefilled from the barangay's optional request (or the model
-        # estimate when none was given), but the admin's final figure — not the
-        # model's own estimate — is the label the demand model learns from.
+        # estimate when none was given), but the admin's final figure - not the
+        # model's own estimate - is the label the demand model learns from.
         predicted_quantity=quantity,
         allocated_quantity=quantity,
         historical_allocation=ml_predict.historical_allocation_for(report.barangay_id),
@@ -579,19 +579,19 @@ def _fulfil_barangay_request(report, quantity, office):
 
 
 def _push_proactive_allocation(barangay, quantity, office, event, remarks):
-    """CSWDO/MSWDO pushing food packs to a barangay proactively — no
+    """CSWDO/MSWDO pushing food packs to a barangay proactively - no
     BarangayReport behind it (source='cswdo_direct'). Same warehouse-check +
     AllocationRecord + DistributionRecord shape as _fulfil_barangay_request;
     only the provenance differs. predicted_quantity is recorded for
     reference/traceability, but allocated_quantity is always whatever the
-    CSWDO admin actually entered on the form — the model never decides the
+    CSWDO admin actually entered on the form - the model never decides the
     number on its own (manuscript Ch.2: predicted output is decision support,
     not an automatic final allocation)."""
     fp = _own_food_pack_inventory()
     available = fp.quantity_available if fp else 0
     if quantity > available:
         return None, (
-            f"{office.office_name} only has {available:,} food packs on hand — "
+            f"{office.office_name} only has {available:,} food packs on hand - "
             f"request a stock replenishment from PSWDO or allocate a smaller quantity."
         )
 
@@ -632,7 +632,7 @@ def _push_proactive_allocation(barangay, quantity, office, event, remarks):
 @login_required
 @role_required("cswdo_admin", "system_admin")
 def proactive_allocate():
-    """Push food packs to a barangay ahead of any Relief Request — the
+    """Push food packs to a barangay ahead of any Relief Request - the
     manuscript's pre-positioning phase applied at the barangay tier, driven
     by the Predictive Analytics ranking (see prediction.index / _barangay_
     snapshot's 'model'-sourced rows). Scoped to an active disaster event on
@@ -673,7 +673,7 @@ def proactive_allocate():
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="cswdo_proactive_allocation",
         description=f"{office.office_name} proactively allocated {quantity:,} food packs to "
-                    f"Brgy. {barangay.barangay_name} ({event.event_name}) — model estimate was "
+                    f"Brgy. {barangay.barangay_name} ({event.event_name}) - model estimate was "
                     f"{alloc.predicted_quantity:,}",
         office_id=office.office_id, barangay_id=barangay.barangay_id,
         allocation_id=alloc.allocation_id,
@@ -686,7 +686,7 @@ def proactive_allocate():
 def _sync_barangay_disaster_status(report):
     """Upsert the BarangayDisasterStatus row that drives the dashboards' and
     GIS map's priority tier for this barangay+event. Called whenever CSWDO/
-    MSWDO accepts a report as valid — whether or not an allocation follows.
+    MSWDO accepts a report as valid - whether or not an allocation follows.
     Event-scoped only (a standing report with no event never grades a tier)."""
     if not report.event_id:
         return
@@ -709,7 +709,7 @@ def _sync_barangay_disaster_status(report):
 @login_required
 @role_required("cswdo_admin", "system_admin")
 def verify_relief_request(report_id):
-    """Acknowledge a barangay's situation report without allocating anything —
+    """Acknowledge a barangay's situation report without allocating anything -
     the barangay has enough stock on hand, or the impact doesn't warrant a
     delivery. Still grades the priority tier (BarangayDisasterStatus)."""
     report = BarangayReport.query.get_or_404(report_id)
@@ -730,12 +730,12 @@ def verify_relief_request(report_id):
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="barangay_report_verified",
         description=f"{office.office_name if office else 'MSWDO'} verified {report.ref} "
-                    f"(Brgy. {report.barangay.barangay_name}) — no allocation"
+                    f"(Brgy. {report.barangay.barangay_name}) - no allocation"
                     + (f", barangay stock {on_hand:,} packs on hand" if on_hand is not None else ""),
         office_id=office.office_id if office else None, barangay_id=report.barangay_id,
     ))
     db.session.commit()
-    flash(f"{report.ref} verified — no allocation. The barangay has been notified.", "success")
+    flash(f"{report.ref} verified - no allocation. The barangay has been notified.", "success")
     return redirect(url_for("cswdo.damage_assessment"))
 
 
@@ -771,12 +771,12 @@ def approve_relief_request(report_id):
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="barangay_relief_approved",
         description=f"{office.office_name} approved {quantity:,} food packs for Brgy. "
-                    f"{report.barangay.barangay_name} ({report.ref}) — delivery scheduled",
+                    f"{report.barangay.barangay_name} ({report.ref}) - delivery scheduled",
         office_id=office.office_id, barangay_id=report.barangay_id,
         allocation_id=alloc.allocation_id,
     ))
     db.session.commit()
-    flash(f"{report.ref} approved — {quantity:,} food packs, delivery to Brgy. "
+    flash(f"{report.ref} approved - {quantity:,} food packs, delivery to Brgy. "
           f"{report.barangay.barangay_name} is now preparing.", "success")
     return redirect(url_for("cswdo.delivery_detail", distribution_id=alloc.distribution_records[0].distribution_id))
 
@@ -805,7 +805,7 @@ def decline_relief_request(report_id):
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="barangay_relief_declined",
         description=f"{office.office_name if office else 'MSWDO'} declined {report.ref} "
-                    f"(Brgy. {report.barangay.barangay_name}) — {reason}",
+                    f"(Brgy. {report.barangay.barangay_name}) - {reason}",
         office_id=office.office_id if office else None, barangay_id=report.barangay_id,
     ))
     db.session.commit()
@@ -834,7 +834,7 @@ def return_damage_report(report_id):
     office = current_user.office
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="damage_report_returned",
-        description=f"{report.ref} was returned by {office.office_name if office else 'MSWDO'} — {remarks}",
+        description=f"{report.ref} was returned by {office.office_name if office else 'MSWDO'} - {remarks}",
         office_id=office.office_id if office else None, barangay_id=report.barangay_id,
     ))
     db.session.commit()
@@ -878,10 +878,10 @@ def damage_assessment_export():
 
 
 # ---------------------------------------------------------------------------
-# Deliveries — CSWDO/MSWDO dispatches food packs from its own warehouse to a
+# Deliveries - CSWDO/MSWDO dispatches food packs from its own warehouse to a
 # barangay and monitors the trip. Two confirmations, kept separate:
-#   * ISSUANCE  — CSWDO confirms the packs left the warehouse (this module).
-#   * VALIDATION — the barangay confirms receipt with a photo/signature
+#   * ISSUANCE  - CSWDO confirms the packs left the warehouse (this module).
+#   * VALIDATION - the barangay confirms receipt with a photo/signature
 #     (app.routes.barangay.confirm_receipt). ONLY the barangay's validation
 #     closes the request and moves stock into the barangay's inventory.
 # Lifecycle: preparing -> loaded -> [Confirm Issuance] dispatched -> in_transit
@@ -909,7 +909,7 @@ def deliveries():
     barangay_ids = [b.barangay_id for b in lgu_barangays]
 
     q = DistributionRecord.query.filter(DistributionRecord.barangay_id.in_(barangay_ids)) if barangay_ids else DistributionRecord.query.filter(db.false())
-    # Barangay-tier deliveries only (this office fulfilled them itself) —
+    # Barangay-tier deliveries only (this office fulfilled them itself) -
     # covers both a barangay's own Relief Request and a proactive,
     # model-driven push with no request behind it.
     q = q.join(AllocationRecord).filter(AllocationRecord.source.in_(("barangay_request", "cswdo_direct")))
@@ -977,9 +977,9 @@ def delivery_detail(distribution_id):
     # This office deducts its warehouse the moment a request is approved (see
     # _fulfil_barangay_request), so `on_hand` above is the LIVE total after
     # every release. Reconstruct what the warehouse held right after THIS
-    # release by adding back everything released for a barangay since — so the
+    # release by adding back everything released for a barangay since - so the
     # figure is specific to this delivery instead of the same global number on
-    # every page. (Ignores mid-stream replenishment transfers — close enough
+    # every page. (Ignores mid-stream replenishment transfers - close enough
     # for a review view.)
     released_since = 0
     if office:
@@ -1038,9 +1038,9 @@ def advance_delivery(distribution_id):
 @login_required
 @role_required("cswdo_admin", "system_admin")
 def confirm_issuance(distribution_id):
-    """Issuance confirmation record — the packs have physically left the CSWDO/
+    """Issuance confirmation record - the packs have physically left the CSWDO/
     MSWDO warehouse. Moves the trip to 'dispatched'. This is NOT proof of
-    delivery — the barangay still has to validate receipt."""
+    delivery - the barangay still has to validate receipt."""
     rec = _own_delivery_or_404(distribution_id)
     if rec.dispatch_status != "loaded" or rec.is_issued:
         flash("Issuance can only be confirmed once the delivery is loaded.", "error")
@@ -1060,13 +1060,13 @@ def confirm_issuance(distribution_id):
 
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="distribution_status",
-        description=f"D-{rec.distribution_date.year}-{rec.distribution_id:03d} — issuance confirmed, "
+        description=f"D-{rec.distribution_date.year}-{rec.distribution_id:03d} - issuance confirmed, "
                     f"{rec.quantity_released:,} food packs released to Brgy. {rec.barangay.barangay_name}",
         office_id=current_user.office.office_id if current_user.office else None,
         barangay_id=rec.barangay_id, distribution_id=rec.distribution_id,
     ))
     db.session.commit()
-    flash(f"Issuance confirmed — {rec.quantity_released:,} packs released. Awaiting barangay validation of receipt.", "success")
+    flash(f"Issuance confirmed - {rec.quantity_released:,} packs released. Awaiting barangay validation of receipt.", "success")
     return redirect(url_for("cswdo.delivery_detail", distribution_id=distribution_id))
 
 
@@ -1085,7 +1085,7 @@ def replace_delivery(distribution_id):
 
     owed = rec.outstanding_deficit
     if owed <= 0:
-        flash("Nothing outstanding on this delivery — no replacement needed.", "error")
+        flash("Nothing outstanding on this delivery - no replacement needed.", "error")
         return redirect(url_for("cswdo.delivery_detail", distribution_id=distribution_id))
 
     quantity = request.form.get("quantity", type=int) or owed
@@ -1097,7 +1097,7 @@ def replace_delivery(distribution_id):
     fp = _own_food_pack_inventory()
     available = fp.quantity_available if fp else 0
     if quantity > available:
-        flash(f"{office.office_name if office else 'This office'} only has {available:,} food packs on hand — "
+        flash(f"{office.office_name if office else 'This office'} only has {available:,} food packs on hand - "
               f"request a stock replenishment from PSWDO or send a smaller replacement.", "error")
         return redirect(url_for("cswdo.delivery_detail", distribution_id=distribution_id))
 
@@ -1115,7 +1115,7 @@ def replace_delivery(distribution_id):
         office_id=office.office_id, item_type="food_pack", item_name="Food Packs",
         delta=-quantity,
         reason=f"Replacement for D-{rec.distribution_date.year}-{rec.distribution_id:03d} "
-               f"(Brgy. {rec.barangay.barangay_name}) — "
+               f"(Brgy. {rec.barangay.barangay_name}) - "
                + (f"{rec.shortage_count:,} short" if rec.shortage_count else "")
                + (", " if rec.shortage_count and rec.damaged_count else "")
                + (f"{rec.damaged_count:,} damaged" if rec.damaged_count else ""),
@@ -1127,17 +1127,17 @@ def replace_delivery(distribution_id):
         actor_id=current_user.user_id, action_type="distribution_replacement",
         description=f"{office.office_name if office else 'MSWDO'} dispatched a {quantity:,}-pack replacement "
                     f"(D-{replacement.distribution_date.year}-{replacement.distribution_id:03d}) for "
-                    f"D-{rec.distribution_date.year}-{rec.distribution_id:03d} — Brgy. {rec.barangay.barangay_name}",
+                    f"D-{rec.distribution_date.year}-{rec.distribution_id:03d} - Brgy. {rec.barangay.barangay_name}",
         office_id=office.office_id if office else None,
         barangay_id=rec.barangay_id, distribution_id=replacement.distribution_id,
     ))
     db.session.commit()
-    flash(f"Replacement delivery created — {quantity:,} food packs for Brgy. {rec.barangay.barangay_name}, now preparing.", "success")
+    flash(f"Replacement delivery created - {quantity:,} food packs for Brgy. {rec.barangay.barangay_name}, now preparing.", "success")
     return redirect(url_for("cswdo.delivery_detail", distribution_id=replacement.distribution_id))
 
 
 # ---------------------------------------------------------------------------
-# Stock Requests (CSWDO -> PSWDO) — municipal warehouse replenishment. The ONE
+# Stock Requests (CSWDO -> PSWDO) - municipal warehouse replenishment. The ONE
 # request type PSWDO decides on. On approval PSWDO transfers stock from a
 # provincial depot into this office's warehouse and both sides monitor the leg;
 # CSWDO confirms receipt, which credits the stock and closes the request.
@@ -1202,7 +1202,7 @@ def municipal_demand_breakdown(office, event):
     barangays = Barangay.query.filter_by(city_municipality=lgu).order_by(Barangay.barangay_name).all()
     rows = []
     for b in barangays:
-        # Projected demand is the model estimate per barangay, aggregated —
+        # Projected demand is the model estimate per barangay, aggregated -
         # barangays no longer state a figure of their own (manuscript: "the
         # system aggregates barangay-level predictions to derive total
         # projected food pack demand per area").
@@ -1314,7 +1314,7 @@ def relief_request_save_draft():
 @role_required("cswdo_admin", "system_admin")
 def relief_request_delete_draft(batch_id):
     batch = _own_batch_or_404(batch_id)
-    # Only an unsubmitted draft can be deleted — a submitted stock request stays
+    # Only an unsubmitted draft can be deleted - a submitted stock request stays
     # on record so the PSWDO decision trail and any transfer tied to it are
     # never orphaned.
     if not batch.is_draft:
@@ -1371,7 +1371,7 @@ def relief_request_submit():
 
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="relief_request_submitted",
-        description=f"{office.office_name} submitted stock request {batch.ref} to PSWDO — "
+        description=f"{office.office_name} submitted stock request {batch.ref} to PSWDO - "
                     f"{batch.requested_food_packs:,} food packs",
         office_id=office.office_id, batch_id=batch.batch_id,
     ))
@@ -1385,7 +1385,7 @@ def relief_request_submit():
 @role_required("cswdo_admin", "system_admin")
 def receive_transfer(transfer_id):
     """CSWDO confirms an incoming transfer (Stock-Request replenishment OR a
-    PSWDO pre-positioning push) arrived — credits the warehouse and closes the
+    PSWDO pre-positioning push) arrived - credits the warehouse and closes the
     Stock Request if there is one."""
     from app.models.logistics import WarehouseTransfer
     office = current_user.office
@@ -1429,7 +1429,7 @@ def receive_transfer(transfer_id):
     ))
     db.session.commit()
     flash(f"Received {transfer.quantity:,} food packs. Warehouse updated.", "success")
-    # Same request.referrer-first pattern as the two early-exit branches above —
+    # Same request.referrer-first pattern as the two early-exit branches above -
     # "Confirm Receipt" is submitted from both this page's Municipal Warehouse
     # view and the Relief Requests tracking tab, so send the admin back to
     # whichever one they actually clicked it from, instead of always bouncing
@@ -1484,7 +1484,7 @@ def notifications():
             categories=CSWDO_NOTIFICATION_CATEGORIES, page=1, total_pages=1, lgu=lgu,
         )
 
-    # Same NOTIFICATION_META allowlist as pswdo.notifications — the office/
+    # Same NOTIFICATION_META allowlist as pswdo.notifications - the office/
     # barangay OR-scope alone already excludes most System Administration
     # rows (no office_id/barangay_id), but this makes it explicit rather
     # than incidental.
@@ -1510,7 +1510,7 @@ def notifications():
         view["was_unread"] = not log.is_read
         page_items.append(view)
 
-    # Opening the Notifications page is itself the "read" action — no per-item
+    # Opening the Notifications page is itself the "read" action - no per-item
     # or "Mark all as read" click needed. Unread rows still show highlighted on
     # this render (via was_unread) so the user sees what's new before it clears.
     if unread_count:
@@ -1535,7 +1535,7 @@ def notifications():
 def view_notification(log_id):
     """The Notifications page's "View" link routes through here instead of
     linking to item.link directly, so opening a notification is what marks
-    it read — no separate "Mark as read" click required."""
+    it read - no separate "Mark as read" click required."""
     log = ActivityLog.query.get_or_404(log_id)
     _assert_own_activity(log)
     log.is_read = True
@@ -1606,11 +1606,11 @@ def change_password():
 # ---------------------------------------------------------------------------
 # Reuses app.routes.report_data's report builders and app.routes.report_files'
 # PDF/Excel generation as-is (both are pure data-in/file-out, no role
-# dependency) — but NOT app.routes.reports' routes/templates, since those are
+# dependency) - but NOT app.routes.reports' routes/templates, since those are
 # pswdo_admin-only, live under /pswdo/reports, and let the caller pick "All
 # Municipalities" or any of the 3 target LGUs via a municipality query param.
 # A cswdo_admin must never see another LGU's data, so filters["municipality"]
-# is always forced to this office's own LGU here, ignoring any query param —
+# is always forced to this office's own LGU here, ignoring any query param -
 # these routes exist entirely so that forcing can happen server-side rather
 # than relying on a template to not offer the other choices.
 
@@ -1659,7 +1659,7 @@ def reports():
         abort(404)
 
     filters = _resolve_cswdo_report_filters(lgu)
-    # Every event, not just the currently-active one — a report is almost
+    # Every event, not just the currently-active one - a report is almost
     # always generated *after* a typhoon has ended, so scoping this filter to
     # status="active" would make every past event unselectable.
     active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
@@ -1680,7 +1680,7 @@ def reports():
         approved_q = approved_q.filter(AllocationRecord.event_id == filters["event_id"])
         delivered_q = delivered_q.join(AllocationRecord).filter(AllocationRecord.event_id == filters["event_id"])
 
-    # "This office's own reports" — ReportLog has no office_id column, so
+    # "This office's own reports" - ReportLog has no office_id column, so
     # generated_by is the scoping key (matches this office's single
     # cswdo_admin in current seed data; safe even with more than one, since
     # each admin then just sees their own generated history).
@@ -1692,7 +1692,7 @@ def reports():
     packs_distributed = sum(d.quantity_released for d in delivered_q.all())
     completed_deliveries = delivered_q.count()
 
-    # "" not None — url_for() drops a None param outright, which would make
+    # "" not None - url_for() drops a None param outright, which would make
     # the generated link carry no event_id at all instead of an explicit
     # "no event filter", and resolve_filters() would then treat that as "not
     # chosen yet" and silently default back to the active event.
@@ -1840,7 +1840,7 @@ def report_download_all():
         ReportLog.generated_at.desc()
     ).limit(10).all()
     if not logs:
-        flash("No reports have been generated yet — export one first.", "error")
+        flash("No reports have been generated yet - export one first.", "error")
         return redirect(url_for("cswdo.reports"))
 
     buffer = io.BytesIO()
@@ -1862,7 +1862,7 @@ def report_download_all():
 
 
 # ---------------------------------------------------------------------------
-# Municipal Warehouse — the CSWDO/MSWDO office manages its own municipal stock
+# Municipal Warehouse - the CSWDO/MSWDO office manages its own municipal stock
 # here (Table 10: "allocation management"; Scope: CSWDO/MSWDO "confirm and
 # record the release of food packs from warehouses to target barangays").
 # Add/update/adjust stock for food and non-food items, scoped strictly to
@@ -1960,7 +1960,7 @@ def municipal_inventory_add():
 
     item_type = _slugify(item_name)
     if WarehouseInventory.query.filter_by(office_id=office.office_id, item_type=item_type).first():
-        flash(f"{item_name} already exists in this warehouse — use Update instead.", "error")
+        flash(f"{item_name} already exists in this warehouse - use Update instead.", "error")
         return redirect(url_for("cswdo.municipal_inventory"))
 
     db.session.add(WarehouseInventory(
@@ -1985,7 +1985,7 @@ def municipal_inventory_add():
 def municipal_inventory_update(inventory_id):
     item = _own_inventory_item_or_403(inventory_id)
     # The form takes the amount being added/removed (e.g. a donation's actual
-    # quantity), not the resulting total — the server does that addition, so
+    # quantity), not the resulting total - the server does that addition, so
     # nobody has to compute item.quantity_available + delta by hand.
     delta = request.form.get("delta", type=int)
     unit = request.form.get("unit", "").strip()
@@ -1998,7 +1998,7 @@ def municipal_inventory_update(inventory_id):
     new_quantity = item.quantity_available + delta
     if new_quantity < 0:
         flash(
-            f"That would take {item.item_name} below zero — current stock is "
+            f"That would take {item.item_name} below zero - current stock is "
             f"{item.quantity_available:,}.", "error"
         )
         return redirect(url_for("cswdo.municipal_inventory"))
@@ -2006,7 +2006,7 @@ def municipal_inventory_update(inventory_id):
         flash("Min stock level can't be negative.", "error")
         return redirect(url_for("cswdo.municipal_inventory"))
 
-    # Same rule as the PSWDO side — a source tag only applies to a net increase
+    # Same rule as the PSWDO side - a source tag only applies to a net increase
     # (incoming stock); a decrease is a manual correction (recount, spoilage).
     source_type, donor_name = "standard", None
     if delta > 0:
@@ -2015,7 +2015,7 @@ def municipal_inventory_update(inventory_id):
             flash(source_error, "error")
             return redirect(url_for("cswdo.municipal_inventory"))
     elif request.form.get("source_type", "").strip() == "donation":
-        flash("A donation adds stock — enter a positive quantity to record it.", "error")
+        flash("A donation adds stock - enter a positive quantity to record it.", "error")
         return redirect(url_for("cswdo.municipal_inventory"))
 
     item.quantity_available = new_quantity
@@ -2042,7 +2042,7 @@ def municipal_inventory_update(inventory_id):
 def municipal_inventory_delete(inventory_id):
     item = _own_inventory_item_or_403(inventory_id)
     if item.item_type == "food_pack":
-        flash("Food Packs can't be removed — it's required for allocation and prediction.", "error")
+        flash("Food Packs can't be removed - it's required for allocation and prediction.", "error")
         return redirect(url_for("cswdo.municipal_inventory"))
     name = item.item_name
     db.session.delete(item)

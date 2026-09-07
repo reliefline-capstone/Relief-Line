@@ -212,7 +212,7 @@
     border-radius: 14px;
     width: 100%;
     max-width: 640px;
-    /* /--ui-scale — see .dashboard-layout zoom in base.css. */
+    /* /--ui-scale - see .dashboard-layout zoom in base.css. */
     max-height: calc(90vh / var(--ui-scale));
     display: flex;
     flex-direction: column;
@@ -323,7 +323,7 @@
     word-break: break-all;
 }
 
-/* .da-remarks-box now lives in dashboard.css — every page using it loads
+/* .da-remarks-box now lives in dashboard.css - every page using it loads
    that stylesheet, which wasn't true of relief_request_detail.html. */
 
 .da-verification-record {
@@ -389,7 +389,7 @@
     color: #8a94a6;
 }
 
-/* Barangay Reports review modal — single-column body that reads top to bottom
+/* Barangay Reports review modal - single-column body that reads top to bottom
    and simply scrolls when it runs long (.rd-modal already caps height and sets
    overflow-y). The decision-support numbers sit in a compact 2×2 grid rather
    than a tall centered stack. */

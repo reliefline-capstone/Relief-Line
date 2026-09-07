@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var provinceLayer = L.geoJSON(null, {
         style: function (feature) {
-            // Matches gis_map.js's full-map styling — is_target is already
+            // Matches gis_map.js's full-map styling - is_target is already
             // scoped server-side (app.routes.pswdo._gis_scope_lgus), so this
             // bold border marks exactly what this account can see.
             var isTarget = feature.properties.is_target;

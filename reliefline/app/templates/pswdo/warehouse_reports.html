@@ -119,7 +119,7 @@
                         <tr>
                             <td><strong>{{ item.title }}</strong></td>
                             <td>{{ item.log.generated_at.strftime('%B %d, %Y') }}</td>
-                            <td>{{ item.log.generated_by_user.name if item.log.generated_by_user else '—' }}</td>
+                            <td>{{ item.log.generated_by_user.name if item.log.generated_by_user else '-' }}</td>
                             <td><span class="format-tag {{ item.log.format }}">{{ item.log.format|upper }}</span></td>
                             <td>{{ item.log.pages }} page{{ 's' if item.log.pages != 1 }}</td>
                             <td>
@@ -132,7 +132,7 @@
                 </table>
             </div>
             {% else %}
-            <p class="empty-note">No reports generated yet — click Generate on any report type above, then Export PDF or Export Excel.</p>
+            <p class="empty-note">No reports generated yet - click Generate on any report type above, then Export PDF or Export Excel.</p>
             {% endif %}
         </section>
 

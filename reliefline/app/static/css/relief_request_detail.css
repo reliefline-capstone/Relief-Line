@@ -32,7 +32,7 @@
 
 /* Left grid column: Request stacked with Replenishment Transfer (when a
    transfer exists) right below it, instead of Replenishment Transfer
-   spanning full-width underneath the whole grid — fills the space next to
+   spanning full-width underneath the whole grid - fills the space next to
    the taller Aggregation Traceability column instead of leaving it empty. */
 .rd-left-col {
     display: flex;
@@ -44,7 +44,7 @@
 /* .dd-stepper-panel's own margin-bottom (distribution_detail.css) was
    written for its usual standalone/block-flow placement. Stacked here as a
    flex child of .rd-left-col, that margin stacked on top of the column's
-   own 16px gap, doubling the space after it to 32px — bigger and
+   own 16px gap, doubling the space after it to 32px - bigger and
    inconsistent next to the plain 16px gap above it. */
 .rd-left-col .dd-stepper-panel { margin-bottom: 0; }
 
@@ -85,7 +85,7 @@
     gap: 12px 24px;
 }
 
-/* Label above value — this had no rule of its own at all before, so the
+/* Label above value - this had no rule of its own at all before, so the
    plain <span> fell all the way back to the browser/body default (16px,
    near-black), reading louder and larger than the 14px bold value it was
    labelling underneath it. */
@@ -163,7 +163,7 @@
 .btn-decision:active { transform: translateY(0); }
 
 /* Brightened to match the app's usual success/danger accents (badges,
-   pills, etc. elsewhere all use #1e8449 / #c0392b) — the previous muted
+   pills, etc. elsewhere all use #1e8449 / #c0392b) - the previous muted
    #3d7a63 / #a85450 read flat next to those and next to the new shadow. */
 .btn-approve-full { background: #1e8449; }
 .btn-approve-full:hover { background: #196f3d; }
@@ -238,7 +238,7 @@
    wheel acts on the modal, not the table underneath (see relief_request_detail.js
    which toggles .rd-modal-open on <html>). .dashboard-main is the actual scroll
    container on these pages (height:100vh; overflow-y:auto), so it's the one to
-   pin — body/html overflow alone wouldn't do it. */
+   pin - body/html overflow alone wouldn't do it. */
 html.rd-modal-open .dashboard-main { overflow: hidden; }
 html.rd-modal-open { overflow: hidden; }
 
@@ -272,7 +272,7 @@ html.rd-modal-open { overflow: hidden; }
    only the modal-specific spacing tweak below is still needed on this page.
 
    Bottom margin only for a standalone intro paragraph sitting directly in
-   the modal (before the form) — a .form-hint nested inside a .form-row
+   the modal (before the form) - a .form-hint nested inside a .form-row
    (e.g. "Up to 1,800 requested." under a field) is a flex item there, so
    this same margin would add on top of .settings-form's own 16px row gap
    instead of just being ignored like it would on a plain inline <span>,

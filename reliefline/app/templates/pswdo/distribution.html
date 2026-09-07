@@ -105,7 +105,7 @@
                             <strong>{{ rec.barangay.city_municipality }}</strong>
                             <span class="rr-sub">{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}</span>
                         </td>
-                        <td>{{ fulfilling.office_name if fulfilling else '—' }}</td>
+                        <td>{{ fulfilling.office_name if fulfilling else '-' }}</td>
                         <td>
                             <strong>{{ "{:,}".format(rec.quantity_released) }}</strong>
                             <span class="rr-sub">food packs</span>
@@ -167,7 +167,7 @@
             </div>
 
             <!-- Step 2: only reachable after a municipality is picked, and the
-                 stock check runs here — before submission, not after. -->
+                 stock check runs here - before submission, not after. -->
             <div class="nd-step-panel" data-step-panel="2" hidden>
                 <button type="button" class="nd-back-link" data-step-back>{{ icon('arrow-left', 14) }} Back to municipality</button>
 
@@ -193,7 +193,7 @@
 
                 <div class="nd-stock-warning" id="nd-stock-warning" hidden>
                     {{ icon('alert-triangle', 14) }}
-                    <span>The fulfilling warehouse doesn't currently have enough stock for this request. Scheduling is blocked until stock is available — transfer more in first.</span>
+                    <span>The fulfilling warehouse doesn't currently have enough stock for this request. Scheduling is blocked until stock is available - transfer more in first.</span>
                 </div>
 
                 <div class="rd-modal-actions">
@@ -203,7 +203,7 @@
             </div>
         </form>
         {% else %}
-        <p class="empty-note" style="padding: 8px 0 16px;">No approved relief requests are waiting to be scheduled right now — approve a relief request first.</p>
+        <p class="empty-note" style="padding: 8px 0 16px;">No approved relief requests are waiting to be scheduled right now - approve a relief request first.</p>
         <div class="rd-modal-actions">
             <a href="{{ url_for('pswdo.relief_requests', status='approved') }}" class="btn-decision btn-partial" style="text-decoration:none; text-align:center;">{{ icon('clipboard', 16, 'white') }} View Approved Requests</a>
             <button type="button" class="btn-cancel" data-close-modal>Close</button>

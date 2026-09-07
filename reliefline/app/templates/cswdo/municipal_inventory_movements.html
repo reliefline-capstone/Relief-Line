@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
-{% block title %}Stock Movement History — {{ office.office_name }} - ReliefLine{% endblock %}
+{% block title %}Stock Movement History - {{ office.office_name }} - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">

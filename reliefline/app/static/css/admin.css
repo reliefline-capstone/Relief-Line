@@ -1,10 +1,10 @@
-/* System Administration module — layered on top of dashboard.css (layout,
+/* System Administration module - layered on top of dashboard.css (layout,
    stat cards, panels, page-header), warehouse_inventory.css (.wh-table,
    .wh-search-wrapper, .wh-icon-btn), relief_request_detail.css (.rd-modal,
    .form rows) and profile_settings.css (.form-row). Only net-new admin-only
    styles live here. */
 
-/* Online presence — distinct from .badge-status-pill (account enabled vs
+/* Online presence - distinct from .badge-status-pill (account enabled vs
    disabled). A small dot + label wherever a user/office is genuinely online
    right now (app.utils.presence.is_online), not just "logged in earlier". */
 .online-indicator {
@@ -34,12 +34,12 @@
     50% { opacity: 0.35; }
 }
 
-/* Office sub-navigation (System Activity / Audit Logs) — .page-tabs with an
+/* Office sub-navigation (System Activity / Audit Logs) - .page-tabs with an
    online dot appended per tab when that group has someone active now. */
 .page-tab .online-dot { margin-left: 6px; color: #1e8449; }
 
 
-/* Dashboard — Recent Users list */
+/* Dashboard - Recent Users list */
 .admin-user-row {
     display: flex;
     align-items: center;
@@ -71,7 +71,7 @@
     flex-shrink: 0;
 }
 
-/* Dashboard — Quick Actions */
+/* Dashboard - Quick Actions */
 .admin-quick-actions { display: flex; flex-direction: column; gap: 6px; }
 
 .admin-quick-action {
@@ -143,7 +143,7 @@
 
 .user-avatar-sm { width: 28px; height: 28px; font-size: 11px; }
 
-/* Row action buttons (User/Office/Barangay Management tables) — same pastel
+/* Row action buttons (User/Office/Barangay Management tables) - same pastel
    chip language as .badge-health / .btn-view elsewhere in the app, just
    clickable instead of purely decorative. */
 .admin-row-actions {
@@ -254,7 +254,7 @@
     line-height: 1.5;
 }
 
-/* Conditional Add/Edit User assignment field (.form-row is display:flex —
+/* Conditional Add/Edit User assignment field (.form-row is display:flex -
    matched here so toggling visibility doesn't also change its layout) */
 [data-role-field] { display: none; }
 [data-role-field].is-visible { display: flex; }

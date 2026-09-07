@@ -29,7 +29,7 @@ ROLE_CHOICES = ["system_admin", "pswdo_admin", "cswdo_admin", "barangay_user"]
 
 
 # ---------------------------------------------------------------------------
-# Small display helpers — everything here derives from real stored fields
+# Small display helpers - everything here derives from real stored fields
 # rather than adding columns for things that are really just presentation.
 # ---------------------------------------------------------------------------
 
@@ -52,7 +52,7 @@ def _deliver_credentials(user, temp_password, subject, intro):
         flash(f"{user.name}'s credentials were emailed to {user.email}.", "success")
     else:
         flash(
-            f"Email delivery isn't configured, so here's the temporary password directly — "
+            f"Email delivery isn't configured, so here's the temporary password directly - "
             f"share it with {user.name} securely: {temp_password}",
             "success",
         )
@@ -152,7 +152,7 @@ def users():
 
 
 def _apply_user_office_barangay(user, role):
-    """Role dictates which assignment field is meaningful — clears the other
+    """Role dictates which assignment field is meaningful - clears the other
     so a role change doesn't leave a stale office/barangay pointer behind."""
     if role in ("pswdo_admin", "cswdo_admin"):
         office_id = request.form.get("office_id", type=int)
@@ -198,7 +198,7 @@ def add_user():
     db.session.commit()
 
     _deliver_credentials(
-        user, temp_password, "ReliefLine — Your account was created",
+        user, temp_password, "ReliefLine - Your account was created",
         f"Hi {name}, a ReliefLine account was created for you as a {ROLE_LABELS.get(role, role)}.",
     )
     return redirect(url_for("admin.users"))
@@ -248,7 +248,7 @@ def reset_user_password(user_id):
     db.session.commit()
 
     _deliver_credentials(
-        user, temp_password, "ReliefLine — Your password was reset",
+        user, temp_password, "ReliefLine - Your password was reset",
         f"Hi {user.name}, your ReliefLine password was reset by a System Administrator.",
     )
     return redirect(url_for("admin.users"))
@@ -285,7 +285,7 @@ def toggle_user_active(user_id):
 @login_required
 @role_required("system_admin")
 def user_activity(user_id):
-    """Everything a single user has done — the drill-down behind User
+    """Everything a single user has done - the drill-down behind User
     Management's "View Activity" action. Same ActivityLog rows System
     Activity shows, just scoped to one actor instead of everyone."""
     user = User.query.get_or_404(user_id)
@@ -304,7 +304,7 @@ def export_user_activity(user_id):
 
 
 # ---------------------------------------------------------------------------
-# Password Reset Requests — a user's self-service "Forgot Password" click
+# Password Reset Requests - a user's self-service "Forgot Password" click
 # (app.routes.auth.forgot_password) lands here as a pending row instead of
 # resetting anything automatically. Granting resets the account's password
 # to DEFAULT_RESET_PASSWORD and flags must_change_password so the user is
@@ -328,7 +328,7 @@ def password_reset_requests():
 
     request_list = requests_q.order_by(PasswordResetRequest.requested_at.desc()).all()
 
-    # Opening this page is what clears the sidebar's red badge — marks every
+    # Opening this page is what clears the sidebar's red badge - marks every
     # currently-pending request seen without touching `status`, so a request
     # still shows under the Pending tab (and still needs a decision) even
     # after the badge itself has cleared.
@@ -609,21 +609,21 @@ def export_barangays():
 
 
 # ---------------------------------------------------------------------------
-# System Activity — full feed off activity_logs, with an office
-# sub-navigation (who did this — grouped by which office the actor belongs
+# System Activity - full feed off activity_logs, with an office
+# sub-navigation (who did this - grouped by which office the actor belongs
 # to) and a "Currently Active" panel built from real presence data (see
 # app.utils.presence), not from is_active or last_login.
 # ---------------------------------------------------------------------------
 
 # Fixed order matching the manuscript's role taxonomy (PSWDO -> CSWDO/MSWDO
 # -> Barangay-Level User -> System Administrator) rather than one tab per
-# office — keeps the sub-nav to at most 5 tabs no matter how many offices or
+# office - keeps the sub-nav to at most 5 tabs no matter how many offices or
 # barangay-level accounts get added later.
 ROLE_GROUP_ORDER = ["pswdo_admin", "cswdo_admin", "barangay_user", "system_admin"]
 
 
 def _actor_groups():
-    """One tab per role — always all 4 from ROLE_GROUP_ORDER, even ones with
+    """One tab per role - always all 4 from ROLE_GROUP_ORDER, even ones with
     zero users yet (e.g. Barangay-Level User before any such account
     exists), so the filter is there and ready as soon as one is added."""
     groups = [{"key": "all", "label": "All Users"}]
@@ -647,7 +647,7 @@ def _apply_actor_group_filter(query, group_key):
 
 def _groups_with_online_flag():
     """Role tabs, each flagged with whether anyone in that role is
-    currently active (green dot) — see app.utils.presence."""
+    currently active (green dot) - see app.utils.presence."""
     online_cutoff = ph_now() - ONLINE_THRESHOLD
     groups = _actor_groups()
     for g in groups:
@@ -744,7 +744,7 @@ def settings_page():
 
 
 # ---------------------------------------------------------------------------
-# Profile Settings (the System Administrator's own account) — same pattern
+# Profile Settings (the System Administrator's own account) - same pattern
 # as pswdo.profile_settings / update_profile_info / change_password.
 # ---------------------------------------------------------------------------
 

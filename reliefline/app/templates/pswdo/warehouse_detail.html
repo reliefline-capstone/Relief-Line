@@ -35,14 +35,14 @@
                 <div class="wh-info-rows">
                     <div class="wh-info-row"><span>Warehouse Name</span><strong>{{ office.office_name }}</strong></div>
                     <div class="wh-info-row"><span>Location</span><strong>{{ office.area_covered }}</strong></div>
-                    <div class="wh-info-row"><span>Full Address</span><strong>{{ office.full_address or '—' }}</strong></div>
-                    <div class="wh-info-row"><span>Warehouse Manager</span><strong>{{ office.manager_name or '—' }}</strong></div>
-                    <div class="wh-info-row"><span>Contact Number</span><strong>{{ office.contact_number or '—' }}</strong></div>
-                    <div class="wh-info-row"><span>Email</span><strong>{{ office.email or '—' }}</strong></div>
+                    <div class="wh-info-row"><span>Full Address</span><strong>{{ office.full_address or '-' }}</strong></div>
+                    <div class="wh-info-row"><span>Warehouse Manager</span><strong>{{ office.manager_name or '-' }}</strong></div>
+                    <div class="wh-info-row"><span>Contact Number</span><strong>{{ office.contact_number or '-' }}</strong></div>
+                    <div class="wh-info-row"><span>Email</span><strong>{{ office.email or '-' }}</strong></div>
                     <div class="wh-info-row"><span>Storage Capacity</span><strong>{{ "{:,}".format(capacity) }} Packs</strong></div>
                     <div class="wh-info-row"><span>Current Stock</span><strong>{{ "{:,}".format(food_pack_qty) }} Packs</strong></div>
                     <div class="wh-info-row"><span>Burn Rate</span><strong>{% if burn %}~{{ burn|int }} packs/day{% else %}No active demand data{% endif %}</strong></div>
-                    <div class="wh-info-row"><span>Days Remaining</span><strong>{% if days_remaining is not none %}{{ days_remaining|int }} days at current rate{% else %}—{% endif %}</strong></div>
+                    <div class="wh-info-row"><span>Days Remaining</span><strong>{% if days_remaining is not none %}{{ days_remaining|int }} days at current rate{% else %}-{% endif %}</strong></div>
                 </div>
             </section>
 
@@ -65,7 +65,7 @@
                         <div class="wh-info-row"><span>Current Stock</span><strong>{{ "{:,}".format(food_pack_qty) }}</strong></div>
                         <div class="wh-info-row"><span>Max Capacity</span><strong>{{ "{:,}".format(capacity) }}</strong></div>
                         <div class="wh-info-row"><span>Available Space</span><strong class="text-green">{{ "{:,}".format(capacity - food_pack_qty if capacity > food_pack_qty else 0) }}</strong></div>
-                        <div class="wh-info-row"><span>Days Remaining</span><strong class="text-green">{% if days_remaining is not none %}{{ days_remaining|int }} days{% else %}—{% endif %}</strong></div>
+                        <div class="wh-info-row"><span>Days Remaining</span><strong class="text-green">{% if days_remaining is not none %}{{ days_remaining|int }} days{% else %}-{% endif %}</strong></div>
                     </div>
                     <a href="{{ url_for('pswdo.warehouse_inventory_items', office_id=office.office_id) }}" class="btn-add-warehouse wh-block-btn">{{ icon('package', 14, 'white') }} Manage Inventory</a>
                     <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-text-link wh-block-link">{{ icon('rotate-ccw', 14) }} Stock Transfer</a>

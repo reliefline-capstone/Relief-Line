@@ -1,7 +1,7 @@
 """
 Trains the food-pack demand model (app.ml.train) against the current
 database and prints the resulting leave-one-out cross-validation metrics.
-Safe to re-run any time new allocation requests come in — each run adds a
+Safe to re-run any time new allocation requests come in - each run adds a
 fresh ModelMetrics row so accuracy over time stays visible.
 
 Usage:

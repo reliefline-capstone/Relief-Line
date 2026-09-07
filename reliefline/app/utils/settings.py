@@ -8,7 +8,7 @@ ever been used.
 from app.extensions import db
 from app.models.system_setting import SystemSetting
 
-# key -> (default, cast, label) — the single place a new admin-editable
+# key -> (default, cast, label) - the single place a new admin-editable
 # setting gets registered. admin.settings_page() renders a field per entry.
 SETTINGS_SCHEMA = {
     "warehouse_healthy_threshold": (0.70, float, "Healthy stock threshold (% of capacity)"),

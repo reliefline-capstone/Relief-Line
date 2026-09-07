@@ -7,7 +7,7 @@
 :root {
     /* One knob for the whole authenticated UI's size. Bumps every icon and
        text size together a notch (adviser feedback: "palakihin nang konti").
-       Applied as `zoom` on .dashboard-layout only — the public/landing pages
+       Applied as `zoom` on .dashboard-layout only - the public/landing pages
        use their own vh-based responsive scale and are left untouched. The
        calc(100vh / --ui-scale) on the full-height shells below divides it
        back out so they still fill exactly one viewport. Tune this number. */
@@ -16,7 +16,7 @@
 
 /* Icons render as raw <svg> (see _macros.html's icon() macro) with no
    vertical-align of their own, so a plain inline icon-then-text pairing sits
-   on the text baseline — visibly low relative to the text's cap-height.
+   on the text baseline - visibly low relative to the text's cap-height.
    Anywhere an icon+text pair isn't already inside a flex/align-items
    container, this is what keeps it level. */
 svg {
@@ -30,13 +30,13 @@ body {
     /* Inter's own recommended settings for on-screen text: 'cv11' switches to
        a single-story 'a' (closer to handwriting, easier for less tech-fluent
        or older readers to recognize at a glance) and tabular numerals keep
-       stacked figures — food pack counts, percentages — aligned in tables
+       stacked figures - food pack counts, percentages - aligned in tables
        and stat cards instead of jittering column to column. */
     font-feature-settings: 'cv11', 'tnum';
     -webkit-font-smoothing: antialiased;
 }
 
-/* One family site-wide (see base.html) — headings lean on Inter's own
+/* One family site-wide (see base.html) - headings lean on Inter's own
    heavier weights for hierarchy instead of a second, more decorative
    typeface, so the whole system reads as one consistent, no-nonsense
    voice for PSWDO/CSWDO/MSWDO/barangay users rather than mixing a
@@ -63,7 +63,7 @@ input {
 }
 
 /* ============================================================
-   Motion — one shared set of subtle, purposeful micro-interactions
+   Motion - one shared set of subtle, purposeful micro-interactions
    for every role's UI (loaded here in base.css, so it reaches every
    page without per-role duplication). Kept understated on purpose,
    in keeping with a government decision-support tool: short
@@ -82,7 +82,7 @@ input {
 }
 
 /* Used by .rd-modal / .da-modal (relief_request_detail.css /
-   damage_assessment.css) — defined here, not there, so it still applies
+   damage_assessment.css) - defined here, not there, so it still applies
    on pages that load one modal stylesheet but not the other. */
 @keyframes modalPopIn {
     from { opacity: 0; transform: scale(0.96) translateY(6px); }
@@ -94,7 +94,7 @@ input {
    navigation instead of just snapping into view.
 
    fill-mode is deliberately `backwards`, NOT `both`/`forwards`: retaining
-   the final keyframe's transform (even translateY(0) — an identity matrix
+   the final keyframe's transform (even translateY(0) - an identity matrix
    still counts) leaves .dashboard-main a *permanent* containing block for
    position:fixed descendants, per spec. That traps .rd-modal-overlay & co.
    inside the content column, so their full-viewport backdrop stops at the
@@ -122,11 +122,11 @@ a, button, select, input, textarea,
 
 /* Placeholder shown while a widget is still fetching data (e.g. the
    dashboard banner's "Loading forecast…" and the weather widget's
-   "Loading live weather…" — see weather_widget.js). A moving shimmer
+   "Loading live weather…" - see weather_widget.js). A moving shimmer
    reads as "working" far more clearly than static gray text, and
    since the real content that later replaces it is written fresh
    (innerHTML, not a text update), this class never has to be removed
-   by hand — it's simply not part of the replacement markup.
+   by hand - it's simply not part of the replacement markup.
    Two variants: default for light/card backgrounds, -dark for the
    navy header banner. */
 .skeleton-shimmer, .skeleton-shimmer-dark {

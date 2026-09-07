@@ -68,7 +68,7 @@ def view(report_type):
         abort(404)
     filters = resolve_filters(request.args)
     report = build_report(report_type, filters, current_user)
-    # Every event, not just the currently-active one — a report is almost
+    # Every event, not just the currently-active one - a report is almost
     # always generated *after* a typhoon has ended, so scoping this filter to
     # status="active" would make every past event unselectable.
     active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
@@ -120,7 +120,7 @@ def export_excel(report_type):
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def download(report_id):
-    """Re-download from Recent Reports — regenerates the same file from the
+    """Re-download from Recent Reports - regenerates the same file from the
     log's stored filters rather than keeping binary blobs on disk/DB."""
     log = ReportLog.query.get_or_404(report_id)
     if log.report_type not in REPORT_TYPES:
@@ -140,7 +140,7 @@ def download(report_id):
 def download_all():
     logs = ReportLog.query.order_by(ReportLog.generated_at.desc()).limit(10).all()
     if not logs:
-        flash("No reports have been generated yet — export one first.", "error")
+        flash("No reports have been generated yet - export one first.", "error")
         return redirect(url_for("pswdo.warehouse_reports"))
 
     buffer = io.BytesIO()

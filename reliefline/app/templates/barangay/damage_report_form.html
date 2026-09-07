@@ -74,7 +74,7 @@
                 {% if active_events %}
                 <p class="form-hint">This report will be linked to the active typhoon-related event: <strong>{{ active_events[0].event_name }}</strong>.</p>
                 {% else %}
-                <p class="form-hint">There is no PSWDO-declared active event right now — this will be filed as a standing report.</p>
+                <p class="form-hint">There is no PSWDO-declared active event right now - this will be filed as a standing report.</p>
                 {% endif %}
                 <div class="wizard-nav"><span></span><button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button></div>
             </section>
@@ -157,7 +157,7 @@
                 <label for="photo_files" class="upload-dropzone">
                     <div class="qa-icon" style="background:#eaf0fd; width:52px; height:52px; margin:0 auto 10px;">{{ icon('file-text', 22, '#2c5aa0') }}</div>
                     <strong>Tap to upload photos</strong>
-                    <span>JPG, PNG, or PDF — up to 10MB each · multiple files allowed</span>
+                    <span>JPG, PNG, or PDF - up to 10MB each · multiple files allowed</span>
                     <input type="file" id="photo_files" name="photo_files" accept=".jpg,.jpeg,.png,.pdf" multiple style="display:none;">
                 </label>
                 {% if report and report.photo_paths %}
@@ -182,7 +182,7 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                 <div class="review-grid">
                     <div class="review-box">
                         <span class="review-box-title">Incident</span>
-                        <div class="review-row"><span>Typhoon Event</span><strong>{{ active_events[0].event_name if active_events else '—' }}</strong></div>
+                        <div class="review-row"><span>Typhoon Event</span><strong>{{ active_events[0].event_name if active_events else '-' }}</strong></div>
                         <div class="review-row"><span>Date of Incident</span><strong id="rv-date"></strong></div>
                     </div>
                     <div class="review-box">
@@ -288,7 +288,7 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
     }
 
     function populateReview() {
-        document.getElementById('rv-date').textContent = (textOf('incident_date') || '—') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
+        document.getElementById('rv-date').textContent = (textOf('incident_date') || '-') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
         document.getElementById('rv-families').textContent = textOf('affected_families') || '0';
         document.getElementById('rv-individuals').textContent = textOf('affected_individuals') || '0';
         document.getElementById('rv-totally').textContent = textOf('totally_damaged_houses') || '0';

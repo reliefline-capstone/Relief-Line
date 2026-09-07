@@ -43,7 +43,7 @@
         {% elif report.status in ('approved', 'fulfilled') %}
         <section class="panel" style="border:1px solid #cdebd7; background:#f0faf4; margin-bottom:16px;">
             <div class="panel-header"><h3 style="color:#1e8449;">{{ icon('check-circle', 16, '#1e8449') }}
-                {{ 'Approved' if report.status == 'approved' else 'Fulfilled — delivery confirmed received' }} by {{ reviewer }}</h3></div>
+                {{ 'Approved' if report.status == 'approved' else 'Fulfilled - delivery confirmed received' }} by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#1e5631;">
                 {% if report.allocation and report.allocation.allocated_quantity %}{{ "{:,}".format(report.allocation.allocated_quantity) }} food packs allocated to your barangay.{% endif %}
                 {% if report.review_remarks %} {{ report.review_remarks }}{% endif %}
@@ -54,7 +54,7 @@
         <section class="panel" style="border:1px solid #cfe0f0; background:#f0f6fc; margin-bottom:16px;">
             <div class="panel-header"><h3 style="color:#2c5aa0;">{{ icon('check-circle', 16, '#2c5aa0') }} Verified by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#244b86;">
-                Your report has been reviewed and acknowledged. No relief delivery was scheduled — your barangay's current stock is considered sufficient for this situation.
+                Your report has been reviewed and acknowledged. No relief delivery was scheduled - your barangay's current stock is considered sufficient for this situation.
                 {% if report.review_remarks %} {{ report.review_remarks }}{% endif %}
             </p>
         </section>
@@ -112,9 +112,9 @@
                 <div class="review-row"><span>Barangay</span><strong>{{ report.barangay.barangay_name }}</strong></div>
                 <div class="review-row"><span>Submitted By</span><strong>{{ report.submitted_by_name }}{% if report.submitted_by_designation %} ({{ report.submitted_by_designation }}){% endif %}</strong></div>
                 <div class="review-row"><span>Date Submitted</span><strong>{{ report.submitted_at.strftime('%B %d, %Y · %I:%M %p') if report.submitted_at else 'Not yet submitted' }}</strong></div>
-                <div class="review-row"><span>Typhoon Event</span><strong>{{ report.event.event_name if report.event else '—' }}</strong></div>
-                <div class="review-row"><span>Incident Date</span><strong>{{ report.incident_date.strftime('%B %d, %Y') if report.incident_date else '—' }}</strong></div>
-                <div class="review-row"><span>Incident Time</span><strong>{{ report.incident_time.strftime('%I:%M %p') if report.incident_time else '—' }}</strong></div>
+                <div class="review-row"><span>Typhoon Event</span><strong>{{ report.event.event_name if report.event else '-' }}</strong></div>
+                <div class="review-row"><span>Incident Date</span><strong>{{ report.incident_date.strftime('%B %d, %Y') if report.incident_date else '-' }}</strong></div>
+                <div class="review-row"><span>Incident Time</span><strong>{{ report.incident_time.strftime('%I:%M %p') if report.incident_time else '-' }}</strong></div>
             </section>
 
             <div class="drv-side">
@@ -132,7 +132,7 @@
                     <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Allocation</h3></div>
                     <div class="info-grid">
                         <div class="info-box"><span>Food Packs Requested</span><strong>{% if report.requested_food_packs %}{{ "{:,}".format(report.requested_food_packs) }}{% else %}Not specified{% endif %}</strong></div>
-                        <div class="info-box"><span>Food Packs Allocated</span><strong>{% if report.allocation %}{{ "{:,}".format(report.allocation.allocated_quantity) }}{% else %}—{% endif %}</strong></div>
+                        <div class="info-box"><span>Food Packs Allocated</span><strong>{% if report.allocation %}{{ "{:,}".format(report.allocation.allocated_quantity) }}{% else %}-{% endif %}</strong></div>
                     </div>
                 </section>
             </div>

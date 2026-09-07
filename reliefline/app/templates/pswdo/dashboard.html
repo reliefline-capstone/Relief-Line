@@ -102,7 +102,7 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
-                {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot — this is always today's actual figure.">LIVE</span>{% endif %}
+                {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot - this is always today's actual figure.">LIVE</span>{% endif %}
                 <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span>
                 <span class="stat-label">Food Packs Available</span>
                 <span class="stat-sub">Across {{ warehouses|length }} warehouses</span>
@@ -115,7 +115,7 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
-                {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot — this is always today's actual figure.">LIVE</span>{% endif %}
+                {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot - this is always today's actual figure.">LIVE</span>{% endif %}
                 <span class="stat-value">{{ low_stock_warehouses|length }}</span>
                 <span class="stat-label">Low Stock Warehouses</span>
             </div>
@@ -134,7 +134,7 @@
             <p class="weather-empty skeleton-shimmer">Loading live weather…</p>
         </div>
 
-        <!-- Declare Disaster Event modal — see app.routes.pswdo.declare_disaster_event.
+        <!-- Declare Disaster Event modal - see app.routes.pswdo.declare_disaster_event.
              Opened by static/js/weather_widget.js, either manually via the panel's
              header button or pre-filled off a live-detected storm. -->
         <div class="rd-modal-overlay" id="declare-event-modal" hidden>
@@ -143,7 +143,7 @@
                     <h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Declare Typhoon-Related Event</h3>
                     <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
                 </div>
-                <p class="form-hint">This opens a new active <strong>typhoon-related event</strong> and ties every relief request and allocation to it until you end it. The system is scoped to typhoon response — the specific hazard (flooding, storm surge, strong winds) is recorded per barangay, not as a separate event type.</p>
+                <p class="form-hint">This opens a new active <strong>typhoon-related event</strong> and ties every relief request and allocation to it until you end it. The system is scoped to typhoon response - the specific hazard (flooding, storm surge, strong winds) is recorded per barangay, not as a separate event type.</p>
                 <form method="POST" action="{{ url_for('pswdo.declare_disaster_event') }}" class="settings-form">
                     <div class="form-row">
                         <label for="declare-event-name">Event Name *</label>
@@ -166,7 +166,7 @@
             </div>
         </div>
 
-        <!-- End Disaster Event confirmation modal — see app.routes.pswdo.end_disaster_event.
+        <!-- End Disaster Event confirmation modal - see app.routes.pswdo.end_disaster_event.
              Opened by static/js/weather_widget.js in place of a native confirm() dialog. -->
         <div class="rd-modal-overlay" id="end-event-modal" hidden>
             <div class="rd-modal">
@@ -187,7 +187,7 @@
 
             <section class="panel map-panel">
                 <div class="panel-header">
-                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map — Province of Pangasinan</h3>
+                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map - Province of Pangasinan</h3>
                     <div class="map-legend">
                         <span><i class="legend-dot normal"></i> Low</span>
                         <span><i class="legend-dot monitoring"></i> Medium</span>
@@ -230,7 +230,7 @@
                 {% for b in pending_requests %}
                 <div class="request-card">
                     <div class="request-top">
-                        <strong>{{ b.office.area_covered if b.office else '—' }}</strong>
+                        <strong>{{ b.office.area_covered if b.office else '-' }}</strong>
                     </div>
                     <span class="request-sub">{{ b.ref }} · {{ "{:,}".format(b.requested_food_packs) }} packs · {{ b.submitted_at.strftime('%b %d') if b.submitted_at }}</span>
                     <div class="request-actions">
@@ -322,7 +322,7 @@
                     </div>
                 </div>
                 {% else %}
-                <p class="empty-note">No recommendations right now — stock levels are healthy.</p>
+                <p class="empty-note">No recommendations right now - stock levels are healthy.</p>
                 {% endfor %}
 
                 {{ prediction_disclaimer() }}

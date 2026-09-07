@@ -24,7 +24,7 @@
         <section class="page-header">
             <div>
                 <h2>Relief Monitoring</h2>
-                <p>Brgy. {{ barangay.barangay_name }} · Read-only — PSWDO/CSWDO manages distribution</p>
+                <p>Brgy. {{ barangay.barangay_name }} · Read-only - PSWDO/CSWDO manages distribution</p>
             </div>
         </section>
 
@@ -82,7 +82,7 @@
                     </div>
                     <div>
                         <strong>{{ row.label }}{% if d.replaces %} <span class="rr-sub" style="color:#1f3a63;">· Replacement</span>{% endif %}</strong>
-                        <span class="dm-delivery-sub">{{ row.ref|upper }} · From: {{ row.fulfilling_office.office_name if row.fulfilling_office else '—' }}
+                        <span class="dm-delivery-sub">{{ row.ref|upper }} · From: {{ row.fulfilling_office.office_name if row.fulfilling_office else '-' }}
                             {%- if d.replaces %} · covers short/damaged packs from D-{{ d.replaces.distribution_date.year }}-{{ '%03d' % d.replaces.distribution_id }}{% endif %}</span>
                     </div>
                 </div>
@@ -119,8 +119,8 @@
                 {% if confirmed %}
                 <div><span>Food Packs Received</span><strong>{{ "{:,}".format(d.received_count) }}{% if d.damaged_count %} <span style="color:#c0392b; font-weight:600;">({{ d.damaged_count }} damaged)</span>{% endif %}</strong></div>
                 <div><span>Date Received</span><strong>{{ d.distribution_date.strftime('%B %d, %Y') }}{% if d.time_received %} at {{ d.time_received.strftime('%I:%M %p') }}{% endif %}</strong></div>
-                <div><span>Received By</span><strong>{{ d.received_by or '—' }}</strong></div>
-                <div><span>Condition</span><strong style="text-transform:capitalize;">{{ d.condition or '—' }}</strong></div>
+                <div><span>Received By</span><strong>{{ d.received_by or '-' }}</strong></div>
+                <div><span>Condition</span><strong style="text-transform:capitalize;">{{ d.condition or '-' }}</strong></div>
                 {% else %}
                 <div><span>ETA</span><strong>{{ d.expected_arrival_time.strftime('%I:%M %p') if d.expected_arrival_time else 'Not yet available' }}</strong></div>
                 {% endif %}
@@ -135,7 +135,7 @@
 
             {% if row.can_confirm %}
             <button type="button" class="dm-confirm-btn" data-open-modal="confirm-modal-{{ d.distribution_id }}">
-                {{ icon('check-circle', 18, 'white') }} Confirm Relief Receipt — {{ "{:,}".format(d.quantity_released) }} Food Packs
+                {{ icon('check-circle', 18, 'white') }} Confirm Relief Receipt - {{ "{:,}".format(d.quantity_released) }} Food Packs
             </button>
             {% endif %}
         </div>
@@ -143,7 +143,7 @@
         {% elif search_query %}
         <section class="panel"><p class="empty-note">No deliveries match your search. <a href="{{ url_for('barangay.relief_monitoring') }}">Clear</a></p></section>
         {% elif status_filter == 'transit' %}
-        <section class="panel"><p class="empty-note">No in-transit deliveries — nothing is awaiting your confirmation right now. <a href="{{ url_for('barangay.relief_monitoring', status='received') }}">View received</a></p></section>
+        <section class="panel"><p class="empty-note">No in-transit deliveries - nothing is awaiting your confirmation right now. <a href="{{ url_for('barangay.relief_monitoring', status='received') }}">View received</a></p></section>
         {% elif status_filter == 'received' %}
         <section class="panel"><p class="empty-note">No received deliveries yet. <a href="{{ url_for('barangay.relief_monitoring') }}">View in transit</a></p></section>
         {% else %}
@@ -172,12 +172,12 @@
 
             <label for="condition-{{ d.distribution_id }}">Condition on Arrival</label>
             <select id="condition-{{ d.distribution_id }}" name="condition" class="confirm-condition" data-dist="{{ d.distribution_id }}" required>
-                <option value="complete">Complete — all {{ "{:,}".format(d.quantity_released) }} packs received in good condition</option>
-                <option value="partial">Partial — fewer packs than expected</option>
-                <option value="damaged">Damaged — some packs arrived damaged</option>
+                <option value="complete">Complete - all {{ "{:,}".format(d.quantity_released) }} packs received in good condition</option>
+                <option value="partial">Partial - fewer packs than expected</option>
+                <option value="damaged">Damaged - some packs arrived damaged</option>
             </select>
 
-            {# Complete: nothing to enter — all released packs received, none damaged. #}
+            {# Complete: nothing to enter - all released packs received, none damaged. #}
             <div class="confirm-qty confirm-qty-partial" data-dist="{{ d.distribution_id }}" hidden>
                 <label for="qty-received-{{ d.distribution_id }}">Food Packs Received</label>
                 <input type="number" id="qty-received-{{ d.distribution_id }}" name="quantity_received"
@@ -203,10 +203,10 @@
                 <label for="proof-{{ d.distribution_id }}" class="upload-dropzone">
                     <div class="qa-icon" style="background:#eaf0fd; width:52px; height:52px; margin:0 auto 10px;">{{ icon('file-text', 22, '#2c5aa0') }}</div>
                     <strong>Tap to upload photo proof</strong>
-                    <span>JPG, PNG, or PDF — up to 10MB each · multiple files allowed</span>
+                    <span>JPG, PNG, or PDF - up to 10MB each · multiple files allowed</span>
                     <input type="file" id="proof-{{ d.distribution_id }}" name="proof_files" class="confirm-photo-input" data-dist="{{ d.distribution_id }}" accept=".jpg,.jpeg,.png,.pdf" multiple style="display:none;">
                 </label>
-                <span class="form-hint confirm-photo-hint" data-dist="{{ d.distribution_id }}">Attach a photo of the received goods if you have one — not required.</span>
+                <span class="form-hint confirm-photo-hint" data-dist="{{ d.distribution_id }}">Attach a photo of the received goods if you have one - not required.</span>
             </div>
 
             <div class="rd-modal-actions">
@@ -225,7 +225,7 @@
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
 <script>
 (function () {
-    // Condition selector reveals the matching quantity inputs — scoped per
+    // Condition selector reveals the matching quantity inputs - scoped per
     // modal via data-dist since a barangay can have several confirm modals on
     // this page. "Complete" needs no input (all released packs, none damaged).
     document.querySelectorAll('.confirm-condition').forEach(function (sel) {
@@ -248,8 +248,8 @@
             if (tag) { tag.textContent = photoRequired ? '(required)' : '(optional)'; tag.style.color = photoRequired ? '#c0392b' : '#8a94a6'; }
             if (hint) {
                 hint.textContent = photoRequired
-                    ? 'A photo is required when packs are short or damaged — CSWDO/MSWDO uses it to verify before sending a replacement.'
-                    : 'Attach a photo of the received goods if you have one — not required.';
+                    ? 'A photo is required when packs are short or damaged - CSWDO/MSWDO uses it to verify before sending a replacement.'
+                    : 'Attach a photo of the received goods if you have one - not required.';
                 hint.classList.remove('hint-error');
             }
         }
@@ -258,7 +258,7 @@
     });
 
     // The photo input lives in a hidden dropzone, so native `required` can't
-    // surface — guard on submit instead.
+    // surface - guard on submit instead.
     document.querySelectorAll('.confirm-receipt-form').forEach(function (form) {
         form.addEventListener('submit', function (e) {
             var id = form.dataset.dist;

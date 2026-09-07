@@ -21,7 +21,7 @@
         <section class="page-header">
             <div>
                 <h2>System Activity</h2>
-                <p>Recent user actions and platform interactions{% if rows %} — showing latest {{ rows|length }}{% endif %}</p>
+                <p>Recent user actions and platform interactions{% if rows %} - showing latest {{ rows|length }}{% endif %}</p>
             </div>
             <a href="{{ url_for('admin.export_activity', role=selected_group) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
         </section>
@@ -57,8 +57,8 @@
                         <td><strong>{{ log.actor.name if log.actor else 'System' }}</strong></td>
                         <td>{{ log.description }}</td>
                         <td><span class="badge-module {{ row.badge_class }}">{{ row.module }}</span></td>
-                        <td>{{ log.created_at | ph_time if log.created_at else '—' }}</td>
-                        <td><code>{{ log.ip_address or '—' }}</code></td>
+                        <td>{{ log.created_at | ph_time if log.created_at else '-' }}</td>
+                        <td><code>{{ log.ip_address or '-' }}</code></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="5" class="empty-note" style="text-align:center; padding:30px;">No activity recorded yet.</td></tr>

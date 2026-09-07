@@ -25,7 +25,7 @@
     <div class="rd-modal rr-review-modal">
         <div class="rd-modal-header">
             <h3>{{ icon('clipboard', 18, '#0f2547') }}
-                {{ rep.ref }} — Brgy. {{ r.barangay.barangay_name }}
+                {{ rep.ref }} - Brgy. {{ r.barangay.barangay_name }}
                 <span class="badge-status status-{{ rep.status }}">{{ status_labels.get(rep.status, rep.status) }}</span>
             </h3>
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
@@ -131,7 +131,7 @@
         <div class="page-header">
             <div>
                 <h2>Barangay Reports</h2>
-                <p>{{ lgu or '—' }}{% if primary_event %} · {{ icon('cloud-lightning', 12) }} {{ primary_event.event_name }}{% endif %} · {{ now.strftime('%B %d, %Y') }}</p>
+                <p>{{ lgu or '-' }}{% if primary_event %} · {{ icon('cloud-lightning', 12) }} {{ primary_event.event_name }}{% endif %} · {{ now.strftime('%B %d, %Y') }}</p>
             </div>
             <div style="display:flex; gap:10px;">
                 <a href="{{ url_for('cswdo.deliveries') }}" class="btn-outline">{{ icon('truck', 16) }} Deliveries</a>
@@ -149,7 +149,7 @@
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('check-circle', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ approved_rows|length }}</span>
-                <span class="stat-label">Approved — In Delivery</span>
+                <span class="stat-label">Approved - In Delivery</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('package', 18, '#1e8449') }}</div>
@@ -199,9 +199,9 @@
                     <tr>
                         <td>{{ rep.ref }}</td>
                         <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
-                        <td>{{ rep.event.event_name if rep.event else '—' }}</td>
+                        <td>{{ rep.event.event_name if rep.event else '-' }}</td>
                         <td>{{ "{:,}".format(rep.affected_families or 0) }}</td>
-                        <td>{% if r.requested %}{{ "{:,}".format(r.requested) }}{% else %}<span class="rd-sub">—</span>{% endif %}</td>
+                        <td>{% if r.requested %}{{ "{:,}".format(r.requested) }}{% else %}<span class="rd-sub">-</span>{% endif %}</td>
                         <td>~{{ "{:,}".format(r.model_estimate) }}<br><span class="rd-sub">
                             {%- if r.barangay_on_hand is none %}stock: none reported{% else %}stock: {{ "{:,}".format(r.barangay_on_hand) }}{% endif -%}
                         </span></td>

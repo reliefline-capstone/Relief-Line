@@ -48,7 +48,7 @@ REPORT_TYPES = {
     },
     "municipality_summary": {
         "title": "Municipality Summary Report",
-        "description": "Relief operations summary per municipality — families, requests, delivery status.",
+        "description": "Relief operations summary per municipality - families, requests, delivery status.",
         "icon": "map",
     },
     "typhoon_summary": {
@@ -65,7 +65,7 @@ REPORT_TYPES = {
 
 
 def _fmt_date(d):
-    return d.strftime("%b %d, %Y") if d else "—"
+    return d.strftime("%b %d, %Y") if d else "-"
 
 
 def _parse_days(raw):
@@ -90,13 +90,13 @@ def resolve_filters(args):
     if event_id:
         event = DisasterEvent.query.get(event_id)
     elif "event_id" in args:
-        # The event dropdown's "All Events" option submits event_id="" — an
+        # The event dropdown's "All Events" option submits event_id="" - an
         # explicit choice to clear the filter, not "no selection made yet".
         # Falling back to the active event here would make that option
         # unselectable whenever a disaster event happens to be active.
         event = None
     else:
-        # No event param at all (e.g. a fresh visit to the Reports page) —
+        # No event param at all (e.g. a fresh visit to the Reports page) -
         # default to whichever disaster event is currently active, if any.
         event = DisasterEvent.query.filter_by(status="active").order_by(
             DisasterEvent.start_date.desc()
@@ -123,7 +123,7 @@ def resolve_filters(args):
 
 
 def _build_relief_requests(filters):
-    """Barangay Reports — same rows/columns as the CSV export on the Barangay
+    """Barangay Reports - same rows/columns as the CSV export on the Barangay
     Reports page (app.routes.cswdo.damage_assessment_export), just scoped to
     every municipality in filters["lgus"] instead of one CSWDO's own LGU, plus
     a leading Municipality column so a province-wide run stays readable.
@@ -145,12 +145,12 @@ def _build_relief_requests(filters):
             rep.barangay.city_municipality,
             rep.ref,
             rep.barangay.barangay_name,
-            rep.event.event_name if rep.event else "—",
+            rep.event.event_name if rep.event else "-",
             BARANGAY_REPORT_STATUS_LABELS.get(rep.status, rep.status.title()),
             rep.submitted_by_name,
             f"{rep.affected_families:,}",
             f"{rep.totally_damaged_houses:,}",
-            f"{alloc.allocated_quantity:,}" if alloc else "—",
+            f"{alloc.allocated_quantity:,}" if alloc else "-",
             _fmt_date(rep.reviewed_at or rep.submitted_at),
         ])
     return {
@@ -181,7 +181,7 @@ def _build_distribution(filters):
             i,
             f"D-{d.distribution_date.year}-{d.distribution_id:03d}",
             d.barangay.city_municipality,
-            fulfilling.office_name if fulfilling else "—",
+            fulfilling.office_name if fulfilling else "-",
             f"{d.quantity_released:,}",
             _fmt_date(d.distribution_date),
             DISPATCH_STATUS_LABELS.get(d.dispatch_status, d.dispatch_status),
@@ -215,7 +215,7 @@ def _build_warehouse_inventory(filters):
             f"{w['capacity']:,}",
             f"{w['pct']:.0f}%",
             w["health"],
-            f"{int(days_left)} days" if days_left is not None else "—",
+            f"{int(days_left)} days" if days_left is not None else "-",
         ])
     return {
         "columns": ["#", "Warehouse", "Municipality", "Food Packs", "Capacity", "% Capacity", "Health", "Days Remaining"],
@@ -348,9 +348,9 @@ def _build_analytics(filters):
         rows.append([i, lgu, f"{packs_needed:,}", f"{delivered:,}", f"{remaining:,}", f"{pct_done}%", worst_label])
 
     _, warehouses, _ = _load_warehouses()
-    notes = [f"{rec['title']} — {rec['detail']}" for rec in _stock_recommendations(warehouses)]
+    notes = [f"{rec['title']} - {rec['detail']}" for rec in _stock_recommendations(warehouses)]
     if not notes:
-        notes = ["No stock-transfer recommendations at this time — warehouse levels are healthy."]
+        notes = ["No stock-transfer recommendations at this time - warehouse levels are healthy."]
 
     return {
         "columns": ["#", "Municipality", "Packs Needed", "Delivered", "Remaining", "% Done", "Priority"],
@@ -400,7 +400,7 @@ def build_report(report_type, filters, user=None):
 
 
 # ---------------------------------------------------------------------------
-# Barangay-scoped reports — same generic {columns, rows, ...} contract as
+# Barangay-scoped reports - same generic {columns, rows, ...} contract as
 # build_report() above, so report_files.generate_file() and a report_view.html
 # need no changes, but scoped to a single barangay_id instead of a list of
 # municipalities. Kept as a separate dict/builder set (rather than folding
@@ -434,13 +434,13 @@ BARANGAY_REPORT_STATUS_LABELS = {
 
 
 def resolve_barangay_filters(args):
-    """Same shape as resolve_filters(), minus the municipality/lgus concept —
+    """Same shape as resolve_filters(), minus the municipality/lgus concept -
     a barangay is always scoped to itself, never to a query-param choice."""
     event_id = args.get("event_id", type=int)
     if event_id:
         event = DisasterEvent.query.get(event_id)
     elif "event_id" in args:
-        # Explicit "All Events" choice — see resolve_filters() above.
+        # Explicit "All Events" choice - see resolve_filters() above.
         event = None
     else:
         event = DisasterEvent.query.filter_by(status="active").order_by(
@@ -470,7 +470,7 @@ def _build_barangay_damage_reports(barangay, filters):
     rows = []
     for i, r in enumerate(records, start=1):
         rows.append([
-            i, r.ref, r.event.event_name if r.event else "—", _fmt_date(r.submitted_at),
+            i, r.ref, r.event.event_name if r.event else "-", _fmt_date(r.submitted_at),
             f"{r.affected_families:,}", f"{r.affected_individuals:,}",
             BARANGAY_REPORT_STATUS_LABELS.get(r.status, r.status.title()),
         ])
@@ -496,9 +496,9 @@ def _build_barangay_relief_deliveries(barangay, filters):
         fulfilling = d.allocation.fulfilling_office or d.allocation.office
         rows.append([
             i, f"D-{d.distribution_date.year}-{d.distribution_id:03d}",
-            fulfilling.office_name if fulfilling else "—", f"{d.quantity_released:,}",
+            fulfilling.office_name if fulfilling else "-", f"{d.quantity_released:,}",
             _fmt_date(d.distribution_date), DISPATCH_STATUS_LABELS.get(d.dispatch_status, d.dispatch_status),
-            d.received_by or "—",
+            d.received_by or "-",
         ])
     return {
         "columns": ["#", "Distribution ID", "Warehouse", "Food Packs", "Date", "Status", "Received By"],

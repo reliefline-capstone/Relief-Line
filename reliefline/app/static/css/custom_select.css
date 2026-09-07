@@ -1,7 +1,7 @@
 /* Custom-styled dropdown that replaces every plain <select> in the app.
    A browser's native open-dropdown listbox can't be restyled with CSS at
-   all — its background, hover highlight colour, borders and font are
-   drawn by the OS/browser itself, not the page — so every <select> in the
+   all - its background, hover highlight colour, borders and font are
+   drawn by the OS/browser itself, not the page - so every <select> in the
    system looked jarringly plain and inconsistent with the rest of the UI
    the moment it was opened (default white box, harsh blue selection bar).
 
@@ -29,8 +29,8 @@
 }
 
 /* Kept in the DOM (not display:none) so it's still a real, focusable,
-   constraint-validated form control — `required` and any existing
-   `change` listeners elsewhere in the codebase keep working untouched —
+   constraint-validated form control - `required` and any existing
+   `change` listeners elsewhere in the codebase keep working untouched -
    just clipped down to an invisible 1x1px box instead of shown. */
 .csel-native {
     position: absolute !important;
@@ -148,7 +148,7 @@
     pointer-events: none;
 }
 
-/* Compact inline variant — the dashboard period-filter's month/year
+/* Compact inline variant - the dashboard period-filter's month/year
    dropdowns sit next to a calendar icon and read as plain clickable text,
    not a boxed control, so the generic bordered trigger would look wrong
    there. */

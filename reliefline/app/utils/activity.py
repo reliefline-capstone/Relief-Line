@@ -1,7 +1,7 @@
 """Shared metadata + logging helper for admin-authored ActivityLog rows
-(System Administration actions — user/office/barangay management, auth,
+(System Administration actions - user/office/barangay management, auth,
 settings). Operational rows written elsewhere (allocation, distribution,
-warehouse — see app.routes.pswdo/cswdo) are untouched and simply fall back
+warehouse - see app.routes.pswdo/cswdo) are untouched and simply fall back
 to DEFAULT_MODULE_LABEL.
 """
 from datetime import datetime
@@ -47,7 +47,7 @@ def module_for_action(action_type):
 
 
 # CSS class suffix (see static/css/admin.css .badge-module.mod-*) each module
-# renders with — reuses the same color language as the rest of the app
+# renders with - reuses the same color language as the rest of the app
 # (blue/purple/amber/green/red/gray) rather than inventing a new palette.
 MODULE_BADGE_CLASS = {
     "Authentication": "mod-blue",
@@ -72,7 +72,7 @@ def log_admin_activity(actor_id, action_type, description, office_id=None, baran
 
     is_read=True on purpose: these rows are visible on the admin's own
     System Activity page (which doesn't filter by is_read), but shouldn't
-    inflate the PSWDO/CSWDO notification bell — that feed is for
+    inflate the PSWDO/CSWDO notification bell - that feed is for
     operational items awaiting their review, not admin housekeeping.
     """
     log = ActivityLog(

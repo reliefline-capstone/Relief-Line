@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Keeps reliefline/database/reliefline_db.sql in sync with your live MariaDB/
 # MySQL on every commit, so `git push` always hands groupmates a working
-# snapshot of the current schema + data — .devcontainer/setup.sh loads this
+# snapshot of the current schema + data - .devcontainer/setup.sh loads this
 # exact file to provision a fresh database for anyone who opens the project.
 #
 # Works both inside the devcontainer (MariaDB, user "reliefline") and on a
@@ -39,7 +39,7 @@ fi
 [ -n "$DUMP_BIN" ] || exit 0
 
 # --- pick the first set of credentials that actually authenticates ----------
-# (a real dump probe — mysqladmin ping reports "alive" even on auth failure)
+# (a real dump probe - mysqladmin ping reports "alive" even on auth failure)
 # format: "user|password"
 CANDIDATES=("reliefline|reliefline_dev_pw" "root|")
 DB_USER=""

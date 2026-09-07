@@ -51,7 +51,7 @@
     color: white;
 }
 
-/* Current (in-progress, not yet reached) step — keeps showing its number
+/* Current (in-progress, not yet reached) step - keeps showing its number
    instead of a checkmark, just highlighted, so it reads as "here now"
    rather than "already done" (see app.routes.barangay's 3-state stepper). */
 .dd-step-current span { color: #2c5aa0; font-weight: 600; }
@@ -68,7 +68,7 @@
 .dd-step-line-done { background: #27ae60; }
 
 /* Status callout for the "Update" panel's read-only states (waiting on the
-   other party / already confirmed) — previously a single bare line of
+   other party / already confirmed) - previously a single bare line of
    .empty-note text with no icon or visual weight, leaving the rest of the
    panel a big block of empty white space next to it. */
 .dd-update-banner {
@@ -95,7 +95,7 @@
 .dd-kv-list span { font-size: 11px; color: #8a94a6; }
 .dd-kv-list strong { font-size: 14px; display: flex; align-items: center; gap: 6px; }
 
-/* Right column of the detail grid — stacks Confirmations above Update
+/* Right column of the detail grid - stacks Confirmations above Update
    Delivery so the shorter panels sit together instead of leaving a wide
    blank band beside the taller Delivery panel. */
 .dd-side-col {
@@ -105,7 +105,7 @@
     min-width: 0;
 }
 
-/* Confirmations — one card per checkpoint (issuance, barangay validation),
+/* Confirmations - one card per checkpoint (issuance, barangay validation),
    with a status icon + pill so "done vs pending" reads at a glance. */
 .dd-confirm-list { display: flex; flex-direction: column; gap: 10px; }
 
@@ -346,7 +346,7 @@
     color: #2c5aa0;
 }
 
-/* Validation photo thumbnail — actual proof-of-delivery image instead of a
+/* Validation photo thumbnail - actual proof-of-delivery image instead of a
    bare filename chip, so PSWDO/CSWDO can see what the barangay submitted
    without downloading it first. Click opens the full-size image. */
 .dd-attachment-photo {

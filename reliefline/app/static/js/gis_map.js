@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }).addTo(map);
 
     // Bottom-right instead of Leaflet's default top-left (which now sits
-    // under the search bar overlay anyway) — restyled in gis_map.css to
+    // under the search bar overlay anyway) - restyled in gis_map.css to
     // match the app's own button/panel language instead of Leaflet's stock
     // look. Leaflet stacks same-corner controls itself, so this shares the
     // corner with the attribution control with no manual offset needed.
@@ -34,29 +34,29 @@ document.addEventListener('DOMContentLoaded', function () {
     function fmt(n) { return (n || 0).toLocaleString(); }
 
     // Config rendered server-side by app.routes.pswdo._gis_config() (shared by
-    // both the PSWDO and CSWDO page templates) — role-specific destinations
+    // both the PSWDO and CSWDO page templates) - role-specific destinations
     // and, for a single-LGU scope (CSWDO/MSWDO), the municipality to land on
     // by default instead of an overview that only ever has one entry.
     var GIS_CONFIG = window.RELIEFLINE_GIS_CONFIG || { role: null, barangayReportsUrl: null, distributionUrl: null, defaultLgu: null };
 
     // PSWDO (province-wide oversight) sees municipality-level aggregates
-    // only — no barangay boundaries, no barangay drill-down. That level of
+    // only - no barangay boundaries, no barangay drill-down. That level of
     // operational detail is CSWDO/MSWDO's job (they only ever have one
     // municipality in scope anyway). system_admin gets the same province-wide
     // view PSWDO does.
     var IS_MUNI_ONLY = GIS_CONFIG.role !== 'cswdo_admin';
 
     // is_target is already restricted server-side to this user's own scope
-    // (app.routes.pswdo._gis_scope_lgus) — a bold solid border marks exactly
+    // (app.routes.pswdo._gis_scope_lgus) - a bold solid border marks exactly
     // the municipality/ies this account is allowed to see data for.
     // Neighboring municipalities' boundaries only carry a handful of
     // vertices each (coarse province-wide context data, not surveyed to the
-    // same precision as the 3 target LGUs' barangay-derived shapes) — fine
+    // same precision as the 3 target LGUs' barangay-derived shapes) - fine
     // as a faint backdrop at the whole-province overview, but blocky enough
     // up close that once the user drills into one LGU, a neighboring shape
     // can read as a stray rectangle "box" over the view. So they're hidden
     // past the overview level, leaving only the clicked LGU's own accurate
-    // boundary on screen — see setLevel(), which re-applies this style.
+    // boundary on screen - see setLevel(), which re-applies this style.
     function provinceStyle(feature) {
         var isTarget = feature.properties.is_target;
         if (state.level !== 'overview' && !isTarget) {
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // own real demand tier (same Critical/High/Medium/Low/Unrated
             // scale as the legend and every badge elsewhere) instead of a
             // flat color, so the map itself answers "which municipality
-            // needs attention" at a glance — updates automatically whenever
+            // needs attention" at a glance - updates automatically whenever
             // the underlying barangay status/allocation data changes, since
             // this is computed fresh from currentData on every render.
             var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === feature.properties.lgu; }) : null;
@@ -84,13 +84,13 @@ document.addEventListener('DOMContentLoaded', function () {
             // Every non-target (or CSWDO-scope) municipality gets the same
             // on-brand blue fill so the whole province reads as one shaded
             // region against neighboring provinces (Nueva Ecija, Tarlac, La
-            // Union, Benguet) — target LGUs stand out further on top of that
+            // Union, Benguet) - target LGUs stand out further on top of that
             // with a bolder navy border and a touch more fill.
             //
             // Non-target municipalities have no real barangay-level source
-            // data (out of this project's scope — see Scope and Limitations),
+            // data (out of this project's scope - see Scope and Limitations),
             // so pangasinan_municipalities.json carries only crude, low-point
-            // placeholder shapes for them — some render as an obvious
+            // placeholder shapes for them - some render as an obvious
             // near-rectangle. Rather than inventing a more accurate boundary
             // (explicitly against project rules), the border is dropped
             // entirely for non-target munis: a soft fill with no hard edge
@@ -110,8 +110,8 @@ document.addEventListener('DOMContentLoaded', function () {
             var p = feature.properties;
             if (p.is_target) {
                 // currentData is already assigned before addData() runs (see
-                // loadData()), so the per-LGU relief rollup — the closest
-                // real figure to "predicted demand" this dataset has — is
+                // loadData()), so the per-LGU relief rollup - the closest
+                // real figure to "predicted demand" this dataset has - is
                 // available here to enrich the hover tooltip.
                 var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === p.lgu; }) : null;
                 var demandLine = muni ? (
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     ? '<br>Barangay stock: none reported'
                     : '<br>Barangay stock: ' + fmt(p.barangay_on_hand) + ' packs';
                 var adequacyLine = p.stock_ratio_pct == null
-                    ? (p.barangay_on_hand === 0 ? '<br>Need vs stock: ' + fmt(p.stock_need) + ' vs 0 — critical' : '')
+                    ? (p.barangay_on_hand === 0 ? '<br>Need vs stock: ' + fmt(p.stock_need) + ' vs 0 - critical' : '')
                     : '<br>Need vs stock: ' + fmt(p.stock_need) + ' / ' + fmt(p.barangay_on_hand) + ' (' + p.stock_ratio_pct + '%)';
                 layer.bindTooltip(
                     '<strong>' + escapeHtml(p.name) + '</strong><br>Stock adequacy: ' + escapeHtml(p.priority_label) +
@@ -158,18 +158,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 );
                 layer.on('click', function () { setLevel('barangay-detail', p.lgu, p.barangay_id, p.name); });
             } else {
-                layer.bindTooltip(escapeHtml(p.name) + ' — no data on record', { sticky: true });
+                layer.bindTooltip(escapeHtml(p.name) + ' - no data on record', { sticky: true });
             }
         },
     }).addTo(map);
 
     var warehouseLayer = L.layerGroup().addTo(map);
     var routeLayer = L.layerGroup().addTo(map);
-    // Nominatim search result pin — separate from every other layer so a
+    // Nominatim search result pin - separate from every other layer so a
     // search never disturbs municipality/warehouse/route rendering.
     var searchMarkerLayer = L.layerGroup().addTo(map);
     // The actual road-routed polyline drawn from clicking a row in Active
-    // Distribution Routes (OSRM) — visually distinct (solid, teal) from the
+    // Distribution Routes (OSRM) - visually distinct (solid, teal) from the
     // existing schematic dashed "in transit" lines in routeLayer above,
     // which stay exactly as they were.
     var osrmRouteLayer = L.layerGroup().addTo(map);
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var m = w.name.match(/warehouse\s+([a-z0-9]+)/i);
         if (m) return 'WH-' + m[1].toUpperCase();
         // Generic names like "PSWDO Warehouse" and "PSWDO Warehouse -
-        // Alaminos" both reduce to the same "PW" initials — the dash isn't
+        // Alaminos" both reduce to the same "PW" initials - the dash isn't
         // a word character, so the regex above never sees "Alaminos" at
         // all. Falling back to the office's own area instead (already on
         // every warehouse marker) is what actually tells two such
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             var marker = L.marker([w.lat, w.lng], { icon: icon });
             // Food packs are the one figure every warehouse popup leads
-            // with, everywhere in the app — the badge next to it is the
+            // with, everywhere in the app - the badge next to it is the
             // same badge-health used on the Dashboard/Warehouse Inventory,
             // so "is this warehouse okay" reads the same way here too.
             var popupHtml =
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<span class="gis-wh-popup-qty">' + fmt(w.food_pack_qty) + ' <small>/ ' + fmt(w.capacity) + ' packs (' + w.pct.toFixed(0) + '%)</small></span>' +
                 '<span class="badge-health badge-' + healthClass + '">' + escapeHtml(w.health || 'No data available') + '</span>' +
                 '</div>';
-            // PSWDO only (CSWDO/MSWDO keeps the popup exactly as it was) —
+            // PSWDO only (CSWDO/MSWDO keeps the popup exactly as it was) -
             // every other relief item this office has on record, never
             // fabricated ("No data available" when there's genuinely
             // nothing), kept visually separate from the food-pack figure
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             })
             .catch(function () {
-                // Never breaks the rest of the dashboard — this is a graceful,
+                // Never breaks the rest of the dashboard - this is a graceful,
                 // visible failure state, not a thrown error.
                 searchResultsEl.innerHTML = '<div class="gis-search-empty">Search is unavailable right now. Try again in a moment.</div>';
             });
@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ---- OSRM route visualization (Active Distribution Routes) ------
     // Free public demo router, no API key. Draws the actual road path
     // (distinct solid teal line) plus a popup with real distance/duration
-    // from OSRM itself — separate from the schematic dashed lines above.
+    // from OSRM itself - separate from the schematic dashed lines above.
     var activeRouteRowId = null;
 
     function clearRouteDetail() {
@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (r.from_lat == null || r.to_lat == null) {
             showRouteDetail('<strong>D-' + r.distribution_id + '</strong>' +
-                '<span>Route unavailable — no coordinates on record for this warehouse or barangay.</span>');
+                '<span>Route unavailable - no coordinates on record for this warehouse or barangay.</span>');
             return;
         }
 
@@ -378,7 +378,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(function () {
                 if (activeRouteRowId !== r.distribution_id) return;
                 showRouteDetail('<strong>D-' + r.distribution_id + '</strong>' +
-                    '<span>Could not load the route right now. The rest of the map is unaffected — try again in a moment.</span>');
+                    '<span>Could not load the route right now. The rest of the map is unaffected - try again in a moment.</span>');
             });
     }
 
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Shared by renderMunicipalityPanel and renderBarangayDetail. Each action is
-    // scoped to the role it belongs to (see app.routes.pswdo._gis_config) — the
+    // scoped to the role it belongs to (see app.routes.pswdo._gis_config) - the
     // button is simply omitted for the other role rather than linking somewhere
     // it would 403 or make no sense:
     //   - Distribution / dispatch stays a PSWDO responsibility.
@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '</div></section>';
 
         // Barangay-level priority listing is CSWDO/MSWDO operational detail
-        // — PSWDO's oversight view stops at the "Municipalities" list above,
+        // - PSWDO's oversight view stops at the "Municipalities" list above,
         // which already answers "which LGU has the highest demand."
         if (!IS_MUNI_ONLY) {
             html += '<section class="panel"><div class="panel-header"><h3>Priority Barangays</h3></div><div>';
@@ -525,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     html += '</div>';
                 }
             } else {
-                html += '<p class="empty-note">Per-barangay food-pack demand — not shown on the map by default.</p>';
+                html += '<p class="empty-note">Per-barangay food-pack demand - not shown on the map by default.</p>';
             }
             html += '</section>';
         }
@@ -533,8 +533,8 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '<section class="panel"><div class="panel-header"><h3>Warehouse Information</h3></div>';
         if (m.warehouse) {
             html += '<div class="dd-summary-row"><span>Assigned Warehouse</span><strong>' + escapeHtml(m.warehouse.name) + '</strong></div>';
-            html += '<div class="dd-summary-row"><span>Approx. Distance</span><strong>' + (m.warehouse.distance_km != null ? (m.warehouse.distance_km < 0.5 ? 'Same municipality' : '~' + m.warehouse.distance_km + ' km') : '—') + '</strong></div>';
-            html += '<div class="dd-summary-row"><span>Current Stock</span><strong>' + (m.warehouse.food_pack_qty != null ? fmt(m.warehouse.food_pack_qty) + ' / ' + fmt(m.warehouse.capacity) + ' packs' : '—') + '</strong></div>';
+            html += '<div class="dd-summary-row"><span>Approx. Distance</span><strong>' + (m.warehouse.distance_km != null ? (m.warehouse.distance_km < 0.5 ? 'Same municipality' : '~' + m.warehouse.distance_km + ' km') : '-') + '</strong></div>';
+            html += '<div class="dd-summary-row"><span>Current Stock</span><strong>' + (m.warehouse.food_pack_qty != null ? fmt(m.warehouse.food_pack_qty) + ' / ' + fmt(m.warehouse.capacity) + ' packs' : '-') + '</strong></div>';
         } else {
             html += '<p class="empty-note">No warehouse data available.</p>';
         }
@@ -615,13 +615,13 @@ document.addEventListener('DOMContentLoaded', function () {
             (b.barangay_on_hand == null ? 'None reported' : fmt(b.barangay_on_hand) + ' packs') + '</strong></div>';
         html += '<div><span>Need vs Stock</span><strong>' +
             (b.stock_ratio_pct == null
-                ? (b.barangay_on_hand === 0 && b.stock_need > 0 ? fmt(b.stock_need) + ' / 0 — critical' : '—')
+                ? (b.barangay_on_hand === 0 && b.stock_need > 0 ? fmt(b.stock_need) + ' / 0 - critical' : '-')
                 : fmt(b.stock_need) + ' / ' + fmt(b.barangay_on_hand) + ' (' + b.stock_ratio_pct + '%)') +
             '</strong></div>';
         html += '<div><span>Population</span><strong>' + fmt(b.population) + '</strong></div>';
         html += '<div><span>Households</span><strong>' + fmt(b.num_households) + '</strong></div>';
-        html += '<div><span>Poverty Incidence</span><strong>' + (b.poverty_incidence != null ? b.poverty_incidence + '%' : '—') + '</strong></div>';
-        html += '<div><span>Disaster Risk Index</span><strong>' + (b.disaster_risk_index != null ? b.disaster_risk_index : '—') + '</strong></div>';
+        html += '<div><span>Poverty Incidence</span><strong>' + (b.poverty_incidence != null ? b.poverty_incidence + '%' : '-') + '</strong></div>';
+        html += '<div><span>Disaster Risk Index</span><strong>' + (b.disaster_risk_index != null ? b.disaster_risk_index : '-') + '</strong></div>';
         html += '<div><span>Past Calamity Frequency</span><strong>' + fmt(b.past_calamity_freq) + '</strong></div>';
         html += '</div></section>';
 
@@ -673,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderBreadcrumb() {
         var el = document.getElementById('gis-breadcrumb');
         var parts = [];
-        // "Province" is province-wide oversight — a PSWDO/system_admin
+        // "Province" is province-wide oversight - a PSWDO/system_admin
         // concern only (see IS_MUNI_ONLY above). A CSWDO/MSWDO account is
         // already locked to its own single LGU server-side, so this crumb
         // stays as a plain, non-clickable label for them instead of a link
@@ -704,11 +704,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (state.level === 'overview') {
             if (IS_MUNI_ONLY) {
                 // PSWDO overview: fit to just the 3 target MUNICIPALITY
-                // polygons (province_context, is_target features) — not the
+                // polygons (province_context, is_target features) - not the
                 // whole province, and not barangay polygons (those sit in a
                 // narrow N-S sliver and stretched the map's aspect ratio
                 // when tried before; see the CSWDO branch below for that
-                // history). CSWDO/MSWDO is untouched — still fits the whole
+                // history). CSWDO/MSWDO is untouched - still fits the whole
                 // province_context exactly as before.
                 var targetFeats = currentData.province_context.features.filter(function (f) { return f.properties.is_target; });
                 if (targetFeats.length) {
@@ -718,7 +718,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Fall back to the whole-province fit below if, for some
                 // reason, no target features came back.
             }
-            // Whole province, not just the target LGUs' barangays — those sit
+            // Whole province, not just the target LGUs' barangays - those sit
             // in a narrow N-S sliver, so fitting to them alone stretched the
             // map's east-west extent to match the container's wide aspect
             // ratio and left far-off municipalities (e.g. Alaminos, San
@@ -777,7 +777,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function setLevel(level, lgu, barangayId, barangayName) {
-        // Municipality-level view never drills further than 'municipality' —
+        // Municipality-level view never drills further than 'municipality' -
         // no barangay boundary layer is even populated to select from.
         if (IS_MUNI_ONLY && (level === 'barangay-list' || level === 'barangay-detail')) {
             level = 'municipality';
@@ -799,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Deep-link support so links from other pages (e.g. the Dashboard's mini
     // map) can land directly on a municipality or barangay instead of overview.
     // Falls back to GIS_CONFIG.defaultLgu when there's no explicit query param
-    // — a CSWDO/MSWDO admin's scope is a single municipality, so there's no
+    // - a CSWDO/MSWDO admin's scope is a single municipality, so there's no
     // real "overview" for them to land on; they go straight to their town.
     var pendingNav = (function () {
         var params = new URLSearchParams(window.location.search);
@@ -888,7 +888,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var refreshBtn = document.getElementById('btn-refresh');
     if (refreshBtn) refreshBtn.addEventListener('click', loadData);
 
-    // Only present on the PSWDO template — CSWDO/MSWDO's single-LGU scope
+    // Only present on the PSWDO template - CSWDO/MSWDO's single-LGU scope
     // has no real "province overview" to reset back to.
     var resetBtn = document.getElementById('btn-reset-map');
     if (resetBtn) {
@@ -923,7 +923,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (r) loadOsrmRoute(r, row);
     });
 
-    // Fullscreen toggle — expands the whole map panel (search bar, map,
+    // Fullscreen toggle - expands the whole map panel (search bar, map,
     // legend included) via the browser's native Fullscreen API, no extra
     // library. Leaflet needs an explicit invalidateSize() nudge after the
     // container's size changes, or tiles render wrong until the next pan.

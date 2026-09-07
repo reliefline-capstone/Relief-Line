@@ -2,7 +2,7 @@ from app.extensions import db
 
 class BarangayReport(db.Model):
     """Barangay-submitted disaster *situation report*, reviewed by the
-    CSWDO/MSWDO office. It is a pure impact/status report — the barangay no
+    CSWDO/MSWDO office. It is a pure impact/status report - the barangay no
     longer states a food-pack figure. Deciding an allocation is entirely a
     CSWDO/MSWDO call, informed by the Linear Regression model's recommended
     quantity and the barangay's own current stock (manuscript Ch.1/Scope:
@@ -10,31 +10,31 @@ class BarangayReport(db.Model):
     operational decisions").
 
     CSWDO/MSWDO acts on a submitted report one of three ways:
-      * verified  — situation acknowledged, no allocation needed (barangay has
+      * verified  - situation acknowledged, no allocation needed (barangay has
                     enough stock, or the impact doesn't warrant a delivery)
-      * approved  — an AllocationRecord + DistributionRecord is created
-      * declined / returned — as before
+      * approved  - an AllocationRecord + DistributionRecord is created
+      * declined / returned - as before
 
     Both `verified` and `approved` upsert the matching BarangayDisasterStatus
     row for the same barangay+event, so the priority tier shown here, on the
     dashboards, and on the GIS map all stay driven by one source of truth.
 
     Severity (`flood_level`) is COMPUTED server-side from the entered impact
-    data (see app.routes.barangay._compute_severity) — not picked by hand.
+    data (see app.routes.barangay._compute_severity) - not picked by hand.
     A zero-impact report (all damage figures 0) is allowed on purpose: a
     barangay may just want to post a status update ("we're fine").
 
     Excludes evacuation-center/evacuee headcounts (manuscript: real-time
     evacuee monitoring not supported).
 
-    `requested_food_packs` is collected again but OPTIONAL — a barangay may
+    `requested_food_packs` is collected again but OPTIONAL - a barangay may
     state how many food packs it thinks it needs, or leave it blank (0). When
     given, CSWDO/MSWDO sees it and it pre-fills the allocation quantity, but it
     is purely decision support: the CSWDO/MSWDO admin can adjust it freely and
     the model estimate + barangay stock are still shown alongside it.
 
     `hygiene_kits_est`, `kitchen_kits_est` are retained as columns for
-    historical rows only — the form no longer collects them and nothing in the
+    historical rows only - the form no longer collects them and nothing in the
     app reads them. Non-food items stay warehouse-monitoring-only per the
     manuscript Scope.
     """
@@ -42,18 +42,18 @@ class BarangayReport(db.Model):
 
     report_id = db.Column(db.Integer, primary_key=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
-    # Nullable — a barangay can file a report anytime, not only while PSWDO
+    # Nullable - a barangay can file a report anytime, not only while PSWDO
     # has a declared active DisasterEvent (see app.routes.barangay's
     # new_damage_report/_apply_report_form, which auto-links to whichever
     # event is currently active, or leaves this NULL when none is). A NULL
     # report never updates BarangayDisasterStatus (see
     # app.routes.cswdo.verify_damage_report) since that table stays
-    # event-scoped — it just doesn't participate in a per-event GIS view.
+    # event-scoped - it just doesn't participate in a per-event GIS view.
     event_id = db.Column(db.Integer, db.ForeignKey("disaster_events.event_id"), nullable=True)
 
     submitted_by_name = db.Column(db.String(150), nullable=False)
     submitted_by_designation = db.Column(db.String(100), nullable=True)
-    # Set only once the report actually leaves draft state — NULL while
+    # Set only once the report actually leaves draft state - NULL while
     # status="draft", same created_at/submitted_at split ReliefRequestBatch
     # already uses (app/models/relief_request_batch.py) so "when was this
     # first drafted" and "when was it actually sent to MSWDO" stay distinct.
@@ -63,7 +63,7 @@ class BarangayReport(db.Model):
     # Incident step
     incident_date = db.Column(db.Date, nullable=True)
     incident_time = db.Column(db.Time, nullable=True)
-    # Priority tier — COMPUTED server-side from the reported impact (see
+    # Priority tier - COMPUTED server-side from the reported impact (see
     # app.routes.barangay._compute_severity), never shown on the report itself.
     # Internal signal only: same 4-tier vocabulary as BarangayDisasterStatus.
     # status, drives the GIS map colours and the CSWDO priority list.
@@ -85,7 +85,7 @@ class BarangayReport(db.Model):
     # state a figure. When > 0 it is shown to CSWDO/MSWDO and pre-fills the
     # allocation quantity as decision support (still fully adjustable).
     requested_food_packs = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
-    # Legacy — no longer collected by the form, not read anywhere. Kept so
+    # Legacy - no longer collected by the form, not read anywhere. Kept so
     # historical rows keep their values (same treatment as roofs_damaged).
     hygiene_kits_est = db.Column(db.Integer, default=0)
     kitchen_kits_est = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))

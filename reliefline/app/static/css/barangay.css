@@ -1,6 +1,6 @@
 /* Baseline building blocks every barangay page needs, kept here since
    barangay.css is the one stylesheet every barangay template reliably
-   imports — other pages define these too (profile_settings.css's
+   imports - other pages define these too (profile_settings.css's
    .btn-primary, admin.css's .form-row select/textarea) but which specific
    file a given barangay page happens to also pull in varies, and relying on
    that was the actual bug: pages that didn't import one of those files got
@@ -33,7 +33,7 @@
 }
 .form-row select:focus, .form-row textarea:focus { outline: none; border-color: #2c5aa0; }
 
-/* Barangay portal — Quick Actions grid (Dashboard) */
+/* Barangay portal - Quick Actions grid (Dashboard) */
 .qa-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -86,7 +86,7 @@
 .badge-status.status-declined { background: #fdecea; color: #c0392b; }
 
 /* Same colors, keyed for the .rr-table / dot-badge convention (relief_requests.css)
-   instead — used wherever a damage report status renders inside an .rr-table row
+   instead - used wherever a damage report status renders inside an .rr-table row
    (Reports, Damage Report tables) so those tables can reuse the exact same
    badge-status-{status} + priority-dot markup as the PSWDO/CSWDO tables. */
 .badge-status-draft { background: #f0f2f6; color: #8a94a6; }
@@ -153,7 +153,7 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
-    /* No max-width here — the step panels stay full width so they line up with
+    /* No max-width here - the step panels stay full width so they line up with
        the stepper panel above. Field width is capped on the rows themselves
        (.form-row-2col / textarea) so inputs don't stretch the whole panel. */
 }
@@ -241,10 +241,10 @@
 .wizard-step > .form-row { margin-bottom: 10px; }
 .wizard-step > .form-row input { max-width: 332px; }
 .wizard-step > .form-row textarea { max-width: 680px; }
-/* Remarks textarea sits under the full-width upload dropzone (Step 4) — let it
+/* Remarks textarea sits under the full-width upload dropzone (Step 4) - let it
    span the panel too so their edges line up. */
 .wizard-step[data-step="4"] > .form-row textarea { max-width: none; width: 100%; }
-/* Consistent spacing under every step's guidance line — a bit more room here
+/* Consistent spacing under every step's guidance line - a bit more room here
    than between fields, so the intro reads as separate from the form. Some
    steps set an inline margin-top on the next block, some don't. */
 .wizard-step > .form-hint { margin: 0 0 18px; }
@@ -272,7 +272,7 @@
 
 .severity-card:has(input:checked) { border-color: #2c5aa0; background: #f4f8ff; box-shadow: 0 0 0 1px #2c5aa0 inset; }
 
-/* Disaster Type radio (damage_report_form.html) — reuses .severity-card's
+/* Disaster Type radio (damage_report_form.html) - reuses .severity-card's
    selectable-card look with an icon in place of the colored dot. */
 .disaster-type-cards { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 700px) { .disaster-type-cards { grid-template-columns: repeat(1, 1fr); } }
@@ -287,7 +287,7 @@
 
 /* Override .rd-modal form label's block/bold/margin defaults when the
    label itself IS the upload dropzone (Relief Monitoring's Confirm Receipt
-   modal reuses this same component) — otherwise the modal's generic label
+   modal reuses this same component) - otherwise the modal's generic label
    styling wins on specificity and collapses it back into a plain bold line. */
 .rd-modal .upload-dropzone {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
@@ -338,11 +338,11 @@
 .timeline-line { flex: 1; height: 2px; background: #e5e9f0; margin-top: 14px; }
 .timeline-line.done { background: #2c5aa0; }
 
-/* Relief Monitoring — delivery cards (barangay's read-only incoming-relief
+/* Relief Monitoring - delivery cards (barangay's read-only incoming-relief
    view). Reuses .dd-stepper/.dd-step from distribution_detail.css for the
    step circles so it's the same component PSWDO's own distribution detail
    page uses, just re-labeled for the barangay's 6-step view. */
-/* "Deliveries" section header — title on the left, search on the right. */
+/* "Deliveries" section header - title on the left, search on the right. */
 .dm-list-header {
     display: flex;
     align-items: center;
@@ -380,7 +380,7 @@
 .dm-card-pending { border-left-color: #e0a63a; }
 .dm-card-done { border-left-color: #2fae76; }
 
-/* Compact the shared .dd-stepper inside these cards — the full-size version
+/* Compact the shared .dd-stepper inside these cards - the full-size version
    (34px circles, 90px columns) made every delivery card very tall. */
 .dm-delivery-card .dd-stepper { padding: 2px 0 0; }
 .dm-delivery-card .dd-step { width: 74px; gap: 5px; }
@@ -436,7 +436,7 @@
 }
 .dm-confirm-btn:hover { background: #196f3d; }
 
-/* Damage report view — the left "Report Information" panel and the right
+/* Damage report view - the left "Report Information" panel and the right
    column (Damage Summary + Relief Needs) should bottom-align as an
    equal-height pair. .main-grid defaults to align-items: start, so each
    column would otherwise size to its own content and end at a different

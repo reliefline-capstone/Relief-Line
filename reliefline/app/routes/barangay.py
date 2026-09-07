@@ -27,7 +27,7 @@ from app.utils import weather as weather_service
 
 # Reused from the PSWDO route module so a status label, priority tier, or
 # notification icon never drifts between the PSWDO/CSWDO screens and this
-# barangay-facing one — see app/routes/pswdo.py for the source of truth.
+# barangay-facing one - see app/routes/pswdo.py for the source of truth.
 from app.routes.pswdo import (
     DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
 )
@@ -46,7 +46,7 @@ REPORT_STATUS_LABELS = {
     "fulfilled": "Fulfilled",
 }
 
-# Reports the barangay has nothing left to act on — MSWDO/CSWDO has decided
+# Reports the barangay has nothing left to act on - MSWDO/CSWDO has decided
 # them: "verified" (situation acknowledged, no allocation), "approved"
 # (accepted, delivery scheduled), "fulfilled" (delivery confirmed received),
 # "declined" (rejected). These fill the History tab. Open items the barangay
@@ -56,7 +56,7 @@ DECIDED_REPORT_STATUSES = ("verified", "approved", "fulfilled", "declined")
 ACCEPTED_REPORT_STATUSES = ("verified", "approved", "fulfilled")
 
 # The barangay's priority tier is COMPUTED server-side from the reported
-# impact (see _compute_severity) — never graded by hand. It stays an internal
+# impact (see _compute_severity) - never graded by hand. It stays an internal
 # signal only: it drives the GIS map colours, the CSWDO priority list, and the
 # BarangayDisasterStatus row, but it is not shown on the report itself. The
 # 4-tier vocabulary matches PRIORITY_BY_STATUS (app/routes/pswdo.py).
@@ -121,12 +121,12 @@ def _active_event():
 
 
 def _own_activity_scope():
-    """This barangay's own ActivityLog rows — the single source of truth the
+    """This barangay's own ActivityLog rows - the single source of truth the
     dashboard's Active Alerts panel, the full Notifications page, and its
     mark-as-read actions all read from, so all three always agree.
 
     Also restricted to NOTIFICATION_META's known operational action_types
-    (same allowlist as app.routes.pswdo.notifications) — barangay_id is
+    (same allowlist as app.routes.pswdo.notifications) - barangay_id is
     already None on every System Administration row (logins, user/office/
     barangay management), so this is belt-and-suspenders rather than fixing
     a live leak, but keeps the exclusion explicit instead of incidental."""
@@ -144,8 +144,8 @@ def _assert_own_activity(log):
 
 
 def _damage_report_notification_link(log):
-    # No report_id FK on ActivityLog, so — same fallback pattern as PSWDO's
-    # _relief_request_submitted_link when it can't resolve an exact record —
+    # No report_id FK on ActivityLog, so - same fallback pattern as PSWDO's
+    # _relief_request_submitted_link when it can't resolve an exact record -
     # this opens the Barangay Report page in general rather than one report.
     return url_for("barangay.damage_report")
 
@@ -175,7 +175,7 @@ NOTIFICATION_LINK_BUILDERS = {
 
 
 # On the barangay side the "distribution" category is presented as
-# "Relief Monitoring" (matches the sidebar page of the same name) — the
+# "Relief Monitoring" (matches the sidebar page of the same name) - the
 # shared NOTIFICATION_META label ("Deliveries") is CSWDO/PSWDO wording.
 NOTIFICATION_CATEGORY_LABELS = {"distribution": "Relief Monitoring"}
 
@@ -192,7 +192,7 @@ def _notification_view(log):
 
 
 def _own_reports_all(barangay_id):
-    """Every report this barangay has ever started, including drafts —
+    """Every report this barangay has ever started, including drafts -
     what the Damage Report page's own Dashboard/History tabs read from."""
     return BarangayReport.query.filter_by(barangay_id=barangay_id).order_by(
         BarangayReport.created_at.desc()
@@ -201,7 +201,7 @@ def _own_reports_all(barangay_id):
 
 def _own_submitted_reports(barangay_id):
     """Reports this barangay has actually sent to MSWDO/CSWDO (excludes
-    drafts still being filled out) — used anywhere outside the Damage Report
+    drafts still being filled out) - used anywhere outside the Damage Report
     page itself, so an in-progress draft never shows up as if it were real,
     reviewable activity (main Dashboard, Reports, Affected Families, CSV export)."""
     return BarangayReport.query.filter(
@@ -230,7 +230,7 @@ def dashboard():
     ).all()
     primary_event = active_events[0] if active_events else None
 
-    # Current Standing — this barangay's status for the active event. Prefer
+    # Current Standing - this barangay's status for the active event. Prefer
     # the MSWDO-synced BarangayDisasterStatus (set once a report is approved);
     # before that, fall back to the barangay's own latest submitted report so
     # the panel reflects what was filed instead of showing 0 next to the
@@ -257,7 +257,7 @@ def dashboard():
         affected_families = 0
         standing_verified = False
 
-    # My damage reports — needing attention (submitted/returned) vs. all-time count
+    # My damage reports - needing attention (submitted/returned) vs. all-time count
     my_reports = _own_submitted_reports(barangay.barangay_id)
     pending_reports = [r for r in my_reports if r.status in ("pending", "returned")]
     returned_reports = [r for r in my_reports if r.status == "returned"]
@@ -272,7 +272,7 @@ def dashboard():
             ).all()
         )
 
-    # Relief deliveries — this barangay's own distributions, most recent first
+    # Relief deliveries - this barangay's own distributions, most recent first
     my_distributions = DistributionRecord.query.filter_by(barangay_id=barangay.barangay_id).order_by(
         DistributionRecord.distribution_date.desc()
     ).limit(5).all()
@@ -282,7 +282,7 @@ def dashboard():
         if d.dispatch_status in ("dispatched", "in_transit", "delayed", "delivered") and d.status != "confirmed"
     ]
 
-    # Active alerts — this barangay's own recent activity, read or unread
+    # Active alerts - this barangay's own recent activity, read or unread
     recent_alerts = []
     scope = _own_activity_scope()
     if scope is not None:
@@ -317,7 +317,7 @@ def dashboard():
 @login_required
 @role_required("barangay_user")
 def dashboard_weather():
-    """JSON feed for the dashboard's Weather & Typhoon Watch widget — this
+    """JSON feed for the dashboard's Weather & Typhoon Watch widget - this
     barangay's own city/municipality only."""
     barangay = _own_barangay_or_404()
     city = barangay.city_municipality
@@ -358,8 +358,8 @@ def damage_report():
 
     # The Active Event Report tab owns the open items (draft/pending/returned)
     # for the CURRENT event (or ones not yet tied to any event). Everything
-    # else — decided reports and anything left open on an event that has since
-    # ended — belongs in History, so a report the barangay can no longer act
+    # else - decided reports and anything left open on an event that has since
+    # ended - belongs in History, so a report the barangay can no longer act
     # on is still visible for the record instead of disappearing.
     active_event_ids = (primary_event.event_id, None) if primary_event else (None,)
 
@@ -401,9 +401,9 @@ def damage_report():
             "status_filter": status_filter,
         })
     else:
-        # Active Event Report tab — open items (draft/submitted/returned) for
+        # Active Event Report tab - open items (draft/submitted/returned) for
         # the active event, PLUS standing ones not yet tied to any event
-        # (event_id IS NULL) — a draft started before PSWDO declared an event
+        # (event_id IS NULL) - a draft started before PSWDO declared an event
         # still needs a way back in.
         open_reports = [r for r in all_reports if _is_active_open(r)]
         returned_reports = [r for r in open_reports if r.status == "returned"]
@@ -501,7 +501,7 @@ def edit_damage_report(report_id):
 @role_required("barangay_user")
 def delete_damage_report(report_id):
     report = _get_own_report_or_404(report_id)
-    # Only drafts can be deleted — a submitted report stays on record so the
+    # Only drafts can be deleted - a submitted report stays on record so the
     # MSWDO review trail and any allocation tied to it are never orphaned.
     if report.status != "draft":
         flash("Only a draft can be deleted. Submitted reports stay on record.", "error")
@@ -531,7 +531,7 @@ def _apply_report_form(report):
         except ValueError:
             pass
 
-    # Roofs Damaged / Wind Signal are no longer collected — the form dropped
+    # Roofs Damaged / Wind Signal are no longer collected - the form dropped
     # them. Left inert on new reports; old rows keep whatever they had.
     report.roofs_damaged = 0
     report.wind_signal = None
@@ -541,7 +541,7 @@ def _apply_report_form(report):
     report.totally_damaged_houses = request.form.get("totally_damaged_houses", type=int) or 0
     report.partially_damaged_houses = request.form.get("partially_damaged_houses", type=int) or 0
 
-    # Priority tier is derived, never hand-picked (see _compute_severity) — an
+    # Priority tier is derived, never hand-picked (see _compute_severity) - an
     # internal signal for the GIS map / CSWDO priority list, not shown on the
     # report.
     report.flood_level = _compute_severity(
@@ -552,7 +552,7 @@ def _apply_report_form(report):
         roofs_damaged=report.roofs_damaged,
     )
 
-    # Optional barangay-stated food-pack request. Left at 0 when blank — it is
+    # Optional barangay-stated food-pack request. Left at 0 when blank - it is
     # only decision support for CSWDO/MSWDO, never a binding figure (see
     # app.routes.cswdo._relief_request_row / approve_relief_request).
     report.requested_food_packs = request.form.get("requested_food_packs", type=int) or 0
@@ -569,7 +569,7 @@ def _get_or_create_report(barangay, report_id, event_id):
         report = _get_own_report_or_404(report_id)
         if report.status not in ("draft", "pending", "returned"):
             abort(403)
-        # A report started before PSWDO declared an event carries no event_id —
+        # A report started before PSWDO declared an event carries no event_id -
         # attach it to whatever event is active now that it's being saved or
         # submitted, so it stops being a standing/orphan record.
         if report.event_id is None and event_id is not None:
@@ -587,7 +587,7 @@ def save_damage_report_draft():
     barangay = _own_barangay_or_404()
     report_id = request.form.get("report_id", type=int)
     # Auto-links to whichever event PSWDO currently has declared, or leaves
-    # this report standalone (event_id=None) — filing no longer requires
+    # this report standalone (event_id=None) - filing no longer requires
     # PSWDO to have declared anything first.
     active_event = _active_event()
     event_id = active_event.event_id if active_event else None
@@ -595,7 +595,7 @@ def save_damage_report_draft():
     report, is_new = _get_or_create_report(barangay, report_id, event_id)
     # Once a report has left draft state (sent to MSWDO/CSWDO as "pending", or
     # bounced back as "returned"), editing it must not quietly demote it back
-    # to "draft" — that would pull it out of the CSWDO review queue / drop its
+    # to "draft" - that would pull it out of the CSWDO review queue / drop its
     # place in the resubmission trail. Only a still-draft (or brand-new)
     # report can be saved as a draft.
     if not is_new and report.status != "draft":
@@ -636,7 +636,7 @@ def submit_damage_report():
 
     was_returned = report.status == "returned"
     report.submitted_at = ph_now()
-    # Resubmitting a returned report puts it back in the review queue —
+    # Resubmitting a returned report puts it back in the review queue -
     # review_remarks/reviewed_by/reviewed_at are left as history of the prior review.
     report.status = "pending"
 
@@ -646,7 +646,7 @@ def submit_damage_report():
     cswdo_office = Office.query.filter_by(office_type="cswdo", area_covered=barangay.city_municipality).first()
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="damage_report_submitted",
-        description=f"{report.ref} {'resubmitted' if was_returned else 'submitted'} by Brgy. {barangay.barangay_name} — "
+        description=f"{report.ref} {'resubmitted' if was_returned else 'submitted'} by Brgy. {barangay.barangay_name} - "
                      f"{report.affected_families:,} affected families",
         office_id=cswdo_office.office_id if cswdo_office else None, barangay_id=barangay.barangay_id,
     ))
@@ -657,17 +657,17 @@ def submit_damage_report():
 
 
 # ---------------------------------------------------------------------------
-# Relief Monitoring — read-only for the barangay: PSWDO/CSWDO own allocation
+# Relief Monitoring - read-only for the barangay: PSWDO/CSWDO own allocation
 # and dispatch, this page only tracks incoming deliveries and lets the
 # barangay confirm receipt (the manuscript's photo/signature validation
 # record requirement). One card per DistributionRecord ("delivery"), not per
 # AllocationRecord, since a single request can eventually produce a
-# tracked physical delivery — the ID and progress the barangay actually
+# tracked physical delivery - the ID and progress the barangay actually
 # cares about is the delivery's, not the original request's.
 # ---------------------------------------------------------------------------
 
 # Simplified 6-step barangay-facing view of a delivery's lifecycle. Coarser
-# than pswdo.DISPATCH_STEPS (which also distinguishes Loaded/Dispatched) —
+# than pswdo.DISPATCH_STEPS (which also distinguishes Loaded/Dispatched) -
 # those sub-stages are PSWDO/CSWDO's own logistics concern, not something a
 # receiving barangay needs a separate step for. Ends in "Received" (this
 # barangay's own confirmation), which pswdo.DISPATCH_STEPS has no equivalent
@@ -697,7 +697,7 @@ def _delivery_step_index(dist):
 def relief_monitoring():
     barangay = _own_barangay_or_404()
 
-    # Most recent first — distribution_date is date-only, so distribution_id
+    # Most recent first - distribution_date is date-only, so distribution_id
     # breaks same-day ties to keep the newest delivery genuinely on top.
     distributions = DistributionRecord.query.filter_by(barangay_id=barangay.barangay_id).order_by(
         DistributionRecord.distribution_date.desc(),
@@ -737,7 +737,7 @@ def relief_monitoring():
 
         delivery_rows = [r for r in delivery_rows if _row_matches(r)]
 
-    # delivery_rows stays in the query's newest-first order — no status
+    # delivery_rows stays in the query's newest-first order - no status
     # grouping, so "All statuses" reads strictly most-recent-first.
 
     # Default view shows only what still needs the barangay's attention.
@@ -782,12 +782,12 @@ def _get_own_distribution_or_404(distribution_id):
 def confirm_receipt(distribution_id):
     rec = _get_own_distribution_or_404(distribution_id)
 
-    # The barangay's VALIDATION RECORD (manuscript) — the only thing that
+    # The barangay's VALIDATION RECORD (manuscript) - the only thing that
     # closes a Relief Request and moves stock into the barangay's inventory.
     # Available once CSWDO has confirmed issuance (dispatched) or the delivery
     # is on the road.
     if rec.dispatch_status not in ("dispatched", "in_transit", "delayed", "delivered") or rec.status == "confirmed":
-        flash("This delivery isn't ready to be confirmed — it may have already been received.", "error")
+        flash("This delivery isn't ready to be confirmed - it may have already been received.", "error")
         return redirect(url_for("barangay.relief_monitoring"))
 
     received_by = request.form.get("received_by", "").strip() or current_user.name
@@ -797,7 +797,7 @@ def confirm_receipt(distribution_id):
         flash("Select the condition the delivery arrived in.", "error")
         return redirect(url_for("barangay.relief_monitoring"))
 
-    # Receipt breakdown — what actually arrived, per the barangay:
+    # Receipt breakdown - what actually arrived, per the barangay:
     #   complete → all released packs, none damaged
     #   partial  → the count the barangay entered, none damaged
     #   damaged  → good + damaged counts the barangay entered
@@ -841,7 +841,7 @@ def confirm_receipt(distribution_id):
     # delivery (CSWDO/MSWDO needs evidence before sending a replacement);
     # OPTIONAL when everything arrived complete.
     if condition in ("partial", "damaged") and not saved_names:
-        flash("Attach a photo of the delivery — proof is required when packs are short or damaged.", "error")
+        flash("Attach a photo of the delivery - proof is required when packs are short or damaged.", "error")
         return redirect(url_for("barangay.relief_monitoring"))
 
     rec.received_by = received_by
@@ -863,7 +863,7 @@ def confirm_receipt(distribution_id):
 
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="distribution_receipt_confirmed",
-        description=f"{rec.barangay.barangay_name} confirmed receipt of D-{rec.distribution_date.year}-{rec.distribution_id:03d} — "
+        description=f"{rec.barangay.barangay_name} confirmed receipt of D-{rec.distribution_date.year}-{rec.distribution_id:03d} - "
                     f"{rec.received_count:,} of {rec.quantity_released or 0:,} food packs received"
                     + (f", {rec.damaged_count:,} damaged" if rec.damaged_count else "")
                     + f" ({condition}), received by {received_by}",
@@ -891,7 +891,7 @@ def _record_barangay_receipt(rec):
             item_name="Food Packs", unit="packs", quantity_available=0,
         )
         db.session.add(inv)
-    # Only usable packs enter stock — what physically arrived, minus any the
+    # Only usable packs enter stock - what physically arrived, minus any the
     # barangay flagged as damaged (see DistributionRecord.good_count).
     usable = rec.good_count
     ref = f"D-{rec.distribution_date.year}-{rec.distribution_id:03d}"
@@ -916,7 +916,7 @@ def _record_barangay_receipt(rec):
 
 
 # ---------------------------------------------------------------------------
-# Inventory — the barangay's own food-pack stock. A plain +/- ledger for
+# Inventory - the barangay's own food-pack stock. A plain +/- ledger for
 # operational visibility (CSWDO/PSWDO can also see it). Goes UP automatically
 # when the barangay validates a delivery; goes DOWN when barangay personnel
 # record having handed packs out to residents. Not a model predictor.
@@ -932,7 +932,7 @@ def inventory():
     ).first()
     on_hand = inv.quantity_available if inv else 0
 
-    # Lifetime totals for the stat cards — unaffected by the Movement History
+    # Lifetime totals for the stat cards - unaffected by the Movement History
     # filters below, same convention as the CSWDO/PSWDO warehouse pages (the
     # filter narrows the list, not the running totals).
     all_logs = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id).all()
@@ -964,9 +964,9 @@ def inventory():
 @login_required
 @role_required("barangay_user")
 def inventory_record():
-    """Barangay-side stock write — DISTRIBUTION ONLY. Stock only ever comes IN
+    """Barangay-side stock write - DISTRIBUTION ONLY. Stock only ever comes IN
     automatically, via a validated delivery (see _record_barangay_receipt,
-    called from confirm_receipt) — a barangay account has no way to add stock
+    called from confirm_receipt) - a barangay account has no way to add stock
     by hand here, only record having handed packs out to residents. (A manual
     "Adjust Count" add/subtract used to live here too; removed on purpose.)"""
     barangay = _own_barangay_or_404()
@@ -998,11 +998,11 @@ def inventory_record():
 
 
 # ---------------------------------------------------------------------------
-# Reports — mirrors app.routes.cswdo's report-generation pattern (report
+# Reports - mirrors app.routes.cswdo's report-generation pattern (report
 # cards -> report_view -> PDF/Excel export -> logged + re-downloadable),
 # just scoped to this one barangay instead of a municipality. Only 2 of the
 # 7 generic report types have a meaningful barangay-scoped equivalent (see
-# app.routes.report_data.BARANGAY_REPORT_TYPES) — a barangay has no
+# app.routes.report_data.BARANGAY_REPORT_TYPES) - a barangay has no
 # warehouse of its own, so Warehouse Inventory/Stock Movement/Municipality
 # Summary/Analytics don't have real data behind them at this scope.
 # ---------------------------------------------------------------------------
@@ -1038,7 +1038,7 @@ def reports():
 
     barangay = _own_barangay_or_404()
     filters = resolve_barangay_filters(request.args)
-    # Every event, not just the currently-active one — a report is almost
+    # Every event, not just the currently-active one - a report is almost
     # always generated *after* a typhoon has ended, so scoping this filter to
     # status="active" would make every past event unselectable.
     active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
@@ -1061,7 +1061,7 @@ def reports():
     packs_received = sum(d.quantity_released for d in delivered)
     completed_deliveries = len(delivered)
 
-    # "" not None — url_for() drops a None param outright, which would make
+    # "" not None - url_for() drops a None param outright, which would make
     # the generated link carry no event_id at all instead of an explicit
     # "no event filter", and resolve_barangay_filters() would then treat that
     # as "not chosen yet" and silently default back to the active event.
@@ -1090,7 +1090,7 @@ def reports():
         f"{filters['start_date'].strftime('%b %d')} - {ph_today().strftime('%b %d, %Y')}"
     )
 
-    # Report History table — moved here from the now-removed standalone
+    # Report History table - moved here from the now-removed standalone
     # Affected Families page, same search + status + export toolbar.
     report_q = request.args.get("report_q", "").strip().lower()
     report_status = request.args.get("report_status", "all")
@@ -1215,7 +1215,7 @@ def report_download_all():
         ReportLog.generated_at.desc()
     ).limit(10).all()
     if not logs:
-        flash("No reports have been generated yet — export one first.", "error")
+        flash("No reports have been generated yet - export one first.", "error")
         return redirect(url_for("barangay.reports"))
 
     buffer = io.BytesIO()
@@ -1241,7 +1241,7 @@ def report_download_all():
 @role_required("barangay_user")
 def reports_export():
     """Lighter CSV export used by the Affected Families' Report History
-    table — separate from the PDF/Excel report_export_pdf/excel above,
+    table - separate from the PDF/Excel report_export_pdf/excel above,
     which log to ReportLog and appear in this page's own Recent Reports."""
     barangay = _own_barangay_or_404()
     my_reports = _own_submitted_reports(barangay.barangay_id)
@@ -1302,7 +1302,7 @@ def notifications():
         view["was_unread"] = not log.is_read
         page_items.append(view)
 
-    # Opening the Notifications page is itself the "read" action — no per-item
+    # Opening the Notifications page is itself the "read" action - no per-item
     # or "Mark all as read" click needed. Unread rows still show highlighted on
     # this render (via was_unread) so the user sees what's new before it clears.
     if unread_count and scope is not None:
@@ -1312,7 +1312,7 @@ def notifications():
         db.session.commit()
 
     # Only the categories this barangay's own ActivityLog rows can actually
-    # carry (see _own_activity_scope) — no "Warehouse" tab like PSWDO's, since
+    # carry (see _own_activity_scope) - no "Warehouse" tab like PSWDO's, since
     # warehouse-transfer notifications never carry a barangay_id, and no
     # "Relief Requests" tab since the barangay's relief request IS its
     # Barangay Report (Tier 1) and its whole lifecycle lives in that category.

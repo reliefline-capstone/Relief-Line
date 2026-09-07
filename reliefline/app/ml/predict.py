@@ -1,12 +1,12 @@
 """
 Loads the Linear Regression model trained by app.ml.train and predicts a
-barangay's food-pack demand from its real profile fields — the same six
+barangay's food-pack demand from its real profile fields - the same six
 manuscript-specified predictors app.ml.train fits on (see FEATURES /
 feature_row there): population, poverty incidence, disaster risk index, past
 calamity frequency, historical allocation, and number of households.
 
 Used by the Predictive Analytics page to estimate demand for barangays that
-haven't had a formal relief request submitted yet — for barangays that
+haven't had a formal relief request submitted yet - for barangays that
 already have one, the real requested/approved/released figures (see
 pswdo._relief_summary) are used instead, since an actual request is always
 better evidence than a model estimate.

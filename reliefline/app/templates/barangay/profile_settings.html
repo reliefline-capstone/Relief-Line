@@ -41,7 +41,7 @@
                     {% endif %}
                     <div>
                         <span>{{ icon('calendar', 14, '#8a94a6') }} Member Since</span>
-                        <strong>{{ current_user.created_at.strftime('%B %Y') if current_user.created_at else '—' }}</strong>
+                        <strong>{{ current_user.created_at.strftime('%B %Y') if current_user.created_at else '-' }}</strong>
                     </div>
                 </div>
             </section>

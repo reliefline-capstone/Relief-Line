@@ -64,7 +64,7 @@
 
 .filter-bar select[name="municipality"] { width: 190px; }
 
-/* Matches .filter-bar select's own height/border/radius — there was no rule
+/* Matches .filter-bar select's own height/border/radius - there was no rule
    for the plain text input at all before, so it fell back to the browser's
    bare default appearance next to the styled dropdowns beside it. */
 .filter-bar input[type="text"] {
@@ -82,7 +82,7 @@
 .filter-bar input[type="text"]:focus { outline: none; border-color: #0f2547; }
 
 /* When the search field is wrapped in .rr-search-wrapper, that wrapper is
-   the styled box — strip the wrapped <input>'s own border/height/padding so
+   the styled box - strip the wrapped <input>'s own border/height/padding so
    it doesn't render a second box inside the first. */
 .filter-bar .rr-search-wrapper input[type="text"] {
     height: auto;
@@ -326,7 +326,7 @@
     padding: 6px 12px;
     /* Explicit 1px border on every variant (see .btn-sm-primary/-danger below)
        and line-height:1 so an <a> and a <button> with the same label render
-       the exact same box — a <button> otherwise keeps line-height:normal and
+       the exact same box - a <button> otherwise keeps line-height:normal and
        comes out shorter. */
     border: 1px solid transparent;
     line-height: 1;
@@ -348,12 +348,12 @@
 
 .rr-table .da-barangay-name { font-weight: 700; color: #1a1a1a; }
 
-/* Draft row actions (Edit + Delete) — keep the two buttons the same size,
+/* Draft row actions (Edit + Delete) - keep the two buttons the same size,
    on one baseline, evenly spaced, matching the barangay damage-report draft row. */
 .rr-row-actions { display: inline-flex; align-items: stretch; gap: 6px; }
 .rr-row-actions form { display: inline-flex; }
 
-/* Generic status badge colours — markup is class="badge-status status-X"
+/* Generic status badge colours - markup is class="badge-status status-X"
    (the older single-class .badge-status-X rules above stay for legacy pages) */
 .badge-status.status-pending,
 .badge-status.status-partially_approved { background: #fef5e3; color: #d68910; }
@@ -426,7 +426,7 @@
     border-color: #0f2547;
 }
 
-/* Priority badge colours (class="badge-priority tier-X") — the tier-critical/
+/* Priority badge colours (class="badge-priority tier-X") - the tier-critical/
    high/medium/low/unrated set is defined in dashboard.css, which every page
    using this also links. Only the extra aliases are needed here. */
 .badge-priority.tier-moderate { background: #fef5e3; color: #d68910; }

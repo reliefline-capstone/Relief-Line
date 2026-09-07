@@ -6,7 +6,7 @@ Every stored datetime is Philippine wall-clock time:
     SQLALCHEMY_ENGINE_OPTIONS (see app/config.py)
 
 `ph_now` / `ph_today` are Jinja globals and `ph_time` is a Jinja filter for
-formatting a stored datetime — all registered in app/__init__.py.
+formatting a stored datetime - all registered in app/__init__.py.
 """
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -17,7 +17,7 @@ DEFAULT_FORMAT = "%b %d, %Y %I:%M %p"
 
 
 def ph_now():
-    """Current Philippine wall-clock time as a naive datetime — correct no
+    """Current Philippine wall-clock time as a naive datetime - correct no
     matter what time zone the host machine is set to."""
     return datetime.now(PH_TZ).replace(tzinfo=None)
 

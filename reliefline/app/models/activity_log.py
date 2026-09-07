@@ -11,7 +11,7 @@ class ActivityLog(db.Model):
     is_read = db.Column(db.Boolean, nullable=False, default=False)
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=True)
-    # Which specific record this notification is about — lets "View" open that
+    # Which specific record this notification is about - lets "View" open that
     # exact record's detail page instead of a generic filtered list. Only one
     # of these (or none, e.g. warehouse_transfer_completed which resolves via
     # office_id instead) is populated per row, depending on action_type.
@@ -19,8 +19,8 @@ class ActivityLog(db.Model):
     distribution_id = db.Column(db.Integer, db.ForeignKey("distribution_records.distribution_id"), nullable=True)
     batch_id = db.Column(db.Integer, db.ForeignKey("relief_request_batches.batch_id"), nullable=True)
     # Populated only for rows written via System Administration actions (see
-    # app.utils.activity) — older/operational rows predate this column and
-    # stay NULL, which the admin System Activity table renders as "—".
+    # app.utils.activity) - older/operational rows predate this column and
+    # stay NULL, which the admin System Activity table renders as "-".
     ip_address = db.Column(db.String(45), nullable=True)
     created_at = db.Column(db.DateTime, default=ph_now)
 

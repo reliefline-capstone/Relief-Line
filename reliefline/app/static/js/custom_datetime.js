@@ -5,7 +5,7 @@
 //
 // The original input is kept in the DOM (visually hidden, tabindex -1) so
 // name/value submission, `required`, `min`/`max` and every existing
-// `change` listener keep working untouched — this only adds a visual layer
+// `change` listener keep working untouched - this only adds a visual layer
 // and writes back a valid value string ("YYYY-MM-DD" / "HH:MM").
 //
 // Opt out on a specific field with `data-no-custom-picker`.
@@ -50,7 +50,7 @@
         });
     }
 
-    // The popup is position:fixed and (while open) parented to <body> — the
+    // The popup is position:fixed and (while open) parented to <body> - the
     // page's .dashboard-main keeps a retained transform from its entrance
     // animation, which would otherwise make it the containing block for
     // position:fixed and throw the coordinates off. Moving to <body> also
@@ -110,7 +110,7 @@
 
         var trigger, icon = null;
         if (opts.typeable) {
-            // A real text input — lets someone type the value directly
+            // A real text input - lets someone type the value directly
             // (e.g. "2:30 PM") instead of only picking from the popup. The
             // clock/calendar icon can't live inside an <input>'s markup, so
             // it's a separate, click-through sibling laid over it.
@@ -157,7 +157,7 @@
             });
             // Selecting a popup item moves focus away from the input, which
             // would otherwise blur (and close) it before the item's own
-            // click handler runs — keep focus on the input instead.
+            // click handler runs - keep focus on the input instead.
             popup.addEventListener('mousedown', function (e) { e.preventDefault(); });
         } else {
             trigger.addEventListener('click', function () {
@@ -276,7 +276,7 @@
 
     // Accepts what someone would naturally type: "2:30 PM", "2:30PM",
     // "14:30" (24h), "2 PM" / "14" (hour only, minutes default to 0).
-    // Returns null for anything it can't confidently parse — the caller
+    // Returns null for anything it can't confidently parse - the caller
     // just leaves the field's last valid value in place rather than
     // guessing wrong.
     function parseTypedTime(text) {
@@ -318,7 +318,7 @@
                 (state.h + ':' + pad(state.m == null ? 0 : state.m) + ' ' + (state.p || 'AM')) : '';
         }
         // Runs when the user types directly into the field instead of (or
-        // alongside) picking from the columns — on blur or Enter, not on
+        // alongside) picking from the columns - on blur or Enter, not on
         // every keystroke, so it never fights an in-progress edit.
         function commitTypedText() {
             var raw = b.trigger.value.trim();

@@ -1,9 +1,9 @@
-/* Custom calendar + time pickers — replace the unstyleable browser-native
+/* Custom calendar + time pickers - replace the unstyleable browser-native
    <input type="date"> / <input type="time"> popups. Built and wired up by
    static/js/custom_datetime.js (loaded globally in base.html), which wraps
    every such input into:
      <div class="cdt-wrap cdt-date|cdt-time">
-       <input class="cdt-native">        (hidden — kept for submission/validation)
+       <input class="cdt-native">        (hidden - kept for submission/validation)
        <button class="cdt-trigger">
        <div class="cdt-popup">
      </div>
@@ -58,7 +58,7 @@
 .cdt-trigger svg { flex-shrink: 0; color: #8a94a6; }
 
 /* A typeable trigger (currently just Time) is a real <input>, not a
-   <button> — same box, but it needs text-input affordances instead of
+   <button> - same box, but it needs text-input affordances instead of
    flex layout, and room on the right for the separate icon overlay.
    Nested selector (.cdt-wrap ...) deliberately outweighs generic
    ".form-row input" rules that load after this stylesheet (see base.html)

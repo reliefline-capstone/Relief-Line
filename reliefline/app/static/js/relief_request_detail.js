@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Generic conditional-field toggle (e.g. "Source: Donation" revealing a
-    // Donor Name field) — same pattern as admin.js's role-field toggle, scoped
+    // Donor Name field) - same pattern as admin.js's role-field toggle, scoped
     // here to whatever form the triggering select lives in.
     function syncToggleFields(select) {
         var form = select.closest('form');
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function openModal(modal) {
         if (!modal) return;
         // .dashboard-main keeps a retained transform from its entrance
-        // animation, which makes it the containing block for position:fixed —
+        // animation, which makes it the containing block for position:fixed -
         // so an overlay nested inside it is offset by the sidebar and scrolls
         // away with the list. Re-parenting to <body> pins it to the viewport.
         if (modal.parentNode !== document.body) document.body.appendChild(modal);
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
         function optName(sel) {
             var opt = sel.options[sel.selectedIndex];
             if (!opt || !opt.value) return null;
-            return (opt.textContent.split(' — ')[0] || opt.textContent).trim();
+            return (opt.textContent.split(' - ')[0] || opt.textContent).trim();
         }
         function num(v) { var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
 

@@ -18,7 +18,7 @@ def create_app():
     app.jinja_env.globals["ph_today"] = ph_today
 
     def asset_version(filename):
-        # File mtime as a cache-busting query string — browsers otherwise hold
+        # File mtime as a cache-busting query string - browsers otherwise hold
         # onto a stale copy of a static JS/CSS file across edits (bit us with
         # gis_map.js: the fix was live on the server but the browser kept
         # serving the old cached script), so this forces a re-fetch whenever
@@ -55,7 +55,7 @@ def create_app():
 
     @app.before_request
     def _track_last_activity():
-        # Heartbeat for app.utils.presence.is_online() — throttled to once a
+        # Heartbeat for app.utils.presence.is_online() - throttled to once a
         # minute per user so normal browsing doesn't turn into a write on
         # every single request. Skips static assets (no endpoint / a
         # 'static' endpoint) since those aren't a meaningful "user is here".
@@ -76,7 +76,7 @@ def create_app():
     @app.before_request
     def _enforce_forced_password_change():
         # Set on User.must_change_password when a System Administrator
-        # grants a PasswordResetRequest (see app.routes.admin) — the account
+        # grants a PasswordResetRequest (see app.routes.admin) - the account
         # now holds the shared default password, so every page but /login
         # (which auto-opens the locked "Set a New Password" modal), that
         # modal's POST target, and logout redirects to /login until the
@@ -107,7 +107,7 @@ def create_app():
             return dict(unread_notification_count=0)
 
         if current_user.role == "cswdo_admin":
-            # Scoped to this office's own LGU — must match the count shown on
+            # Scoped to this office's own LGU - must match the count shown on
             # the CSWDO Notifications page and dashboard widget (see
             # app.routes.cswdo._own_activity_filters), otherwise the sidebar
             # badge would disagree with the page it links to.
@@ -130,7 +130,7 @@ def create_app():
             return dict(unread_notification_count=count)
 
         if current_user.role == "barangay_user":
-            # Scoped to this barangay_id alone — must match the count shown on
+            # Scoped to this barangay_id alone - must match the count shown on
             # the Barangay Notifications page and dashboard widget (see
             # app.routes.barangay._own_activity_filter).
             if not current_user.barangay_id:
@@ -145,11 +145,11 @@ def create_app():
             return dict(unread_notification_count=count)
 
         # pswdo_admin / system_admin see the province-wide count, matching the
-        # PSWDO Notifications page (app.routes.pswdo.notifications) — same
+        # PSWDO Notifications page (app.routes.pswdo.notifications) - same
         # PSWDO_NOTIFICATION_TYPES allowlist, so System Administration rows
         # (logins, user/office/barangay management) never count here either
         # (even though they're already is_read=True by design), and neither
-        # do damage_report_* rows — reviewing those is entirely CSWDO/MSWDO's
+        # do damage_report_* rows - reviewing those is entirely CSWDO/MSWDO's
         # job, and PSWDO has no page to click through to for them.
         from app.routes.pswdo import PSWDO_NOTIFICATION_TYPES
         count = ActivityLog.query.filter(
@@ -160,11 +160,11 @@ def create_app():
     @app.context_processor
     def inject_pending_password_resets():
         # Powers the badge on admin/_sidebar.html's "Password Reset
-        # Requests" link, which is included on every admin/*.html page —
+        # Requests" link, which is included on every admin/*.html page -
         # a context processor means each admin route doesn't need to
         # compute and pass this count itself. Scoped to is_seen=False (not
         # just status="pending") so opening the Password Reset Requests page
-        # — which marks pending rows seen, see app.routes.admin — clears the
+        # - which marks pending rows seen, see app.routes.admin - clears the
         # badge even though those requests are still awaiting a decision.
         from flask_login import current_user
         from app.models.password_reset_request import PasswordResetRequest

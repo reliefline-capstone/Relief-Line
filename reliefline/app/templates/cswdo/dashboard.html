@@ -55,7 +55,7 @@
                 <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_affected_families) }}</span>
                 <span class="stat-label">Affected Families</span>
-                <span class="stat-sub">{{ lgu or '—' }}</span>
+                <span class="stat-sub">{{ lgu or '-' }}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
@@ -90,7 +90,7 @@
 
             <section class="panel map-panel">
                 <div class="panel-header">
-                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map — {{ lgu or 'Your Municipality' }}</h3>
+                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map - {{ lgu or 'Your Municipality' }}</h3>
                     <div class="map-legend">
                         <span><i class="legend-dot normal"></i> Low</span>
                         <span><i class="legend-dot monitoring"></i> Medium</span>

@@ -1,5 +1,5 @@
 /* Demand-forecast bar fills, by priority tier (distinct from the
-   warehouse-health fill-* classes already in dashboard.css — same visual
+   warehouse-health fill-* classes already in dashboard.css - same visual
    language, different meaning, so kept as separate classes to avoid a name
    collision on this page where both appear together). */
 .pa-fill-critical { background: #e74c3c; }
@@ -8,7 +8,7 @@
 .pa-fill-low { background: #27ae60; }
 .pa-fill-unrated { background: #d8dee8; }
 
-/* Barangay Priority Ranking — collapsed to the top 5 until "View all" */
+/* Barangay Priority Ranking - collapsed to the top 5 until "View all" */
 .pa-rank-extra { display: none; }
 [data-ranking].is-expanded .pa-rank-extra { display: flex; }
 
@@ -33,7 +33,7 @@
 [data-ranking].is-expanded .pa-rank-toggle svg { transform: rotate(180deg); }
 
 /* CSWDO scope covers a single municipality, so "Demand Forecast by
-   Municipality" is always one row — pairing it with the long Barangay
+   Municipality" is always one row - pairing it with the long Barangay
    Priority Ranking in a 2-column grid left a wall of blank space. Stack
    the panels full-width instead; PSWDO (province-wide, many municipalities)
    keeps the side-by-side .dash-grid-even layout. */
@@ -80,7 +80,7 @@
     margin-top: 4px;
 }
 
-/* Historical trend — line chart (inline SVG, no chart library) */
+/* Historical trend - line chart (inline SVG, no chart library) */
 .pa-line-chart {
     width: 100%;
     max-width: 760px;

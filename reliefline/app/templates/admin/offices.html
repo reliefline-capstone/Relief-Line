@@ -67,7 +67,7 @@
                         <td><span class="badge-module mod-blue">{{ row.code }}</span></td>
                         <td>{{ row.type_label }}</td>
                         <td>{{ office.area_covered }}</td>
-                        <td>{{ office.manager_name or '—' }}</td>
+                        <td>{{ office.manager_name or '-' }}</td>
                         <td>{{ row.user_count }}</td>
                         <td><span class="badge-status-pill {{ 'is-active' if office.is_active else 'is-inactive' }}">{{ 'Active' if office.is_active else 'Inactive' }}</span></td>
                         <td>

@@ -7,8 +7,8 @@ class WarehouseTransfer(db.Model):
       * PSWDO depot -> PSWDO depot: an instant redistribution (status jumps
         straight to 'completed', no batch_id, no dispatch tracking).
       * PSWDO depot -> CSWDO municipal warehouse: fulfilment of a Stock Request
-        (batch_id set). PSWDO monitors this leg — preparing -> in_transit ->
-        delivered — and the CSWDO warehouse only credits the stock when it
+        (batch_id set). PSWDO monitors this leg - preparing -> in_transit ->
+        delivered - and the CSWDO warehouse only credits the stock when it
         confirms receipt (status -> 'completed', batch -> 'fulfilled').
     """
     __tablename__ = "warehouse_transfers"

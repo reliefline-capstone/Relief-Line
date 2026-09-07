@@ -77,8 +77,8 @@
                         <td><strong>{{ rec.barangay.city_municipality }}</strong></td>
                         <td><strong>{{ "{:,}".format(rec.quantity_released) }}</strong> <span class="rr-sub">packs</span></td>
                         <td>{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}</td>
-                        <td>{{ rec.received_by or '—' }}</td>
-                        <td><span class="badge-status badge-status-delivered">{{ rec.condition|title if rec.condition else '—' }}</span></td>
+                        <td>{{ rec.received_by or '-' }}</td>
+                        <td><span class="badge-status badge-status-delivered">{{ rec.condition|title if rec.condition else '-' }}</span></td>
                         <td><a href="{{ url_for('pswdo.distribution_detail', distribution_id=rec.distribution_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a></td>
                     </tr>
                     {% else %}

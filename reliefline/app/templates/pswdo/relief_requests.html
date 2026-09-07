@@ -21,7 +21,7 @@
         <section class="page-header">
             <div>
                 <h2>Stock Requests</h2>
-                <p>Municipal warehouse replenishment requests from CSWDO/MSWDO offices — the only requests PSWDO decides on.</p>
+                <p>Municipal warehouse replenishment requests from CSWDO/MSWDO offices - the only requests PSWDO decides on.</p>
             </div>
             <div style="display:flex; gap:10px;">
                 <a href="{{ url_for('pswdo.transfers') }}" class="btn-outline">{{ icon('truck', 14) }} Transfers</a>
@@ -68,10 +68,10 @@
                     {% for b in rows %}
                     <tr>
                         <td>{{ b.ref }}</td>
-                        <td>{{ b.office.area_covered if b.office else '—' }}</td>
-                        <td>{{ b.event.event_name if b.event else '—' }}</td>
+                        <td>{{ b.office.area_covered if b.office else '-' }}</td>
+                        <td>{{ b.event.event_name if b.event else '-' }}</td>
                         <td><strong>{{ "{:,}".format(b.requested_food_packs) }}</strong></td>
-                        <td>{{ "{:,}".format(b.approved_food_packs) if b.approved_food_packs else '—' }}</td>
+                        <td>{{ "{:,}".format(b.approved_food_packs) if b.approved_food_packs else '-' }}</td>
                         <td><span class="badge-priority tier-{{ b.priority }}">{{ priority_labels.get(b.priority, b.priority) }}</span></td>
                         <td><span class="badge-status status-{{ b.display_status }}">{{ status_labels.get(b.display_status, b.display_status) }}</span></td>
                         <td><a href="{{ url_for('pswdo.relief_request_detail', batch_id=b.batch_id) }}" class="btn-view-sm">{{ icon('eye', 13) }} {{ 'Review' if b.display_status == 'pending' else 'View' }}</a></td>
@@ -104,14 +104,14 @@
                 <label for="pp-to">Target Municipal Warehouse *</label>
                 <select name="to_office_id" id="pp-to" required data-transfer-dest>
                     <option value="">Select…</option>
-                    {% for w in cswdo_offices %}<option value="{{ w.office.office_id }}" data-current="{{ w.food_pack_qty }}" data-capacity="{{ w.capacity }}">{{ w.office.office_name }} ({{ w.office.area_covered }}) — {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
+                    {% for w in cswdo_offices %}<option value="{{ w.office.office_id }}" data-current="{{ w.food_pack_qty }}" data-capacity="{{ w.capacity }}">{{ w.office.office_name }} ({{ w.office.area_covered }}) - {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
                 </select>
             </div>
             <div class="form-row">
                 <label for="pp-depot">From Provincial Depot *</label>
                 <select name="fulfilling_office_id" id="pp-depot" required data-transfer-source>
                     <option value="">Select…</option>
-                    {% for w in depots %}<option value="{{ w.office.office_id }}" data-available="{{ w.food_pack_qty }}">{{ w.office.office_name }} — {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
+                    {% for w in depots %}<option value="{{ w.office.office_id }}" data-available="{{ w.food_pack_qty }}">{{ w.office.office_name }} - {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
                 </select>
             </div>
             <div class="form-row"><label for="pp-qty">Quantity *</label><input type="number" name="quantity" id="pp-qty" min="1" required data-transfer-qty></div>

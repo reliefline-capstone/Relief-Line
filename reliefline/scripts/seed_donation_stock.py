@@ -1,7 +1,7 @@
 """
 Seeds synthetic "donation" WarehouseStockLog entries so the Stock Movement
 History page (and the Recent Movements panels on the Dashboard / Warehouse
-Detail pages) has real donation-tagged entries to show — see the Source
+Detail pages) has real donation-tagged entries to show - see the Source
 field added to Warehouse Inventory's Add Stock / Update Stock modals
 (source_type="standard"|"donation", donor_name).
 
@@ -62,7 +62,7 @@ ENTRIES = [
 def run():
     with app.app_context():
         if WarehouseStockLog.query.filter_by(source_type="donation").first():
-            print("Donation-tagged WarehouseStockLog rows already present — skipping. "
+            print("Donation-tagged WarehouseStockLog rows already present - skipping. "
                   "Delete existing donation rows first if you want to reseed.")
             return
 

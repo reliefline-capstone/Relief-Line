@@ -82,7 +82,7 @@
                         <div><span>Priority</span><strong>{{ priority.label }}</strong></div>
                         <div>
                             <span>Typhoon Event</span>
-                            <strong>{% if alloc.event %}{{ icon('cloud-lightning', 14, '#3867d6') }} {{ alloc.event.event_name }}{% else %}{{ alloc.disaster_event or '—' }}{% endif %}</strong>
+                            <strong>{% if alloc.event %}{{ icon('cloud-lightning', 14, '#3867d6') }} {{ alloc.event.event_name }}{% else %}{{ alloc.disaster_event or '-' }}{% endif %}</strong>
                         </div>
                         <div><span>Request ID</span><strong>RR-{{ alloc.allocation_date.year }}-{{ '%03d'|format(alloc.allocation_id) }}</strong></div>
                     </div>
@@ -95,7 +95,7 @@
                         <div class="dd-wh-tile dd-wh-blue">
                             {{ icon('building', 20, '#2c5aa0') }}
                             <span>Source Warehouse</span>
-                            <strong>{{ fulfilling_office.office_name if fulfilling_office else '—' }}</strong>
+                            <strong>{{ fulfilling_office.office_name if fulfilling_office else '-' }}</strong>
                         </div>
                         <div class="dd-wh-tile dd-wh-green">
                             {{ icon('package', 20, '#1e8449') }}
@@ -122,12 +122,12 @@
                         <div class="dd-wh-tile">
                             {{ icon('arrow-right', 18, '#8a94a6') }}
                             <span>DEPARTURE TIME</span>
-                            <strong>{{ rec.departure_time.strftime('%I:%M %p') if rec.departure_time else '—' }}</strong>
+                            <strong>{{ rec.departure_time.strftime('%I:%M %p') if rec.departure_time else '-' }}</strong>
                         </div>
                         <div class="dd-wh-tile">
                             {{ icon('map-pin', 18, '#8a94a6') }}
                             <span>EXPECTED ARRIVAL</span>
-                            <strong>{{ rec.expected_arrival_time.strftime('%I:%M %p') if rec.expected_arrival_time else '—' }}</strong>
+                            <strong>{{ rec.expected_arrival_time.strftime('%I:%M %p') if rec.expected_arrival_time else '-' }}</strong>
                         </div>
                     </div>
                 </section>
@@ -136,14 +136,14 @@
                 <section class="panel">
                     <div class="panel-header">
                         <h3 class="rd-panel-title" style="margin-bottom:0;">Route Map</h3>
-                        <span class="rd-sub">{{ fulfilling_office.office_name if fulfilling_office else '—' }} → {{ rec.barangay.city_municipality }}</span>
+                        <span class="rd-sub">{{ fulfilling_office.office_name if fulfilling_office else '-' }} → {{ rec.barangay.city_municipality }}</span>
                     </div>
                     <div class="dd-route-box">
                         <div class="dd-route-line-wrap">
                             <div class="dd-route-line"></div>
                             <div class="dd-route-node dd-route-start">
                                 <div class="dd-route-badge dd-route-wh">WH</div>
-                                <strong>{{ fulfilling_office.office_name if fulfilling_office else '—' }}</strong>
+                                <strong>{{ fulfilling_office.office_name if fulfilling_office else '-' }}</strong>
                                 <span>{{ icon('map-pin', 10) }} Warehouse</span>
                             </div>
                             <div class="dd-route-truck" style="left: {{ route_progress }}%;">
@@ -157,7 +157,7 @@
                             </div>
                         </div>
                         <div class="dd-route-legend">
-                            <span><i class="dd-route-badge dd-route-wh dd-legend-icon">WH</i> {{ fulfilling_office.office_name if fulfilling_office else '—' }}</span>
+                            <span><i class="dd-route-badge dd-route-wh dd-legend-icon">WH</i> {{ fulfilling_office.office_name if fulfilling_office else '-' }}</span>
                             <span>{{ icon('truck', 12) }} {{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}</span>
                             <span>{{ icon('map-pin', 12) }} {{ rec.barangay.city_municipality }} (Drop-off)</span>
                         </div>
@@ -172,11 +172,11 @@
                         <span class="dd-completed-tag">{{ icon('check-circle', 12) }} Completed</span>
                     </div>
                     <div class="dd-kv-list">
-                        <div><span>Received By</span><strong>{{ rec.received_by or '—' }}</strong></div>
+                        <div><span>Received By</span><strong>{{ rec.received_by or '-' }}</strong></div>
                         <div><span>Date Received</span><strong>{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}</strong></div>
-                        <div><span>Time Received</span><strong>{{ rec.time_received.strftime('%I:%M %p') if rec.time_received else '—' }}</strong></div>
-                        <div><span>Condition</span><strong>{{ rec.condition|title if rec.condition else '—' }}</strong></div>
-                        <div><span>Travel Time</span><strong>{{ rec.travel_time or '—' }}</strong></div>
+                        <div><span>Time Received</span><strong>{{ rec.time_received.strftime('%I:%M %p') if rec.time_received else '-' }}</strong></div>
+                        <div><span>Condition</span><strong>{{ rec.condition|title if rec.condition else '-' }}</strong></div>
+                        <div><span>Travel Time</span><strong>{{ rec.travel_time or '-' }}</strong></div>
                     </div>
                     {{ validation_attachments(rec.distribution_id, attachments) }}
                 </section>
@@ -192,8 +192,8 @@
                     <span class="rd-sub" style="display:block; text-align:center; margin-bottom:14px;">Food Packs</span>
 
                     <div class="dd-summary-row"><span>Municipality</span><strong>{{ rec.barangay.city_municipality }}</strong></div>
-                    <div class="dd-summary-row"><span>Warehouse</span><strong>{{ fulfilling_office.office_name if fulfilling_office else '—' }}</strong></div>
-                    <div class="dd-summary-row"><span>ETA</span><strong>{{ rec.expected_arrival_time.strftime('%I:%M %p') if rec.expected_arrival_time else '—' }}</strong></div>
+                    <div class="dd-summary-row"><span>Warehouse</span><strong>{{ fulfilling_office.office_name if fulfilling_office else '-' }}</strong></div>
+                    <div class="dd-summary-row"><span>ETA</span><strong>{{ rec.expected_arrival_time.strftime('%I:%M %p') if rec.expected_arrival_time else '-' }}</strong></div>
 
                     {% if rec.dispatch_status == 'preparing' %}
                     <form method="POST" action="{{ url_for('pswdo.advance_distribution', distribution_id=rec.distribution_id) }}">

@@ -1,6 +1,6 @@
 // Replaces every plain <select> on the page with a custom-styled dropdown.
 // Loaded globally (base.html) so every page gets this without needing
-// template-by-template changes — see custom_select.css for why (a native
+// template-by-template changes - see custom_select.css for why (a native
 // select's open listbox can't be restyled with CSS at all).
 //
 // The original <select> is kept in the DOM (visually hidden, not removed)
@@ -8,7 +8,7 @@
 // `select.addEventListener('change', ...)` wiring elsewhere in the
 // codebase (admin.js's role-field toggle, relief_request_detail.js's
 // transfer-calc preview, weather_widget.js's Declare Event modal, etc.)
-// keep working completely unchanged — this only adds a visual layer on
+// keep working completely unchanged - this only adds a visual layer on
 // top and forwards real `change`/`input` events onto the original select.
 (function () {
     'use strict';
@@ -158,7 +158,7 @@
         select.addEventListener('change', function () { refreshTriggerLabel(wrap); });
 
         // Native constraint validation (`required`) still fires on the
-        // hidden select — surface it visually on the trigger instead of
+        // hidden select - surface it visually on the trigger instead of
         // leaving no visible cue near the widget the user actually sees.
         select.addEventListener('invalid', function () {
             trigger.classList.add('csel-invalid');

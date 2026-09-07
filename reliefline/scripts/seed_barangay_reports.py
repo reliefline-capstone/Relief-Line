@@ -41,12 +41,12 @@ PLAN = {
          "Flooding receding. Residents advised to stay alert.", "Consistent with barangay visit.", 6),
         ("Sonquil", "Ernesto Villar", "Barangay Kagawad", "pending", "needs_assistance", 220, 880, 9, 14, 0.6,
          "Several households still without power.", None, 2),
-        # Bungallon — no report submitted yet
+        # Bungallon - no report submitted yet
         ("Botao", "Marissa Ocampo", "Barangay Captain", "verified", "high_priority", 900, 3600, 22, 31, 1.1,
          "Critical flooding, main road impassable.", "Verified on-site. Matches CDRRMO advisory.", 8),
         ("Cablong", "Danilo Ferrer", "Barangay Secretary", "returned", "normal", 80, 320, 0, 3, 0.1,
-         "Minor debris on roadside only.", "Please confirm affected-families count — seems too high for the reported damage.", 5),
-        # Carosucan Sur — no report submitted yet
+         "Minor debris on roadside only.", "Please confirm affected-families count - seems too high for the reported damage.", 5),
+        # Carosucan Sur - no report submitted yet
         ("Dalongue", "Teresita Bautista", "Barangay Captain", "verified", "needs_assistance", 600, 2400, 11, 19, 0.7,
          "Several families relocated to higher ground.", "Verified. Data consistent with field visit.", 7),
         ("Erfe", "Romeo Castillo", "Barangay Kagawad", "pending", "high_priority", 340, 1360, 15, 20, 0.9,
@@ -56,7 +56,7 @@ PLAN = {
     ],
     "Urdaneta City": [
         ("Anonas", "Julieta Reyes", "Barangay Captain", "verified", "high_priority", 1200, 4800, 28, 40, 1.3,
-         "Critical flooding, evacuation ongoing.", "Verified on-site — matches CDRRMO report.", 10),
+         "Critical flooding, evacuation ongoing.", "Verified on-site - matches CDRRMO report.", 10),
         ("Bactad East", "Mario Corpuz", "Barangay Secretary", "verified", "needs_assistance", 800, 3200, 14, 22, 0.8,
          "Flood waters entering low-lying homes.", "Consistent with field visit.", 9),
         ("Bayaoas", "Angelita Ramos", "Barangay Kagawad", "pending", "monitoring", 180, 720, 3, 6, 0.3,
@@ -65,12 +65,12 @@ PLAN = {
          "No flooding reported, strong winds only.", None, 4),
         ("Cabaruan", "Yolanda Santiago", "Barangay Secretary", "verified", "needs_assistance", 600, 2400, 10, 18, 0.6,
          "Several roads temporarily flooded.", "Verified. Redirect relief coordination noted.", 11),
-        # Cabuloan — no report submitted yet
+        # Cabuloan - no report submitted yet
         ("Camantiles", "Arnel Pascual", "Barangay Kagawad", "returned", "monitoring", 95, 380, 1, 3, 0.2,
-         "Minor flooding near the barangay hall.", "Photo evidence unclear — please resubmit with a clearer shot.", 3),
+         "Minor flooding near the barangay hall.", "Photo evidence unclear - please resubmit with a clearer shot.", 3),
         ("Casantaan", "Remedios Torres", "Barangay Captain", "pending", "needs_assistance", 260, 1040, 8, 13, 0.7,
          "Creek overflowed near residential area.", None, 1),
-        # Catablan — no report submitted yet
+        # Catablan - no report submitted yet
         ("Cayambanan", "Benjamin Aguilar", "Barangay Secretary", "pending", "monitoring", 130, 520, 2, 5, 0.3,
          "Light flooding, situation stable.", None, 5),
     ],
@@ -78,7 +78,7 @@ PLAN = {
         ("Ambonao", "Perlita Navarro", "Barangay Captain", "pending", "monitoring", 140, 560, 2, 4, 0.3,
          "Light flooding along the main road.", None, 2),
         ("Ambuetel", "Josefina Mendoza", "Barangay Secretary", "returned", "normal", 50, 200, 0, 1, 0.0,
-         "No significant damage observed.", "Report is missing barangay captain's signature — please resubmit.", 4),
+         "No significant damage observed.", "Report is missing barangay captain's signature - please resubmit.", 4),
         ("Banaoang", "Ramon Salvador", "Barangay Kagawad", "verified", "monitoring", 250, 1000, 3, 7, 0.3,
          "Flooding receding along riverside homes.", "Verified. Matches previous advisory.", 8),
         ("Bued", "Cristina Lopez", "Barangay Captain", "pending", "needs_assistance", 210, 840, 7, 12, 0.6,
@@ -87,12 +87,12 @@ PLAN = {
          "Strong winds, no flooding reported.", None, 6),
         ("Cabilocaan", "Aurora Ramirez", "Barangay Kagawad", "verified", "needs_assistance", 500, 2000, 9, 16, 0.6,
          "Several families temporarily relocated.", "Verified on-site.", 9),
-        # Dinalaoan — no report submitted yet
+        # Dinalaoan - no report submitted yet
         ("Doyong", "Salvador Cruz", "Barangay Captain", "verified", "monitoring", 350, 1400, 4, 8, 0.4,
          "Water receding, roads passable.", "Verified.", 10),
-        # Gabon — no report submitted yet
+        # Gabon - no report submitted yet
         ("Lasip", "Herminia Flores", "Barangay Secretary", "verified", "high_priority", 700, 2800, 18, 25, 1.0,
-         "Critical flooding, several households isolated.", "Verified — matches CDRRMO advisory.", 12),
+         "Critical flooding, several households isolated.", "Verified - matches CDRRMO advisory.", 12),
     ],
 }
 
@@ -100,7 +100,7 @@ PLAN = {
 def run():
     with app.app_context():
         if BarangayReport.query.first():
-            print("BarangayReport rows already present — skipping. "
+            print("BarangayReport rows already present - skipping. "
                   "Delete existing rows first if you want to reseed.")
             return
 
@@ -108,7 +108,7 @@ def run():
             DisasterEvent.start_date.desc()
         ).first()
         if not event:
-            print("No active DisasterEvent found — run seed_demo_data.py first.")
+            print("No active DisasterEvent found - run seed_demo_data.py first.")
             return
 
         reviewers = {u.office_id: u for u in User.query.filter_by(role="cswdo_admin").all()}
@@ -152,7 +152,7 @@ def run():
                 # Optional barangay-stated food-pack request. Populate it for
                 # roughly half the still-open reports so the CSWDO queue
                 # exercises both the "requested a figure" and "left it blank"
-                # states. It's only decision support — CSWDO can adjust it.
+                # states. It's only decision support - CSWDO can adjust it.
                 if status in ("pending", "returned") and count % 2 == 0:
                     report.requested_food_packs = int(round(families * 1.15 / 5) * 5)
 

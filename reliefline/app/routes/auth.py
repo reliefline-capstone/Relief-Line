@@ -57,7 +57,7 @@ def login():
             db.session.commit()
             if user.must_change_password:
                 # The forced "Set a New Password" step is a locked modal on
-                # the /login page — _enforce_forced_password_change keeps the
+                # the /login page - _enforce_forced_password_change keeps the
                 # user there until they replace the default password.
                 return redirect(url_for("auth.login"))
             return redirect(url_for(_dashboard_endpoint(user.role)))
@@ -65,7 +65,7 @@ def login():
         return retry
 
     if current_user.is_authenticated and not current_user.must_change_password:
-        # Already signed in — no reason to show the login screen again.
+        # Already signed in - no reason to show the login screen again.
         return redirect(url_for(_dashboard_endpoint(current_user.role)))
 
     # current_user set + must_change_password: render with the locked

@@ -16,7 +16,7 @@ class AllocationRecord(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
-    # Decision fields — no new status enum values (rejection is tracked via
+    # Decision fields - no new status enum values (rejection is tracked via
     # rejection_reason instead, since "pending" is otherwise unambiguous once set)
     rejection_reason = db.Column(db.Text, nullable=True)
     fulfilling_office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=True)
@@ -25,17 +25,17 @@ class AllocationRecord(db.Model):
     decided_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
 
     # Set only for records created via the CSWDO/MSWDO "Relief Requests" batch
-    # flow (app/routes/cswdo.py) — NULL for province-level records created any
+    # flow (app/routes/cswdo.py) - NULL for province-level records created any
     # other way (e.g. scripts/seed_demo_data.py), which PSWDO still processes
     # exactly the same either way.
     batch_id = db.Column(db.Integer, db.ForeignKey("relief_request_batches.batch_id"), nullable=True)
 
     # Provenance:
-    #   pswdo_batch      — CSWDO batched it up to PSWDO (Tier 2, legacy/current)
-    #   barangay_request — a barangay's Relief Request, fulfilled by CSWDO from
+    #   pswdo_batch      - CSWDO batched it up to PSWDO (Tier 2, legacy/current)
+    #   barangay_request - a barangay's Relief Request, fulfilled by CSWDO from
     #                      its own municipal warehouse (Tier 1). PSWDO never sees
     #                      or schedules these (filtered out of its queues).
-    #   cswdo_direct     — CSWDO pushed stock to a barangay proactively (model-
+    #   cswdo_direct     - CSWDO pushed stock to a barangay proactively (model-
     #                      driven), no barangay request behind it.
     source = db.Column(
         db.Enum("pswdo_batch", "barangay_request", "cswdo_direct"),

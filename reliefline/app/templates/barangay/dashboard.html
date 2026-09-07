@@ -56,7 +56,7 @@
                 <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
                 <span class="stat-value">{{ pending_reports_count }}</span>
                 <span class="stat-label">Pending Reports</span>
-                <span class="stat-sub">{% if returned_reports_count %}{{ returned_reports_count }} returned — needs correction{% else %}Awaiting MSWDO/CSWDO review{% endif %}</span>
+                <span class="stat-sub">{% if returned_reports_count %}{{ returned_reports_count }} returned - needs correction{% else %}Awaiting MSWDO/CSWDO review{% endif %}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
@@ -137,7 +137,7 @@
                 </div>
             </div>
             <p class="form-hint" style="margin-top:12px;">
-                Sourced from PSA / CPDO / CDRRMO records and used as predictor variables by the food pack allocation model — not editable here.
+                Sourced from PSA / CPDO / CDRRMO records and used as predictor variables by the food pack allocation model - not editable here.
             </p>
         </section>
 
@@ -154,7 +154,7 @@
                 <div class="barangay-report-row">
                     <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}">
                         <strong>{{ r.ref }}</strong>
-                        <span>{{ r.event.event_name if r.event else '—' }} · {{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at }}</span>
+                        <span>{{ r.event.event_name if r.event else '-' }} · {{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at }}</span>
                     </a>
                     <span class="badge-status status-{{ r.status }}">{{ report_status_labels.get(r.status, r.status) }}</span>
                 </div>
@@ -177,7 +177,7 @@
                         <span class="badge-status badge-status-{{ d.dispatch_status }}">{{ dispatch_status_labels.get(d.dispatch_status, d.dispatch_status) }}</span>
                     </div>
                     <div class="request-detail-grid">
-                        <span>From</span><strong>{{ d.allocation.fulfilling_office.office_name if d.allocation and d.allocation.fulfilling_office else '—' }}</strong>
+                        <span>From</span><strong>{{ d.allocation.fulfilling_office.office_name if d.allocation and d.allocation.fulfilling_office else '-' }}</strong>
                         {% if d.dispatch_status == 'delivered' %}
                         <span>Received</span><strong>{{ d.distribution_date.strftime('%B %d, %Y') }}</strong>
                         {% elif d.expected_arrival_time %}

@@ -5,7 +5,7 @@ class WarehouseInventory(db.Model):
 
     inventory_id = db.Column(db.Integer, primary_key=True)
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=False)
-    # "food_pack" is a reserved key — the predictive/allocation pipeline and burn-rate
+    # "food_pack" is a reserved key - the predictive/allocation pipeline and burn-rate
     # math key off it specifically. Any other slug (e.g. "rice_50kg") is a free-form
     # warehouse stock-monitoring line item with no predictive model behind it.
     item_type = db.Column(db.String(50), nullable=False)
@@ -19,14 +19,14 @@ class WarehouseInventory(db.Model):
 
 
 class WarehouseStockLog(db.Model):
-    """Manual stock adjustments (Add Stock / Update Stock) — feeds the 'Received'
+    """Manual stock adjustments (Add Stock / Update Stock) - feeds the 'Received'
     entries in the Stock Movement history, distinct from releases and transfers.
 
     source_type/donor_name give the manuscript's "tracks incoming relief supplies
-    including special donations from external agencies" (Chapter 1 — Purpose and
+    including special donations from external agencies" (Chapter 1 - Purpose and
     Description) a structured field instead of leaving it to the free-text reason
     alone. Per the Scope and Limitations section, this is stock-visibility
-    metadata only — donation supplies are still counted as ordinary warehouse
+    metadata only - donation supplies are still counted as ordinary warehouse
     stock for allocation/pre-positioning math; only their provenance is tagged,
     and distribution routing stays outside the system's control either way.
     """
@@ -41,7 +41,7 @@ class WarehouseStockLog(db.Model):
     # "standard" covers provincial supply, transfers-in, and any other routine
     # restock; "donation" is a special relief supply from an external agency
     # (NGO, LGU partner, private donor). donor_name is only meaningful when
-    # source_type="donation" — NULL otherwise.
+    # source_type="donation" - NULL otherwise.
     source_type = db.Column(db.Enum("standard", "donation"), nullable=False, default="standard",
                              server_default="standard")
     donor_name = db.Column(db.String(150), nullable=True)

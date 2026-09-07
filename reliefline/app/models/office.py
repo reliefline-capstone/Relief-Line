@@ -9,7 +9,7 @@ class Office(db.Model):
     area_covered = db.Column(db.String(100), nullable=False)
     capacity_food_pack = db.Column(db.Integer, default=20000)
 
-    # Warehouse "General Information" fields — optional since not every office
+    # Warehouse "General Information" fields - optional since not every office
     # (e.g. plain CSWDO administrative offices) doubles as a staffed storage site.
     full_address = db.Column(db.String(255), nullable=True)
     manager_name = db.Column(db.String(100), nullable=True)

@@ -5,7 +5,7 @@ the manuscript's Scope and Limitations section.
 
 This is a situational-awareness add-on layered on top of the manuscript's
 core deliverables (Linear Regression allocation prediction + geospatial
-mapping) — it does not feed the predictive model or change any of its six
+mapping) - it does not feed the predictive model or change any of its six
 predictor variables. It exists so PSWDO/CSWDO/barangay users can see current
 conditions and an approaching tropical cyclone *before* someone manually logs
 a DisasterEvent, the same way DisasterEvent.weather_condition already lets
@@ -37,10 +37,10 @@ import requests
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 GDACS_EVENTS_URL = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP"
-REQUEST_TIMEOUT = 8  # seconds — generous since this is fetched client-side, off the page's own load path
+REQUEST_TIMEOUT = 8  # seconds - generous since this is fetched client-side, off the page's own load path
 REQUEST_RETRIES = 2  # one retry absorbs the occasional transient blip (seen in practice when
                       # 3 sequential per-city calls share one flaky connection) without a user-visible failure
-CACHE_TTL = 900  # 15 minutes — plenty fresh for a relief-planning dashboard
+CACHE_TTL = 900  # 15 minutes - plenty fresh for a relief-planning dashboard
 
 # Approximate town-center coordinates for the three target LGUs (manuscript
 # Scope and Limitations). Good enough for a city-level weather snapshot;
@@ -50,14 +50,14 @@ LGU_COORDS = {
     "Urdaneta City": (15.9762, 120.5713),
     "Santa Barbara": (15.8961, 120.4991),
     "Calasiao": (16.0089, 120.4520),
-    # Not one of the three target LGUs — this is the PSWDO's own seat (see
+    # Not one of the three target LGUs - this is the PSWDO's own seat (see
     # Appendix A: "Building, Solis Street, Poblacion Lingayen, Pangasinan").
     # Used only for the PSWDO dashboard's header ("conditions where we are"),
     # separate from the target-LGU breakdown in the dashboard's detail panel.
     "Lingayen": (16.0219, 120.2325),
 }
 
-# Philippine Area of Responsibility, loosely boxed — generous on purpose so a
+# Philippine Area of Responsibility, loosely boxed - generous on purpose so a
 # storm approaching from the Pacific still shows up a little before PAGASA
 # would formally name it. Matches the manuscript's "Typhoon-Related Disaster
 # Response" scope (typhoon + its direct effects: flash floods, storm surge,
@@ -104,7 +104,7 @@ _typhoon_cache = {"fetched_at": 0, "payload": None}
 
 
 def _get_json(url, params=None):
-    """requests.get(...).json() with a couple of immediate retries — cheap
+    """requests.get(...).json() with a couple of immediate retries - cheap
     insurance against the occasional one-off timeout/connection blip that
     would otherwise fail a single city while its neighbors (fetched moments
     apart in the same request) succeed. Raises on the final attempt so the
@@ -167,7 +167,7 @@ def get_weather(city, force_refresh=False):
         lows = daily.get("temperature_2m_min", [])
         rain_pct = daily.get("precipitation_probability_max", [])
 
-        # Skip index 0 (today, already covered by "current") — next 4 days.
+        # Skip index 0 (today, already covered by "current") - next 4 days.
         forecast = []
         for i in range(1, min(len(dates), 5)):
             f_label, f_icon = _describe_code(codes[i]) if i < len(codes) else ("Unknown", "cloud")
@@ -227,7 +227,7 @@ def get_typhoon_watch(force_refresh=False):
         {"available": True, "active": bool, "storms": [...], "fetched_at": ...}
 
     or {"available": False} if GDACS couldn't be reached. "active" is False
-    (not missing) when GDACS is reachable but no PAR-relevant storm exists —
+    (not missing) when GDACS is reachable but no PAR-relevant storm exists -
     that's the normal, good-news case, distinct from "we couldn't check"."""
     cached = _typhoon_cache["payload"]
     if not force_refresh and cached and (time.time() - _typhoon_cache["fetched_at"]) < CACHE_TTL:

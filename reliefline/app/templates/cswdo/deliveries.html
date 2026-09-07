@@ -22,7 +22,7 @@
         <div class="page-header">
             <div>
                 <h2>Deliveries</h2>
-                <p>{{ lgu or '—' }} · food packs released from your warehouse to barangays</p>
+                <p>{{ lgu or '-' }} · food packs released from your warehouse to barangays</p>
             </div>
             <a href="{{ url_for('cswdo.damage_assessment') }}" class="btn-outline">{{ icon('clipboard', 16) }} Barangay Reports</a>
         </div>
@@ -73,8 +73,8 @@
                     {% set r = row.rec %}
                     <tr>
                         <td>{{ row.ref }}{% if r.replaces %}<span class="rr-sub" style="color:#1f3a63;">replacement for D-{{ r.replaces.distribution_date.year }}-{{ '%03d' % r.replaces.distribution_id }}</span>{% endif %}</td>
-                        <td>{{ row.request_ref or '—' }}</td>
-                        <td>{{ row.event or '—' }}</td>
+                        <td>{{ row.request_ref or '-' }}</td>
+                        <td>{{ row.event or '-' }}</td>
                         <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
                         <td><strong>{{ "{:,}".format(r.quantity_released) }}</strong>
                             {% if r.is_validated and (r.shortage_count or r.damaged_count) %}

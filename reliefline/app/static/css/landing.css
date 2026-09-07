@@ -80,7 +80,7 @@ body { overflow-x: hidden; }
 
 .lp-nav-links a:hover::after { transform: scaleX(1); }
 
-/* "Log In" — the nav's one call to action, styled as a solid button rather
+/* "Log In" - the nav's one call to action, styled as a solid button rather
    than a plain link (and no underline-grow on hover). */
 .lp-nav-login {
     display: inline-flex;
@@ -114,7 +114,7 @@ html { scroll-behavior: smooth; }
     padding: 64px 28px;
 }
 
-/* Strong, soft wash — heaviest over the left copy and the lower edge,
+/* Strong, soft wash - heaviest over the left copy and the lower edge,
    lighter toward the upper-right so the building/tree stay faintly
    recognizable without competing with the text or the login card. */
 .lp-hero-overlay {
@@ -474,7 +474,7 @@ html { scroll-behavior: smooth; }
 .lp-arch-card.lp-reveal:nth-of-type(2) { transition-delay: 0.1s; }
 .lp-arch-card.lp-reveal:nth-of-type(3) { transition-delay: 0.2s; }
 
-/* Forgot Password modal — overlays the landing page itself (dims it, same
+/* Forgot Password modal - overlays the landing page itself (dims it, same
    idea as .rd-modal-overlay elsewhere in the app) instead of navigating to
    a separate standalone page. */
 .auth-modal-overlay {

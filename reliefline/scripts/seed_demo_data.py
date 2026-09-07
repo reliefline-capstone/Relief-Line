@@ -42,7 +42,7 @@ TARGET_LGUS = ["Urdaneta City", "Santa Barbara", "Calasiao"]
 def run():
     with app.app_context():
         if DistributionRecord.query.first():
-            print("Demo data already present (found a DistributionRecord) — skipping. "
+            print("Demo data already present (found a DistributionRecord) - skipping. "
                   "Delete existing rows first if you want to reseed.")
             return
 
@@ -62,7 +62,7 @@ def run():
             # placeholder (earlier demo data used "Typhoon Crising"/"Sample
             # Typhoon Event", neither of which referred to an actual storm).
             # Typhoon Inday (international name Bavi) was a real super
-            # typhoon affecting the Philippines in early-to-mid July 2026 —
+            # typhoon affecting the Philippines in early-to-mid July 2026 -
             # see Rappler (https://www.rappler.com/philippines/weather/super-typhoon-inday-update-pagasa-forecast-july-7-2026-11pm/)
             # and Al Jazeera (https://www.aljazeera.com/news/2026/7/10/philippines-landslides-kill-15-as-typhoon-bavi-threatens-region).
             # The seeded start_date below (7 days before "today") is meant to
@@ -135,13 +135,13 @@ def run():
         db.session.flush()
         print(f"Seeded {len(status_plan)} BarangayDisasterStatus rows")
 
-        # One ReliefRequestBatch per office, created lazily on first use — every
+        # One ReliefRequestBatch per office, created lazily on first use - every
         # AllocationRecord below now goes through the same submission wrapper the
         # real CSWDO "Relief Requests" flow uses (app.routes.cswdo.relief_request_submit),
         # instead of being created directly. Without this, these records would be
         # invisible on the CSWDO Relief Requests page (which only reads
         # ReliefRequestBatch) while still showing up on the CSWDO Dashboard's
-        # "Relief Request Status" widget (which reads AllocationRecord directly) —
+        # "Relief Request Status" widget (which reads AllocationRecord directly) -
         # the two pages would silently disagree about how many requests exist.
         _relief_batches = {}
         submitted_at = datetime.combine(today - timedelta(days=1), dtime(9, 0))

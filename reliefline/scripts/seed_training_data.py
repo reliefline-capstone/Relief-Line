@@ -4,18 +4,18 @@ Builds a realistic training dataset for the food-pack demand model
 
 What it does
 ------------
-1. Upserts the full, real barangay roster for the three target LGUs —
-   Urdaneta City (34), Santa Barbara (29), Calasiao (24) — taken from the
+1. Upserts the full, real barangay roster for the three target LGUs -
+   Urdaneta City (34), Santa Barbara (29), Calasiao (24) - taken from the
    PSGC boundary files in app/static/geo. Existing barangays keep their
-   barangay_id (so every FK — users, allocations, statuses — stays intact);
+   barangay_id (so every FK - users, allocations, statuses - stays intact);
    only their profile numbers are refreshed. The 10 placeholder Santa
    Barbara names are renamed to real ones.
 2. Gives every barangay a *coherent* synthetic profile: population, a
    per-barangay household size (so num_households is NOT a fixed ratio of
    population and the two carry independent signal), poverty incidence,
-   disaster risk index and past-calamity frequency — all deterministic from
+   disaster risk index and past-calamity frequency - all deterministic from
    the barangay name, so re-runs are stable. Any barangay figure we have an
-   official record for (see scripts/real_profiles.py — currently Urdaneta
+   official record for (see scripts/real_profiles.py - currently Urdaneta
    City population and household counts, PSA 2024) overrides the synthetic
    value; fields with no real dataset yet stay synthetic.
 3. Creates six past (ended) typhoon events spanning 2023-2025 and, for each,
@@ -23,7 +23,7 @@ What it does
    of barangays. The allocation quantity comes from an explicit generative
    model (see `synthetic_allocation`): a fraction of households is affected,
    only a fraction of THOSE need food packs, and the pack count tracks that
-   need (~one per family) — so a mid-size barangay in a moderate event lands
+   need (~one per family) - so a mid-size barangay in a moderate event lands
    around 100-300 packs, not thousands. `affected_families` on the status row
    is the raw affected count (larger, but never more than the barangay's
    household total). Real allocations will differ; retraining via
@@ -42,7 +42,7 @@ import sys
 from datetime import date, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/ — sibling modules
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/ - sibling modules
 
 from real_profiles import real_profile
 
@@ -75,7 +75,7 @@ GEO_FILES = {
 SANTA_BARBARA_RENAMES = {
     "Abot": "Alibago",
     "Ban-ao": "Balingueo",
-    "Batayang": "Sonquil",  # not "Banaoang" — that name already exists in Calasiao
+    "Batayang": "Sonquil",  # not "Banaoang" - that name already exists in Calasiao
     "Bungallon": "Banzal",
     "Calepaan": "Botao",
     "Carosucan Norte": "Cablong",
@@ -87,7 +87,7 @@ SANTA_BARBARA_RENAMES = {
 
 # Six past typhoon events with a severity multiplier each. Severity is the
 # only per-event driver the model can't see (it has no event feature), so it
-# is kept in a modest band — the six static predictors stay dominant.
+# is kept in a modest band - the six static predictors stay dominant.
 SYNTHETIC_EVENTS = [
     ("Typhoon Egay (2023)",        date(2023, 8, 19),  date(2023, 8, 26),  "Typhoon",            0.88),
     ("Typhoon Kabayan (2023)",     date(2023, 11, 4),  date(2023, 11, 10), "Severe Tropical Storm", 0.97),
@@ -147,7 +147,7 @@ def profile_for(name, lgu):
 def _affected_rate(b, severity):
     """Fraction of a barangay's households actually affected in an event.
     Driven by exposure/vulnerability, lifted by event severity. Clipped to a
-    realistic 5%-60% — a whole barangay is very rarely 100% affected."""
+    realistic 5%-60% - a whole barangay is very rarely 100% affected."""
     base = (0.055
             + 0.026 * float(b.disaster_risk_index)
             + 0.0016 * float(b.poverty_incidence)
@@ -156,7 +156,7 @@ def _affected_rate(b, severity):
 
 
 def _pack_need_rate(b):
-    """Of the AFFECTED households, the share that actually needs a food pack —
+    """Of the AFFECTED households, the share that actually needs a food pack -
     displaced, house damaged, or no means to cook. Not every affected family
     needs relief goods; higher-risk barangays see more displacement."""
     return max(0.20, min(0.24 + 0.028 * float(b.disaster_risk_index)
@@ -167,7 +167,7 @@ PACKS_PER_FAMILY = 1.1  # ~one food pack per family, small operational buffer
 
 
 def affected_families_for(b, severity, rng):
-    """Realistic count of affected families for a BarangayDisasterStatus row —
+    """Realistic count of affected families for a BarangayDisasterStatus row -
     a few dozen to a few hundred, never more than the barangay has."""
     fam = _affected_rate(b, severity) * b.num_households * rng.uniform(0.9, 1.1)
     return max(0, min(int(round(fam)), b.num_households))
@@ -182,7 +182,7 @@ def synthetic_allocation(b, severity, prior, rng):
                    + 0.20 * prior_allocation + noise
 
     So the figure tracks *families that actually need relief goods*, not the
-    raw affected count — a barangay of 500 households in a moderate event lands
+    raw affected count - a barangay of 500 households in a moderate event lands
     around 80-150 packs, not thousands.
     """
     affected_households = b.num_households * _affected_rate(b, severity)
@@ -287,7 +287,7 @@ def run():
         # --- 4. create events + statuses + allocations (chronological) -----
         # The synthetic historical events carry ONLY training data (no
         # distributions), so their allocations + statuses are dropped and
-        # rebuilt every run — that keeps a retune of the generative model a
+        # rebuilt every run - that keeps a retune of the generative model a
         # one-command operation.
         barangay_by_id = {b.barangay_id: b for b in all_barangays}
         syn_events = DisasterEvent.query.filter(
@@ -354,7 +354,7 @@ def run():
             db.session.flush()
 
         # --- 5. rewrite pre-existing demo allocation labels coherently -----
-        # (Typhoon Inday / Basyang / Ada — event_id 1-3). Keeps the training
+        # (Typhoon Inday / Basyang / Ada - event_id 1-3). Keeps the training
         # set on one generative function; syncs the linked distribution and
         # status rows so the demo pages still add up.
         rewritten = 0

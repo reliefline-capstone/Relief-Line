@@ -1,4 +1,4 @@
-/* Standalone sign-in page (templates/login.html) — the provincial capitol
+/* Standalone sign-in page (templates/login.html) - the provincial capitol
    behind a light wash, provincial identity + ReliefLine intro on the left,
    the sign-in card on the right. The shared .login-card and its form
    controls come from login.css. */
@@ -24,7 +24,7 @@
     transform-origin: center;
 }
 
-/* Light wash — heaviest behind the copy on the left, clearing toward the
+/* Light wash - heaviest behind the copy on the left, clearing toward the
    right so the building stays faintly visible behind the card. */
 .lpg::before {
     content: "";
@@ -152,7 +152,7 @@
     box-shadow: 0 24px 64px rgba(15, 37, 71, 0.18);
 }
 
-/* "Secured System" divider removed — give the notice below the button its
+/* "Secured System" divider removed - give the notice below the button its
    own breathing room and a top rule in its place. */
 .lpg-main .login-card .secured-note {
     margin-top: 18px;

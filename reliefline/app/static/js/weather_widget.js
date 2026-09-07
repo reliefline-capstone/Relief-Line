@@ -1,5 +1,5 @@
 /**
- * Weather & Typhoon Watch widget — fetches app.utils.weather's JSON snapshot
+ * Weather & Typhoon Watch widget - fetches app.utils.weather's JSON snapshot
  * (served per-role at /pswdo/dashboard/weather, /cswdo/dashboard/weather,
  * /barangay/dashboard/weather) and renders it client-side.
  *
@@ -10,24 +10,24 @@
  * Every host page must include a container like:
  *   <div class="weather-widget" data-weather-widget data-endpoint="{{ url_for('pswdo.dashboard_weather') }}"></div>
  *
- * A second, optional container renders a compact one-line summary — meant
+ * A second, optional container renders a compact one-line summary - meant
  * for the dashboard's greeting banner, where a "condition + typhoon status"
  * glance belongs beside the clock rather than the full multi-day card:
  *   <div class="banner-weather-live" data-weather-header data-endpoint="..."></div>
  *
- * A third, optional container renders a compact multi-day forecast strip —
+ * A third, optional container renders a compact multi-day forecast strip -
  * sits in the greeting banner where a manually-logged DisasterEvent badge
- * used to (that badge is a *record your office logged*, not live weather —
- * see app/models/disaster_event.py — so it doesn't belong next to a weather
+ * used to (that badge is a *record your office logged*, not live weather -
+ * see app/models/disaster_event.py - so it doesn't belong next to a weather
  * widget; each dashboard shows it elsewhere if at all):
  *   <div class="banner-forecast-box" data-weather-forecast data-endpoint="..."></div>
  *
  * All containers fetch independently (they all hit the same 15-minute
- * server-side cache, so a second request in the same window is instant —
+ * server-side cache, so a second request in the same window is instant -
  * simpler than plumbing shared state between unrelated DOM regions).
  *
  * Icon paths are duplicated from app/utils/icons.py (the browser can't read
- * that file) — keep both in sync when adding a weather icon.
+ * that file) - keep both in sync when adding a weather icon.
  */
 (function () {
     "use strict";
@@ -107,7 +107,7 @@
             return (
                 '<div class="typhoon-watch typhoon-watch-unknown">' +
                 svgIcon("alert-triangle", 16) +
-                '<span>Typhoon monitoring is temporarily unavailable — check PAGASA directly for the latest bulletin.</span>' +
+                '<span>Typhoon monitoring is temporarily unavailable - check PAGASA directly for the latest bulletin.</span>' +
                 "</div>"
             );
         }
@@ -135,7 +135,7 @@
 
         // The "Declare Disaster Event" action itself now lives in the panel
         // header (see eventActionHtml) instead of a second button dropped in
-        // here — one button, and this grid keeps only real storm cards as
+        // here - one button, and this grid keeps only real storm cards as
         // its items, so a lone card's auto-fit column properly collapses
         // its unused siblings and stretches to use the panel's full width
         // rather than a fixed-width card next to blank space.
@@ -143,7 +143,7 @@
     }
 
     // --- Declare/End Disaster Event header action ---------------------------
-    // PSWDO-only (gated by data-can-declare-events on the panel container —
+    // PSWDO-only (gated by data-can-declare-events on the panel container -
     // see app.routes.pswdo.declare_disaster_event / end_disaster_event).
     // Only one of Declare/End ever renders: the app treats a single active
     // DisasterEvent as the current one everywhere, so both being available
@@ -162,7 +162,7 @@
         }
         // Pre-fills from the first live-detected storm when there is one, so
         // declaring it is a one-click confirm rather than retyping what's
-        // already on screen — same single button either way, just with or
+        // already on screen - same single button either way, just with or
         // without prefill data attributes.
         return (
             '<button type="button" class="weather-declare-btn" data-declare-open ' +
@@ -292,13 +292,13 @@
 
     // --- Compact header chip (greeting banner) -----------------------------
     // A one-line live-conditions glance, distinct from the full multi-city
-    // panel above. Uses the first city in the endpoint's response — the
+    // panel above. Uses the first city in the endpoint's response - the
     // viewer's own LGU for CSWDO/barangay, or the first of the three target
     // LGUs for PSWDO's province-wide view.
     //
     // No typhoon-watch line here on purpose (used to show GDACS's raw "is
     // there any cyclone in the PAR" read, e.g. "No active cyclone in the
-    // PAR") — it duplicated the greeting banner's own Active Event badge
+    // PAR") - it duplicated the greeting banner's own Active Event badge
     // (server-rendered from this office's actual declared DisasterEvent,
     // see app.routes.cswdo/barangay dashboard()), was a second, less
     // authoritative signal for the same thing, and ate up header space for
@@ -347,7 +347,7 @@
         var city = (data.cities || [])[0];
         if (!city || !city.available || !city.forecast || !city.forecast.length) {
             container.innerHTML = '<span class="banner-forecast-error">' + svgIcon("cloud", 14) + ' Forecast unavailable' +
-                (city ? " — " + escapeHtml(city.city) : "") + '</span>';
+                (city ? " - " + escapeHtml(city.city) : "") + '</span>';
             return;
         }
         var daysHtml = city.forecast.map(function (f) {

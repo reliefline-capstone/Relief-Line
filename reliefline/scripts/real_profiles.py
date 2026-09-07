@@ -4,7 +4,7 @@ Real per-barangay reference data that replaces synthetic seed values.
 This is the single source of truth for any barangay profile figure we have an
 official record for. `seed_training_data.profile_for()` generates a synthetic
 profile for every barangay, then overlays whatever real values live here on
-top — so a field we have (e.g. Urdaneta population) is real, and a field we
+top - so a field we have (e.g. Urdaneta population) is real, and a field we
 don't yet have (e.g. poverty incidence, disaster risk index) stays synthetic
 until its own official dataset is added here.
 
@@ -19,9 +19,9 @@ Missing keys simply fall through to the synthetic value.
 Sources
 ----------------------------------------------------------------------------
 Urdaneta City
-  * population     — Philippine Statistics Authority (PSA), "Total Population,
+  * population     - Philippine Statistics Authority (PSA), "Total Population,
                      Urdaneta City", as of 01 July 2024. City total: 145,935.
-  * num_households — PSA household count per barangay. City total: 40,015.
+  * num_households - PSA household count per barangay. City total: 40,015.
 """
 
 # (city_municipality, barangay_name) -> {predictor: real value}

@@ -1,5 +1,5 @@
 /* ============================================================
-   Profile Settings — shared by admin / pswdo / cswdo / barangay
+   Profile Settings - shared by admin / pswdo / cswdo / barangay
    (all four templates load only dashboard.css + this file, so the
    polish here is safely scoped to the Profile Settings screen).
    ============================================================ */
@@ -142,7 +142,7 @@
     background: #eaf0fd;
 }
 
-/* Form on the left, contextual helper text on the right — fills the
+/* Form on the left, contextual helper text on the right - fills the
    panel width instead of leaving a wide empty margin beside the fields. */
 .settings-panel-body {
     display: grid;

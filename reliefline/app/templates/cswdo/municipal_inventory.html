@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
-{% block title %}{{ office.office_name }} — Municipal Warehouse - ReliefLine{% endblock %}
+{% block title %}{{ office.office_name }} - Municipal Warehouse - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
@@ -39,9 +39,9 @@
                 <div class="wh-info-rows">
                     <div class="wh-info-row"><span>Office Name</span><strong>{{ office.office_name }}</strong></div>
                     <div class="wh-info-row"><span>Location</span><strong>{{ office.area_covered }}</strong></div>
-                    <div class="wh-info-row"><span>Full Address</span><strong>{{ office.full_address or '—' }}</strong></div>
-                    <div class="wh-info-row"><span>Contact Number</span><strong>{{ office.contact_number or '—' }}</strong></div>
-                    <div class="wh-info-row"><span>Email</span><strong>{{ office.email or '—' }}</strong></div>
+                    <div class="wh-info-row"><span>Full Address</span><strong>{{ office.full_address or '-' }}</strong></div>
+                    <div class="wh-info-row"><span>Contact Number</span><strong>{{ office.contact_number or '-' }}</strong></div>
+                    <div class="wh-info-row"><span>Email</span><strong>{{ office.email or '-' }}</strong></div>
                     <div class="wh-info-row"><span>Storage Capacity</span><strong>{{ "{:,}".format(capacity) }} Packs</strong></div>
                     <div class="wh-info-row"><span>Food Packs On Hand</span><strong>{{ "{:,}".format(food_pack_qty) }} Packs</strong></div>
                     <div class="wh-info-row"><span>Burn Rate</span><strong>
@@ -49,7 +49,7 @@
                         {%- elif has_active_event %}No affected-families data yet
                         {%- else %}No active event{% endif -%}
                     </strong></div>
-                    <div class="wh-info-row"><span>Days of Supply</span><strong>{% if days_remaining is not none %}{{ days_remaining|int }} days at current rate{% else %}—{% endif %}</strong></div>
+                    <div class="wh-info-row"><span>Days of Supply</span><strong>{% if days_remaining is not none %}{{ days_remaining|int }} days at current rate{% else %}-{% endif %}</strong></div>
                 </div>
                 <p class="form-hint" style="margin-top:12px;">This office manages its own municipal stock. Provincial replenishment / pre-positioning transfers are coordinated with the PSWDO.</p>
             </section>
@@ -269,7 +269,7 @@
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 <script>
 // Live-computes the resulting total as the user types a donation/adjustment
-// amount, so nobody has to add it to the current stock by hand — the server
+// amount, so nobody has to add it to the current stock by hand - the server
 // still does the authoritative math (see cswdo.municipal_inventory_update).
 function miPreviewTotal(input) {
     var current = parseInt(input.dataset.current, 10) || 0;

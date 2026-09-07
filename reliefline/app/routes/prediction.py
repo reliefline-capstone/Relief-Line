@@ -15,7 +15,7 @@ from app.models.barangay_inventory import food_pack_on_hand
 from app.models.barangay_report import BarangayReport
 from app.ml import predict as ml_predict
 
-# Reused rather than re-implemented — this is the same TARGET_LGUS scope,
+# Reused rather than re-implemented - this is the same TARGET_LGUS scope,
 # warehouse loader, stock-transfer recommendation, and stock-adequacy tier
 # logic the Dashboard/GIS Map/Relief Requests pages already use.
 from app.routes.pswdo import (
@@ -32,7 +32,7 @@ def _scope_lgus():
 
     The Linear Regression model is a CSWDO/MSWDO decision-support tool (see the
     manuscript's Ch.1 Purpose and Ch.3 Project Design), so a cswdo_admin is
-    pinned to their own municipality — same per-office boundary as
+    pinned to their own municipality - same per-office boundary as
     app.routes.pswdo._gis_scope_lgus. PSWDO/system_admin still see all three
     target LGUs. A CSWDO admin with no office on record gets an empty scope
     rather than falling back to full access.
@@ -57,8 +57,8 @@ def _resolve_event(event_id):
 
 def _barangay_snapshot(barangay, status_row, event_id):
     """One barangay's real profile + need figures. The priority tier here is
-    STOCK ADEQUACY (see app.routes.pswdo._stock_adequacy) — reported caseload
-    (affected families + individuals) vs the barangay's own food-pack stock —
+    STOCK ADEQUACY (see app.routes.pswdo._stock_adequacy) - reported caseload
+    (affected families + individuals) vs the barangay's own food-pack stock -
     the same lens the GIS map uses, so this page and the map agree. 'Estimated
     Need' still uses the real submitted request/allocation when one exists,
     else the trained model's forecast."""
@@ -108,7 +108,7 @@ def _barangay_snapshot(barangay, status_row, event_id):
         "undelivered": max(packs_needed - released, 0),
         "need_source": source,
         "predicted_quantity": predicted,
-        # The barangay's own current food-pack stock — int, or None when the
+        # The barangay's own current food-pack stock - int, or None when the
         # barangay has never reported any. Shown read-only in the ranking and
         # used to prefill a proactive allocation (model estimate − on hand).
         "on_hand_stock": on_hand,
@@ -130,7 +130,7 @@ def index():
     scope_lgus = _scope_lgus()
     is_cswdo = _is_cswdo()
     # Proactive allocation is a CSWDO/MSWDO action (this page's route is
-    # already cswdo_admin/system_admin-only) — just needs an office on file
+    # already cswdo_admin/system_admin-only) - just needs an office on file
     # to know which warehouse to deduct from and which barangay it may act on.
     can_allocate = bool(current_user.office)
     municipality_filter = request.args.get("municipality", "all")
@@ -152,7 +152,7 @@ def index():
 
     # Snapshots below log a real PredictionLog row (deduped per barangay/day)
     # for every barangay whose estimate comes from the model rather than a
-    # submitted request — see _barangay_snapshot / log_prediction_once_per_day.
+    # submitted request - see _barangay_snapshot / log_prediction_once_per_day.
     snapshots = []
     for b in barangays:
         snap = _barangay_snapshot(b, status_map.get(b.barangay_id), event_id)
@@ -163,7 +163,7 @@ def index():
     # ---- Stat cards ----
     estimated_need = sum(s["undelivered"] for s in snapshots)
     all_offices, all_warehouses, _ = _load_warehouses()
-    # A CSWDO/MSWDO admin only ever sees their own municipal warehouse here —
+    # A CSWDO/MSWDO admin only ever sees their own municipal warehouse here -
     # province-wide depot visibility stays a PSWDO responsibility.
     if is_cswdo and current_user.office:
         warehouses = [w for w in all_warehouses if w["office"].office_id == current_user.office.office_id]
@@ -171,7 +171,7 @@ def index():
         warehouses = all_warehouses
     total_food_packs = sum(w["food_pack_qty"] for w in warehouses)
     fulfillable_warehouses = [w for w in warehouses if w["food_pack_qty"] > 0]
-    # Burn rate is only meaningful during an active disaster event/operation —
+    # Burn rate is only meaningful during an active disaster event/operation -
     # one food pack sustains one family for three days (manuscript Scope), so
     # daily burn = affected_families / 3. No active event ⇒ no burn rate.
     total_affected_families = sum(s["affected_families"] for s in snapshots if s["status"] != "normal") if event else 0
@@ -198,7 +198,7 @@ def index():
         })
     forecast_by_lgu.sort(key=lambda f: f["packs_needed"], reverse=True)
 
-    # ---- Priority ranking (barangay-level) — by STOCK SHORTFALL: the
+    # ---- Priority ranking (barangay-level) - by STOCK SHORTFALL: the
     # barangays least able to cover their own reported caseload from their own
     # food-pack stock float to the top (same lens as the GIS map). Within a
     # tier, the higher need-vs-stock ratio ranks first, then the larger
@@ -209,7 +209,7 @@ def index():
         reverse=True,
     )[:8]
 
-    # ---- Warehouse stock forecast — the province-wide PSWDO warehouses only
+    # ---- Warehouse stock forecast - the province-wide PSWDO warehouses only
     # (municipal CSWDO offices are covered on the GIS Map's per-municipality
     # "assigned warehouse" card instead) ----
     warehouse_cards = []
@@ -229,7 +229,7 @@ def index():
             "burn_rate": burn_rate,
         })
 
-    # ---- Historical trend — real DistributionRecord history, whatever there
+    # ---- Historical trend - real DistributionRecord history, whatever there
     # is of it (this deployment currently has activity on a single date) ----
     since = ph_today() - timedelta(days=days_filter)
     history_rows = DistributionRecord.query.join(Barangay).filter(
@@ -243,11 +243,11 @@ def index():
         by_date[r.distribution_date] += r.quantity_released
     historical_trend = [{"date": d.strftime("%b %d"), "packs": qty} for d, qty in sorted(by_date.items())]
 
-    # ---- Model performance (real, honest — see app/ml/train.py) ----
+    # ---- Model performance (real, honest - see app/ml/train.py) ----
     latest_metrics = ModelMetrics.query.order_by(ModelMetrics.trained_at.desc()).first()
 
     # ---- Recommendations: real stock-transfer rules + top-priority barangay ----
-    # Link targets are role-aware — the PSWDO stock-transfer / relief-request
+    # Link targets are role-aware - the PSWDO stock-transfer / relief-request
     # pages are role_required("pswdo_admin", ...) and would 403 a cswdo_admin.
     relief_link = url_for("cswdo.relief_requests") if is_cswdo else "/pswdo/relief-requests"
     transfer_link = url_for("cswdo.municipal_inventory") if is_cswdo else "/pswdo/warehouse-inventory/transfer"

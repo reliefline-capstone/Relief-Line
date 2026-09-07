@@ -60,7 +60,7 @@
                 {% if t.status == 'completed' %}
                 <div class="dd-update-banner dd-update-success">
                     {{ icon('check-circle', 16, '#1e8449') }}
-                    <p>{{ t.to_office.office_name }} confirmed receipt — stock credited.</p>
+                    <p>{{ t.to_office.office_name }} confirmed receipt - stock credited.</p>
                 </div>
                 {% elif can_issue %}
                 <form method="POST" action="{{ url_for('pswdo.transfer_issue', transfer_id=t.transfer_id) }}" class="settings-form">
@@ -71,7 +71,7 @@
                 {% else %}
                 <div class="dd-update-banner dd-update-pending">
                     {{ icon('truck', 16, '#2c5aa0') }}
-                    <p>In transit — waiting for {{ t.to_office.area_covered }} to confirm receipt.</p>
+                    <p>In transit - waiting for {{ t.to_office.area_covered }} to confirm receipt.</p>
                 </div>
                 {% endif %}
             </section>

@@ -67,7 +67,7 @@
                         <td>
                             <div class="wh-fill-cell">
                                 <div class="warehouse-bar wh-fill-bar"><div class="warehouse-bar-fill fill-{{ row.status|lower }}" style="width: {{ pct if pct and pct <= 100 else 100 }}%;"></div></div>
-                                <span>{% if pct is not none %}{{ pct }}%{% else %}—{% endif %}</span>
+                                <span>{% if pct is not none %}{{ pct }}%{% else %}-{% endif %}</span>
                             </div>
                         </td>
                         <td><span class="badge-health badge-{{ row.status|lower }}">{{ 'Low Stock' if row.status == 'Low' else row.status }}</span></td>
@@ -191,7 +191,7 @@
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
 <script>
 // Live-computes the resulting total as the user types a donation/adjustment
-// amount, so nobody has to add it to the current stock by hand — the server
+// amount, so nobody has to add it to the current stock by hand - the server
 // still does the authoritative math (see pswdo.warehouse_inventory_update).
 function whPreviewTotal(input) {
     var current = parseInt(input.dataset.current, 10) || 0;

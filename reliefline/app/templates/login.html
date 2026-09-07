@@ -36,7 +36,7 @@
             </div>
             <p class="lpg-intro-desc">
                 A Data-Driven Relief Supplies Pipeline System for the Province of
-                Pangasinan — transforming fragmented, manual relief planning into a
+                Pangasinan - transforming fragmented, manual relief planning into a
                 structured, centralized, and evidence-based platform.
             </p>
         </section>
@@ -101,7 +101,7 @@
         <span>© 2026 Province of Pangasinan. All rights reserved.</span>
     </footer>
 
-    <!-- Forgot Password modal — opened by the "Forgot Password?" button, in
+    <!-- Forgot Password modal - opened by the "Forgot Password?" button, in
          place, without navigating to a separate page. -->
     <div class="auth-modal-overlay" id="forgot-password-modal" hidden>
         <div class="login-card auth-modal-card">
@@ -128,7 +128,7 @@
         </div>
     </div>
 
-    {# Set a New Password — shown to a user whose password was reset by a
+    {# Set a New Password - shown to a user whose password was reset by a
        System Administrator. No close control and data-no-dismiss: they stay
        locked here (see app.__init__'s _enforce_forced_password_change) until
        they replace the shared default password. #}
@@ -192,7 +192,7 @@
     });
     document.querySelectorAll('.auth-modal-overlay').forEach(function (overlay) {
         // [data-no-dismiss] (the forced "Set a New Password" step) can't be
-        // clicked away or Escape'd out of — the user has to complete it.
+        // clicked away or Escape'd out of - the user has to complete it.
         if (overlay.hasAttribute('data-no-dismiss')) return;
         overlay.addEventListener('click', function (e) {
             if (e.target === overlay) overlay.hidden = true;

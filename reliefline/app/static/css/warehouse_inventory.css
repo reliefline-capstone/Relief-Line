@@ -98,10 +98,10 @@
 
 .wh-text-link:hover { color: #0f2547; }
 
-/* .btn-add-warehouse now lives in dashboard.css — every page using this
+/* .btn-add-warehouse now lives in dashboard.css - every page using this
    button loads that stylesheet, which wasn't true of this one. */
 
-/* Stat cards — 4 across instead of the dashboard's 6 */
+/* Stat cards - 4 across instead of the dashboard's 6 */
 .wh-stat-cards { grid-template-columns: repeat(4, 1fr); }
 
 @media (max-width: 1200px) {
@@ -193,13 +193,13 @@
 }
 
 /* Warehouse Overview table */
-/* overflow-x (not overflow: hidden) so a table wider than its panel — e.g. long
-   office names alongside DATE/TIME/ACTIVITY/QUANTITY columns — scrolls into
+/* overflow-x (not overflow: hidden) so a table wider than its panel - e.g. long
+   office names alongside DATE/TIME/ACTIVITY/QUANTITY columns - scrolls into
    view instead of being silently clipped with no way to reach it. Still clips
    the table's square corners to the panel's border-radius either way. */
 /* .main-grid is a CSS grid with the default align-items: stretch, so
    without this the panel stretches to match its taller sibling
-   (.wh-side-col — Recent Stock Movements), leaving a large empty gap below
+   (.wh-side-col - Recent Stock Movements), leaving a large empty gap below
    the table's last row instead of the panel just sizing to its own content. */
 .wh-table-panel { padding: 0; overflow-x: auto; align-self: start; }
 
@@ -440,7 +440,7 @@
 /* Side column */
 .wh-side-col { display: flex; flex-direction: column; }
 
-/* Municipal Warehouse detail — General Information (left) and the Capacity
+/* Municipal Warehouse detail - General Information (left) and the Capacity
    card (right) sit as a matched pair, so the Capacity panel stretches to the
    same height instead of floating short beside the longer info list. */
 .mi-detail-grid { align-items: stretch; }
@@ -526,7 +526,7 @@
 .wh-pending-transfer:last-child { border-bottom: none; }
 .wh-pending-transfer strong { display: block; font-size: 13px; }
 
-/* Warehouse Detail — General Information / Capacity */
+/* Warehouse Detail - General Information / Capacity */
 .wh-info-rows { display: flex; flex-direction: column; }
 
 .wh-info-row {
@@ -605,7 +605,7 @@
     font-size: 13px;
 }
 
-/* Warehouses list — card grid */
+/* Warehouses list - card grid */
 .wh-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

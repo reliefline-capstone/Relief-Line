@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
-{% block title %}{{ user.name }} — Activity - ReliefLine{% endblock %}
+{% block title %}{{ user.name }} - Activity - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
@@ -68,8 +68,8 @@
                     <tr>
                         <td>{{ log.description }}</td>
                         <td><span class="badge-module {{ row.badge_class }}">{{ row.module }}</span></td>
-                        <td>{{ log.created_at | ph_time if log.created_at else '—' }}</td>
-                        <td><code>{{ log.ip_address or '—' }}</code></td>
+                        <td>{{ log.created_at | ph_time if log.created_at else '-' }}</td>
+                        <td><code>{{ log.ip_address or '-' }}</code></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="4" class="empty-note" style="text-align:center; padding:30px;">No activity recorded for {{ user.name }} yet.</td></tr>

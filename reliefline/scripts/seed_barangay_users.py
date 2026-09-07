@@ -1,9 +1,9 @@
 """
 Creates one barangay_user login per row in `barangays` (Table 10: "Barangay-
-Level Users" — authorized barangay personnel who submit/validate relief-
+Level Users" - authorized barangay personnel who submit/validate relief-
 related information). Every target barangay across Urdaneta City, Santa
 Barbara, and Calasiao gets exactly one account, keyed off barangay_id (not
-barangay_name, since names repeat across LGUs — e.g. "Banaoang" exists in
+barangay_name, since names repeat across LGUs - e.g. "Banaoang" exists in
 both Calasiao and Santa Barbara).
 
 Safe to re-run: skips any barangay that already has a barangay_user account.
@@ -43,7 +43,7 @@ NAME_POOL = [
 PINNED_NAMES = {
     # The dashboard mockup reviewed with the team labels this account
     # "Brgy. Banaoang, Sta. Barbara", but the only "Banaoang" among the 10
-    # seeded target barangays per LGU is Calasiao's (barangay_id 23) — Santa
+    # seeded target barangays per LGU is Calasiao's (barangay_id 23) - Santa
     # Barbara's own Banaoang exists in the GIS geojson but isn't one of the
     # 10 barangays this dataset uses. Pinned here to the one that's real.
     ("Banaoang", "Calasiao"): "Jose Reyes",

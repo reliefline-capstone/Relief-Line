@@ -7,7 +7,7 @@
     <title>{% block title %}ReliefLine{% endblock %}</title>
     <!-- Runs before any CSS/layout so a saved sidebar-collapsed preference
          (see the toggle handler at the bottom of this file) applies before
-         first paint — without this, every page would flash briefly in the
+         first paint - without this, every page would flash briefly in the
          wrong (default-expanded) state before JS could fix it up. -->
     <script>
         (function () {
@@ -22,19 +22,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- One typeface, everywhere: Inter is drawn specifically for on-screen
          UI legibility at small sizes and has unambiguous numerals (0/O, 1/l/I
-         stay distinct) — which matters more here than a decorative heading
+         stay distinct) - which matters more here than a decorative heading
          face, since PSWDO/CSWDO/MSWDO/barangay users read a lot of counts and
          figures under time pressure, not marketing copy. The wider weight
          range (400-800) is what gives headings their own presence without a
          second font family to load or keep visually consistent. -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}?v={{ asset_version('css/base.css') }}">
-    <!-- Custom dropdown for every <select> in the app — see
+    <!-- Custom dropdown for every <select> in the app - see
          custom_select.css for why this needs to be global. Loaded before
          extra_css so a page can still add its own overrides after it if
          ever needed. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom_select.css') }}?v={{ asset_version('css/custom_select.css') }}">
-    <!-- Custom calendar / time pickers for every <input type="date|time"> —
+    <!-- Custom calendar / time pickers for every <input type="date|time"> -
          same reason as custom_select: the native popup is unstyleable. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom_datetime.css') }}?v={{ asset_version('css/custom_datetime.css') }}">
     {% block extra_css %}{% endblock %}
@@ -42,10 +42,10 @@
 <body>
     {% block content %}{% endblock %}
 
-    <!-- Flash toast stack — rendered once here, as a sibling of the page's
+    <!-- Flash toast stack - rendered once here, as a sibling of the page's
          own content (every role used to include an identical _flash.html
          partial inside their own <main class="dashboard-main">, which
-         has an entrance `animation` using `transform` + fill-mode: both —
+         has an entrance `animation` using `transform` + fill-mode: both -
          that quietly makes .dashboard-main a *permanent* containing block
          for any position:fixed descendant, per spec. Practically: the
          floating toast wasn't fixed to the viewport at all, it was pinned

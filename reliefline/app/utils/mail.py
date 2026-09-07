@@ -1,12 +1,12 @@
 """
-Minimal SMTP sender for the password-reset flow — plain smtplib against
+Minimal SMTP sender for the password-reset flow - plain smtplib against
 whatever MAIL_* environment variables are set, no Flask-Mail dependency.
 
 Returns False (never raises for "not configured") when MAIL_SERVER isn't
 set, so callers can fall back to displaying the reset link directly. This
 keeps the reset flow fully usable before any real mail server is wired up,
 and it starts sending real email the moment MAIL_SERVER/MAIL_USERNAME/
-MAIL_PASSWORD are added to .env — no code changes needed anywhere else.
+MAIL_PASSWORD are added to .env - no code changes needed anywhere else.
 """
 import os
 import smtplib

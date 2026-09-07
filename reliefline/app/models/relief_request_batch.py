@@ -2,7 +2,7 @@ from app.extensions import db
 
 
 class ReliefRequestBatch(db.Model):
-    """A **Stock Request** — one CSWDO/MSWDO office asking PSWDO to replenish
+    """A **Stock Request** - one CSWDO/MSWDO office asking PSWDO to replenish
     its municipal warehouse (Tier 2). This is the ONLY request PSWDO decides on:
     barangay-level Relief Requests (Tier 1) are handled entirely by CSWDO from
     its own warehouse and never reach PSWDO.
@@ -11,7 +11,7 @@ class ReliefRequestBatch(db.Model):
     the requesting CSWDO warehouse and monitors that leg (the manuscript's
     "PSWDO ... coordinates pre-positioning" + "from PSWDO to CSWDO lang ang
     monitoring"). The batch's own `status` column tracks the decision directly
-    — no per-barangay fan-out.
+    - no per-barangay fan-out.
 
     (Historically a batch spawned one AllocationRecord per barangay; those rows
     still exist and `allocation_records` still resolves them, but new batches
@@ -82,7 +82,7 @@ class ReliefRequestBatch(db.Model):
 
     @property
     def allocation_records(self):
-        """Legacy per-barangay children — only pre-Phase-3 batches have these."""
+        """Legacy per-barangay children - only pre-Phase-3 batches have these."""
         from app.models.allocation import AllocationRecord
         return AllocationRecord.query.filter_by(batch_id=self.batch_id).order_by(
             AllocationRecord.allocation_id

@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}?v={{ asset_version('css/landing.css') }}">
 {% endblock %}
 
-<!-- Marketing page only — no auth actions flash here (sign-in lives on
+<!-- Marketing page only - no auth actions flash here (sign-in lives on
      /login now), so base.html's corner toast is suppressed rather than
      pulling in dashboard.css just to style it. -->
 {% block global_flash %}{% endblock %}
@@ -56,7 +56,7 @@
                     </div>
                 </div>
                 <p class="lp-hero-desc">
-                    A Data-Driven Relief Supplies Pipeline System for the Province of Pangasinan —
+                    A Data-Driven Relief Supplies Pipeline System for the Province of Pangasinan -
                     transforming fragmented, manual relief planning into a structured, centralized,
                     and evidence-based platform.
                 </p>
@@ -84,29 +84,14 @@
             <div class="lp-section-head lp-reveal">
                 <span class="lp-eyebrow lp-eyebrow-blue">System Capabilities</span>
                 <h2>What ReliefLine Does</h2>
-                <p>A structured pipeline connecting prediction, pre-positioning, monitoring, and validation — end to end.</p>
+                <p>A structured pipeline connecting prediction, pre-positioning, monitoring, and validation - end to end.</p>
             </div>
 
             <div class="lp-card-grid">
                 <div class="lp-feature-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('grid', 20, '#2f54eb') }}</div>
-                    <h3>Predictive Food Pack Allocation</h3>
-                    <p>Uses a Linear Regression model to estimate recommended food pack quantities per barangay, based on population, poverty incidence, disaster risk, calamity history, and prior allocations.</p>
-                </div>
-                <div class="lp-feature-card lp-reveal">
                     <div class="lp-feature-icon">{{ icon('package', 20, '#2f54eb') }}</div>
                     <h3>Pre-positioning Support</h3>
                     <p>Uses predicted demand and current warehouse stock levels to guide inter-warehouse redistribution ahead of forecasted typhoon-related disasters.</p>
-                </div>
-                <div class="lp-feature-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('building', 20, '#2f54eb') }}</div>
-                    <h3>Warehouse Stock Monitoring</h3>
-                    <p>Monitors food pack inventory and non-food items such as hygiene kits and kitchen kits across provincial warehouses.</p>
-                </div>
-                <div class="lp-feature-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('map-pin', 20, '#2f54eb') }}</div>
-                    <h3>Geospatial Mapping</h3>
-                    <p>Displays barangay-level predicted food pack demand and priority status using interactive maps.</p>
                 </div>
                 <div class="lp-feature-card lp-reveal">
                     <div class="lp-feature-icon">{{ icon('check-circle', 20, '#2f54eb') }}</div>
@@ -118,6 +103,21 @@
                     <h3>Distribution Validation</h3>
                     <p>Supports photo-based or signature-based validation records to confirm that food packs reached their intended barangay recipients.</p>
                 </div>
+                <div class="lp-feature-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('grid', 20, '#2f54eb') }}</div>
+                    <h3>Predictive Food Pack Allocation</h3>
+                    <p>Uses a Linear Regression model to estimate recommended food pack quantities per barangay, based on population, poverty incidence, disaster risk, calamity history, and prior allocations.</p>
+                </div>
+                <div class="lp-feature-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('building', 20, '#2f54eb') }}</div>
+                    <h3>Warehouse Stock Monitoring</h3>
+                    <p>Monitors food pack inventory and non-food items such as hygiene kits and kitchen kits across provincial warehouses.</p>
+                </div>
+                <div class="lp-feature-card lp-reveal">
+                    <div class="lp-feature-icon">{{ icon('map-pin', 20, '#2f54eb') }}</div>
+                    <h3>Geospatial Mapping</h3>
+                    <p>Displays barangay-level predicted food pack demand and priority status using interactive maps.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -128,7 +128,7 @@
             <div class="lp-about-copy lp-reveal">
                 <span class="lp-eyebrow lp-eyebrow-green">About ReliefLine</span>
                 <h2>From Fragmented to <span class="lp-accent">Data-Driven</span></h2>
-                <p>ReliefLine is designed to transform the fragmented, manual relief planning process into a structured, centralized, and data-driven platform — from barangay-level field reporting all the way to provincial warehouse management.</p>
+                <p>ReliefLine is designed to transform the fragmented, manual relief planning process into a structured, centralized, and data-driven platform - from barangay-level field reporting all the way to provincial warehouse management.</p>
                 <p>Built as a capstone research project aligned with the Province of Pangasinan's disaster preparedness goals, it uses Linear Regression to estimate food pack demand at the barangay level based on historical disaster and allocation data.</p>
 
                 <ul class="lp-check-list">
@@ -160,7 +160,7 @@
                 </div>
 
                 <div class="lp-arch-card lp-arch-provincial lp-reveal">
-                    <div class="lp-arch-card-head">{{ icon('shield', 18, '#1e8449') }} <h4>Provincial Level — PSWDO</h4></div>
+                    <div class="lp-arch-card-head">{{ icon('shield', 18, '#1e8449') }} <h4>Provincial Level - PSWDO</h4></div>
                     <ul>
                         <li>{{ icon('check', 12, '#1e8449') }} Warehouse stock visibility and pre-positioning</li>
                         <li>{{ icon('check', 12, '#1e8449') }} Allocation request review and approval</li>
@@ -248,7 +248,7 @@
         </div>
     </footer>
 
-    <!-- Privacy Notice / Terms of Use / Contact Support — opened from the
+    <!-- Privacy Notice / Terms of Use / Contact Support - opened from the
          footer's Legal column in place, without leaving the landing page.
          Content mirrors app.templates.privacy/terms/contact.html, which stay
          reachable directly (e.g. their own real URL, no-JS) via the same
@@ -265,8 +265,8 @@
 
                 <h3>What we collect</h3>
                 <ul>
-                    <li>Account information for authorized users — name, email, and office or barangay assignment.</li>
-                    <li>Disaster response records submitted through the system — barangay damage reports, relief requests, allocation and distribution records, and warehouse stock levels.</li>
+                    <li>Account information for authorized users - name, email, and office or barangay assignment.</li>
+                    <li>Disaster response records submitted through the system - barangay damage reports, relief requests, allocation and distribution records, and warehouse stock levels.</li>
                     <li>Basic system activity logs (who approved or updated a record, and when) kept for accountability.</li>
                 </ul>
 
@@ -287,17 +287,17 @@
                 <h2>Terms of Use</h2>
             </div>
             <div class="static-page-body">
-                <p>By accessing ReliefLine, you agree to use the system only for the authorized disaster-response coordination duties assigned to your role — PSWDO, CSWDO/MSWDO, or barangay-level personnel — in the Province of Pangasinan.</p>
+                <p>By accessing ReliefLine, you agree to use the system only for the authorized disaster-response coordination duties assigned to your role - PSWDO, CSWDO/MSWDO, or barangay-level personnel - in the Province of Pangasinan.</p>
 
                 <h3>Account use</h3>
                 <ul>
                     <li>Accounts are personal and must not be shared.</li>
-                    <li>Reports submitted through the system — damage assessments, relief requests, and distribution/validation records — must reflect actual, good-faith information.</li>
+                    <li>Reports submitted through the system - damage assessments, relief requests, and distribution/validation records - must reflect actual, good-faith information.</li>
                     <li>Unauthorized access or use of ReliefLine outside of official relief operations is prohibited.</li>
                 </ul>
 
                 <h3>System availability</h3>
-                <p>ReliefLine requires an active internet connection. It is provided as a decision-support tool — its predictions and recommendations are estimates and do not replace the professional judgment of PSWDO, CSWDO/MSWDO, and barangay personnel.</p>
+                <p>ReliefLine requires an active internet connection. It is provided as a decision-support tool - its predictions and recommendations are estimates and do not replace the professional judgment of PSWDO, CSWDO/MSWDO, and barangay personnel.</p>
             </div>
         </div>
     </div>
@@ -312,9 +312,9 @@
             <div class="static-page-body">
                 <p>For account access, password issues, or technical support with ReliefLine, reach out through your own office's usual chain:</p>
                 <ul>
-                    <li><strong>Barangay-level users</strong> — contact your City/Municipal Social Welfare and Development Office (CSWDO/MSWDO).</li>
-                    <li><strong>CSWDO/MSWDO personnel</strong> — contact the Provincial Social Welfare and Development Office (PSWDO).</li>
-                    <li><strong>PSWDO personnel</strong> — contact your ReliefLine System Administrator.</li>
+                    <li><strong>Barangay-level users</strong> - contact your City/Municipal Social Welfare and Development Office (CSWDO/MSWDO).</li>
+                    <li><strong>CSWDO/MSWDO personnel</strong> - contact the Provincial Social Welfare and Development Office (PSWDO).</li>
+                    <li><strong>PSWDO personnel</strong> - contact your ReliefLine System Administrator.</li>
                 </ul>
                 <p>Locked out of your account? Use the <strong>Forgot Password?</strong> option on the sign-in page to send a reset request to a System Administrator.</p>
             </div>
@@ -329,7 +329,7 @@
 <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-// Hero map — a Leaflet basemap clipped to the outline of the Province of
+// Hero map - a Leaflet basemap clipped to the outline of the Province of
 // Pangasinan, so the province floats on the page (drop shadow in
 // landing.css) with no card or frame. The three pilot LGUs (Calasiao,
 // Santa Barbara, Urdaneta City) are drawn on top. Static.
@@ -369,7 +369,7 @@
     ]).then(function (res) {
         var muni = res[0], outline = res[1];
 
-        // Province boundary — a white casing then a dark line, so the
+        // Province boundary - a white casing then a dark line, so the
         // silhouette stays crisp against both the basemap and the page.
         L.geoJSON(outline, {
             pane: 'lpOutline', interactive: false,
@@ -380,7 +380,7 @@
             style: { color: '#22345a', weight: 1.75, opacity: 1, fill: false },
         }).addTo(map);
 
-        // The three pilot LGUs — white casing under a vivid blue fill.
+        // The three pilot LGUs - white casing under a vivid blue fill.
         L.geoJSON(muni, {
             pane: 'lpTarget', interactive: false,
             filter: function (f) { return TARGETS[f.properties.name] === 1; },
@@ -457,14 +457,14 @@
         onScroll();
     }
 
-    // Forgot Password modal — same generic [data-open-modal]/[data-close-modal]
+    // Forgot Password modal - same generic [data-open-modal]/[data-close-modal]
     // pattern used elsewhere in the app (e.g. relief_request_detail.js), scoped
     // to .auth-modal-overlay here since this page doesn't load that script.
     document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
         btn.addEventListener('click', function (e) {
             // Footer legal links keep a real href (Privacy Notice etc. stay
             // reachable at their own URL with JS off, or ctrl/cmd/shift-click
-            // to open in a new tab as usual) — a plain click opens the modal
+            // to open in a new tab as usual) - a plain click opens the modal
             // in place instead of navigating away.
             if (e.metaKey || e.ctrlKey || e.shiftKey) return;
             var modal = document.getElementById(btn.dataset.openModal);

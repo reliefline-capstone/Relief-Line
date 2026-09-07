@@ -23,7 +23,7 @@
         <div class="page-header">
             <div>
                 <h2>Stock Requests</h2>
-                <p>{{ lgu or '—' }} · ask PSWDO to replenish your municipal warehouse
+                <p>{{ lgu or '-' }} · ask PSWDO to replenish your municipal warehouse
                     {%- if primary_event %} · {{ primary_event.event_name }}{% endif %}</p>
             </div>
             <div class="rr-header-actions">
@@ -65,7 +65,7 @@
 
         {% if tab == 'create' %}
         <div class="rr-panel rr-panel-flush">
-            <div class="rr-panel-header"><div><h3>Projected demand — barangay breakdown</h3><p>Municipal demand = Σ barangay model estimates. PSWDO sees the same breakdown.</p></div></div>
+            <div class="rr-panel-header"><div><h3>Projected demand - barangay breakdown</h3><p>Municipal demand = Σ barangay model estimates. PSWDO sees the same breakdown.</p></div></div>
             <table class="rr-table">
                 <thead><tr><th>Barangay</th><th>Model Estimate (demand)</th></tr></thead>
                 <tbody>
@@ -113,7 +113,7 @@
                 <label for="rr-photo-files" class="rr-dropzone" data-dropzone>
                     <span class="rr-dropzone-icon">{{ icon('file-text', 20, '#2c5aa0') }}</span>
                     <strong data-dropzone-label>Click to choose files</strong>
-                    <span class="rr-dropzone-hint">JPG, PNG, or PDF — you can select several</span>
+                    <span class="rr-dropzone-hint">JPG, PNG, or PDF - you can select several</span>
                     <input type="file" id="rr-photo-files" name="photo_files" multiple accept=".pdf,.jpg,.jpeg,.png">
                 </label>
                 <ul class="rr-file-list" data-file-list hidden></ul>
@@ -143,7 +143,7 @@
             </div>
             <div class="rr-handler-row">
                 <div><span>Current Handler</span><strong>{% if selected.display_status == 'pending' %}PSWDO Office{% elif selected.display_status == 'fulfilled' %}Completed{% else %}Warehouse / Logistics{% endif %}</strong></div>
-                <div><span>Decision</span><strong>{{ selected.decision_remarks or ('Awaiting PSWDO' if selected.display_status == 'pending' else '—') }}</strong></div>
+                <div><span>Decision</span><strong>{{ selected.decision_remarks or ('Awaiting PSWDO' if selected.display_status == 'pending' else '-') }}</strong></div>
             </div>
         </div>
         {% if t %}
@@ -162,10 +162,10 @@
             {% if t.dispatch_status in ('in_transit','delivered') and t.status != 'completed' %}
             <form method="POST" action="{{ url_for('cswdo.receive_transfer', transfer_id=t.transfer_id) }}" class="settings-form" style="margin-top:10px;">
                 <div class="form-row"><label>Received by</label><input type="text" name="received_by" placeholder="{{ current_user.name }}"></div>
-                <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Confirm Receipt — credit {{ "{:,}".format(t.quantity) }} packs</button>
+                <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Confirm Receipt - credit {{ "{:,}".format(t.quantity) }} packs</button>
             </form>
             {% elif t.status == 'completed' %}
-            <p class="empty-note" style="color:#1e8449;">{{ icon('check-circle', 14) }} Received {{ t.received_at.strftime('%b %d, %I:%M %p') if t.received_at }} — warehouse credited.</p>
+            <p class="empty-note" style="color:#1e8449;">{{ icon('check-circle', 14) }} Received {{ t.received_at.strftime('%b %d, %I:%M %p') if t.received_at }} - warehouse credited.</p>
             {% else %}
             <p class="empty-note">Approved by PSWDO. Waiting for dispatch.</p>
             {% endif %}
@@ -180,7 +180,7 @@
                     {% for b in trackable %}
                     <tr>
                         <td>{{ b.ref }}</td><td>{{ "{:,}".format(b.requested_food_packs) }}</td>
-                        <td>{{ "{:,}".format(b.approved_food_packs) if b.approved_food_packs else '—' }}</td>
+                        <td>{{ "{:,}".format(b.approved_food_packs) if b.approved_food_packs else '-' }}</td>
                         <td><span class="badge-status status-{{ b.display_status }}">{{ status_labels.get(b.display_status, b.display_status) }}</span></td>
                         <td><a href="{{ url_for('cswdo.relief_requests', tab='tracking', batch_id=b.batch_id) }}" class="btn-view-sm">View</a></td>
                     </tr>
@@ -205,9 +205,9 @@
                     {% for b in rows %}
                     <tr>
                         <td>{{ b.ref }}</td>
-                        <td>{{ b.event.event_name if b.event else '—' }}</td>
+                        <td>{{ b.event.event_name if b.event else '-' }}</td>
                         <td>{{ "{:,}".format(b.requested_food_packs) }}</td>
-                        <td>{{ "{:,}".format(b.approved_food_packs) if b.approved_food_packs else '—' }}</td>
+                        <td>{{ "{:,}".format(b.approved_food_packs) if b.approved_food_packs else '-' }}</td>
                         <td><span class="badge-status status-{{ b.display_status }}">{{ status_labels.get(b.display_status, b.display_status) }}</span></td>
                         <td>{{ b.submitted_at.strftime('%b %d, %Y') if b.submitted_at else (b.created_at.strftime('%b %d, %Y') + ' (draft)') }}</td>
                         <td style="white-space:nowrap;">
@@ -234,7 +234,7 @@
     </main>
 </div>
 
-<!-- Delete-draft confirmation — replaces the native confirm() dialog. One modal
+<!-- Delete-draft confirmation - replaces the native confirm() dialog. One modal
      serves every .draft-delete-form on the page; the form is stashed on submit. -->
 <div class="rd-modal-overlay" id="delete-draft-modal" hidden>
     <div class="rd-modal">
@@ -311,7 +311,7 @@
             label.textContent = defaultText;
             return;
         }
-        label.textContent = files.length + (files.length === 1 ? ' file selected' : ' files selected') + ' — click to change';
+        label.textContent = files.length + (files.length === 1 ? ' file selected' : ' files selected') + ' - click to change';
         files.forEach(function (f) {
             var li = document.createElement('li');
             li.textContent = f.name;

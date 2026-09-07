@@ -45,14 +45,14 @@ WAREHOUSE_MODERATE_DEFAULT = 0.30
 
 
 def _healthy_threshold():
-    # Admin-editable via System Settings — see app.utils.settings.SETTINGS_SCHEMA.
+    # Admin-editable via System Settings - see app.utils.settings.SETTINGS_SCHEMA.
     return get_setting("warehouse_healthy_threshold", WAREHOUSE_HEALTHY_DEFAULT, cast=float)
 
 
 def _moderate_threshold():
     return get_setting("warehouse_moderate_threshold", WAREHOUSE_MODERATE_DEFAULT, cast=float)
 
-# Priority is derived from BarangayDisasterStatus for the active event —
+# Priority is derived from BarangayDisasterStatus for the active event -
 # there is no priority/urgency column in the schema, so this maps the
 # existing 4-tier status enum onto the labels the UI shows.
 PRIORITY_BY_STATUS = {
@@ -75,7 +75,7 @@ DEFAULT_PRIORITY = {"label": "Unrated", "tier": "unrated", "detail": "No status 
 #     50% < ratio <= 80% -> Medium   (yellow)
 #     80% < ratio < 100% -> High     (orange)
 #     ratio >= 100%      -> Critical (red)
-#   no inventory row on record        -> Unrated (grey)  — can't be assessed
+#   no inventory row on record        -> Unrated (grey)  - can't be assessed
 #   0 stock while need > 0            -> Critical
 #   no need (0 impact / no report)   -> Low
 _STOCK_TIER = {
@@ -130,12 +130,12 @@ ROUTE_PROGRESS_BY_STATUS = {
 }
 
 # Every ActivityLog.action_type actually written anywhere in this app (see the
-# ActivityLog(...) call sites) — the Notifications page and dashboard mini
+# ActivityLog(...) call sites) - the Notifications page and dashboard mini
 # panel both render off of this, so a new action_type must be added here too.
 # `category` is the stable filter key (used in ?category= URLs); `category_label`
 # is the shared display name. Two roles show a category under a different name
-# than this shared default — CSWDO/PSWDO's "distribution" reads "Deliveries",
-# the barangay's reads "Relief Monitoring" — so those routes override the label
+# than this shared default - CSWDO/PSWDO's "distribution" reads "Deliveries",
+# the barangay's reads "Relief Monitoring" - so those routes override the label
 # in their own _notification_view (see NOTIFICATION_CATEGORY_LABELS there).
 NOTIFICATION_META = {
     "allocation_approved": {"icon": "check-circle", "color": "#1e8449", "category": "relief_requests", "category_label": "Stock Requests"},
@@ -144,7 +144,7 @@ NOTIFICATION_META = {
     "distribution_status": {"icon": "truck", "color": "#2c5aa0", "category": "distribution", "category_label": "Deliveries"},
     "distribution_delivered": {"icon": "check-circle", "color": "#1e8449", "category": "distribution", "category_label": "Deliveries"},
     "warehouse_transfer_completed": {"icon": "rotate-ccw", "color": "#6c5ce7", "category": "warehouse", "category_label": "Warehouse"},
-    # Barangay Report lifecycle (Tier 1) — the barangay files a report/relief
+    # Barangay Report lifecycle (Tier 1) - the barangay files a report/relief
     # request, CSWDO/MSWDO reviews it (returns / approves / declines) and
     # fulfils from its own municipal warehouse. CSWDO + barangay feeds only;
     # PSWDO has no barangay-report page to click through to (see
@@ -160,14 +160,14 @@ NOTIFICATION_META = {
     "direct_allocation": {"icon": "package", "color": "#6c5ce7", "category": "relief_requests", "category_label": "Stock Requests"},
     # CSWDO -> barangay, model-driven, no request behind it (source='cswdo_direct'
     # on AllocationRecord). CSWDO decides and fulfils entirely from its own
-    # warehouse and a delivery follows, so it rides the deliveries feed —
+    # warehouse and a delivery follows, so it rides the deliveries feed -
     # CSWDO + barangay only; PSWDO has nothing to act on for it.
     "cswdo_proactive_allocation": {"icon": "package", "color": "#6c5ce7", "category": "distribution", "category_label": "Deliveries"},
 }
 DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
 
 # Barangay Report review is entirely a CSWDO/MSWDO responsibility per the
-# manuscript — PSWDO has no barangay-report page of its own to click through
+# manuscript - PSWDO has no barangay-report page of its own to click through
 # to. Rather than show these as dead-end, non-clickable entries, PSWDO's own
 # notification feed excludes them outright; NOTIFICATION_META itself stays the
 # shared source of truth since CSWDO's and Barangay's own notification feeds
@@ -230,7 +230,7 @@ def _priority_info(status_key):
 
 
 # --- GIS map: real PSGC boundary data (faeldon/philippines-json-maps), scoped to
-# exactly what the manuscript covers — barangay-level for the 3 target LGUs, with
+# exactly what the manuscript covers - barangay-level for the 3 target LGUs, with
 # the rest of the province shown only as neutral geographic context (no disaster
 # data is tracked for those areas, so none is shown for them).
 GIS_LGU_FILES = {
@@ -243,7 +243,7 @@ _geojson_cache = {}
 
 
 def _load_geojson_file(filename):
-    # Keyed on the file's mtime, not just its name — a boundary-data fix
+    # Keyed on the file's mtime, not just its name - a boundary-data fix
     # edited on disk (e.g. the Santa Barbara/Calasiao/Urdaneta polygon
     # corrections) used to keep serving the stale in-memory copy for the
     # rest of that server process's life until someone thought to restart
@@ -259,7 +259,7 @@ def _load_geojson_file(filename):
 
 
 def _bbox_center(geometry):
-    """Bounding-box midpoint — used only as a fallback when a polygon is too
+    """Bounding-box midpoint - used only as a fallback when a polygon is too
     degenerate for _polygon_centroid to compute an area."""
     lons, lats = [], []
 
@@ -295,7 +295,7 @@ def _ring_signed_area_centroid(ring):
 
 
 def _polygon_centroid(geometry):
-    """Area-weighted centroid of a Polygon/MultiPolygon's exterior ring(s) —
+    """Area-weighted centroid of a Polygon/MultiPolygon's exterior ring(s) -
     correct for concave, bay-wrapping coastal shapes (e.g. Alaminos) where a
     bounding-box midpoint can land in open water. Falls back to the bbox
     center only if every ring turns out to be degenerate (zero area)."""
@@ -332,7 +332,7 @@ def _normalize_muni_name(name):
 
 
 def _haversine_km(point_a, point_b):
-    """Great-circle distance in km — used only for an approximate warehouse
+    """Great-circle distance in km - used only for an approximate warehouse
     distance estimate, not a claim of real road distance/travel time."""
     lat1, lon1 = point_a
     lat2, lon2 = point_b
@@ -345,7 +345,7 @@ def _haversine_km(point_a, point_b):
 
 def _municipality_centroid(area_covered):
     """Approximate lat/lng for an office's LGU, from the province boundary file.
-    Used only to place warehouse markers — not a claim of a precise address."""
+    Used only to place warehouse markers - not a claim of a precise address."""
     province = _load_geojson_file("pangasinan_municipalities.json")
     target = _normalize_muni_name(area_covered).lower()
     for feature in province["features"]:
@@ -357,7 +357,7 @@ def _municipality_centroid(area_covered):
 def _target_barangay_geojson(lgu, event_id):
     """Barangay polygons for one target LGU, merged with real disaster-status
     data for the given event. Barangays with no matching DB record (a known
-    data-quality gap for Santa Barbara — see conversation notes) render as
+    data-quality gap for Santa Barbara - see conversation notes) render as
     'no_data' rather than being silently guessed at."""
     raw = _load_geojson_file(GIS_LGU_FILES[lgu])
     db_barangays = {b.barangay_name: b for b in Barangay.query.filter_by(city_municipality=lgu).all()}
@@ -371,7 +371,7 @@ def _target_barangay_geojson(lgu, event_id):
         ).all()
         statuses = {r.barangay_id: r for r in rows}
 
-        # Latest non-draft report per barangay for this event — the basis for
+        # Latest non-draft report per barangay for this event - the basis for
         # "affected barangay" counts and the affected-families figure, same as
         # the CSWDO/MSWDO and PSWDO dashboards. Kept separate from the graded
         # `status` tier below, which still drives the map colours.
@@ -394,7 +394,7 @@ def _target_barangay_geojson(lgu, event_id):
             status_key = status_row.status if status_row else "normal"
             report_row = reports.get(barangay.barangay_id)
             on_hand = food_pack_on_hand(barangay.barangay_id)
-            # GIS colour = STOCK ADEQUACY, not disaster severity — "can this
+            # GIS colour = STOCK ADEQUACY, not disaster severity - "can this
             # barangay cover its own reported caseload from its own stock?"
             stock_need = ((report_row.affected_families or 0)
                           + (report_row.affected_individuals or 0)) if report_row else 0
@@ -420,13 +420,13 @@ def _target_barangay_geojson(lgu, event_id):
                 "poverty_incidence": float(barangay.poverty_incidence) if barangay.poverty_incidence is not None else None,
                 "disaster_risk_index": float(barangay.disaster_risk_index) if barangay.disaster_risk_index is not None else None,
                 "past_calamity_freq": barangay.past_calamity_freq,
-                # Barangay's own current food-pack stock — read-only context for
+                # Barangay's own current food-pack stock - read-only context for
                 # whoever's weighing an allocation. None = never reported.
                 "barangay_on_hand": on_hand,
             }
-            # Current calculated food-pack figure — the map's hover detail.
+            # Current calculated food-pack figure - the map's hover detail.
             # Real submitted request if this barangay has one for the event,
-            # else the Linear Regression model's live estimate — see
+            # else the Linear Regression model's live estimate - see
             # _current_packs_needed for why (never a manual barangay guess).
             packs_needed, packs_source = _current_packs_needed(barangay, event_id)
             props["food_packs_current"] = packs_needed
@@ -451,14 +451,14 @@ def _target_barangay_centroid(lgu, barangay_name):
 
 def _relief_summary(barangay_ids, event_id):
     """Food-pack requested/approved/released rollup for a set of barangays,
-    built entirely from AllocationRecord + DistributionRecord — no invented
+    built entirely from AllocationRecord + DistributionRecord - no invented
     fields (this backs the GIS map's Relief Statistics card)."""
     empty = {"requested": 0, "approved": 0, "released": 0, "remaining": 0, "progress_pct": 0}
     if not barangay_ids:
         return empty
 
-    # Scoped to the current relief context: the active event's allocations, or —
-    # when no event is active — only standing/direct allocations (event_id IS
+    # Scoped to the current relief context: the active event's allocations, or -
+    # when no event is active - only standing/direct allocations (event_id IS
     # NULL). Historical allocations from past ended events are NOT current need
     # and must never be summed in here (a barangay with several past typhoons on
     # record would otherwise show a "requested" figure in the tens of thousands).
@@ -492,12 +492,12 @@ def _relief_summary(barangay_ids, event_id):
 def _current_packs_needed(barangay, event_id, relief=None):
     """The food-pack figure the system currently calculates for one barangay:
     the real submitted request for the given event if one exists (an actual
-    request always beats a model guess — same rule the manuscript's Chapter 2
+    request always beats a model guess - same rule the manuscript's Chapter 2
     Predictive Model discussion frames as "decision support rather than an
     automatic final allocation"), otherwise the Linear Regression model's live
     estimate from the barangay's latest profile data. This is the same
     "packs needed" figure the Predictive Analytics dashboard shows (see
-    app.routes.prediction._barangay_snapshot) — reused here so the GIS map's
+    app.routes.prediction._barangay_snapshot) - reused here so the GIS map's
     hover detail and that dashboard never disagree. relief can be passed in
     when the caller already has it (e.g. _target_barangay_geojson) to avoid
     querying AllocationRecord/DistributionRecord twice for the same barangay.
@@ -612,7 +612,7 @@ def _item_status(qty, min_level):
 
 
 def _food_pack_health(qty, capacity):
-    """Warehouse-level food-pack rating — fill ratio against the warehouse's
+    """Warehouse-level food-pack rating - fill ratio against the warehouse's
     storage capacity, using the admin-editable thresholds. Backs the warehouse
     'Low Stock' badge, the capacity donut, and the dashboard 'Low Stock
     Warehouses' card. NOT the per-item Inventory Management status (_item_status)."""
@@ -631,7 +631,7 @@ def _slugify(text):
 
 
 def _parse_stock_source(form):
-    """Shared by warehouse_inventory_add and warehouse_inventory_update — one
+    """Shared by warehouse_inventory_add and warehouse_inventory_update - one
     dispatch point for turning the "Source" field on either modal into
     (source_type, donor_name, error). A donation entry needs a named donor/
     agency so the tracking is actually useful (per the manuscript's "tracks
@@ -652,7 +652,7 @@ def _parse_stock_source(form):
 
 def _full_stock_movements(office_ids, type_filter="all", date_str=""):
     """Structured movement ledger (releases, completed transfers, manual stock
-    adjustments) for warehouses in office_ids — real data, not free-text logs.
+    adjustments) for warehouses in office_ids - real data, not free-text logs.
     type_filter: all | released | transferred_out | transferred_in | received"""
     movements = []
     filter_date = None
@@ -677,7 +677,7 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
                 "qty": -d.quantity_released,
                 "context": d.barangay.city_municipality if d.barangay else "",
                 "when": d.distribution_date,
-                # distribution_date has no time component — submitted_at is the closest
+                # distribution_date has no time component - submitted_at is the closest
                 # real timestamp on this row, used only to interleave with other sources.
                 "sort_at": d.submitted_at or datetime.combine(d.distribution_date, datetime.min.time()),
                 "is_donation": False,
@@ -728,13 +728,13 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
         for log in log_q.order_by(WarehouseStockLog.created_at.desc()).all():
             base_context = log.reason or f"{log.item_name} stock update"
             if log.is_donation:
-                context = f"Donated by {log.donor_name}" + (f" — {log.reason}" if log.reason else "")
+                context = f"Donated by {log.donor_name}" + (f" - {log.reason}" if log.reason else "")
             else:
                 context = base_context
             movements.append({
                 "office_id": log.office_id,
                 "office_name": log.office.office_name,
-                "direction": "Received — Donation" if log.is_donation else "Received",
+                "direction": "Received - Donation" if log.is_donation else "Received",
                 "qty": log.delta,
                 "context": context,
                 "when": log.created_at.date(),
@@ -747,7 +747,7 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
 
 
 def _recent_stock_movements(office_ids, limit=6):
-    # Over-fetch on each side before merging — otherwise a same-day tie between
+    # Over-fetch on each side before merging - otherwise a same-day tie between
     # a release and a transfer can get the transfer truncated before the merge
     # even sees it (list.sort() is stable, so pre-limited insertion order wins).
     return _full_stock_movements(office_ids)[:limit]
@@ -756,10 +756,10 @@ def _recent_stock_movements(office_ids, limit=6):
 def _resolve_dashboard_period():
     """Reads ?period=monthly|yearly&month=&year= off the dashboard request and
     turns it into a (period_start, period_end) date range, or (None, None)
-    when no period is selected — the caller's cue to fall back to today's
+    when no period is selected - the caller's cue to fall back to today's
     live/current-state view (the dashboard's original behavior).
 
-    Deliberately does NOT touch warehouse stock — WarehouseInventory only ever
+    Deliberately does NOT touch warehouse stock - WarehouseInventory only ever
     stores today's on-hand quantity, never a historical daily balance, so
     "stock as of a past month" isn't data this system actually has. Food Packs
     Available / Low Stock Items stay live regardless of the period picked."""
@@ -767,7 +767,7 @@ def _resolve_dashboard_period():
     if period not in ("monthly", "yearly"):
         return None, None, None
 
-    # Falls back to the current year/month rather than bailing out to Live —
+    # Falls back to the current year/month rather than bailing out to Live -
     # switching the Monthly/Yearly tab resubmits the form without the field
     # that only the other tab renders (e.g. "month" doesn't exist while
     # Yearly is showing), and that toggle shouldn't silently drop the filter.
@@ -784,7 +784,7 @@ def _resolve_dashboard_period():
 
 
 def _dashboard_period_years():
-    """Selectable years for the dashboard filter — spans every DisasterEvent
+    """Selectable years for the dashboard filter - spans every DisasterEvent
     on record through the current year, so a past-dated seed event is never
     out of the dropdown's reach."""
     earliest = db.session.query(db.func.min(DisasterEvent.start_date)).scalar()
@@ -816,23 +816,23 @@ def dashboard():
             db.or_(DisasterEvent.end_date.is_(None), DisasterEvent.end_date >= period_start)
         ).order_by(DisasterEvent.start_date.desc()).all()
     else:
-        # Live view: only what's active right now — the dashboard's original behavior.
+        # Live view: only what's active right now - the dashboard's original behavior.
         active_events = DisasterEvent.query.filter_by(status="active").order_by(
             DisasterEvent.start_date.desc()
         ).all()
     primary_event = active_events[0] if active_events else None
 
     all_offices, warehouses, total_food_packs = _load_warehouses()
-    # Dashboard's "Warehouse Status" widget only — highest capacity % first,
+    # Dashboard's "Warehouse Status" widget only - highest capacity % first,
     # lowest (i.e. the warehouses most in need of attention) at the bottom,
     # per how the widget is meant to read top-to-bottom.
     warehouses.sort(key=lambda w: w["pct"], reverse=True)
 
-    # CSWDO offices only — scope for relief operations (3 target LGUs)
+    # CSWDO offices only - scope for relief operations (3 target LGUs)
     cswdo_offices = [o for o in all_offices if o.office_type == "cswdo"]
     office_ids = [o.office_id for o in cswdo_offices]
 
-    # Pending Stock Requests — the municipal-warehouse replenishment requests
+    # Pending Stock Requests - the municipal-warehouse replenishment requests
     # PSWDO decides on (the ONLY request type it acts on).
     pending_q = ReliefRequestBatch.query.filter(
         ReliefRequestBatch.submitted_at.isnot(None),
@@ -846,7 +846,7 @@ def dashboard():
     pending_requests = pending_q.order_by(ReliefRequestBatch.submitted_at.desc()).limit(6).all()
     pending_requests_count = pending_q.count()
 
-    # Affected families + municipalities — straight from what the barangays
+    # Affected families + municipalities - straight from what the barangays
     # reported for the active event(s), across the 3 target LGUs. No severity
     # grading and no approval gate (same basis as the CSWDO/MSWDO dashboard):
     # any barangay with a non-draft report counts, and a barangay that filed
@@ -875,14 +875,14 @@ def dashboard():
             r.barangay.city_municipality for r in latest_by_barangay.values()
         }
 
-    # Burn rate — based on affected families in the 3 target LGUs,
+    # Burn rate - based on affected families in the 3 target LGUs,
     # against TOTAL province-wide food pack stock (PSWDO can redistribute)
     burn_rate = round(total_affected_families / 3, 0) if total_affected_families > 0 else 0
     days_remaining = round(total_food_packs / burn_rate, 1) if burn_rate > 0 else None
     estimated_need = int(burn_rate * 3) if burn_rate > 0 else 0  # 3-day estimated need
     remaining_after_3days = max(total_food_packs - estimated_need, 0)
 
-    # Low stock warehouses — same "Low" health rating the Warehouse Inventory
+    # Low stock warehouses - same "Low" health rating the Warehouse Inventory
     # page shows in red: food-pack stock below the moderate % of capacity
     # (see _load_warehouses / _moderate_threshold). Uses the `warehouses` list
     # already loaded above so the card and that page can never disagree.
@@ -890,10 +890,10 @@ def dashboard():
         w["office"].office_name for w in warehouses if w["health"] == "Low"
     )
 
-    # System Recommendations — simple threshold-based logic, food_pack only
+    # System Recommendations - simple threshold-based logic, food_pack only
     recommendations = _stock_recommendations(warehouses)
 
-    # Today's Distribution Progress (3 target LGUs, TODAY's actual active event —
+    # Today's Distribution Progress (3 target LGUs, TODAY's actual active event -
     # deliberately independent of the month/year filter above, which only
     # scopes the historical KPI cards, never this always-live "today" panel).
     today_active_event = DisasterEvent.query.filter_by(status="active").order_by(
@@ -901,8 +901,8 @@ def dashboard():
     ).first()
     # Scoped to the active event when one exists; otherwise every approved/
     # released allocation counts (direct allocations and standing requests
-    # can both happen with no declared event — see direct_allocation).
-    # Excludes both barangay_request and cswdo_direct — municipal-to-barangay
+    # can both happen with no declared event - see direct_allocation).
+    # Excludes both barangay_request and cswdo_direct - municipal-to-barangay
     # tiers CSWDO handles and fulfils entirely on its own; PSWDO's own "today"
     # panel is about its own warehouse/dispatch activity only.
     today_query = AllocationRecord.query.join(Barangay).filter(
@@ -938,8 +938,8 @@ def dashboard():
         if lgu_allocated > 0:
             by_municipality.append({"lgu": lgu, "released": lgu_released, "allocated": lgu_allocated})
 
-    # Recent activity feed — the general audit trail. Restricted to
-    # NOTIFICATION_META's known operational action_types — System
+    # Recent activity feed - the general audit trail. Restricted to
+    # NOTIFICATION_META's known operational action_types - System
     # Administration rows (logins, user/office/barangay management) belong
     # on the System Admin's own System Activity page, not here. The
     # dedicated Notifications page (sidebar) covers the unread subset now
@@ -997,8 +997,8 @@ def dashboard_weather():
 
     Defaults to all three target LGUs, for the dashboard's Weather & Typhoon
     Watch detail panel. The greeting header instead passes
-    ?cities=Lingayen — the PSWDO's own seat (see app.utils.weather.LGU_COORDS)
-    — so the header shows conditions where PSWDO staff actually are, distinct
+    ?cities=Lingayen - the PSWDO's own seat (see app.utils.weather.LGU_COORDS)
+    - so the header shows conditions where PSWDO staff actually are, distinct
     from the target-LGU breakdown in the panel below.
     """
     requested = request.args.get("cities")
@@ -1013,14 +1013,14 @@ def dashboard_weather():
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def declare_disaster_event():
-    """Opens a new active DisasterEvent — the one action that was previously
+    """Opens a new active DisasterEvent - the one action that was previously
     only possible by editing the database directly (see scripts/seed_demo_data.py;
     no route ever constructed a DisasterEvent before this one). Meant to be
     triggered off the live Weather & Typhoon Watch panel (app/utils/weather.py)
     once PSWDO decides a real detected system warrants an official response,
     though the form works with any manually-entered name too.
 
-    Only one event may be active at a time — every dashboard's "primary_event"
+    Only one event may be active at a time - every dashboard's "primary_event"
     logic already assumes a single current event, so a second concurrent one
     would make "the" active typhoon ambiguous everywhere it's used.
     """
@@ -1067,7 +1067,7 @@ def declare_disaster_event():
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def end_disaster_event(event_id):
-    """Closes out an active DisasterEvent — the counterpart to
+    """Closes out an active DisasterEvent - the counterpart to
     declare_disaster_event above. Existing allocation/distribution/damage-report
     history tied to this event is untouched; it simply stops being "the"
     active event so a new one can be declared."""
@@ -1098,7 +1098,7 @@ def warehouse_inventory():
 
     all_offices, warehouses, total_food_packs = _load_warehouses()
     office_ids = [o.office_id for o in all_offices]
-    # Warehouse Overview table — highest capacity % first, lowest (i.e. the
+    # Warehouse Overview table - highest capacity % first, lowest (i.e. the
     # warehouses most in need of attention) at the bottom, same ordering as
     # the dashboard's "Warehouse Status" widget.
     warehouses.sort(key=lambda w: w["pct"], reverse=True)
@@ -1118,7 +1118,7 @@ def warehouse_inventory():
 
     recent_movements = _recent_stock_movements(office_ids, limit=6)
 
-    # Warehouse map markers — same municipality-centroid approximation used by
+    # Warehouse map markers - same municipality-centroid approximation used by
     # the GIS Map / dashboard mini-map (see _municipality_centroid), not a
     # claim of the warehouse's precise street address.
     warehouse_map_points = []
@@ -1165,7 +1165,7 @@ def warehouse_create():
         return redirect(url_for("pswdo.warehouse_inventory"))
 
     # office_type="pswdo" marks it as province-managed warehouse infrastructure,
-    # so it's picked up by _load_warehouses() regardless of which LGU it's in —
+    # so it's picked up by _load_warehouses() regardless of which LGU it's in -
     # same pattern as the existing "PSWDO Warehouse" seed offices.
     office = Office(
         office_name=office_name, office_type="pswdo", area_covered=area_covered,
@@ -1300,7 +1300,7 @@ def warehouse_inventory_add(office_id):
 
     item_type = _slugify(item_name)
     if WarehouseInventory.query.filter_by(office_id=office_id, item_type=item_type).first():
-        flash(f"{item_name} already exists for this warehouse — use Update instead.", "error")
+        flash(f"{item_name} already exists for this warehouse - use Update instead.", "error")
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
 
     item = WarehouseInventory(
@@ -1328,7 +1328,7 @@ def warehouse_inventory_add(office_id):
 def warehouse_inventory_update(inventory_id):
     item = WarehouseInventory.query.get_or_404(inventory_id)
     # The form takes the amount being added/removed (e.g. a donation's actual
-    # quantity), not the resulting total — the server does that addition, so
+    # quantity), not the resulting total - the server does that addition, so
     # nobody has to compute item.quantity_available + delta by hand.
     delta = request.form.get("delta", type=int)
     unit = request.form.get("unit", "").strip()
@@ -1341,7 +1341,7 @@ def warehouse_inventory_update(inventory_id):
     new_quantity = item.quantity_available + delta
     if new_quantity < 0:
         flash(
-            f"That would take {item.item_name} below zero — current stock is "
+            f"That would take {item.item_name} below zero - current stock is "
             f"{item.quantity_available:,}.", "error"
         )
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
@@ -1350,7 +1350,7 @@ def warehouse_inventory_update(inventory_id):
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
 
     # Only a net *increase* is ever a "received" event with a source worth
-    # tagging — a decrease is a manual correction (e.g. recount, spoilage),
+    # tagging - a decrease is a manual correction (e.g. recount, spoilage),
     # not incoming stock, so donation/standard source doesn't apply to it.
     source_type, donor_name = "standard", None
     if delta > 0:
@@ -1359,7 +1359,7 @@ def warehouse_inventory_update(inventory_id):
             flash(source_error, "error")
             return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
     elif request.form.get("source_type", "").strip() == "donation":
-        flash("A donation adds stock — enter a positive quantity to record it.", "error")
+        flash("A donation adds stock - enter a positive quantity to record it.", "error")
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
 
     item.quantity_available = new_quantity
@@ -1389,7 +1389,7 @@ def warehouse_inventory_delete(inventory_id):
     office_id = item.office_id
 
     if item.item_type == "food_pack":
-        flash("Food Packs can't be removed — it's required for allocation and prediction.", "error")
+        flash("Food Packs can't be removed - it's required for allocation and prediction.", "error")
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
 
     db.session.delete(item)
@@ -1414,7 +1414,7 @@ def warehouse_inventory_export(office_id):
         pct = round((item.quantity_available / item.min_stock_level) * 100) if item.min_stock_level > 0 else None
         writer.writerow([
             item.item_name, item.quantity_available, item.unit, item.min_stock_level,
-            f"{pct}%" if pct is not None else "—",
+            f"{pct}%" if pct is not None else "-",
             _item_status(item.quantity_available, item.min_stock_level),
         ])
 
@@ -1474,7 +1474,7 @@ def warehouse_stock_transfer_page():
             actor_id=current_user.user_id, action_type="warehouse_transfer_completed",
             description=(
                 f"Transferred {quantity:,} food packs from {from_office.office_name} to {to_office.office_name}"
-                + (f" — {reason}" if reason else "")
+                + (f" - {reason}" if reason else "")
             ),
             office_id=to_office_id,
         ))
@@ -1561,13 +1561,13 @@ def warehouse_stock_movements_export():
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def warehouse_reports():
-    # Deferred import — report_data imports helpers back from this module,
+    # Deferred import - report_data imports helpers back from this module,
     # so this must be a call-time import to avoid a circular import.
     from app.models.report import ReportLog
     from app.routes.report_data import REPORT_TYPES, resolve_filters
 
     filters = resolve_filters(request.args)
-    # Every event, not just the currently-active one — a report is almost
+    # Every event, not just the currently-active one - a report is almost
     # always generated *after* a typhoon has ended, so scoping this filter to
     # status="active" would make every past event unselectable.
     active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
@@ -1595,7 +1595,7 @@ def warehouse_reports():
     packs_distributed = sum(d.quantity_released for d in delivered_q.all())
     completed_deliveries = delivered_q.count()
 
-    # "" not None — url_for() drops a None param outright, which would make
+    # "" not None - url_for() drops a None param outright, which would make
     # the generated link carry no event_id at all instead of an explicit
     # "no event filter", and resolve_filters() would then treat that as "not
     # chosen yet" and silently default back to the active event.
@@ -1641,7 +1641,7 @@ def _gis_scope_lgus():
 
     PSWDO/system_admin coordinate all 3 target LGUs (their actual scope per
     the manuscript). A CSWDO/MSWDO admin is restricted to their own office's
-    area_covered only — the manuscript's generalized-workflow note ("operational
+    area_covered only - the manuscript's generalized-workflow note ("operational
     procedures unique to a specific city or municipality... are not
     accommodated") reflects a per-office operational boundary, and nothing in
     the manuscript gives one city/municipal office visibility into another's
@@ -1659,12 +1659,12 @@ def _gis_scope_lgus():
 
 def _gis_config():
     """Client-side config for the GIS map shell (both the PSWDO and CSWDO page
-    templates) — resolves the role-specific panel actions once, server-side,
+    templates) - resolves the role-specific panel actions once, server-side,
     instead of hardcoding routes in gis_map.js. Each URL is None for the role
     that shouldn't see that action, and gis_map.js hides the button entirely:
-      - distributionUrl:   PSWDO only — dispatch/distribution stays a PSWDO
+      - distributionUrl:   PSWDO only - dispatch/distribution stays a PSWDO
         responsibility per the manuscript; CSWDO has no distribution page.
-      - barangayReportsUrl: CSWDO only — reviewing barangay reports is entirely
+      - barangayReportsUrl: CSWDO only - reviewing barangay reports is entirely
         a CSWDO/MSWDO responsibility; PSWDO has no barangay-report page."""
     is_pswdo = current_user.role in ("pswdo_admin", "system_admin")
     scope = _gis_scope_lgus()
@@ -1699,9 +1699,9 @@ def gis_map_data():
     scope_lgus = _gis_scope_lgus()
     full_scope = set(scope_lgus) == set(TARGET_LGUS)
 
-    # Barangay-level layer — the only areas the manuscript's predictive/status
+    # Barangay-level layer - the only areas the manuscript's predictive/status
     # model actually covers. Everything else on the map is neutral context.
-    # Scoped to scope_lgus, not TARGET_LGUS — a CSWDO/MSWDO admin only ever
+    # Scoped to scope_lgus, not TARGET_LGUS - a CSWDO/MSWDO admin only ever
     # gets their own municipality's barangays back from this endpoint.
     target_features = []
     for lgu in scope_lgus:
@@ -1711,9 +1711,9 @@ def gis_map_data():
             target_features.append(feature)
     target_barangays_geojson = {"type": "FeatureCollection", "features": target_features}
 
-    # Province context — geographic orientation only, no disaster data implied.
+    # Province context - geographic orientation only, no disaster data implied.
     # is_target (which drives the bordered/clickable styling and the hover
-    # detail) is restricted to scope_lgus — for a CSWDO admin, the OTHER two
+    # detail) is restricted to scope_lgus - for a CSWDO admin, the OTHER two
     # target LGUs render exactly like any other non-target municipality:
     # plain background, no click-through, no data.
     province_geojson = _load_geojson_file("pangasinan_municipalities.json")
@@ -1730,10 +1730,10 @@ def gis_map_data():
         })
     province_context_geojson = {"type": "FeatureCollection", "features": province_features}
 
-    # Warehouses — real Office + WarehouseInventory data, placed at their LGU's
+    # Warehouses - real Office + WarehouseInventory data, placed at their LGU's
     # approximate centroid (not a precise street address). Full scope (PSWDO)
     # keeps every warehouse, provincial depots included. A CSWDO admin only
-    # ever sees their own municipal office's stock — not another city/town's,
+    # ever sees their own municipal office's stock - not another city/town's,
     # and not the provincial depots either, since that province-wide stock
     # visibility is a PSWDO-only responsibility per the manuscript and isn't
     # exposed to CSWDO anywhere else in the system.
@@ -1755,12 +1755,12 @@ def gis_map_data():
         if full_scope:
             # PSWDO-only addition (gated on full_scope, the same flag this
             # function already uses to distinguish PSWDO's province-wide view
-            # from CSWDO's single-LGU one) — real WarehouseInventory rows for
+            # from CSWDO's single-LGU one) - real WarehouseInventory rows for
             # this office, item_type != "food_pack" (that one's covered by
             # food_pack_qty/capacity above). Any such row is, by definition,
             # a relief-supply stock-monitoring line item (see
-            # app.models.warehouse.WarehouseInventory's own docstring) — not
-            # general inventory — so all of them are relief-relevant here.
+            # app.models.warehouse.WarehouseInventory's own docstring) - not
+            # general inventory - so all of them are relief-relevant here.
             # CSWDO's payload shape is completely unchanged by this branch.
             other_items = WarehouseInventory.query.filter(
                 WarehouseInventory.office_id == w["office"].office_id,
@@ -1773,7 +1773,7 @@ def gis_map_data():
     if not full_scope:
         total_food_packs = sum(w["food_pack_qty"] for w in warehouse_markers)
 
-    # Schematic in-transit indicators — a straight line between known warehouse
+    # Schematic in-transit indicators - a straight line between known warehouse
     # and barangay centroids, NOT a real road route (excluded by manuscript scope).
     in_transit_lines = []
     in_transit_records = DistributionRecord.query.join(Barangay).filter(
@@ -1793,7 +1793,7 @@ def gis_map_data():
                 "barangay": d.barangay.barangay_name,
             })
 
-    # Side-panel stats — real counts scoped to scope_lgus only. "Affected" =
+    # Side-panel stats - real counts scoped to scope_lgus only. "Affected" =
     # the barangay filed a report for this event (same basis as the dashboards),
     # not the graded status tier.
     barangay_props = [f["properties"] for f in target_features if f["properties"]["has_data"]]
@@ -1808,7 +1808,7 @@ def gis_map_data():
         reverse=True,
     )[:5]
 
-    # Active distribution routes table — real DistributionRecord + logistics data.
+    # Active distribution routes table - real DistributionRecord + logistics data.
     active_routes = DistributionRecord.query.join(Barangay).join(AllocationRecord).filter(
         Barangay.city_municipality.in_(scope_lgus),
         DistributionRecord.dispatch_status.in_(["preparing", "loaded", "dispatched", "in_transit"])
@@ -1819,7 +1819,7 @@ def gis_map_data():
         allocation = d.allocation
         office = allocation.fulfilling_office if allocation else None
         # Same municipality-centroid approximations used above for
-        # in_transit_lines — real coordinates (not a road route), just
+        # in_transit_lines - real coordinates (not a road route), just
         # enough for the client to hand off to OSRM for the actual routing.
         # None when a centroid can't be resolved; the frontend simply won't
         # offer route visualization for that row rather than guessing.
@@ -1827,7 +1827,7 @@ def gis_map_data():
         to_point = _target_barangay_centroid(d.barangay.city_municipality, d.barangay.barangay_name)
         routes_table.append({
             "distribution_id": d.distribution_id,
-            "from_office": office.office_name if office else "—",
+            "from_office": office.office_name if office else "-",
             "from_lat": from_point[0] if from_point else None,
             "from_lng": from_point[1] if from_point else None,
             "to_barangay": d.barangay.barangay_name,
@@ -1837,10 +1837,10 @@ def gis_map_data():
             "packs": d.quantity_released,
             "status": d.dispatch_status,
             "status_label": DISPATCH_STATUS_LABELS.get(d.dispatch_status, d.dispatch_status),
-            "eta": d.expected_arrival_time.strftime("%I:%M %p") if d.expected_arrival_time else "—",
+            "eta": d.expected_arrival_time.strftime("%I:%M %p") if d.expected_arrival_time else "-",
         })
 
-    # Per-municipality rollups — backs the GIS map's drill-down "Municipality
+    # Per-municipality rollups - backs the GIS map's drill-down "Municipality
     # Information" panel. Built entirely from data already computed above plus
     # real AllocationRecord/DistributionRecord aggregates (no invented fields).
     municipalities = []
@@ -1861,12 +1861,12 @@ def gis_map_data():
         if current_route:
             current_distribution = {
                 "distribution_id": current_route.distribution_id,
-                "eta": current_route.expected_arrival_time.strftime("%I:%M %p") if current_route.expected_arrival_time else "—",
+                "eta": current_route.expected_arrival_time.strftime("%I:%M %p") if current_route.expected_arrival_time else "-",
                 "status": current_route.dispatch_status,
                 "status_label": DISPATCH_STATUS_LABELS.get(current_route.dispatch_status, current_route.dispatch_status),
             }
 
-        # "Assigned" warehouse — prefer the office actually fulfilling this
+        # "Assigned" warehouse - prefer the office actually fulfilling this
         # municipality's requests (real AllocationRecord.fulfilling_office_id
         # relationship) over a geographic guess; only fall back to nearest-by-
         # distance when no fulfillment history exists yet.
@@ -1902,7 +1902,7 @@ def gis_map_data():
             }
 
         relief = _relief_summary(barangay_ids, event_id)
-        # Predicted demand — sum of each tracked barangay's food_packs_current
+        # Predicted demand - sum of each tracked barangay's food_packs_current
         # (real submitted request where one exists, else the Linear
         # Regression model's live estimate; see _current_packs_needed). Same
         # methodology Predictive Analytics already reports per barangay,
@@ -2075,7 +2075,7 @@ def gis_map_municipality_report(lgu):
 
 
 # ---------------------------------------------------------------------------
-# Stock Requests (PSWDO decides) — CSWDO municipal-warehouse replenishment.
+# Stock Requests (PSWDO decides) - CSWDO municipal-warehouse replenishment.
 # The only request type PSWDO acts on. Approving one performs a WarehouseTransfer
 # from a provincial depot into the CSWDO warehouse; PSWDO monitors that leg.
 # ---------------------------------------------------------------------------
@@ -2106,7 +2106,7 @@ def _stock_request_rows(status_filter="all", municipality_filter="all", search="
 
 
 def _municipal_demand_for(office, event):
-    """Sum of the barangay-level model outputs for an office's LGU — the exact
+    """Sum of the barangay-level model outputs for an office's LGU - the exact
     figure PSWDO sees (aggregation traceability). Barangays no longer state a
     figure of their own, so this is purely the aggregated model estimate."""
     lgu = office.area_covered if office else None
@@ -2263,7 +2263,7 @@ def approve_relief_request(batch_id):
     label = "Partially approved" if quantity < batch.requested_food_packs else "Approved"
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="allocation_approved",
-        description=f"{label} stock request {batch.ref} — {quantity:,} food packs to "
+        description=f"{label} stock request {batch.ref} - {quantity:,} food packs to "
                     f"{batch.office.office_name} from {depot.office_name}",
         office_id=batch.office_id, batch_id=batch.batch_id,
     ))
@@ -2304,7 +2304,7 @@ def reject_relief_request(batch_id):
 def direct_allocation():
     """PSWDO pre-positioning stock into a CSWDO warehouse proactively, ahead of
     any Stock Request (manuscript's pre-positioning phase). Creates a monitored
-    WarehouseTransfer, not a barangay allocation — PSWDO never allocates to a
+    WarehouseTransfer, not a barangay allocation - PSWDO never allocates to a
     barangay directly (that is CSWDO's job)."""
     to_office_id = request.form.get("to_office_id", type=int)
     to_office = Office.query.get(to_office_id) if to_office_id else None
@@ -2354,10 +2354,10 @@ def direct_allocation():
 
 
 # ---------------------------------------------------------------------------
-# Stock Transfers monitor — PSWDO -> CSWDO warehouse legs (Stock-Request
+# Stock Transfers monitor - PSWDO -> CSWDO warehouse legs (Stock-Request
 # fulfilments + proactive pre-positioning). PSWDO monitors the trip; the CSWDO
 # warehouse confirms receipt (which credits the stock). This is the ONLY
-# delivery monitoring PSWDO does — barangay deliveries are CSWDO's.
+# delivery monitoring PSWDO does - barangay deliveries are CSWDO's.
 # ---------------------------------------------------------------------------
 
 TRANSFER_STATUS_LABELS = {"preparing": "Preparing", "in_transit": "In Transit", "delivered": "Delivered"}
@@ -2431,7 +2431,7 @@ def transfer_issue(transfer_id):
             pass
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="distribution_status",
-        description=f"{t.ref} dispatched — {t.quantity:,} food packs en route to {t.to_office.office_name}",
+        description=f"{t.ref} dispatched - {t.quantity:,} food packs en route to {t.to_office.office_name}",
         office_id=t.to_office_id, batch_id=t.batch_id,
     ))
     db.session.commit()
@@ -2440,7 +2440,7 @@ def transfer_issue(transfer_id):
 
 
 # ---------------------------------------------------------------------------
-# Recommendations — PSWDO's read-only decision-support view. It does NOT run
+# Recommendations - PSWDO's read-only decision-support view. It does NOT run
 # the model (manuscript: the provincial level "draws from city and municipality
 # demand projections rather than generating a separate prediction model"). Each
 # line carries its numbers so the reasoning is explainable (Molnar, 2022).
@@ -2484,10 +2484,10 @@ def recommendations_page():
             continue
         src = healthiest["office"].office_name if healthiest else "a provincial depot"
         if m["open_request"] and m["open_request"].status == "pending":
-            action = f"Stock request {m['open_request'].ref} is pending — approve up to {m['shortage']:,} packs."
+            action = f"Stock request {m['open_request'].ref} is pending - approve up to {m['shortage']:,} packs."
             link = url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id)
         elif m["open_request"]:
-            action = f"Stock request {m['open_request'].ref} already approved — monitor the transfer."
+            action = f"Stock request {m['open_request'].ref} already approved - monitor the transfer."
             link = url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id)
         else:
             action = f"No request on file yet. Consider pre-positioning ~{m['shortage']:,} packs from {src}."
@@ -2501,7 +2501,7 @@ def recommendations_page():
         if w["health"] == "Low":
             recs.append({
                 "type": "warning",
-                "title": f"{w['office'].office_name} stock low — {w['pct']:.0f}% of capacity ({w['food_pack_qty']:,} packs)",
+                "title": f"{w['office'].office_name} stock low - {w['pct']:.0f}% of capacity ({w['food_pack_qty']:,} packs)",
                 "detail": "Replenish this depot before it can't cover municipal requests.",
                 "link": url_for("pswdo.warehouse_inventory"),
             })
@@ -2566,7 +2566,7 @@ def _filtered_distributions():
 
 
 def _eligible_for_distribution():
-    """Approved relief requests with no DistributionRecord yet — the pool
+    """Approved relief requests with no DistributionRecord yet - the pool
     "New Distribution" can schedule from. Once scheduled, an allocation drops
     out of this list (see create_distribution) since dispatch-status changes
     happen afterward via the existing distribution detail actions, not by
@@ -2574,7 +2574,7 @@ def _eligible_for_distribution():
 
     Each row is enriched with the fulfilling warehouse's CURRENT stock (not
     just what was available at approval time) so the New Distribution modal
-    can double-check availability up front, before the user even submits —
+    can double-check availability up front, before the user even submits -
     create_distribution() re-checks the same thing server-side regardless,
     since stock can still move between page load and submit."""
     allocations = AllocationRecord.query.join(Barangay).filter(
@@ -2612,7 +2612,7 @@ def distribution():
     ctx = _filtered_distributions()
     eligible_allocations = _eligible_for_distribution()
 
-    # Municipality counts for the New Distribution wizard's first step —
+    # Municipality counts for the New Distribution wizard's first step -
     # ordered by TARGET_LGUS so the tile order stays stable across loads.
     municipality_counts = {}
     for lgu in TARGET_LGUS:
@@ -2647,7 +2647,7 @@ def create_distribution():
         flash("A distribution has already been scheduled for this request.", "error")
         return redirect(url_for("pswdo.distribution"))
 
-    # Re-check stock at schedule time, not just at approval time — the
+    # Re-check stock at schedule time, not just at approval time - the
     # fulfilling warehouse's stock can move (other releases, transfers) in
     # the gap between a request being approved and actually being scheduled.
     office = allocation.fulfilling_office
@@ -2657,7 +2657,7 @@ def create_distribution():
     available = inventory.quantity_available if inventory else 0
     if not office or available < allocation.allocated_quantity:
         flash(
-            f"Cannot schedule — {office.office_name if office else 'the fulfilling warehouse'} now has only "
+            f"Cannot schedule - {office.office_name if office else 'the fulfilling warehouse'} now has only "
             f"{available:,} food packs available, but this request needs {allocation.allocated_quantity:,}. "
             f"Transfer more stock in or re-approve with a lower quantity first.",
             "error"
@@ -2688,7 +2688,7 @@ def create_distribution():
         action_type="distribution_status",
         description=(
             f"New distribution scheduled for {allocation.barangay.barangay_name}, "
-            f"{allocation.barangay.city_municipality} — {allocation.allocated_quantity:,} food packs"
+            f"{allocation.barangay.city_municipality} - {allocation.allocated_quantity:,} food packs"
         ),
         office_id=allocation.fulfilling_office_id,
         barangay_id=allocation.barangay_id,
@@ -2736,7 +2736,7 @@ OFFICE_TYPE_PREFIX = {"cswdo": "MSWDO", "pswdo": "PSWDO"}
 
 def _person_label(user, office):
     if not user:
-        return "—"
+        return "-"
     prefix = OFFICE_TYPE_PREFIX.get(office.office_type) if office else None
     return f"{prefix} - {user.name}" if prefix else user.name
 
@@ -2935,13 +2935,13 @@ def notifications():
     category_filter = request.args.get("category", "all")
 
     # Restricted to PSWDO_NOTIFICATION_TYPES (NOTIFICATION_META minus damage
-    # reports) — otherwise two kinds of rows leak into this feed: System
-    # Administration rows (logins, user/office/barangay management — see
+    # reports) - otherwise two kinds of rows leak into this feed: System
+    # Administration rows (logins, user/office/barangay management - see
     # app.utils.log_admin_activity), which are is_read=True by design so they
     # wouldn't inflate the unread badge but still showed up in the list
     # itself as uncategorized "Other" entries; and damage_report_* rows,
     # which showed up correctly categorized but as dead-end, non-clickable
-    # entries since PSWDO has no damage-report page — that review is
+    # entries since PSWDO has no damage-report page - that review is
     # entirely CSWDO/MSWDO's job. Both belong elsewhere, not here.
     known_types = PSWDO_NOTIFICATION_TYPES
     base_scope = ActivityLog.action_type.in_(known_types)
@@ -2966,7 +2966,7 @@ def notifications():
         view["was_unread"] = not log.is_read
         page_items.append(view)
 
-    # Opening the Notifications page is itself the "read" action — no per-item
+    # Opening the Notifications page is itself the "read" action - no per-item
     # or "Mark all as read" click needed. Unread rows still show highlighted on
     # this render (via was_unread) so the user sees what's new before it clears.
     if unread_count:
@@ -3002,7 +3002,7 @@ def notifications():
 def view_notification(log_id):
     """The Notifications page's "View" link routes through here instead of
     linking to item.link directly, so opening a notification is what marks
-    it read — no separate "Mark as read" click required."""
+    it read - no separate "Mark as read" click required."""
     log = ActivityLog.query.get_or_404(log_id)
     log.is_read = True
     db.session.commit()

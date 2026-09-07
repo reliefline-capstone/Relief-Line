@@ -283,7 +283,7 @@
     align-items: flex-start;
 }
 
-/* Auto-dismiss + manual close mirror .flash-banner (dashboard.css) — see
+/* Auto-dismiss + manual close mirror .flash-banner (dashboard.css) - see
    base.html's inline script, which toggles .is-leaving (transitioned here)
    on any [data-flash-auto-dismiss] element regardless of which flash
    markup rendered it. */
@@ -386,7 +386,7 @@
     }
 }
 
-/* Privacy/Terms/Help/Contact — reuse .login-card's sizing but widen it and
+/* Privacy/Terms/Help/Contact - reuse .login-card's sizing but widen it and
    allow it to scroll, since article-style content is usually taller than a
    login form. */
 .static-page-card {
