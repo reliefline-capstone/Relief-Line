@@ -369,13 +369,12 @@ a.stat-card:hover::after { transform: none; }
     a.stat-card .stat-icon, a.stat-card:hover .stat-icon { transform: none; }
 }
 
-/* landing page hero entrances */
-.lp-hero-lockup, .lp-hero-desc, .lp-hero-actions, .lp-hero-map { animation: none; }
+/* The public landing page keeps its own entrance animations (see
+   landing.css) - it's a marketing page, not the working app. */
 
-/* sign-in page: Ken Burns photo drift + staggered element rise */
+/* sign-in page: only the looping Ken Burns photo drift is dropped;
+   the one-shot element rise-in stays. */
 .lpg::after { animation: none; }
-.lpg-topbar, .lpg-intro-lockup, .lpg-intro-desc,
-.lpg-main .login-card, .lpg-footer { animation: none; }
 
 /* ---- Kept, on purpose: the stat-card row -------------------------
    One short, staggered entrance when a KPI row first paints - the one

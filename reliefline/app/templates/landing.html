@@ -35,8 +35,8 @@
             <div class="lp-nav-links" id="lp-nav-links">
                 <a href="#home">Home</a>
                 <a href="#services">Services</a>
-                <a href="#about">About ReliefLine</a>
-                <a href="#contact">Contacts</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
                 <a href="{{ url_for('auth.login') }}" class="lp-nav-login">Log In</a>
             </div>
         </div>
@@ -52,27 +52,26 @@
                     <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="ReliefLine" class="lp-hero-logo">
                     <div class="lp-hero-title">
                         <h1>ReliefLine</h1>
-                        <p class="lp-hero-tagline">Disaster Relief Management System</p>
+                        <p class="lp-hero-tagline">Data-Driven Disaster Relief Management System</p>
                     </div>
                 </div>
                 <p class="lp-hero-desc">
-                    A Data-Driven Relief Supplies Pipeline System for the Province of Pangasinan -
-                    transforming fragmented, manual relief planning into a structured, centralized,
-                    and evidence-based platform.
+                    A centralized platform for predicting food pack demand, monitoring provincial
+                    warehouse stocks, and supporting evidence-based relief allocation across Pangasinan.
                 </p>
                 <div class="lp-hero-actions">
-                    <a href="{{ url_for('auth.login') }}" class="lp-btn lp-btn-primary">Log In to System {{ icon('arrow-right', 14) }}</a>
-                    <a href="#services" class="lp-btn lp-btn-secondary">Learn More {{ icon('arrow-right', 14) }}</a>
+                    <a href="{{ url_for('auth.login') }}" class="lp-btn lp-btn-primary">Access ReliefLine {{ icon('arrow-right', 14) }}</a>
+                    <a href="#services" class="lp-btn lp-btn-secondary">Explore the System {{ icon('chevron-down', 14) }}</a>
                 </div>
             </div>
 
             <div class="lp-hero-map">
-                {# Basemap tiles © OpenStreetMap contributors (openstreetmap.org/copyright). #}
+                {# Province + LGU boundaries: PSA/PSGC via faeldon/philippines-json-maps. #}
                 <div id="lp-map"
                      data-geo="{{ url_for('static', filename='geo/pangasinan_municipalities.json') }}"
                      data-outline="{{ url_for('static', filename='geo/pangasinan_outline.json') }}"
                      role="img"
-                     aria-label="Map of the Province of Pangasinan with Calasiao, Santa Barbara, and Urdaneta City highlighted. Basemap © OpenStreetMap contributors."></div>
+                     aria-label="Map of the Province of Pangasinan with Calasiao, Santa Barbara, and Urdaneta City highlighted. Decorative boundary map."></div>
             </div>
 
         </div>
@@ -89,32 +88,32 @@
 
             <div class="lp-card-grid">
                 <div class="lp-feature-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('package', 20, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('package', 20, '#5347ce') }}</div>
                     <h3>Pre-positioning Support</h3>
                     <p>Uses predicted demand and current warehouse stock levels to guide inter-warehouse redistribution ahead of forecasted typhoon-related disasters.</p>
                 </div>
                 <div class="lp-feature-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('check-circle', 20, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('check-circle', 20, '#5347ce') }}</div>
                     <h3>Allocation Monitoring</h3>
                     <p>Supports food pack allocation review from warehouse to target barangays, and lets PSWDO and CSWDO/MSWDO users track allocation status.</p>
                 </div>
                 <div class="lp-feature-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('clipboard', 20, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('clipboard', 20, '#5347ce') }}</div>
                     <h3>Distribution Validation</h3>
                     <p>Supports photo-based or signature-based validation records to confirm that food packs reached their intended barangay recipients.</p>
                 </div>
                 <div class="lp-feature-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('grid', 20, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('trending-up', 20, '#5347ce') }}</div>
                     <h3>Predictive Food Pack Allocation</h3>
                     <p>Uses a Linear Regression model to estimate recommended food pack quantities per barangay, based on population, poverty incidence, disaster risk, calamity history, and prior allocations.</p>
                 </div>
                 <div class="lp-feature-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('building', 20, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('building', 20, '#5347ce') }}</div>
                     <h3>Warehouse Stock Monitoring</h3>
                     <p>Monitors food pack inventory and non-food items such as hygiene kits and kitchen kits across provincial warehouses.</p>
                 </div>
                 <div class="lp-feature-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('map-pin', 20, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('map', 20, '#5347ce') }}</div>
                     <h3>Geospatial Mapping</h3>
                     <p>Displays barangay-level predicted food pack demand and priority status using interactive maps.</p>
                 </div>
@@ -128,7 +127,7 @@
             <div class="lp-about-copy lp-reveal">
                 <span class="lp-eyebrow lp-eyebrow-green">About ReliefLine</span>
                 <h2>From Fragmented to <span class="lp-accent">Data-Driven</span></h2>
-                <p>ReliefLine is designed to transform the fragmented, manual relief planning process into a structured, centralized, and data-driven platform - from barangay-level field reporting all the way to provincial warehouse management.</p>
+                <p>ReliefLine transforms fragmented relief planning into a centralized, data-driven workflow &mdash; from barangay-level reporting to provincial warehouse management.</p>
                 <p>Built as a capstone research project aligned with the Province of Pangasinan's disaster preparedness goals, it uses Linear Regression to estimate food pack demand at the barangay level based on historical disaster and allocation data.</p>
 
                 <ul class="lp-check-list">
@@ -136,37 +135,118 @@
                     <li>{{ icon('check-circle', 16, '#1e8449') }} Centralized warehouse stock visibility for PSWDO</li>
                     <li>{{ icon('check-circle', 16, '#1e8449') }} Photo or signature-based distribution validation records</li>
                 </ul>
+
+                <a href="#architecture" class="lp-btn lp-btn-primary lp-about-cta">Learn More {{ icon('arrow-right', 14) }}</a>
+            </div>
+
+            <div class="lp-about-showcase lp-reveal">
+                <img class="lp-about-device"
+                     src="{{ url_for('static', filename='img/about-showcase.png') }}?v={{ asset_version('img/about-showcase.png') }}"
+                     alt="ReliefLine PSWDO dashboard on a laptop" loading="lazy">
+
+
+                <div class="lp-showcase-chip lp-chip-tl">
+                    <span class="lp-chip-ic lp-chip-ic-blue">{{ icon('trending-up', 16, '#5347ce') }}</span>
+                    <span><strong>Predict</strong>Food Pack Demand</span>
+                </div>
+                <div class="lp-showcase-chip lp-chip-tr">
+                    <span class="lp-chip-ic lp-chip-ic-teal">{{ icon('package', 16, '#0f9b9a') }}</span>
+                    <span><strong>Monitor</strong>Warehouse Stocks</span>
+                </div>
+                <div class="lp-showcase-chip lp-chip-bl">
+                    <span class="lp-chip-ic lp-chip-ic-violet">{{ icon('users', 16, '#7c4fd6') }}</span>
+                    <span><strong>Allocate</strong>Resources &amp; Support</span>
+                </div>
+                <div class="lp-showcase-chip lp-chip-br">
+                    <span class="lp-chip-ic lp-chip-ic-green">{{ icon('check-circle', 16, '#1e8449') }}</span>
+                    <span><strong>Validate</strong>Distribution Records</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Three-Level Architecture -->
+    <section class="lp-section" id="architecture">
+        <div class="lp-section-inner">
+            <div class="lp-section-head lp-reveal">
+                <span class="lp-eyebrow lp-eyebrow-blue">How It Works</span>
+                <h2>Three-Level Architecture</h2>
+                <p>Field reports flow up; predicted demand and approvals flow down - barangay to municipality to province.</p>
             </div>
 
             <div class="lp-architecture">
-                <span class="lp-architecture-label">Three-Level Architecture</span>
-
-                <div class="lp-arch-card lp-arch-barangay lp-reveal">
-                    <div class="lp-arch-card-head">{{ icon('users', 18, '#2f54eb') }} <h4>Barangay Level</h4></div>
+                <svg class="lp-arch-line" aria-hidden="true">
+                    <path pathLength="1" d="" />
+                </svg>
+                <div class="lp-arch-card lp-arch-barangay">
+                    <div class="lp-arch-card-top">
+                        <span class="lp-arch-num">01</span>
+                        <span class="lp-arch-ic">{{ icon('users', 18, '#fff') }}</span>
+                    </div>
+                    <h4>Barangay</h4>
                     <ul>
-                        <li>{{ icon('check', 12, '#2f54eb') }} Submits disaster impact reports</li>
-                        <li>{{ icon('check', 12, '#2f54eb') }} Views predicted food pack allocation</li>
-                        <li>{{ icon('check', 12, '#2f54eb') }} Confirms receipt of delivered relief goods</li>
+                        <li>{{ icon('check-circle', 13, '#7c4fd6') }} Submits disaster impact reports</li>
+                        <li>{{ icon('check-circle', 13, '#7c4fd6') }} Views predicted food pack allocation</li>
+                        <li>{{ icon('check-circle', 13, '#7c4fd6') }} Confirms receipt of delivered relief goods</li>
                     </ul>
                 </div>
 
-                <div class="lp-arch-card lp-arch-city lp-reveal">
-                    <div class="lp-arch-card-head">{{ icon('building', 18, '#7c4fd6') }} <h4>City / Municipal Level</h4></div>
+                <div class="lp-arch-card lp-arch-city">
+                    <div class="lp-arch-card-top">
+                        <span class="lp-arch-num">02</span>
+                        <span class="lp-arch-ic">{{ icon('clipboard', 18, '#fff') }}</span>
+                    </div>
+                    <h4>CSWDO / MSWDO</h4>
                     <ul>
-                        <li>{{ icon('check', 12, '#7c4fd6') }} Verifies barangay damage assessment reports</li>
-                        <li>{{ icon('check', 12, '#7c4fd6') }} Views aggregated municipal-level demand</li>
-                        <li>{{ icon('check', 12, '#7c4fd6') }} CSWDO / MSWDO allocation coordination</li>
+                        <li>{{ icon('check-circle', 13, '#5347ce') }} Verifies barangay damage assessment reports</li>
+                        <li>{{ icon('check-circle', 13, '#5347ce') }} Views aggregated municipal-level demand</li>
+                        <li>{{ icon('check-circle', 13, '#5347ce') }} City / municipal allocation coordination</li>
                     </ul>
                 </div>
 
-                <div class="lp-arch-card lp-arch-provincial lp-reveal">
-                    <div class="lp-arch-card-head">{{ icon('shield', 18, '#1e8449') }} <h4>Provincial Level - PSWDO</h4></div>
+                <div class="lp-arch-card lp-arch-provincial">
+                    <div class="lp-arch-card-top">
+                        <span class="lp-arch-num">03</span>
+                        <span class="lp-arch-ic">{{ icon('shield', 18, '#fff') }}</span>
+                    </div>
+                    <h4>PSWDO</h4>
                     <ul>
-                        <li>{{ icon('check', 12, '#1e8449') }} Warehouse stock visibility and pre-positioning</li>
-                        <li>{{ icon('check', 12, '#1e8449') }} Allocation request review and approval</li>
-                        <li>{{ icon('check', 12, '#1e8449') }} Province-wide distribution tracking</li>
+                        <li>{{ icon('check-circle', 13, '#1e8449') }} Warehouse stock visibility and pre-positioning</li>
+                        <li>{{ icon('check-circle', 13, '#1e8449') }} Allocation request review and approval</li>
+                        <li>{{ icon('check-circle', 13, '#1e8449') }} Stock transfer and delivery monitoring</li>
                     </ul>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- More Features -->
+    {% set more_features = [
+        ('users', 'Role-based access control'),
+        ('clipboard', 'Barangay disaster reporting'),
+        ('trending-up', 'Predictive food-pack demand'),
+        ('cloud', '5-day weather forecast'),
+        ('alert-triangle', 'Typhoon & cyclone tracking'),
+        ('building', 'Municipal demand aggregation'),
+        ('truck', 'Inter-warehouse stock transfers'),
+        ('package', 'Food & non-food inventory'),
+        ('bell', 'Low-stock alerts'),
+        ('eye', 'Photo & signature validation'),
+        ('map', 'Barangay priority mapping'),
+        ('bar-chart', 'Warehouse stock dashboards'),
+        ('shield', 'Allocation approval workflow'),
+        ('clock', 'Calamity history records'),
+        ('download', 'CSV & PDF exports'),
+    ] %}
+    <section class="lp-more" id="more-features">
+        <h2 class="lp-more-title">More Features</h2>
+        <div class="lp-more-marquee">
+            <div class="lp-more-track">
+                {% for _ in range(2) %}
+                    {% for icn, label in more_features %}
+                    <span class="lp-more-pill">{{ icon(icn, 15, '#5347ce') }} {{ label }}</span>
+                    {% endfor %}
+                {% endfor %}
             </div>
         </div>
     </section>
@@ -180,34 +260,36 @@
                 <p>Province of Pangasinan · Provincial Social Welfare and Development Office</p>
             </div>
 
+            <p class="lp-contact-intro lp-reveal">For system-related concerns &mdash; account access, technical support, or general questions about ReliefLine.</p>
+
             <div class="lp-contact-grid">
                 <div class="lp-contact-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('mail', 18, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('mail', 18, '#5347ce') }}</div>
                     <h4>Email</h4>
                     <span>pswdo@pangasinan.gov.ph</span>
                 </div>
                 <div class="lp-contact-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('phone', 18, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('phone', 18, '#5347ce') }}</div>
                     <h4>Telephone</h4>
                     <span>(075) 542-2589</span>
                 </div>
                 <div class="lp-contact-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('map-pin', 18, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('map-pin', 18, '#5347ce') }}</div>
                     <h4>Office Address</h4>
                     <span>Capitol Complex, Lingayen, Pangasinan</span>
                 </div>
                 <div class="lp-contact-card lp-reveal">
-                    <div class="lp-feature-icon">{{ icon('clock', 18, '#2f54eb') }}</div>
+                    <div class="lp-feature-icon">{{ icon('clock', 18, '#5347ce') }}</div>
                     <h4>Office Hours</h4>
                     <span>Monday – Friday, 8:00 AM – 5:00 PM</span>
                 </div>
             </div>
 
             <div class="lp-emergency-note lp-reveal">
-                <div class="lp-emergency-icon">{{ icon('info', 18, 'white') }}</div>
+                <div class="lp-emergency-icon">{{ icon('alert-triangle', 18, 'white') }}</div>
                 <div class="lp-emergency-text">
-                    <strong>Emergency Notice</strong>
-                    <span>For emergency or disaster-related concerns, please coordinate with your local CSWDO / MSWDO immediately.</span>
+                    <strong>Emergency / Disaster Concerns</strong>
+                    <span>ReliefLine is not an emergency hotline. For urgent or disaster-related concerns, coordinate directly with your local CSWDO / MSWDO.</span>
                 </div>
             </div>
         </div>
@@ -230,8 +312,8 @@
                 <h5>Navigation</h5>
                 <a href="#home">Home</a>
                 <a href="#services">Services</a>
-                <a href="#about">About ReliefLine</a>
-                <a href="#contact">Contacts</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
             </div>
 
             <div class="lp-footer-col">
@@ -337,6 +419,12 @@
     var el = document.getElementById('lp-map');
     if (!el || typeof L === 'undefined' || !el.dataset.geo) return;
 
+    // name in the boundary file -> { label shown on the pin, accent colour }
+    var TARGET_META = {
+        'City of Urdaneta': { label: 'Urdaneta City', color: '#5347ce', dir: 'up' },
+        'Santa Barbara':    { label: 'Santa Barbara', color: '#e67e22', dir: 'down' },
+        'Calasiao':         { label: 'Calasiao',      color: '#16c8c7', dir: 'left' },
+    };
     var TARGETS = { 'Calasiao': 1, 'Santa Barbara': 1, 'City of Urdaneta': 1 };
 
     var map = L.map(el, {
@@ -345,14 +433,11 @@
         boxZoom: false, keyboard: false, touchZoom: false,
     });
 
-    // OSM basemap, calmed down with a CSS filter (see landing.css) so it
-    // reads as a quiet backdrop. Attribution is carried in the container's
-    // aria-label and a template comment (the clip-path silhouette cuts off
-    // Leaflet's own corner control).
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 12, minZoom: 7,
-    }).addTo(map);
-
+    // No tile basemap - the province is drawn entirely from the local
+    // boundary GeoJSON (faint municipality mesh + outline), so there are
+    // no place-name labels and no third-party tile watermark. The map is
+    // decorative and static; only the three LGU pins carry text.
+    map.createPane('lpBase').style.zIndex = 390;
     map.createPane('lpOutline').style.zIndex = 410;
     map.createPane('lpTarget').style.zIndex = 450;
 
@@ -369,27 +454,56 @@
     ]).then(function (res) {
         var muni = res[0], outline = res[1];
 
-        // Province boundary - a white casing then a dark line, so the
-        // silhouette stays crisp against both the basemap and the page.
+        // Faint municipality mesh - a soft off-white fill with hairline
+        // borders, so the province reads as a clean shape with a little
+        // internal texture instead of a flat blob.
+        L.geoJSON(muni, {
+            pane: 'lpBase', interactive: false,
+            style: { color: '#cfccec', weight: 0.7, opacity: 0.7, fillColor: '#f1f0f8', fillOpacity: 0.96 },
+        }).addTo(map);
+
+        // Province boundary - a white casing then a soft line so the
+        // silhouette stays crisp against the page.
         L.geoJSON(outline, {
             pane: 'lpOutline', interactive: false,
             style: { color: '#ffffff', weight: 4, opacity: 0.9, fill: false },
         }).addTo(map);
         var outlineLayer = L.geoJSON(outline, {
             pane: 'lpOutline', interactive: false,
-            style: { color: '#22345a', weight: 1.75, opacity: 1, fill: false },
+            style: { color: '#8f88c9', weight: 1.5, opacity: 0.9, fill: false },
         }).addTo(map);
 
-        // The three pilot LGUs - white casing under a vivid blue fill.
+        // The three pilot LGUs - a soft tinted fill in each one's accent
+        // colour, white casing, then a labelled pin dropped at its centre.
         L.geoJSON(muni, {
             pane: 'lpTarget', interactive: false,
             filter: function (f) { return TARGETS[f.properties.name] === 1; },
-            style: { color: '#ffffff', weight: 3, fillColor: '#2f54eb', fillOpacity: 0.85 },
+            style: function (f) {
+                var m = TARGET_META[f.properties.name] || { color: '#5347ce' };
+                return { color: '#ffffff', weight: 2.5, fillColor: m.color, fillOpacity: 0.28 };
+            },
         }).addTo(map);
         L.geoJSON(muni, {
             pane: 'lpTarget', interactive: false,
             filter: function (f) { return TARGETS[f.properties.name] === 1; },
-            style: { color: '#12235a', weight: 1, fill: false },
+            style: function (f) {
+                var m = TARGET_META[f.properties.name] || { color: '#5347ce' };
+                return { color: m.color, weight: 1.4, opacity: 0.55, fill: false };
+            },
+            onEachFeature: function (f, layer) {
+                var m = TARGET_META[f.properties.name];
+                if (!m) return;
+                var c = layer.getBounds().getCenter();
+                L.marker(c, {
+                    pane: 'lpTarget', interactive: false, keyboard: false,
+                    icon: L.divIcon({
+                        className: 'lp-map-pin lp-map-pin-' + m.dir,
+                        iconSize: null,
+                        html: '<span class="lp-map-chip" style="--pin:' + m.color + '">' +
+                              m.label + '</span><span class="lp-map-dot" style="--pin:' + m.color + '"></span>',
+                    }),
+                }).addTo(map);
+            },
         }).addTo(map);
 
         // Flatten the outline (Polygon or MultiPolygon) to a list of rings.
@@ -505,6 +619,219 @@
     } else {
         revealTargets.forEach(function (el) { el.classList.add('is-visible'); });
     }
+
+    // Three-Level Architecture: ONE continuous SVG connector, drawn from a path
+    // that is rebuilt from the live card geometry so it keeps an even distance
+    // from every card at any width. The draw progress and the per-card reveal
+    // are both tied to scroll position (never autoplay) and fully reversible.
+    (function () {
+        var arch = document.querySelector('.lp-architecture');
+        if (!arch) return;
+        var svg = arch.querySelector('.lp-arch-line');
+        var path = svg && svg.querySelector('path');
+        var cards = Array.prototype.slice.call(arch.querySelectorAll('.lp-arch-card'));
+        if (!cards.length) return;
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        var lineHidden = function () {
+            return !path || getComputedStyle(svg).display === 'none';
+        };
+
+        function box(el) {
+            return { t: el.offsetTop, b: el.offsetTop + el.offsetHeight,
+                     l: el.offsetLeft, r: el.offsetLeft + el.offsetWidth };
+        }
+
+        // A Catmull-Rom spline through the given points -> one C1-continuous
+        // cubic path with NO sharp corners, passing smoothly through every
+        // waypoint. `t` (0..1) controls how loose the curve is.
+        function smooth(pts, t) {
+            t = t || 1;
+            var d = 'M ' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
+            for (var i = 0; i < pts.length - 1; i++) {
+                var p0 = pts[i - 1] || pts[i], p1 = pts[i],
+                    p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+                var c1x = p1[0] + (p2[0] - p0[0]) / 6 * t,
+                    c1y = p1[1] + (p2[1] - p0[1]) / 6 * t,
+                    c2x = p2[0] - (p3[0] - p1[0]) / 6 * t,
+                    c2y = p2[1] - (p3[1] - p1[1]) / 6 * t;
+                d += ' C ' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ' ' +
+                     c2x.toFixed(1) + ' ' + c2y.toFixed(1) + ' ' +
+                     p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+            }
+            return d;
+        }
+
+        var n1 = function (v) { return (Math.round(v * 10) / 10).toString(); };
+
+        // ONE continuous route matching the reference:
+        //   hook over 01's top-right + down its right side
+        //   -> a clean round loop out to the LEFT linking 01 -> 02
+        //   -> a clean round loop out to the RIGHT linking 02 -> 03
+        //   -> a short finish.
+        // Each loop is a single symmetric cubic (a smooth "D" bulge - never a
+        // cusp). Segments that pass behind a card are hidden by the card.
+        function buildPath() {
+            if (lineHidden()) return;
+            var W = arch.offsetWidth, H = arch.offsetHeight;
+            var c0 = box(cards[0]), c1 = box(cards[1]), c2 = box(cards[2]);
+            var cx = (c0.l + c0.r) / 2;
+            var c0y = (c0.t + c0.b) / 2, c1y = (c1.t + c1.b) / 2, c2y = (c2.t + c2.b) / 2;
+
+            // the hook: two clean cubics that share a vertical tangent where
+            // they meet, so it rounds 01's top-right corner without a kink -
+            // an arc up and over, then a bulge down the right side into the edge.
+            var hookX = Math.min(c0.r + 96, W - 12);
+            var d = 'M ' + n1(cx) + ' ' + n1(c0.t - 54) +
+                    ' C ' + n1(cx + 122) + ' ' + n1(c0.t - 94) + ' ' +
+                            n1(hookX) + ' ' + n1(c0.t - 58) + ' ' +
+                            n1(hookX) + ' ' + n1(c0.t + 6) +
+                    ' C ' + n1(hookX) + ' ' + n1(c0.t + 80) + ' ' +
+                            n1(c0.r + 40) + ' ' + n1(c0y - 6) + ' ' +
+                            n1(c0.r) + ' ' + n1(c0y);
+
+            // straight-ish connector that runs BEHIND a card (hidden by it),
+            // arriving at (x,y) travelling horizontally so it flows into a bulge
+            function link(x, y, fromDir) {
+                return ' C ' + n1(x + fromDir * 60) + ' ' + n1(y) + ' ' +
+                               n1(x + fromDir * 30) + ' ' + n1(y) + ' ' +
+                               n1(x) + ' ' + n1(y);
+            }
+            // A true half-circle bulge from (edge,y1) out past the card edge
+            // and back to (edge,y2) - drawn as TWO quarter-circle cubic arcs
+            // (kappa = 0.5523) meeting at the outermost point, so it is round,
+            // not a boxy teardrop. Leaves/returns to the edge horizontally.
+            var K = 0.5523;
+            function bulge(y1, y2, edge, dir) {
+                var mid = (y1 + y2) / 2;
+                var r = Math.abs(y2 - y1) / 2;
+                var lim = dir < 0 ? edge - 10 : W - 10 - edge;   // room to the edge of view
+                r = Math.min(r, Math.abs(lim));
+                var outer = edge + dir * r;
+                var kr = K * r;
+                return ' C ' + n1(edge + dir * kr) + ' ' + n1(y1) + ' ' +
+                               n1(outer) + ' ' + n1(mid - kr) + ' ' +
+                               n1(outer) + ' ' + n1(mid) +
+                        ' C ' + n1(outer) + ' ' + n1(mid + kr) + ' ' +
+                               n1(edge + dir * kr) + ' ' + n1(y2) + ' ' +
+                               n1(edge) + ' ' + n1(y2);
+            }
+
+            // (hidden) from the hook's end straight across behind 01 to its
+            // left edge at mid-height, then the round loop out to the left -> 02
+            d += link(c0.l, c0y, 1);
+            d += bulge(c0y, c1y, c0.l, -1);
+            // (hidden) across behind 02 to its right edge, then the loop -> 03
+            d += link(c1.r, c1y, -1);
+            d += bulge(c1y, c2y, c1.r, 1);
+            // (hidden) a short finish behind 03
+            d += link(c2.r - 40, c2y + 40, -1);
+
+            svg.setAttribute('viewBox', '0 0 ' + Math.round(W) + ' ' + Math.round(H));
+            path.setAttribute('d', d);
+        }
+
+        if (reduce) {
+            buildPath();
+            cards.forEach(function (c) { c.classList.add('box-in'); c.classList.add('is-drawn'); });
+            if (path) path.style.strokeDashoffset = '0';
+            return;
+        }
+
+        // boxAt: the opaque card box fades in (kept ahead of the line so it
+        //   always masks the connector behind it).
+        // revealAt: the card's contents slide in as the line reaches the card.
+        var boxAt = [0.0, 0.26, 0.58];
+        var revealAt = [0.18, 0.55, 0.88];
+        var ticking = false;
+        function update() {
+            ticking = false;
+            var vh = window.innerHeight || document.documentElement.clientHeight;
+            var r = arch.getBoundingClientRect();
+            var start = vh * 0.80;
+            var span = r.height + vh * 0.35;
+            var p = (start - r.top) / span;
+            p = p < 0 ? 0 : (p > 1 ? 1 : p);
+
+            var hidden = lineHidden();
+            if (!hidden) path.style.strokeDashoffset = String(1 - p);
+            for (var i = 0; i < cards.length; i++) {
+                cards[i].classList.toggle('box-in', hidden ? p > 0.02 : p >= boxAt[i]);
+                cards[i].classList.toggle('is-drawn', hidden ? p > 0.02 : p >= revealAt[i]);
+            }
+        }
+        function onScroll() {
+            if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
+        }
+        function onResize() { buildPath(); onScroll(); }
+
+        buildPath();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onResize);
+        // rebuild once more after fonts/late layout settle
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(buildPath);
+        setTimeout(buildPath, 400);
+        update();
+    })();
+
+    // "More Features" marquee: auto-scrolls, and can be grabbed / swiped to
+    // scroll through by hand (with a bit of momentum on release).
+    (function () {
+        var marq = document.querySelector('.lp-more-marquee');
+        var track = marq && marq.querySelector('.lp-more-track');
+        if (!track) return;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        var offset = 0, half = 0, speed = 0.5;
+        var dragging = false, lastX = 0, vel = 0, paused = false, moved = 0;
+
+        function measure() { half = track.scrollWidth / 2; }
+        measure();
+        window.addEventListener('resize', measure);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+
+        function apply() {
+            if (half > 0) offset = ((offset % half) + half) % half;   // wrap seamlessly
+            track.style.transform = 'translateX(' + (-offset).toFixed(2) + 'px)';
+        }
+        function frame() {
+            if (!dragging) {
+                if (Math.abs(vel) > 0.15) { offset -= vel; vel *= 0.94; }
+                else { vel = 0; if (!paused) offset += speed; }
+                apply();
+            }
+            requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+
+        marq.addEventListener('pointerdown', function (e) {
+            dragging = true; lastX = e.clientX; vel = 0; moved = 0;
+            marq.classList.add('is-grabbing');
+            try { marq.setPointerCapture(e.pointerId); } catch (x) {}
+        });
+        marq.addEventListener('pointermove', function (e) {
+            if (!dragging) return;
+            var dx = e.clientX - lastX;
+            lastX = e.clientX;
+            moved += Math.abs(dx);
+            offset -= dx;
+            vel = dx * 0.55;
+            apply();
+        });
+        function end(e) {
+            if (!dragging) return;
+            dragging = false;
+            marq.classList.remove('is-grabbing');
+            try { marq.releasePointerCapture(e.pointerId); } catch (x) {}
+        }
+        marq.addEventListener('pointerup', end);
+        marq.addEventListener('pointercancel', end);
+        // swallow the click that follows a real drag (so pills don't act like links)
+        marq.addEventListener('click', function (e) { if (moved > 6) { e.preventDefault(); e.stopPropagation(); } }, true);
+        // steady auto-scroll pauses while hovering (momentum/drag unaffected)
+        marq.addEventListener('mouseenter', function () { paused = true; });
+        marq.addEventListener('mouseleave', function () { paused = false; });
+    })();
 })();
 </script>
 {% endblock %}

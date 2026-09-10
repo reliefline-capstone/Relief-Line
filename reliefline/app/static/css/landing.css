@@ -101,19 +101,66 @@ body { overflow-x: hidden; }
 html { scroll-behavior: smooth; }
 
 @keyframes lp-fade-up {
-    from { opacity: 0; transform: translateY(18px); }
+    from { opacity: 0; transform: translateY(14px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes lp-fade-in {
-    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    from { opacity: 0; transform: translateY(10px) scale(0.985); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+
 .lp-hero {
     position: relative;
+    overflow: hidden;                 /* clip the slowly zooming photo */
+    padding: 64px 28px 128px;
+}
+
+/* Capitol backdrop on its own layer: a single, gentle zoom-in on load that
+   eases to a fixed limit and stops (no endless loop). */
+@keyframes lp-hero-zoom {
+    from { transform: scale(1); }
+    to   { transform: scale(1.07); }
+}
+.lp-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
     background: url('/static/img/capitol-bg.jpg') center/cover no-repeat;
-    padding: 64px 28px;
+    transform-origin: 62% 45%;        /* keep the capitol facade in frame as it grows */
+    transform: scale(1.07);           /* resting state = the zoom's end point */
+    animation: lp-hero-zoom 7s ease-out both;
+    will-change: transform;
+}
+.lp-hero-overlay { z-index: 1; }
+.lp-hero-inner { z-index: 2; }
+
+/* Wave divider where the hero meets the next section - a white curve
+   cut out of the hero's bottom edge so the photo flows into the page
+   instead of ending on a hard line. Two tileable wave layers drift
+   sideways at different speeds for a gentle rolling motion. */
+@keyframes lp-wave-drift {
+    from { background-position: 0 bottom, 0 bottom; }
+    to   { background-position: 640px bottom, -880px bottom; }
+}
+.lp-hero::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 104px;
+    z-index: 4;
+    pointer-events: none;
+    background-repeat: repeat-x, repeat-x;
+    background-size: 640px 100%, 880px 100%;
+    background-position: 0 bottom, 0 bottom;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 104' preserveAspectRatio='none'%3E%3Cpath fill='rgba(255,255,255,0.55)' d='M0,52 C106,16 214,16 320,52 C426,88 534,88 640,52 L640,104 L0,104 Z'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 880 104' preserveAspectRatio='none'%3E%3Cpath fill='%23ffffff' d='M0,60 C146,24 294,24 440,60 C586,96 734,96 880,60 L880,104 L0,104 Z'/%3E%3C/svg%3E");
+    animation: lp-wave-drift 14s linear infinite;
 }
 
 /* Strong, soft wash - heaviest over the left copy and the lower edge,
@@ -145,9 +192,10 @@ html { scroll-behavior: smooth; }
    parent so it hugs that clipped silhouette instead of being clipped away
    with it (clip-path applies after filter on the same element). */
 .lp-hero-map {
-    animation: lp-fade-in 0.7s ease 0.2s both;
-    filter: drop-shadow(0 24px 34px rgba(83, 71, 206, 0.34))
-            drop-shadow(0 6px 12px rgba(83, 71, 206, 0.2));
+    position: relative;
+    animation: lp-fade-in 0.6s ease-out 0.15s both;
+    filter: drop-shadow(0 18px 30px rgba(83, 71, 206, 0.20))
+            drop-shadow(0 5px 10px rgba(28, 30, 58, 0.12));
 }
 
 #lp-map {
@@ -156,16 +204,61 @@ html { scroll-behavior: smooth; }
        the column with little empty space above/below. */
     height: 360px;
     background: transparent;
+    overflow: visible;
 }
 
-/* Calm the OSM basemap so it sits back as a backdrop. */
-#lp-map .leaflet-tile-pane {
-    filter: saturate(0.62) brightness(1.04) contrast(0.96);
-}
-
-/* Soft lift on the highlighted LGUs so they read on top of the basemap. */
+/* Soft lift on the highlighted LGUs so they read on top of the mesh. */
 #lp-map .leaflet-pane.leaflet-lpTarget-pane {
-    filter: drop-shadow(0 2px 6px rgba(83, 71, 206, 0.5));
+    filter: drop-shadow(0 2px 5px rgba(28, 30, 58, 0.24));
+    overflow: visible;
+}
+
+/* --- Labelled pins on the three pilot LGUs --- */
+.lp-map-pin { overflow: visible; }
+.lp-map-dot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 13px;
+    height: 13px;
+    margin: -6.5px 0 0 -6.5px;
+    border-radius: 50%;
+    background: var(--pin, #5347ce);
+    border: 3px solid #fff;
+    box-shadow: 0 2px 6px rgba(28, 30, 58, 0.32);
+}
+.lp-map-chip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, calc(-100% - 18px));
+    padding: 2.5px 8px;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--pin, #5347ce);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    white-space: nowrap;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.2);
+}
+/* faint tether from the chip toward its dot */
+.lp-map-chip::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: 1.5px;
+    height: 14px;
+    transform: translateX(-50%);
+    background: var(--pin, #5347ce);
+    opacity: 0.5;
+}
+.lp-map-pin-down .lp-map-chip { transform: translate(-50%, 22px); }
+.lp-map-pin-down .lp-map-chip::after { top: auto; bottom: 100%; }
+.lp-map-pin-left .lp-map-chip { transform: translate(calc(-100% - 16px), -50%); }
+.lp-map-pin-left .lp-map-chip::after {
+    left: 100%; top: 50%; width: 14px; height: 1.5px; transform: translateY(-50%);
 }
 
 .lp-map-failed { display: flex; align-items: center; justify-content: center; }
@@ -179,11 +272,11 @@ html { scroll-behavior: smooth; }
     display: flex;
     align-items: center;
     gap: 16px;
-    animation: lp-fade-up 0.7s ease both;
+    animation: lp-fade-up 0.55s ease-out both;
 }
 
-.lp-hero-desc { animation: lp-fade-up 0.7s ease 0.12s both; }
-.lp-hero-actions { animation: lp-fade-up 0.7s ease 0.22s both; }
+.lp-hero-desc { animation: lp-fade-up 0.55s ease-out 0.1s both; }
+.lp-hero-actions { animation: lp-fade-up 0.55s ease-out 0.2s both; }
 
 .lp-hero-logo { width: 72px; flex-shrink: 0; }
 
@@ -293,17 +386,24 @@ html { scroll-behavior: smooth; }
     align-items: center;
     justify-content: center;
     margin-bottom: 14px;
+    transition: background 0.25s ease;
 }
+.lp-feature-icon svg { transition: stroke 0.25s ease; }
+
+/* icon recolours on card hover */
+.lp-feature-card:hover .lp-feature-icon { background: #5347ce; }
+.lp-feature-card:hover .lp-feature-icon svg { stroke: #fff; }
 
 .lp-feature-card h3 { font-size: 15px; color: var(--lp-navy); margin-bottom: 8px; }
 .lp-feature-card p { font-size: 13.5px; color: var(--lp-text-muted); line-height: 1.6; }
 
+
 /* ---- About + architecture ---- */
 .lp-about-grid {
     display: grid;
-    grid-template-columns: 1.1fr 1fr;
+    grid-template-columns: 1fr 1.05fr;
     gap: 56px;
-    align-items: start;
+    align-items: center;
 }
 
 .lp-about-copy h2 { font-size: clamp(24px, 3vw, 32px); color: var(--lp-navy); margin: 12px 0 16px; }
@@ -312,6 +412,109 @@ html { scroll-behavior: smooth; }
 
 .lp-check-list { list-style: none; margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
 .lp-check-list li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #333; }
+
+.lp-about-cta { margin-top: 24px; }
+
+/* --- About showcase: laptop mockup + floating capability chips --- */
+.lp-about-showcase {
+    position: relative;
+    padding: 48px 30px 40px;
+}
+/* A few distinct, well-separated soft "bubble" blobs + small crisp accent
+   circles. Each blob fades fully to transparent at its own edge and there is
+   clear space between them, so nothing ever forms a rectangular seam. */
+.lp-about-showcase::before {
+    content: "";
+    position: absolute;
+    inset: -16% -9% -9%;
+    z-index: 0;
+    pointer-events: none;
+    /* every circle sits fully inside the viewBox with margin, so each fade
+       finishes before the layer edge - nothing is ever clipped flat */
+    background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 640'%3E%3Cg fill='%23dbe6f7' fill-opacity='0.55'%3E%3Ccircle cx='690' cy='205' r='178'/%3E%3Ccircle cx='178' cy='412' r='140'/%3E%3Ccircle cx='778' cy='452' r='82'/%3E%3Ccircle cx='204' cy='150' r='78'/%3E%3C/g%3E%3Cg fill='%23a7c0e8'%3E%3Ccircle cx='188' cy='320' r='14'/%3E%3Ccircle cx='236' cy='392' r='6'/%3E%3Ccircle cx='742' cy='268' r='16'/%3E%3Ccircle cx='806' cy='300' r='6'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Laptop mockup image (transparent PNG render) */
+.lp-about-device {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 30px 46px rgba(28, 30, 58, 0.16)) drop-shadow(0 8px 18px rgba(83, 71, 206, 0.12));
+    transform-origin: 50% 70%;
+    /* held hidden until the showcase scrolls into view, then pops in */
+    animation: lp-device-pop 0.62s cubic-bezier(0.34, 1.45, 0.6, 1) both;
+    animation-play-state: paused;
+}
+.lp-about-showcase.is-visible .lp-about-device { animation-play-state: running; }
+@keyframes lp-device-pop {
+    0%   { opacity: 0; transform: scale(0.86); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.lp-showcase-chip {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 13px;
+    background: #fff;
+    border: 1px solid #ececf3;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(28, 30, 58, 0.14);
+    font-size: 11px;
+    line-height: 1.25;
+    color: var(--lp-text-muted);
+    white-space: nowrap;
+    /* all four pop in together, hold, then disappear together - loop.
+       tiny per-chip offsets keep it from looking too mechanical.
+       Held at frame 0 (hidden) until the showcase scrolls into view. */
+    animation: lp-chip-pop 6.5s ease-in-out infinite both;
+    animation-play-state: paused;
+}
+.lp-about-showcase.is-visible .lp-showcase-chip { animation-play-state: running; }
+.lp-showcase-chip strong { display: block; font-size: 12.5px; color: var(--lp-navy); }
+.lp-chip-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    flex-shrink: 0;
+}
+.lp-chip-ic-blue   { background: #efedfd; }
+.lp-chip-ic-teal   { background: #e2f6f5; }
+.lp-chip-ic-violet { background: #f1ecfb; }
+.lp-chip-ic-green  { background: #e6f6ec; }
+
+/* near-simultaneous - only a few tenths of a second apart.
+   --cs gives each chip a slightly different resting size */
+.lp-chip-tl { top: 10px; left: -16px; animation-delay: 0s;    --cs: 1.08; }
+.lp-chip-tr { top: 30px; right: -6px; animation-delay: 0.18s; --cs: 0.9; }
+.lp-chip-bl { bottom: 74px; left: -22px; animation-delay: 0.32s; --cs: 1.16; }
+.lp-chip-br { bottom: 46px; right: 0; animation-delay: 0.1s;   --cs: 0.86; }
+
+@keyframes lp-chip-pop {
+    0%   { opacity: 0; transform: scale(calc(var(--cs, 1) * 0.4)); }
+    8%   { opacity: 1; transform: scale(calc(var(--cs, 1) * 1.06)); }
+    15%  { transform: scale(var(--cs, 1)); }
+    68%  { opacity: 1; transform: scale(var(--cs, 1)); }
+    75%  { opacity: 0; transform: scale(calc(var(--cs, 1) * 0.4)); }
+    100% { opacity: 0; transform: scale(calc(var(--cs, 1) * 0.4)); }
+}
+
+/* Architecture: ONE continuous purple connector that flows past all three
+   levels - over 01, a wide sweep to 02, a wide sweep to 03. It draws itself
+   in step with scroll (JS drives stroke-dashoffset) and each card is
+   revealed as the line reaches it. */
+.lp-architecture {
+    position: relative;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 44px 0 34px;
+}
 
 .lp-architecture-label {
     display: block;
@@ -322,26 +525,181 @@ html { scroll-behavior: smooth; }
     margin-bottom: 14px;
 }
 
-.lp-arch-card {
-    border-radius: 12px;
-    padding: 18px 20px;
-    margin-bottom: 14px;
-    border: 1px solid transparent;
+/* the connector */
+.lp-arch-line {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    z-index: 0;
+    pointer-events: none;
+}
+.lp-arch-line path {
+    fill: none;
+    stroke: #6d3fc4;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    /* eases scroll updates so it glides rather than snapping frame-to-frame */
+    transition: stroke-dashoffset 0.25s ease-out;
 }
 
-.lp-arch-card:last-child { margin-bottom: 0; }
+/* Two-stage reveal: the opaque card BOX fades in first (`.box-in`, ahead of
+   the drawing line, so it always masks the connector that passes behind it),
+   then the card's CONTENTS slide in as the line reaches it (`.is-drawn`). */
+.lp-arch-card {
+    position: relative;
+    z-index: 1;
+    max-width: 470px;
+    margin: 0 auto 30px;
+    border-radius: 16px;
+    padding: 24px 26px 22px;
+    background: #fff;
+    border: 1px solid #ece8f8;
+    box-shadow: 0 12px 34px rgba(83, 71, 206, 0.08);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.lp-arch-card.box-in { opacity: 1; transform: none; }
+.lp-arch-card:last-child { margin-bottom: 12px; }
 
-.lp-arch-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.lp-arch-card-head h4 { font-size: 14.5px; color: var(--lp-navy); }
+.lp-arch-card-top,
+.lp-arch-card h4,
+.lp-arch-card ul {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.lp-arch-card.is-drawn .lp-arch-card-top,
+.lp-arch-card.is-drawn h4,
+.lp-arch-card.is-drawn ul {
+    opacity: 1;
+    transform: none;
+}
+.lp-arch-card.is-drawn h4 { transition-delay: 0.06s; }
+.lp-arch-card.is-drawn ul { transition-delay: 0.12s; }
 
-.lp-arch-card ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-.lp-arch-card li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #444; }
+.lp-arch-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+.lp-arch-num {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.lp-arch-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+.lp-arch-card h4 { font-size: 15.5px; color: #1f2a44; margin: 10px 0 13px; }
 
-.lp-arch-barangay { background: #efedfd; }
-.lp-arch-city { background: #f1ecfb; }
-.lp-arch-provincial { background: #e8faf0; }
+.lp-arch-card ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.lp-arch-card li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #4b5563; }
+.lp-arch-card li svg { flex-shrink: 0; }
+
+/* per-level gradient accents (number text + icon tile) */
+.lp-arch-barangay { background: #fcfbff; }
+.lp-arch-barangay .lp-arch-num,
+.lp-arch-barangay .lp-arch-ic { background-image: linear-gradient(150deg, #9a6ff0, #6d3fc4); }
+
+.lp-arch-city { background: #fbfaff; }
+.lp-arch-city .lp-arch-num,
+.lp-arch-city .lp-arch-ic { background-image: linear-gradient(150deg, #6f74f2, #4133c0); }
+
+.lp-arch-provincial { background: #f5fcf8; border-color: #dbf0e4; }
+.lp-arch-provincial .lp-arch-num,
+.lp-arch-provincial .lp-arch-ic { background-image: linear-gradient(150deg, #17b6a3, #0a8f56); }
+
+/* ---- More Features (marquee) ---- */
+.lp-more {
+    background: linear-gradient(135deg, #5347ce 0%, #4436b4 100%);
+    padding: 58px 0 62px;
+    overflow: hidden;
+}
+.lp-more-title {
+    text-align: center;
+    color: #fff;
+    font-size: clamp(23px, 3vw, 30px);
+    font-weight: 700;
+    margin-bottom: 34px;
+}
+.lp-more-marquee {
+    display: flex;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: pan-y;          /* let the page scroll vertically; we handle horizontal drags */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.lp-more-marquee.is-grabbing { cursor: grabbing; }
+.lp-more-track {
+    display: flex;
+    flex-shrink: 0;
+    gap: 14px;
+    padding-left: 14px;
+    will-change: transform;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.lp-more-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--lp-navy);
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: 0 6px 16px rgba(28, 30, 58, 0.16);
+    -webkit-user-drag: none;
+}
+.lp-more-pill svg { flex-shrink: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-more-marquee { -webkit-mask-image: none; mask-image: none; }
+    .lp-more-track {
+        animation: none;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 20px;
+        row-gap: 12px;
+    }
+    /* the track holds the list twice for a seamless scroll - show it once here */
+    .lp-more-track .lp-more-pill:nth-child(n+16) { display: none; }
+}
 
 /* ---- Contact ---- */
+.lp-contact-intro {
+    text-align: center;
+    max-width: 620px;
+    margin: -12px auto 26px;
+    font-size: 13.5px;
+    color: var(--lp-text-muted);
+    line-height: 1.6;
+}
+
 .lp-contact-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -411,34 +769,34 @@ html { scroll-behavior: smooth; }
 .lp-footer-inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 48px 28px 32px;
+    padding: 34px 28px 24px;
     display: grid;
     grid-template-columns: 1.6fr 1fr 1fr;
-    gap: 32px;
+    gap: 28px;
 }
 
 .lp-footer-brand-head { display: flex; align-items: center; gap: 12px; }
-.lp-footer-brand-head img { width: 42px; height: 42px; border-radius: 50%; }
-.lp-footer-brand-head strong { display: block; font-size: 16px; }
-.lp-footer-brand-head span { font-size: 12.5px; opacity: 0.75; line-height: 1.5; }
+.lp-footer-brand-head img { width: 38px; height: 38px; border-radius: 50%; }
+.lp-footer-brand-head strong { display: block; font-size: 15px; }
+.lp-footer-brand-head span { font-size: 12px; opacity: 0.75; line-height: 1.45; }
 
 .lp-footer-col h5 {
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     opacity: 0.7;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 
-.lp-footer-col { display: flex; flex-direction: column; gap: 10px; }
-.lp-footer-col a { font-size: 13.5px; opacity: 0.85; }
+.lp-footer-col { display: flex; flex-direction: column; gap: 7px; }
+.lp-footer-col a { font-size: 13px; opacity: 0.85; }
 .lp-footer-col a:hover { opacity: 1; }
 
 .lp-footer-bottom {
     border-top: 1px solid rgba(255,255,255,0.12);
     max-width: 1200px;
     margin: 0 auto;
-    padding: 18px 28px;
+    padding: 14px 28px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -454,8 +812,9 @@ html { scroll-behavior: smooth; }
 /* ---- Scroll-reveal ---- */
 .lp-reveal {
     opacity: 0;
-    transform: translateY(22px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    will-change: opacity, transform;
 }
 
 .lp-reveal.is-visible { opacity: 1; transform: translateY(0); }
@@ -472,9 +831,6 @@ html { scroll-behavior: smooth; }
 .lp-contact-grid .lp-reveal:nth-child(3) { transition-delay: 0.16s; }
 .lp-contact-grid .lp-reveal:nth-child(4) { transition-delay: 0.24s; }
 
-.lp-arch-card.lp-reveal:nth-of-type(1) { transition-delay: 0s; }
-.lp-arch-card.lp-reveal:nth-of-type(2) { transition-delay: 0.1s; }
-.lp-arch-card.lp-reveal:nth-of-type(3) { transition-delay: 0.2s; }
 
 /* Forgot Password modal - overlays the landing page itself (dims it, same
    idea as .rd-modal-overlay elsewhere in the app) instead of navigating to
@@ -517,9 +873,19 @@ html { scroll-behavior: smooth; }
 
 /* Motion-sensitive users get the same content with no animation. */
 @media (prefers-reduced-motion: reduce) {
-    .lp-hero-lockup, .lp-hero-desc, .lp-hero-actions {
+    .lp-hero-lockup, .lp-hero-desc, .lp-hero-actions,
+    .lp-hero-map, .lp-hero::after, .lp-hero::before,
+    .lp-showcase-chip, .lp-about-device {
         animation: none;
     }
+    .lp-hero::before { transform: none; }
+    .lp-showcase-chip { transform: scale(var(--cs, 1)); }
+    .lp-about-device { opacity: 1; transform: none; }
+    .lp-arch-card { opacity: 1; transform: none; transition: none; }
+    .lp-arch-card-top, .lp-arch-card h4, .lp-arch-card ul {
+        opacity: 1; transform: none; transition: none;
+    }
+    .lp-arch-line path { stroke-dashoffset: 0; transition: none; }
     .lp-reveal {
         opacity: 1;
         transform: none;
@@ -552,6 +918,21 @@ html { scroll-behavior: smooth; }
     .lp-contact-grid { grid-template-columns: repeat(2, 1fr); }
     .lp-footer-inner { grid-template-columns: 1fr 1fr; }
     .lp-footer-brand { grid-column: 1 / -1; }
+
+    .lp-about-showcase { padding: 30px 24px; max-width: 520px; margin: 0 auto; }
+    .lp-chip-tl, .lp-chip-bl { left: 0; }
+    .lp-chip-tr, .lp-chip-br { right: 0; }
+
+    /* not enough side room for the wide connector - hide it, keep the plain
+       per-card reveal (JS falls back automatically). */
+    .lp-architecture { max-width: 540px; }
+    .lp-arch-line { display: none; }
+}
+
+@media (max-width: 520px) {
+    .lp-showcase-chip { position: static; margin: 8px 0 0; white-space: normal; animation: none; }
+    .lp-about-showcase { padding: 0; }
+    .lp-about-showcase::before { display: none; }
 }
 
 @media (max-width: 720px) {
