@@ -1,8 +1,8 @@
 :root {
-    --lp-navy: #0f2547;
-    --lp-navy-light: #1a3a6b;
-    --lp-blue: #2f54eb;
-    --lp-blue-light: #4468f0;
+    --lp-navy: #5347ce;
+    --lp-navy-light: #4436b4;
+    --lp-blue: #5347ce;
+    --lp-blue-light: #6a5fe0;
     --lp-text-muted: #6b7686;
     --lp-border: #e6e9f0;
     --lp-bg-alt: #f7f9fc;
@@ -17,11 +17,11 @@ body { overflow-x: hidden; }
     z-index: 50;
     background: white;
     border-bottom: 1px solid var(--lp-border);
-    box-shadow: 0 4px 14px rgba(15, 37, 71, 0);
+    box-shadow: 0 4px 14px rgba(83, 71, 206, 0);
     transition: box-shadow 0.25s ease;
 }
 
-.lp-nav.is-scrolled { box-shadow: 0 4px 14px rgba(15, 37, 71, 0.08); }
+.lp-nav.is-scrolled { box-shadow: 0 4px 14px rgba(83, 71, 206, 0.08); }
 
 .lp-nav-inner {
     max-width: 1200px;
@@ -92,7 +92,9 @@ body { overflow-x: hidden; }
     font-weight: 600;
     transition: background 0.2s ease;
 }
-.lp-nav-login:hover { background: var(--lp-blue-light); color: white; }
+/* Needs to out-specify `.lp-nav-links a:hover` above, which would otherwise
+   turn the label blue-on-blue (unreadable) on hover. */
+.lp-nav-links a.lp-nav-login:hover { background: var(--lp-blue-light); color: #fff; }
 .lp-nav-login::after { display: none; }
 
 /* ---- Hero ---- */
@@ -144,8 +146,8 @@ html { scroll-behavior: smooth; }
    with it (clip-path applies after filter on the same element). */
 .lp-hero-map {
     animation: lp-fade-in 0.7s ease 0.2s both;
-    filter: drop-shadow(0 24px 34px rgba(15, 37, 71, 0.34))
-            drop-shadow(0 6px 12px rgba(15, 37, 71, 0.2));
+    filter: drop-shadow(0 24px 34px rgba(83, 71, 206, 0.34))
+            drop-shadow(0 6px 12px rgba(83, 71, 206, 0.2));
 }
 
 #lp-map {
@@ -163,7 +165,7 @@ html { scroll-behavior: smooth; }
 
 /* Soft lift on the highlighted LGUs so they read on top of the basemap. */
 #lp-map .leaflet-pane.leaflet-lpTarget-pane {
-    filter: drop-shadow(0 2px 6px rgba(15, 37, 71, 0.5));
+    filter: drop-shadow(0 2px 6px rgba(83, 71, 206, 0.5));
 }
 
 .lp-map-failed { display: flex; align-items: center; justify-content: center; }
@@ -227,7 +229,7 @@ html { scroll-behavior: smooth; }
 .lp-btn:active { transform: translateY(0); }
 
 .lp-btn-primary { background: var(--lp-blue); color: white; }
-.lp-btn-primary:hover { background: var(--lp-blue-light); box-shadow: 0 8px 18px rgba(47, 84, 235, 0.28); }
+.lp-btn-primary:hover { background: var(--lp-blue-light); box-shadow: 0 8px 18px rgba(83, 71, 206, 0.28); }
 
 .lp-btn-secondary { background: #eef1f6; color: #333; }
 .lp-btn-secondary:hover { background: #e2e6ee; }
@@ -257,7 +259,7 @@ html { scroll-behavior: smooth; }
     letter-spacing: 0.2px;
 }
 
-.lp-eyebrow-blue { background: #eaf0ff; color: var(--lp-blue); }
+.lp-eyebrow-blue { background: #efedfd; color: var(--lp-blue); }
 .lp-eyebrow-green { background: #e8faf0; color: #1e8449; }
 .lp-eyebrow-orange { background: #fff1e6; color: #c8621a; }
 
@@ -278,15 +280,15 @@ html { scroll-behavior: smooth; }
 
 .lp-feature-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(15, 37, 71, 0.08);
-    border-color: #dbe3f5;
+    box-shadow: 0 12px 24px rgba(83, 71, 206, 0.08);
+    border-color: #e0daf7;
 }
 
 .lp-feature-icon {
     width: 42px;
     height: 42px;
     border-radius: 10px;
-    background: #eaf0ff;
+    background: #efedfd;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -335,7 +337,7 @@ html { scroll-behavior: smooth; }
 .lp-arch-card ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .lp-arch-card li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #444; }
 
-.lp-arch-barangay { background: #eaf0ff; }
+.lp-arch-barangay { background: #efedfd; }
 .lp-arch-city { background: #f1ecfb; }
 .lp-arch-provincial { background: #e8faf0; }
 
@@ -357,7 +359,7 @@ html { scroll-behavior: smooth; }
 
 .lp-contact-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(15, 37, 71, 0.07);
+    box-shadow: 0 10px 20px rgba(83, 71, 206, 0.07);
 }
 
 .lp-contact-card .lp-feature-icon { margin: 0 auto 12px; }
@@ -480,7 +482,7 @@ html { scroll-behavior: smooth; }
 .auth-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 37, 71, 0.55);
+    background: rgba(83, 71, 206, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;

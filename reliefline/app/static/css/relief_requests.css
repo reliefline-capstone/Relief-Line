@@ -13,7 +13,7 @@
     width: 260px;
     padding: 9px 14px;
     background: white;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
 }
 
@@ -45,7 +45,7 @@
 .filter-bar select {
     height: 38px;
     padding: 8px 34px 8px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 6px;
     font-size: 13px;
     color: #333;
@@ -70,7 +70,7 @@
 .filter-bar input[type="text"] {
     height: 38px;
     padding: 8px 14px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 6px;
     font-size: 13px;
     font-family: inherit;
@@ -79,7 +79,7 @@
     min-width: 180px;
     flex: 1 1 180px;
 }
-.filter-bar input[type="text"]:focus { outline: none; border-color: #0f2547; }
+.filter-bar input[type="text"]:focus { outline: none; border-color: #5347ce; }
 
 /* When the search field is wrapped in .rr-search-wrapper, that wrapper is
    the styled box - strip the wrapped <input>'s own border/height/padding so
@@ -97,7 +97,7 @@
     gap: 8px;
     height: 38px;
     padding: 8px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 6px;
     box-sizing: border-box;
     flex-shrink: 0;
@@ -134,7 +134,7 @@
 
 .pill-pending { background: #fef5e3; color: #d68910; }
 .pill-approved { background: #e8faf0; color: #1e8449; }
-.pill-released { background: #ede7f6; color: #6c3483; }
+.pill-released { background: #ede7f6; color: #5347ce; }
 .pill-rejected { background: #fdecea; color: #c0392b; }
 
 .summary-note {
@@ -161,25 +161,77 @@
 .rr-table tbody tr:last-child td { border-bottom: none; }
 
 .rr-table thead {
-    background: #f8f9fc;
+    background: #f4f4fb;
 }
 
 .rr-table th {
     text-align: left;
-    padding: 12px 16px;
-    font-size: 11px;
+    padding: 10px 16px;
+    font-size: 10.5px;
     color: #8a94a6;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
     font-weight: 700;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #e7e8ef;
 }
 
 .rr-table td {
-    padding: 14px 16px;
-    border-bottom: 1px solid #f0f2f6;
-    font-size: 14px;
-    vertical-align: top;
+    padding: 11px 16px;
+    border-bottom: 1px solid #f0f1f6;
+    font-size: 13.5px;
+    line-height: 1.4;
+    vertical-align: middle;
 }
+
+.rr-table tbody tr:hover td { background: #faf9fe; }
+
+/* -- Stock Requests list specifics (scoped to .rr-table-wrap, the only
+      page that uses it) ------------------------------------------------ */
+/* Row height sized so a full page of results fills most of the viewport
+   rather than leaving a large empty band under the card. */
+.rr-table-wrap .rr-table th { padding: 11px 16px; }
+.rr-table-wrap .rr-table td { padding: 14px 16px; font-size: 13px; }
+
+/* tabular figures so digit columns line up */
+.rr-table-wrap .rr-table td:nth-child(1),
+.rr-table-wrap .rr-table td:nth-child(4),
+.rr-table-wrap .rr-table td:nth-child(5) {
+    font-variant-numeric: tabular-nums;
+}
+.rr-table-wrap .rr-table td:first-child {
+    color: #55606f;
+    font-weight: 600;
+}
+/* Event name reads as a link */
+.rr-table-wrap .rr-table td:nth-child(3) { color: #5347ce; }
+
+/* A request still awaiting a decision jumps out: warm row wash + a
+   solid accent bar down its left edge, so a new submission is spotted
+   at a glance without scanning the Status column. */
+.rr-table-wrap .rr-table tbody tr:has(.badge-status.status-pending) td {
+    background: #fff8ec;
+}
+.rr-table-wrap .rr-table tbody tr:has(.badge-status.status-pending):hover td {
+    background: #fef2dd;
+}
+.rr-table-wrap .rr-table tbody tr:has(.badge-status.status-pending) td:first-child {
+    box-shadow: inset 3px 0 0 0 #e0930f;
+}
+/* Actions column hugs the right edge */
+.rr-table-wrap .rr-table th:last-child,
+.rr-table-wrap .rr-table td:last-child {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Pagination footer sits inside the table card: count on the left,
+   page controls on the right. */
+.rr-table-wrap .rr-pagination {
+    justify-content: space-between;
+    border-top: 1px solid #eef0f5;
+    padding: 12px 16px;
+}
+.rr-table-wrap .rr-pagination > span { color: #8a94a6; font-size: 12px; }
 
 .rr-sub {
     display: block;
@@ -189,26 +241,34 @@
 }
 
 .badge-status {
-    padding: 4px 10px;
-    border-radius: 10px;
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 10.5px;
     font-weight: 600;
+    letter-spacing: 0.1px;
+    white-space: nowrap;
 }
 
 .badge-status-pending { background: #fef5e3; color: #d68910; }
 .badge-status-approved { background: #e8faf0; color: #1e8449; }
-.badge-status-released { background: #ede7f6; color: #6c3483; }
-.badge-status-partially_approved { background: #eaf0fd; color: #2c5aa0; }
+.badge-status-released { background: #ede7f6; color: #5347ce; }
+.badge-status-partially_approved { background: #efedfd; color: #5347ce; }
 .badge-status-rejected { background: #fdecea; color: #c0392b; }
 
 .badge-priority {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
-    padding: 4px 10px;
-    border-radius: 10px;
-    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 10.5px;
     font-weight: 600;
+    letter-spacing: 0.1px;
+    white-space: nowrap;
 }
 
 .badge-priority-critical { background: #fdecea; color: #c0392b; }
@@ -228,8 +288,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid #2c5aa0;
-    color: #2c5aa0;
+    border: 1px solid #5347ce;
+    color: #5347ce;
     padding: 6px 12px;
     border-radius: 6px;
     font-size: 12px;
@@ -252,16 +312,16 @@
 
 .page-btn {
     padding: 6px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 6px;
     font-size: 12px;
     color: #444;
 }
 
 .page-btn.active {
-    background: #0f2547;
+    background: #5347ce;
     color: white;
-    border-color: #0f2547;
+    border-color: #5347ce;
 }
 
 @media (max-width: 768px) {
@@ -308,7 +368,7 @@
 }
 .da-filter-bar input[type="text"],
 .da-filter-bar select {
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
     padding: 9px 12px;
     font-size: 13px;
@@ -335,14 +395,24 @@
     font-weight: 600;
     white-space: nowrap;
 }
-.btn-view-sm { border-color: #d8dee8; background: white; color: #333; }
-.btn-view-sm:hover { background: #f8f9fc; }
-.btn-review-sm { background: #0f2547; color: white; }
-.btn-review-sm:hover { background: #16305e; }
+.btn-view-sm { background: #eef0f4; color: #4a5568; }
+.btn-view-sm:hover { background: #e4e6ec; }
+.btn-review-sm { background: #5347ce; color: white; }
+.btn-review-sm:hover { background: #3f34a0; }
+
+/* On the Stock Requests list the "Review" action (pending rows only) reads
+   as a soft primary chip rather than the neutral "View" grey. */
+.rr-table-wrap .rr-table tbody tr:has(.status-pending) td:last-child .btn-view-sm {
+    background: #ece9fb;
+    color: #4a3fb4;
+}
+.rr-table-wrap .rr-table tbody tr:has(.status-pending) td:last-child .btn-view-sm:hover {
+    background: #ded9f7;
+}
 
 /* Filled colour variants for draft-row Edit / Delete */
-.btn-sm-primary { background: #2c5aa0; border-color: #2c5aa0; color: #fff; }
-.btn-sm-primary:hover { background: #244b86; border-color: #244b86; }
+.btn-sm-primary { background: #5347ce; border-color: #5347ce; color: #fff; }
+.btn-sm-primary:hover { background: #4a3fb4; border-color: #4a3fb4; }
 .btn-sm-danger { background: #c0392b; border-color: #c0392b; color: #fff; }
 .btn-sm-danger:hover { background: #a53125; border-color: #a53125; }
 
@@ -357,12 +427,15 @@
    (the older single-class .badge-status-X rules above stay for legacy pages) */
 .badge-status.status-pending,
 .badge-status.status-partially_approved { background: #fef5e3; color: #d68910; }
-.badge-status.status-approved,
 .badge-status.status-fulfilled,
 .badge-status.status-validated,
 .badge-status.status-delivered,
 .badge-status.status-completed,
 .badge-status.status-confirmed { background: #e8faf0; color: #1e8449; }
+/* "Approved" is in-progress (transfer on the way), not done - reads
+   purple like the "Approved / In Transit" filter, distinct from the
+   green "Fulfilled". */
+.badge-status.status-approved { background: #efedfd; color: #5347ce; }
 .badge-status.status-declined,
 .badge-status.status-rejected,
 .badge-status.status-delayed { background: #fdecea; color: #c0392b; }
@@ -371,7 +444,7 @@
 .badge-status.status-loaded,
 .badge-status.status-issued,
 .badge-status.status-dispatched,
-.badge-status.status-in_transit { background: #eaf0fd; color: #2c5aa0; }
+.badge-status.status-in_transit { background: #efedfd; color: #5347ce; }
 
 /* Summary pills rendered as plain <span> children (no .pill class) */
 .summary-pills > span {
@@ -384,50 +457,158 @@
 }
 .summary-pills > span:first-child { background: #fef5e3; color: #b7791f; }
 
-/* Clickable status filter pills (replaces the status dropdown) */
-.status-filter-pills { gap: 8px; }
+/* ================================================================
+   Compact toolbar layout (Stock Requests list) - tabs on the left,
+   search / filter / actions on the right, all on one wrapping row.
+   ================================================================ */
+.rr-page-head { margin-bottom: 14px; }
+.rr-page-head h2 { font-size: 20px; color: #5347ce; margin-bottom: 3px; }
+.rr-page-head p { font-size: 12.5px; color: #8a94a6; }
+
+.rr-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    margin-bottom: 14px;
+}
+
+/* Clickable status filter tabs - flat text, the active one boxed. */
+.status-filter-pills {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
+}
 .status-pill {
-    padding: 7px 14px;
+    padding: 7px 12px;
     border-radius: 8px;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
-    background: #f0f2f6;
-    color: #55606f;
+    background: transparent;
+    color: #7b8494;
     border: 1px solid transparent;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    transition: filter .12s ease, border-color .12s ease;
+    gap: 5px;
+    white-space: nowrap;
+    transition: background .12s ease, color .12s ease, border-color .12s ease;
 }
-.status-pill strong { font-size: 14px; font-weight: 700; }
-.status-pill:hover { filter: brightness(0.96); }
-.status-pill-pending { background: #fef5e3; color: #b7791f; }
-.status-pill-approved { background: #eaf0fd; color: #2c5aa0; }
-.status-pill-fulfilled { background: #e8faf0; color: #1e8449; }
-.status-pill-declined { background: #fdecea; color: #c0392b; }
-.status-pill.active {
-    border-color: currentColor;
-    box-shadow: 0 0 0 1px currentColor inset;
-}
+.status-pill strong { font-weight: 700; opacity: 0.85; }
+.status-pill:hover { background: #f1f0f8; }
+.status-pill-all     { color: #55606f; }
+.status-pill-pending  { color: #d68910; }
+.status-pill-approved { color: #5347ce; }
+.status-pill-fulfilled { color: #1e8449; }
+.status-pill-declined { color: #c0392b; }
 
-/* Numbered pagination rendered as bare <a> links */
-.rr-pagination { justify-content: center; gap: 6px; flex-wrap: wrap; }
-.pagination-controls { flex-wrap: wrap; justify-content: center; }
-.rr-pagination a {
-    padding: 6px 12px;
-    border: 1px solid #d8dee8;
-    border-radius: 6px;
+/* Active tab: keeps its own colour, sits in a white chip. */
+.status-pill.active {
+    background: #fff;
+    border-color: #e4e5ee;
+    box-shadow: 0 1px 3px rgba(28, 30, 58, 0.08);
+}
+.status-pill.active strong { opacity: 1; }
+
+/* Right-hand controls */
+.rr-toolbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+.rr-mini-select {
+    height: 34px;
+    max-width: 150px;
+    padding: 0 28px 0 10px;
+    border: 1px solid #e3e4ec;
+    border-radius: 8px;
     font-size: 12px;
     color: #444;
+    background-color: #fff;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3e%3cpath d='M1 1L5 5L9 1' stroke='%238a94a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
 }
-.rr-pagination a.active {
-    background: #0f2547;
-    color: white;
-    border-color: #0f2547;
+.rr-search-box {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    width: 190px;
+    max-width: 34vw;
+    padding: 0 10px;
+    background: #fff;
+    border: 1px solid #e3e4ec;
+    border-radius: 8px;
+}
+.rr-search-box input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 12px;
+    background: transparent;
+    color: #333;
+}
+.rr-filter-btn,
+.rr-icon-btn,
+.rr-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    height: 34px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.rr-filter-btn { padding: 0 14px; background: #fff; border: 1px solid #e3e4ec; color: #444; }
+.rr-filter-btn:hover { background: #f6f5fc; }
+.rr-icon-btn { width: 34px; background: #fff; border: 1px solid #e3e4ec; color: #55606f; }
+.rr-icon-btn:hover { background: #f6f5fc; }
+.rr-primary-btn { padding: 0 14px; background: #5347ce; border: 1px solid #5347ce; color: #fff; }
+.rr-primary-btn:hover { background: #4436b4; }
+
+/* Compact pagination: "Showing x to y" + prev / current / next */
+.rr-pagination { justify-content: space-between; }
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.page-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #e3e4ec;
+    border-radius: 7px;
+    color: #55606f;
+}
+.page-nav:hover { background: #f4f4fb; }
+.page-nav.is-disabled { opacity: 0.4; pointer-events: none; }
+.page-current {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 7px;
+    background: #5347ce;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 /* Priority badge colours (class="badge-priority tier-X") - the tier-critical/
    high/medium/low/unrated set is defined in dashboard.css, which every page
    using this also links. Only the extra aliases are needed here. */
 .badge-priority.tier-moderate { background: #fef5e3; color: #d68910; }
-.badge-priority.tier-none { background: #f0f2f6; color: #8a94a6; }
+.badge-priority.tier-none { background: #f0f2f6; color: #8a94a6; }

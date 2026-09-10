@@ -2,7 +2,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: #0f2547;
+    background: #5347ce;
     color: white;
     padding: 9px 16px;
     border-radius: 8px;
@@ -10,17 +10,17 @@
     font-weight: 600;
 }
 
-.btn-primary:hover { background: #1a3a6b; }
+.btn-primary:hover { background: #4436b4; }
 
 .dist-filter-bar { justify-content: flex-start; }
 .dist-filter-bar .btn-outline { margin-left: auto; }
 
-.dist-id { color: #2c5aa0; }
+.dist-id { color: #5347ce; }
 .dist-unassigned { color: #b8bfc9; font-style: italic; }
 
 .badge-status-preparing { background: #fef5e3; color: #d68910; }
-.badge-status-loaded { background: #eaf0fd; color: #2c5aa0; }
-.badge-status-dispatched { background: #f1edfe; color: #6c5ce7; }
+.badge-status-loaded { background: #efedfd; color: #5347ce; }
+.badge-status-dispatched { background: #f1edfe; color: #5347ce; }
 .badge-status-in_transit { background: #fdf0e4; color: #a5713a; }
 .badge-status-delivered { background: #e8faf0; color: #1e8449; }
 .badge-status-delayed { background: #fdecea; color: #c0392b; }
@@ -46,7 +46,7 @@
     color: #b8bfc9;
 }
 
-.nd-step.is-active { color: #0f2547; }
+.nd-step.is-active { color: #5347ce; }
 
 .nd-step-num {
     display: flex;
@@ -61,12 +61,12 @@
     flex-shrink: 0;
 }
 
-.nd-step.is-active .nd-step-num { background: #2f54eb; color: white; }
+.nd-step.is-active .nd-step-num { background: #5347ce; color: white; }
 
 .nd-step-line {
     flex: 1;
     height: 1px;
-    background: #e6e9f0;
+    background: #e6e7ef;
 }
 
 .nd-muni-grid {
@@ -83,14 +83,14 @@
     width: 100%;
     text-align: left;
     padding: 14px 16px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 10px;
     background: white;
     transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.nd-muni-tile:hover { border-color: #2f54eb; background: #f7f9fe; }
-.nd-muni-tile strong { font-size: 14px; color: #0f2547; }
+.nd-muni-tile:hover { border-color: #5347ce; background: #f6f4fd; }
+.nd-muni-tile strong { font-size: 14px; color: #5347ce; }
 .nd-muni-tile span { font-size: 12px; color: #8a94a6; }
 
 .nd-back-link {
@@ -99,7 +99,7 @@
     gap: 6px;
     font-size: 12.5px;
     font-weight: 600;
-    color: #2f54eb;
+    color: #5347ce;
     background: none;
     padding: 0;
     margin-bottom: 10px;
@@ -119,7 +119,7 @@
     align-items: center;
     gap: 10px;
     padding: 12px 14px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 10px;
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease;
@@ -130,12 +130,12 @@
    would otherwise leave them visibly laid out. */
 .nd-request-option[hidden] { display: none; }
 
-.nd-request-option:hover { border-color: #2f54eb; }
-.nd-request-option.is-selected { border-color: #2f54eb; background: #f7f9fe; }
+.nd-request-option:hover { border-color: #5347ce; }
+.nd-request-option.is-selected { border-color: #5347ce; background: #f6f4fd; }
 .nd-request-option input[type="radio"] { flex-shrink: 0; }
 
 .nd-request-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.nd-request-body strong { font-size: 13.5px; color: #0f2547; }
+.nd-request-body strong { font-size: 13.5px; color: #5347ce; }
 .nd-request-body span { font-size: 12px; color: #8a94a6; }
 
 .nd-stock-badge {

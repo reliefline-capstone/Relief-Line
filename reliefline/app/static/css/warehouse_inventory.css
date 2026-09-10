@@ -11,7 +11,7 @@
     height: 320px;
     width: 100%;
     border-radius: 12px;
-    background: #eaf1fb;
+    background: #efedfd;
 }
 
 /* Breadcrumb */
@@ -27,12 +27,12 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    color: #2c5aa0;
+    color: #5347ce;
     font-weight: 600;
 }
 
 .wh-breadcrumb-back { display: inline-flex; transform: rotate(90deg); }
-.wh-breadcrumb-sep { color: #c3cad6; }
+.wh-breadcrumb-sep { color: #cdcfe0; }
 .wh-breadcrumb-current { color: #1a1a1a; font-weight: 600; }
 
 .wh-breadcrumb-status {
@@ -76,8 +76,8 @@
     color: #8a94a6;
 }
 
-.wh-subnav a:hover { color: #0f2547; }
-.wh-subnav a.active { background: #f0f2f6; color: #0f2547; }
+.wh-subnav a:hover { color: #5347ce; }
+.wh-subnav a.active { background: #f0f2f6; color: #5347ce; }
 
 /* Header actions */
 .wh-header-actions {
@@ -96,7 +96,7 @@
     background: none;
 }
 
-.wh-text-link:hover { color: #0f2547; }
+.wh-text-link:hover { color: #5347ce; }
 
 /* .btn-add-warehouse now lives in dashboard.css - every page using this
    button loads that stylesheet, which wasn't true of this one. */
@@ -188,7 +188,7 @@
     gap: 4px;
     font-size: 12px;
     font-weight: 700;
-    color: #2c5aa0;
+    color: #5347ce;
     flex-shrink: 0;
 }
 
@@ -204,7 +204,7 @@
 .wh-table-panel { padding: 0; overflow-x: auto; align-self: start; }
 
 .wh-table tbody tr { transition: background-color 0.15s ease; }
-.wh-table tbody tr:hover { background: #f8f9fc; }
+.wh-table tbody tr:hover { background: #f4f4fb; }
 
 .wh-table-panel .panel-header {
     padding: 16px 20px;
@@ -224,26 +224,49 @@
     border-collapse: collapse;
 }
 
-.wh-table thead { background: #f8f9fc; }
+.wh-table thead { background: #f4f4fb; }
 
 .wh-table th {
     text-align: left;
-    padding: 12px 16px;
-    font-size: 11px;
+    padding: 10px 16px;
+    font-size: 10.5px;
     color: #8a94a6;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
     font-weight: 700;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #e7e8ef;
 }
 
 .wh-table td {
-    padding: 14px 16px;
-    border-bottom: 1px solid #f0f2f6;
-    font-size: 14px;
-    vertical-align: top;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f1f6;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #3a4252;
+    vertical-align: middle;
 }
 
 .wh-table tr:last-child td { border-bottom: none; }
+
+/* Font hierarchy: the first column is the row's identifier - it leads;
+   the "type"/category column recedes; .wh-sub is the tertiary line. */
+.wh-table tbody td:first-child {
+    font-weight: 600;
+    color: #2b3242;
+    font-variant-numeric: tabular-nums;
+}
+.wh-table tbody td strong { font-weight: 700; color: #1f2a44; }
+
+/* Stock Transfers list: Type is a quiet category label, the route is
+   the row's readable body text, Packs is the figure that stands out. */
+.wh-table-transfers tbody td:first-child { white-space: nowrap; }
+.wh-table-transfers tbody td:nth-child(2) {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+}
+.wh-table-transfers tbody td:nth-child(3) { color: #3a4252; min-width: 280px; }
+.wh-table-transfers tbody td:nth-child(4) { font-variant-numeric: tabular-nums; }
 
 .wh-table th.wh-status-col,
 .wh-table td.wh-status-col {
@@ -263,9 +286,17 @@
 
 .wh-sub {
     display: block;
-    font-size: 11px;
-    color: #8a94a6;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #9aa1ae;
     margin-top: 2px;
+    letter-spacing: 0.1px;
+}
+/* In a table row .wh-sub is the tertiary line under the identifier -
+   don't let the parent cell's bold/dark leak into it. */
+.wh-table tbody td:first-child .wh-sub {
+    font-weight: 500;
+    color: #9aa1ae;
 }
 
 .wh-fill-cell {
@@ -281,8 +312,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid #2c5aa0;
-    color: #2c5aa0;
+    border: 1px solid #5347ce;
+    color: #5347ce;
     background: white;
     padding: 6px 12px;
     border-radius: 6px;
@@ -290,7 +321,7 @@
     font-weight: 600;
 }
 
-.btn-view:hover { background: #eaf0fd; }
+.btn-view:hover { background: #efedfd; }
 
 /* Standalone page forms (outside modals) */
 .wh-form label {
@@ -306,7 +337,7 @@
 .wh-form textarea {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
     font-size: 13px;
     font-family: inherit;
@@ -328,7 +359,7 @@
     flex-shrink: 0;
     width: 34px; height: 34px;
     border-radius: 50%;
-    background: #0f2547;
+    background: #5347ce;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -339,7 +370,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    background: #eaf0fd;
+    background: #efedfd;
     border-radius: 10px;
     padding: 16px;
     margin-top: 16px;
@@ -351,7 +382,7 @@
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.4px;
-    color: #2c5aa0;
+    color: #5347ce;
     margin-bottom: 4px;
 }
 
@@ -396,7 +427,7 @@
     gap: 8px;
     padding: 9px 14px;
     background: white;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
 }
 
@@ -416,7 +447,7 @@
 .wh-item-icon {
     width: 28px; height: 28px;
     border-radius: 7px;
-    background: #eaf0fd;
+    background: #efedfd;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -431,10 +462,10 @@
     justify-content: center;
     width: 30px; height: 30px;
     border-radius: 6px;
-    background: #f8f9fc;
+    background: #f4f4fb;
 }
 
-.wh-icon-btn:hover { background: #eaf0fd; }
+.wh-icon-btn:hover { background: #efedfd; }
 .wh-icon-btn-danger:hover { background: #fdecea; }
 
 /* Side column */
@@ -475,11 +506,11 @@
     padding: 12px 0 4px;
     font-size: 12px;
     font-weight: 600;
-    color: #2c5aa0;
+    color: #5347ce;
     user-select: none;
 }
 .wh-movement-more > summary::-webkit-details-marker { display: none; }
-.wh-movement-more > summary:hover { color: #1e3a6b; }
+.wh-movement-more > summary:hover { color: #4436b4; }
 .wh-movement-more .wh-movement-row:first-of-type { border-top: none; }
 
 /* When expanded, drop the toggle to the bottom of the revealed rows so it
@@ -557,7 +588,7 @@
     justify-content: center;
 }
 
-.wh-capacity-ring-text strong { font-size: 20px; color: #0f2547; }
+.wh-capacity-ring-text strong { font-size: 20px; color: #5347ce; }
 .wh-capacity-ring-text span { font-size: 11px; color: #8a94a6; }
 
 .wh-block-btn { width: 100%; justify-content: center; margin-top: 16px; }
@@ -583,7 +614,7 @@
 
 .wh-movement-filters select {
     padding: 8px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 6px;
     font-size: 13px;
     color: #333;
@@ -595,7 +626,7 @@
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 6px;
 }
 
@@ -630,7 +661,7 @@
 .wh-warehouse-card-icon {
     width: 38px; height: 38px;
     border-radius: 10px;
-    background: #eaf0fd;
+    background: #efedfd;
     display: flex;
     align-items: center;
     justify-content: center;

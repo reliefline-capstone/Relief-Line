@@ -83,42 +83,42 @@
 
         <!-- Stat cards -->
         <section class="stat-cards">
-            <div class="stat-card">
+            <a class="stat-card" href="{{ url_for('pswdo.gis_map') }}">
                 <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
                 <span class="stat-value">{{ active_events|length }}</span>
                 <span class="stat-label">{{ 'Typhoon Events' if is_filtered else 'Active Typhoon' }}</span>
                 <span class="stat-sub">{{ active_events|map(attribute='event_name')|join(' · ') if active_events else 'None' }}</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.gis_map') }}">
                 <div class="stat-icon orange">{{ icon('map-pin', 18, '#e67e22') }}</div>
                 <span class="stat-value">{{ affected_municipalities_count }}</span>
                 <span class="stat-label">Affected Municipalities</span>
                 <span class="stat-sub">Out of {{ total_target_lgus }}</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.gis_map') }}">
                 <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_affected_families) }}</span>
                 <span class="stat-label">Affected Families</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.warehouse_inventory') }}">
                 <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
                 {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot - this is always today's actual figure.">LIVE</span>{% endif %}
                 <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span>
                 <span class="stat-label">Food Packs Available</span>
                 <span class="stat-sub">Across {{ warehouses|length }} warehouses</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.relief_requests') }}">
                 <div class="stat-icon amber">{{ icon('clipboard', 18, '#f39c12') }}</div>
                 <span class="stat-value">{{ pending_requests_count }}</span>
                 <span class="stat-label">Pending Stock Requests</span>
                 <span class="stat-sub">{{ 'Submitted this period, still awaiting approval' if is_filtered else 'Awaiting approval' }}</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.warehouse_inventory') }}">
                 <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
                 {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot - this is always today's actual figure.">LIVE</span>{% endif %}
                 <span class="stat-value">{{ low_stock_warehouses|length }}</span>
                 <span class="stat-label">Low Stock Warehouses</span>
-            </div>
+            </a>
         </section>
 
         <!-- Weather & Typhoon Watch (live, via app/utils/weather.py) -->

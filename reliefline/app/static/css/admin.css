@@ -85,8 +85,8 @@
     color: #1a1a1a;
 }
 
-.admin-quick-action:hover { background: #f4f6fa; }
-.admin-quick-action svg:first-child { color: #0f2547; flex-shrink: 0; }
+.admin-quick-action:hover { background: #eceef4; }
+.admin-quick-action svg:first-child { color: #5347ce; flex-shrink: 0; }
 .admin-quick-action-arrow { margin-left: auto; color: #8a94a6; flex-shrink: 0; }
 
 /* Status badges (accounts / offices) */
@@ -134,8 +134,8 @@
     white-space: nowrap;
 }
 
-.badge-module.mod-blue { background: #eaf0fd; color: #2c5aa0; }
-.badge-module.mod-purple { background: #f1edfe; color: #6c5ce7; }
+.badge-module.mod-blue { background: #efedfd; color: #5347ce; }
+.badge-module.mod-purple { background: #f1edfe; color: #5347ce; }
 .badge-module.mod-amber { background: #fef5e3; color: #d68910; }
 .badge-module.mod-green { background: #e8faf0; color: #1e8449; }
 .badge-module.mod-red { background: #fdecea; color: #c0392b; }
@@ -165,8 +165,8 @@
     white-space: nowrap;
 }
 
-.admin-btn-edit { background: #eaf0fd; color: #2c5aa0; }
-.admin-btn-edit:hover { background: #dbe6fb; }
+.admin-btn-edit { background: #efedfd; color: #5347ce; }
+.admin-btn-edit:hover { background: #e0daf7; }
 
 .admin-btn-neutral { background: #f0f2f6; color: #444; }
 .admin-btn-neutral:hover { background: #e4e7ee; }
@@ -190,7 +190,7 @@
     letter-spacing: 0.4px;
     font-weight: 700;
     border-bottom: 1px solid #eee;
-    background: #f8f9fc;
+    background: #f4f4fb;
 }
 
 .perm-table th:not(:first-child), .perm-table td:not(:first-child) { text-align: center; }
@@ -212,7 +212,7 @@
 }
 
 .perm-mark.perm-yes { background: #e8faf0; color: #1e8449; }
-.perm-mark.perm-no { background: #f0f2f6; color: #c3cad6; }
+.perm-mark.perm-no { background: #f0f2f6; color: #cdcfe0; }
 
 /* System Settings */
 .settings-section-title {
@@ -226,14 +226,14 @@
 
 .form-row select, .form-row textarea {
     padding: 10px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
     font-size: 13.5px;
     font-family: inherit;
     color: #1a1a1a;
 }
 
-.form-row select:focus, .form-row textarea:focus { outline: none; border-color: #2c5aa0; }
+.form-row select:focus, .form-row textarea:focus { outline: none; border-color: #5347ce; }
 
 .form-row-inline {
     display: flex;
@@ -245,8 +245,8 @@
 .form-row-inline input[type="checkbox"] { width: 16px; height: 16px; }
 
 .settings-hint-box {
-    background: #eaf0fd;
-    color: #2c5aa0;
+    background: #efedfd;
+    color: #5347ce;
     font-size: 12px;
     padding: 10px 12px;
     border-radius: 8px;

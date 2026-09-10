@@ -45,44 +45,44 @@
 
         <!-- Stat cards -->
         <section class="stat-cards">
-            <div class="stat-card">
+            <a class="stat-card" href="{{ url_for('cswdo.gis_map') }}">
                 <div class="stat-icon orange">{{ icon('map-pin', 18, '#e67e22') }}</div>
                 <span class="stat-value">{{ affected_barangays_count }}</span>
                 <span class="stat-label">Affected Barangays</span>
                 <span class="stat-sub">of {{ total_barangays }} total</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('cswdo.gis_map') }}">
                 <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_affected_families) }}</span>
                 <span class="stat-label">Affected Families</span>
                 <span class="stat-sub">{{ lgu or '-' }}</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('cswdo.municipal_inventory') }}">
                 <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
                 <span class="stat-value">{{ "{:,}".format(food_pack_qty) }}</span>
                 <span class="stat-label">Municipal Food Packs</span>
                 <span class="stat-sub">{{ stock_health }} stock level</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('cswdo.relief_requests') }}">
                 <div class="stat-icon brown">{{ icon('clipboard', 18, '#8d6e4b') }}</div>
                 <span class="stat-value">{{ pending_requests_count }}</span>
                 <span class="stat-label">Pending Stock Requests</span>
                 <span class="stat-sub">Awaiting PSWDO approval</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('cswdo.deliveries') }}">
                 <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ incoming_deliveries_count }}</span>
                 <span class="stat-label">Incoming Deliveries</span>
                 <span class="stat-sub">
                     {% if next_delivery %}{{ dispatch_status_labels.get(next_delivery.dispatch_status, next_delivery.dispatch_status) }}{% if next_delivery.expected_arrival_time %} · ETA {{ next_delivery.expected_arrival_time.strftime('%I:%M %p') }}{% endif %}{% else %}None scheduled{% endif %}
                 </span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('cswdo.damage_assessment') }}">
                 <div class="stat-icon red">{{ icon('file-text', 18, '#e74c3c') }}</div>
                 <span class="stat-value">{{ pending_barangay_reports_count }}</span>
                 <span class="stat-label">Pending Barangay Reports</span>
                 <span class="stat-sub">Awaiting your review</span>
-            </div>
+            </a>
         </section>
 
         <!-- GIS Map + Relief Request Status -->

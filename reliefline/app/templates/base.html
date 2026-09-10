@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ReliefLine{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v={{ asset_version('img/favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}?v={{ asset_version('img/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16.png') }}?v={{ asset_version('img/favicon-16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/favicon-180.png') }}?v={{ asset_version('img/favicon-180.png') }}">
     <!-- Runs before any CSS/layout so a saved sidebar-collapsed preference
          (see the toggle handler at the bottom of this file) applies before
          first paint - without this, every page would flash briefly in the
@@ -38,6 +42,10 @@
          same reason as custom_select: the native popup is unstyleable. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom_datetime.css') }}?v={{ asset_version('css/custom_datetime.css') }}">
     {% block extra_css %}{% endblock %}
+    <!-- Theme refresh - loaded last so its cosmetic overrides (palette,
+         card surfaces, sidebar, type stack) win over the per-page sheets
+         above. Visual only; see theme.css header. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_version('css/theme.css') }}">
 </head>
 <body>
     {% block content %}{% endblock %}

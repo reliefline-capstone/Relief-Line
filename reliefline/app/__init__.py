@@ -158,6 +158,24 @@ def create_app():
         return dict(unread_notification_count=count)
 
     @app.context_processor
+    def inject_pending_stock_requests():
+        # Powers the badge on pswdo/_sidebar.html's "Stock Requests" link
+        # (included on every pswdo/*.html page). Counts submitted stock
+        # requests still awaiting a PSWDO decision - same filter as the
+        # dashboard's "Pending Stock Requests" stat and the "Awaiting
+        # decision" tab on the Stock Requests page, so the three never
+        # disagree.
+        from flask_login import current_user
+        from app.models.relief_request_batch import ReliefRequestBatch
+        if not current_user.is_authenticated or current_user.role not in ("pswdo_admin", "system_admin"):
+            return dict(pending_stock_requests=0)
+        count = ReliefRequestBatch.query.filter(
+            ReliefRequestBatch.submitted_at.isnot(None),
+            ReliefRequestBatch.status == "pending",
+        ).count()
+        return dict(pending_stock_requests=count)
+
+    @app.context_processor
     def inject_pending_password_resets():
         # Powers the badge on admin/_sidebar.html's "Password Reset
         # Requests" link, which is included on every admin/*.html page -

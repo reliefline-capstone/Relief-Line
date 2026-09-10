@@ -9,7 +9,7 @@
     </div>
     <nav class="sidebar-nav">
         <a href="{{ url_for('pswdo.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' }}">{{ icon('grid', 18) }} <span class="sidebar-label">Dashboard</span></a>
-        <a href="{{ url_for('pswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('clipboard', 18) }} <span class="sidebar-label">Stock Requests</span></a>
+        <a href="{{ url_for('pswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('clipboard', 18) }} <span class="sidebar-label">Stock Requests</span> {% if pending_stock_requests %}<span class="nav-badge">{{ pending_stock_requests }}</span>{% endif %}</a>
         <a href="{{ url_for('pswdo.transfers') }}" class="{{ 'active' if active_page == 'distribution' }}">{{ icon('truck', 18) }} <span class="sidebar-label">Stock Transfers</span></a>
         <a href="{{ url_for('pswdo.warehouse_inventory') }}" class="{{ 'active' if active_page == 'warehouse_inventory' }}">{{ icon('building', 18) }} <span class="sidebar-label">Warehouse Inventory</span></a>
         <a href="{{ url_for('pswdo.gis_map') }}" class="{{ 'active' if active_page == 'gis_map' }}">{{ icon('map', 18) }} <span class="sidebar-label">GIS Map</span></a>

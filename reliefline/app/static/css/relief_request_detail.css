@@ -13,11 +13,11 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #0f2547;
+    color: #5347ce;
     font-weight: 600;
 }
 
-.rd-crumb-sep { color: #c3cad6; }
+.rd-crumb-sep { color: #cdcfe0; }
 
 /* Layout */
 .rd-grid { align-items: start; }
@@ -101,7 +101,7 @@
 .rd-stat-tile {
     flex: 1;
     text-align: center;
-    background: #f8f9fc;
+    background: #f4f4fb;
     border-radius: 10px;
     padding: 18px;
 }
@@ -127,7 +127,7 @@
 
 .rd-inventory-block {
     flex: 1;
-    background: #f8f9fc;
+    background: #f4f4fb;
     border-radius: 10px;
     padding: 16px;
 }
@@ -151,13 +151,13 @@
     color: white;
     font-weight: 700;
     font-size: 14px;
-    box-shadow: 0 2px 8px rgba(15, 37, 71, 0.14);
+    box-shadow: 0 2px 8px rgba(83, 71, 206, 0.14);
     transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 
 .btn-decision:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(15, 37, 71, 0.2);
+    box-shadow: 0 6px 16px rgba(83, 71, 206, 0.2);
 }
 
 .btn-decision:active { transform: translateY(0); }
@@ -167,10 +167,10 @@
    #3d7a63 / #a85450 read flat next to those and next to the new shadow. */
 .btn-approve-full { background: #1e8449; }
 .btn-approve-full:hover { background: #196f3d; }
-.btn-verify-only { background: #2c5aa0; }
-.btn-verify-only:hover { background: #244b86; }
-.btn-partial { background: #24456b; }
-.btn-partial:hover { background: #1c3656; }
+.btn-verify-only { background: #5347ce; }
+.btn-verify-only:hover { background: #4a3fb4; }
+.btn-partial { background: #4436b4; }
+.btn-partial:hover { background: #3a3170; }
 .btn-reject { background: #c0392b; }
 .btn-reject:hover { background: #a53125; }
 
@@ -187,9 +187,9 @@
 .rd-decision-summary p { font-size: 14px; line-height: 1.6; }
 .rd-decision-summary .rd-remarks { color: #8a94a6; font-size: 13px; margin-top: 8px; }
 .rd-decision-approved { border-left: 4px solid #1e8449; }
-.rd-decision-partially_approved { border-left: 4px solid #2c5aa0; }
+.rd-decision-partially_approved { border-left: 4px solid #5347ce; }
 .rd-decision-rejected { border-left: 4px solid #c0392b; }
-.rd-decision-released { border-left: 4px solid #6c3483; }
+.rd-decision-released { border-left: 4px solid #5347ce; }
 
 /* Urgency score bar */
 .rd-urgency-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
@@ -219,7 +219,7 @@
 .rd-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 37, 71, 0.5);
+    background: rgba(83, 71, 206, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -265,7 +265,7 @@ html.rd-modal-open { overflow: hidden; }
     margin-bottom: 16px;
 }
 
-.rd-modal-header h3 { font-size: 17px; color: #0f2547; }
+.rd-modal-header h3 { font-size: 17px; color: #5347ce; }
 .rd-modal-close { background: none; padding: 2px; color: #8a94a6; }
 
 /* .form-hint's base styling now lives in dashboard.css (loaded here), so
@@ -306,7 +306,7 @@ html.rd-modal-open { overflow: hidden; }
 .rd-modal form textarea {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
     font-size: 13px;
     font-family: inherit;
@@ -328,19 +328,19 @@ html.rd-modal-open { overflow: hidden; }
 .rd-amount-tile {
     flex: 1;
     text-align: center;
-    background: #f8f9fc;
+    background: #f4f4fb;
     border-radius: 10px;
     padding: 14px;
 }
 
 .rd-amount-tile strong { display: block; font-size: 22px; margin: 4px 0; }
-.rd-amount-highlight { background: #eaf0fd; }
-.rd-amount-highlight strong { color: #2c5aa0; }
+.rd-amount-highlight { background: #efedfd; }
+.rd-amount-highlight strong { color: #5347ce; }
 
 /* Live "stock after transfer" calculation preview */
 .transfer-calc-preview {
-    background: #f8f9fc;
-    border: 1px solid #e6e9f0;
+    background: #f4f4fb;
+    border: 1px solid #e6e7ef;
     border-radius: 10px;
     padding: 12px 14px;
     margin: 4px 0 6px;

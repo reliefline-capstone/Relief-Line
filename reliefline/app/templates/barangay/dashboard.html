@@ -46,30 +46,30 @@
 
         <!-- Stat cards -->
         <section class="stat-cards stat-cards-4">
-            <div class="stat-card">
+            <a class="stat-card" href="{{ url_for('barangay.damage_report') }}">
                 <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(affected_families) }}</span>
                 <span class="stat-label">Affected Families</span>
                 <span class="stat-sub">this typhoon event</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('barangay.damage_report') }}">
                 <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
                 <span class="stat-value">{{ pending_reports_count }}</span>
                 <span class="stat-label">Pending Reports</span>
                 <span class="stat-sub">{% if returned_reports_count %}{{ returned_reports_count }} returned - needs correction{% else %}Awaiting MSWDO/CSWDO review{% endif %}</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('barangay.relief_monitoring') }}">
                 <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
                 <span class="stat-value">{{ "{:,}".format(food_packs_allocated) }}</span>
                 <span class="stat-label">Food Packs Allocated</span>
                 <span class="stat-sub">This typhoon event</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('barangay.relief_monitoring') }}">
                 <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ in_transit_count }}</span>
                 <span class="stat-label">Relief In Transit</span>
                 <span class="stat-sub">{{ in_transit_count }} delivery{{ 's' if in_transit_count != 1 }} on the way</span>
-            </div>
+            </a>
         </section>
 
         <!-- Current Situation -->

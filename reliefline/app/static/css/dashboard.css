@@ -5,7 +5,7 @@
        viewport exactly instead of overflowing by that percentage. */
     zoom: var(--ui-scale);
     height: calc(100vh / var(--ui-scale));
-    background: #f4f6fa;
+    background: #eceef4;
     overflow: hidden;
 }
 
@@ -27,7 +27,7 @@
        render it --ui-scale taller than the viewport and clip the Logout row. */
     height: calc(100vh / var(--ui-scale));
     background: white;
-    border-right: 1px solid #e5e9f0;
+    border-right: 1px solid #e6e7ef;
     display: flex;
     flex-direction: column;
     padding: 20px 16px;
@@ -60,8 +60,8 @@ html.sidebar-collapsed .sidebar {
     height: 26px;
     border-radius: 50%;
     background: white;
-    border: 1px solid #e5e9f0;
-    box-shadow: 0 1px 4px rgba(15, 37, 71, 0.15);
+    border: 1px solid #e6e7ef;
+    box-shadow: 0 1px 4px rgba(83, 71, 206, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -91,7 +91,7 @@ html.sidebar-collapsed .sidebar-toggle {
     left: 72px;
 }
 
-.sidebar-toggle:hover { background: #f4f6fa; color: #0f2547; }
+.sidebar-toggle:hover { background: #eceef4; color: #5347ce; }
 
 .sidebar-toggle svg {
     transition: transform 0.22s ease;
@@ -163,8 +163,8 @@ html.sidebar-collapsed .nav-badge {
 
 html.sidebar-collapsed .sidebar-user { justify-content: center; gap: 0; }
 
-.sidebar-user:hover { background: #f4f6fa; }
-.sidebar-user.active { background: #eaf0fd; }
+.sidebar-user:hover { background: #eceef4; }
+.sidebar-user.active { background: #efedfd; }
 
 .sidebar-user-info {
     display: flex;
@@ -209,7 +209,7 @@ html.sidebar-collapsed .sidebar-brand {
 }
 
 .brand-icon { width: 26px; height: 26px; }
-.sidebar-brand strong { color: #0f2547; font-size: 16px; display: block; }
+.sidebar-brand strong { color: #5347ce; font-size: 16px; display: block; }
 .brand-sub { font-size: 11px; color: #8a94a6; }
 
 .sidebar-nav {
@@ -259,13 +259,13 @@ html.sidebar-collapsed .sidebar-nav a {
 }
 
 .sidebar-nav a.active {
-    background: #0f2547;
+    background: #5347ce;
     color: white;
     font-weight: 600;
 }
 
 .sidebar-nav a:not(.active):hover {
-    background: #f4f6fa;
+    background: #eceef4;
 }
 
 .nav-badge {
@@ -302,7 +302,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .user-avatar {
     width: 34px; height: 34px;
-    background: #0f2547;
+    background: #5347ce;
     color: white;
     border-radius: 50%;
     display: flex;
@@ -348,7 +348,7 @@ html.sidebar-collapsed .dashboard-main {
     /* Elevation has to read as "floating above the page" rather than the
        soft, barely-there shadow an inline banner needed - this sits on
        top of everything, corner-anchored, so it needs to look like it. */
-    box-shadow: 0 12px 32px rgba(15, 37, 71, 0.22);
+    box-shadow: 0 12px 32px rgba(83, 71, 206, 0.22);
     overflow: hidden;
     max-height: 80px;
     pointer-events: auto;
@@ -381,7 +381,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .flash-success { background: #f2fdf7; color: #1e8449; border-left-color: #1e8449; }
 .flash-error { background: #fef4f3; color: #c0392b; border-left-color: #c0392b; }
-.flash-info { background: #f3f7fe; color: #2c5aa0; border-left-color: #2c5aa0; }
+.flash-info { background: #f2f0fd; color: #5347ce; border-left-color: #5347ce; }
 
 @keyframes flashToastIn {
     from { opacity: 0; transform: translateY(-10px); }
@@ -402,14 +402,14 @@ html.sidebar-collapsed .dashboard-main {
     gap: 12px;
 }
 
-.page-header h2 { font-size: 21px; color: #0f2547; margin-bottom: 3px; }
+.page-header h2 { font-size: 21px; color: #5347ce; margin-bottom: 3px; }
 .page-header p { font-size: 13px; color: #8a94a6; }
 
 .btn-outline {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     background: white;
     color: #333;
     padding: 9px 16px;
@@ -418,7 +418,7 @@ html.sidebar-collapsed .dashboard-main {
     font-weight: 600;
 }
 
-.btn-outline:hover { background: #f8f9fc; }
+.btn-outline:hover { background: #f4f4fb; }
 
 /* Label-above-field modal/settings form layout, used across admin, pswdo,
    cswdo and barangay forms. Moved here (from profile_settings.css) since
@@ -459,7 +459,7 @@ html.sidebar-collapsed .dashboard-main {
 .form-row select,
 .form-row textarea {
     padding: 10px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
     font-size: 13.5px;
     color: #1a1a1a;
@@ -472,13 +472,13 @@ html.sidebar-collapsed .dashboard-main {
 .form-row select:focus,
 .form-row textarea:focus {
     outline: none;
-    border-color: #2c5aa0;
+    border-color: #5347ce;
 }
 
 .form-row input:disabled,
 .form-row select:disabled,
 .form-row textarea:disabled {
-    background: #f4f6fa;
+    background: #eceef4;
     color: #8a94a6;
 }
 
@@ -492,7 +492,7 @@ html.sidebar-collapsed .dashboard-main {
 .form-hint strong { color: #55606f; }
 
 .da-remarks-box {
-    background: #f8f9fc;
+    background: #f4f4fb;
     border-radius: 8px;
     padding: 12px 14px;
     font-size: 13px;
@@ -510,7 +510,7 @@ html.sidebar-collapsed .dashboard-main {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #0f2547;
+    background: #5347ce;
     color: white;
     padding: 10px 18px;
     border-radius: 8px;
@@ -518,7 +518,7 @@ html.sidebar-collapsed .dashboard-main {
     font-weight: 700;
 }
 
-.btn-add-warehouse:hover { background: #1a3a6b; }
+.btn-add-warehouse:hover { background: #4436b4; }
 
 .btn-icon {
     display: flex;
@@ -526,20 +526,20 @@ html.sidebar-collapsed .dashboard-main {
     justify-content: center;
     width: 36px;
     height: 36px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     background: white;
     border-radius: 8px;
 }
 
-.btn-icon:hover { background: #f8f9fc; }
+.btn-icon:hover { background: #f4f4fb; }
 
 /* Greeting banner */
 .greeting-banner {
     position: relative;
     overflow: hidden;
     background:
-        radial-gradient(72% 140% at 90% -30%, rgba(96, 150, 224, 0.34) 0%, rgba(96, 150, 224, 0) 55%),
-        linear-gradient(135deg, #0f2547 0%, #1c3f74 100%);
+        radial-gradient(72% 140% at 90% -30%, rgba(136, 124, 253, 0.34) 0%, rgba(136, 124, 253, 0) 55%),
+        linear-gradient(135deg, #5347ce 0%, #887cfd 100%);
     color: white;
     border-radius: 14px;
     padding: 20px 24px;
@@ -691,7 +691,7 @@ html.sidebar-collapsed .dashboard-main {
 /* Period filter */
 .dash-period-bar {
     background: white;
-    border: 1px solid #e6e9f0;
+    border: 1px solid #e6e7ef;
     border-radius: 10px;
     padding: 14px 18px;
     margin-bottom: 16px;
@@ -717,7 +717,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .dash-period-toggle {
     display: flex;
-    background: #f4f6fa;
+    background: #eceef4;
     border-radius: 8px;
     padding: 3px;
     gap: 2px;
@@ -734,12 +734,12 @@ html.sidebar-collapsed .dashboard-main {
     transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.dash-period-tab:hover { color: var(--navy, #0f2547); }
+.dash-period-tab:hover { color: var(--navy, #5347ce); }
 
 .dash-period-tab.is-active {
     background: white;
-    color: var(--navy, #0f2547);
-    border-color: #2f54eb;
+    color: var(--navy, #5347ce);
+    border-color: #5347ce;
 }
 
 .dash-period-date {
@@ -747,10 +747,10 @@ html.sidebar-collapsed .dashboard-main {
     align-items: center;
     gap: 8px;
     background: white;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
     padding: 7px 12px;
-    color: #0f2547;
+    color: #5347ce;
 }
 
 .dash-period-date select {
@@ -758,7 +758,7 @@ html.sidebar-collapsed .dashboard-main {
     background: none;
     font-size: 12.5px;
     font-weight: 600;
-    color: #0f2547;
+    color: #5347ce;
     padding: 0;
     cursor: pointer;
 }
@@ -772,7 +772,7 @@ html.sidebar-collapsed .dashboard-main {
     gap: 6px;
     font-size: 12.5px;
     font-weight: 700;
-    color: var(--navy, #0f2547);
+    color: var(--navy, #5347ce);
     padding: 7px 4px;
     border-radius: 6px;
 }
@@ -785,7 +785,7 @@ html.sidebar-collapsed .dashboard-main {
     background: #27ae60;
 }
 
-.dash-period-live:hover { color: #2f54eb; }
+.dash-period-live:hover { color: #5347ce; }
 
 .dash-period-caption {
     margin-top: 10px;
@@ -840,7 +840,7 @@ html.sidebar-collapsed .dashboard-main {
        black, plus a subtle scale-up riding on .stat-card's existing
        hover lift (base.css) - small touches that read as considered
        rather than the flat, plain solid-colour square this used to be. */
-    box-shadow: 0 2px 6px rgba(15, 37, 71, 0.08);
+    box-shadow: 0 2px 6px rgba(83, 71, 206, 0.08);
     transition: transform 0.15s ease;
 }
 
@@ -851,7 +851,7 @@ html.sidebar-collapsed .dashboard-main {
 .stat-icon.purple { background: linear-gradient(135deg, #f1edfe, #ded2fb); }
 .stat-icon.green { background: linear-gradient(135deg, #e8faf0, #c3f0d8); }
 .stat-icon.amber { background: linear-gradient(135deg, #fef5e3, #fbe4b3); }
-.stat-icon.blue { background: linear-gradient(135deg, #eaf0fd, #cddaf8); }
+.stat-icon.blue { background: linear-gradient(135deg, #efedfd, #d9d3f5); }
 .stat-icon.brown { background: linear-gradient(135deg, #f5efe6, #e7d7bd); }
 
 .stat-value { font-size: 22px; font-weight: 700; color: #1a1a1a; }
@@ -956,7 +956,7 @@ html.sidebar-collapsed .dashboard-main {
 .map-placeholder-box {
     position: relative;
     min-height: 380px;
-    background: #eaf1fb;
+    background: #efedfd;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -1062,7 +1062,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .legend-mark.legend-typhoon {
     width: 10px; height: 10px;
-    background: #3867d6;
+    background: #4896fe;
     border-radius: 50%;
 }
 
@@ -1144,7 +1144,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .btn-approve {
     width: 100%;
-    background: #0f2547;
+    background: #5347ce;
     color: white;
     padding: 9px;
     border-radius: 6px;
@@ -1168,7 +1168,7 @@ html.sidebar-collapsed .dashboard-main {
 .btn-view-all {
     display: block;
     text-align: center;
-    color: #0f2547;
+    color: #5347ce;
     font-size: 13px;
     font-weight: 600;
     margin-top: 12px;
@@ -1182,7 +1182,7 @@ html.sidebar-collapsed .dashboard-main {
     gap: 6px;
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px dashed #e1e5eb;
+    border-top: 1px dashed #e6e7ef;
     color: #8a94a6;
     font-size: 11px;
     font-style: italic;
@@ -1220,7 +1220,7 @@ html.sidebar-collapsed .dashboard-main {
     .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 /* Warehouse status */
-.link-manage { color: #0f2547; font-size: 12px; font-weight: 600; }
+.link-manage { color: #5347ce; font-size: 12px; font-weight: 600; }
 
 /* Now an <a> (links to that warehouse's detail page) rather than a bare
    <div> - the hover/focus tint plus the cursor make that discoverable
@@ -1235,7 +1235,7 @@ html.sidebar-collapsed .dashboard-main {
     color: inherit;
     transition: background-color 0.15s ease;
 }
-.warehouse-status-row:hover, .warehouse-status-row:focus-visible { background: #f8f9fc; }
+.warehouse-status-row:hover, .warehouse-status-row:focus-visible { background: #f4f4fb; }
 .warehouse-status-row:last-child { border-bottom: none; }
 
 .warehouse-status-top {
@@ -1307,8 +1307,8 @@ html.sidebar-collapsed .dashboard-main {
 /* Predictive analytics */
 .tag-outline {
     font-size: 11px;
-    color: #0f2547;
-    border: 1px solid #d8dee8;
+    color: #5347ce;
+    border: 1px solid #e3e4ec;
     padding: 3px 10px;
     border-radius: 10px;
 }
@@ -1330,9 +1330,9 @@ html.sidebar-collapsed .dashboard-main {
 .pa-metric strong { display: block; font-size: 22px; margin: 4px 0; }
 .pa-sub { font-size: 11px; color: #8a94a6; }
 
-.pa-blue { background: #eaf0fd; }
-.pa-blue span:first-child { color: #3867d6; }
-.pa-blue strong { color: #2c5aa0; }
+.pa-blue { background: #efedfd; }
+.pa-blue span:first-child { color: #4896fe; }
+.pa-blue strong { color: #5347ce; }
 
 .pa-green { background: #e8faf0; }
 .pa-green span:first-child { color: #1e8449; }
@@ -1379,7 +1379,7 @@ html.sidebar-collapsed .dashboard-main {
 .recommendation-row strong { display: block; font-size: 12px; }
 .recommendation-row span { font-size: 11px; opacity: 0.8; }
 
-.rec-info { background: #eaf0fd; color: #2c5aa0; }
+.rec-info { background: #efedfd; color: #5347ce; }
 .rec-warning { background: #fef5e3; color: #b7791f; }
 .rec-critical { background: #fdecea; color: #c0392b; }
 
@@ -1413,7 +1413,7 @@ html.sidebar-collapsed .dashboard-main {
     justify-content: center;
 }
 
-.progress-ring-text strong { font-size: 18px; color: #0f2547; }
+.progress-ring-text strong { font-size: 18px; color: #5347ce; }
 .progress-ring-text span { font-size: 10px; color: #8a94a6; }
 
 .progress-stats-grid {
@@ -1424,7 +1424,7 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 .progress-stats-grid div {
-    background: #f8f9fc;
+    background: #f4f4fb;
     border-radius: 8px;
     padding: 10px 12px;
 }
@@ -1454,7 +1454,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .municipality-bar-fill {
     height: 100%;
-    background: #0f2547;
+    background: #5347ce;
     transition: width 0.4s ease;
 }
 
@@ -1483,7 +1483,7 @@ html.sidebar-collapsed .dashboard-main {
 .notification-row {
     display: flex;
     gap: 10px;
-    background: #f8f9fc;
+    background: #f4f4fb;
     padding: 10px 12px;
     border-radius: 8px;
     margin-bottom: 8px;
@@ -1515,10 +1515,10 @@ html.sidebar-collapsed .dashboard-main {
    here would leak this background onto that different component too. */
 .badge-status.status-pending { background: #fef5e3; color: #d68910; }
 .badge-status.status-approved { background: #e8faf0; color: #1e8449; }
-.badge-status.status-verified { background: #eaf4fb; color: #2c5aa0; }
-.badge-status.status-released { background: #eaf0fd; color: #2c5aa0; }
+.badge-status.status-verified { background: #f0eefc; color: #5347ce; }
+.badge-status.status-released { background: #efedfd; color: #5347ce; }
 .badge-status.status-rejected { background: #fdecea; color: #c0392b; }
-.badge-status.status-partially_approved { background: #eaf0fd; color: #2c5aa0; }
+.badge-status.status-partially_approved { background: #efedfd; color: #5347ce; }
 .badge-status.status-returned { background: #fdecea; color: #c0392b; }
 .badge-status.status-fulfilled { background: #e8faf0; color: #1e8449; }
 .badge-status.status-declined { background: #fdecea; color: #c0392b; }
@@ -1539,7 +1539,7 @@ html.sidebar-collapsed .dashboard-main {
     align-items: center;
     gap: 6px;
     font-size: 11px;
-    color: #3867d6;
+    color: #4896fe;
     margin-bottom: 6px;
 }
 
@@ -1553,7 +1553,7 @@ html.sidebar-collapsed .dashboard-main {
 
 .request-progress-fill {
     height: 100%;
-    background: #3867d6;
+    background: #4896fe;
 }
 
 /* Municipal inventory */
@@ -1632,7 +1632,7 @@ html.sidebar-collapsed .dashboard-main {
 .page-tabs {
     display: flex;
     gap: 4px;
-    border-bottom: 1px solid #e5e9f0;
+    border-bottom: 1px solid #e6e7ef;
     margin-bottom: 20px;
 }
 
@@ -1649,7 +1649,7 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 .page-tab:hover { color: #1a1a1a; }
-.page-tab.active { color: #0f2547; border-bottom-color: #0f2547; }
+.page-tab.active { color: #5347ce; border-bottom-color: #5347ce; }
 
 .page-tab-badge {
     background: #f0f2f6;
@@ -1660,7 +1660,7 @@ html.sidebar-collapsed .dashboard-main {
     border-radius: 10px;
 }
 
-.page-tab.active .page-tab-badge { background: #0f2547; color: white; }
+.page-tab.active .page-tab-badge { background: #5347ce; color: white; }
 
 .stat-cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stat-cards-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -1695,7 +1695,7 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 .weather-refresh-btn {
-    background: #f4f6fa;
+    background: #eceef4;
     border: none;
     border-radius: 8px;
     padding: 6px 12px;
@@ -1705,7 +1705,7 @@ html.sidebar-collapsed .dashboard-main {
     cursor: pointer;
 }
 
-.weather-refresh-btn:hover { background: #e8ecf3; }
+.weather-refresh-btn:hover { background: #ecedf3; }
 
 /* Declare/End Disaster Event - PSWDO-only header action, see
    static/js/weather_widget.js's eventActionHtml/wireEventActions. */
@@ -1750,7 +1750,7 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 .typhoon-watch-clear { background: #e8faf0; color: #1e8449; }
-.typhoon-watch-unknown { background: #f4f6fa; color: #8a94a6; }
+.typhoon-watch-unknown { background: #eceef4; color: #8a94a6; }
 
 /* Storm cards fan out across the panel's full width - same responsive grid
    as .weather-cities below - instead of stacking in a narrow left column
@@ -1792,7 +1792,7 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 .weather-city {
-    background: #f8f9fb;
+    background: #f4f4fb;
     border-radius: 10px;
     padding: 14px;
 }
@@ -1814,7 +1814,7 @@ html.sidebar-collapsed .dashboard-main {
     margin-bottom: 10px;
 }
 
-.weather-city-icon { color: #4a7bd8; flex-shrink: 0; }
+.weather-city-icon { color: #6a5fe0; flex-shrink: 0; }
 
 .weather-city-main { display: flex; flex-direction: column; flex: 1; }
 .weather-city-name { font-size: 12px; font-weight: 700; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.3px; }
@@ -1835,7 +1835,7 @@ html.sidebar-collapsed .dashboard-main {
 .weather-forecast-strip {
     display: flex;
     justify-content: space-between;
-    border-top: 1px solid #e8ecf3;
+    border-top: 1px solid #ecedf3;
     padding-top: 10px;
 }
 
@@ -1849,7 +1849,7 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 .wf-day { font-weight: 700; }
-.wf-icon { color: #6c8ac4; }
+.wf-icon { color: #8579c8; }
 .wf-temps { font-size: 11px; }
 .wf-rain { color: #8a94a6; font-size: 9.5px; }
 

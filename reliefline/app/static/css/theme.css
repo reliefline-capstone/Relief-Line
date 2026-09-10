@@ -1,0 +1,401 @@
+/* ============================================================
+   ReliefLine - visual theme refresh
+   ------------------------------------------------------------
+   Loaded LAST (see base.html), so it only needs to nudge the
+   shared component surfaces into the new look. Scope is strictly
+   cosmetic: colour, background, border, shadow, radius and the
+   type stack. No layout, spacing structure, content, markup,
+   navigation or behaviour is touched here.
+
+   Palette (from the reference design system):
+     #5347CE  deep indigo   - primary / brand / active
+     #887CFD  soft violet   - secondary accent / gradients
+     #4896FE  clear blue    - tertiary accent
+     #16C8C7  teal          - reserved accent
+   The bulk of the recolour lives in the individual stylesheets
+   (navy -> indigo, etc.); this file is the finishing pass.
+   ============================================================ */
+
+:root {
+    /* Legacy token names kept so existing var(--navy) / var(--accent-blue)
+       references resolve to the refreshed palette. */
+    --navy: #5347ce;
+    --navy-light: #4436b4;
+    --accent-blue: #5347ce;
+    --accent-blue-light: #887cfd;
+    --text-muted: #8a94a6;
+
+    --rl-primary: #5347ce;
+    --rl-primary-strong: #4436b4;
+    --rl-violet: #887cfd;
+    --rl-blue: #4896fe;
+    --rl-teal: #16c8c7;
+
+    --rl-canvas: #eef0f5;
+    --rl-surface: #ffffff;
+    --rl-border: #e7e8ef;
+    --rl-tint: #efedfd;
+
+    --rl-shadow: 0 1px 2px rgba(83, 71, 206, 0.05), 0 8px 24px rgba(28, 30, 58, 0.06);
+    --rl-shadow-hover: 0 10px 28px rgba(83, 71, 206, 0.12);
+}
+
+/* ---- Typography -------------------------------------------------------
+   Prefer SF Pro Display where it exists (Apple devices, per the reference),
+   fall back to the already-loaded Inter everywhere else. */
+body,
+h1, h2, h3, h4, h5, h6,
+button, input, select, textarea, .page-header h2 {
+    font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+                 "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ---- App canvas ----------------------------------------------------- */
+.dashboard-layout {
+    background: var(--rl-canvas);
+}
+
+/* ---- Cards / panels ------------------------------------------------
+   Soft, rounded, hairline-bordered white surfaces with a barely-there
+   shadow - the reference's calm card language. */
+.panel,
+.stat-card,
+.wh-reco-panel,
+.wh-success-panel {
+    border: 1px solid var(--rl-border);
+    border-radius: 14px;
+    box-shadow: var(--rl-shadow);
+}
+
+.panel:hover {
+    box-shadow: var(--rl-shadow-hover);
+}
+
+/* Stat cards stay flat - border + the bottom colour wash only, no shadow. */
+.stat-card,
+.stat-card:hover {
+    box-shadow: none;
+}
+
+/* ---- Stat cards -------------------------------------------------
+   Matches the reference mock while keeping the current reading order
+   (icon tile -> value -> label). The existing caption span (.stat-sub)
+   is relocated to a small status pill in the top-right corner - no
+   markup change, the same text, just re-placed. A muted arrow and a
+   faint colour wash finish the card. */
+.stat-card {
+    position: relative;
+    overflow: hidden;
+    padding: 16px 15px 15px;
+    gap: 0;
+    /* on the dashboards this is an <a>; elsewhere it stays a plain <div> */
+    color: inherit;
+    text-decoration: none;
+}
+/* Only the clickable dashboard cards get a pointer + hover affordance. */
+a.stat-card {
+    cursor: pointer;
+}
+a.stat-card:hover {
+    border-color: #d7d5f2;
+}
+
+/* Icon: soft tinted rounded tile, top-left, in normal flow. */
+.stat-card .stat-icon {
+    position: static;
+    order: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    margin: 0 0 12px;
+    box-shadow: none;
+}
+.stat-card:hover .stat-icon { transform: none; }
+
+.stat-card .stat-value {
+    order: 0;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #1f2a44;
+    letter-spacing: -0.02em;
+}
+.stat-card .stat-label {
+    order: 0;
+    margin: 4px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2b3242;
+}
+
+/* Caption -> top-right status pill (dot + text, soft tinted). */
+.stat-card .stat-sub {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    max-width: calc(100% - 74px);   /* clear the icon tile on the left */
+    padding: 2.5px 8px 2.5px 17px;  /* left pad leaves room for the dot */
+    border-radius: 999px;
+    background: rgba(83, 71, 206, 0.09);
+    font-size: 9.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.stat-card .stat-sub::before {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--rl-primary);
+}
+.stat-card .stat-sub:empty { display: none; }
+
+/* muted "go" arrow, bottom-right - only on the clickable dashboard cards
+   (a.stat-card), hidden until the card is hovered then it fades in. */
+a.stat-card::after {
+    content: "";
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    width: 15px;
+    height: 15px;
+    background: var(--rl-primary);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.16s ease, transform 0.16s ease;
+    -webkit-mask: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E");
+    mask: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E");
+}
+a.stat-card:hover::after {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* faint colour wash along the bottom, tinted to the card's icon colour */
+.stat-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 46%;
+    pointer-events: none;
+    background: linear-gradient(0deg, rgba(83, 71, 206, 0.06) 0%, rgba(83, 71, 206, 0) 100%);
+}
+.stat-card:has(.stat-icon.red)::before    { background: linear-gradient(0deg, rgba(231, 76, 60, 0.08) 0%, rgba(231, 76, 60, 0) 100%); }
+.stat-card:has(.stat-icon.orange)::before { background: linear-gradient(0deg, rgba(230, 126, 34, 0.08) 0%, rgba(230, 126, 34, 0) 100%); }
+.stat-card:has(.stat-icon.amber)::before  { background: linear-gradient(0deg, rgba(214, 137, 16, 0.08) 0%, rgba(214, 137, 16, 0) 100%); }
+.stat-card:has(.stat-icon.green)::before  { background: linear-gradient(0deg, rgba(30, 132, 73, 0.08) 0%, rgba(30, 132, 73, 0) 100%); }
+.stat-card:has(.stat-icon.purple)::before { background: linear-gradient(0deg, rgba(83, 71, 206, 0.08) 0%, rgba(83, 71, 206, 0) 100%); }
+.stat-card:has(.stat-icon.blue)::before   { background: linear-gradient(0deg, rgba(72, 150, 254, 0.08) 0%, rgba(72, 150, 254, 0) 100%); }
+.stat-card:has(.stat-icon.brown)::before  { background: linear-gradient(0deg, rgba(165, 113, 58, 0.08) 0%, rgba(165, 113, 58, 0) 100%); }
+
+/* pill dot + tint follow the card colour */
+.stat-card:has(.stat-icon.red) .stat-sub    { background: rgba(231, 76, 60, 0.10); }
+.stat-card:has(.stat-icon.red) .stat-sub::before    { background: #e74c3c; }
+.stat-card:has(.stat-icon.orange) .stat-sub { background: rgba(230, 126, 34, 0.12); }
+.stat-card:has(.stat-icon.orange) .stat-sub::before { background: #e67e22; }
+.stat-card:has(.stat-icon.amber) .stat-sub  { background: rgba(214, 137, 16, 0.12); }
+.stat-card:has(.stat-icon.amber) .stat-sub::before  { background: #d68910; }
+.stat-card:has(.stat-icon.green) .stat-sub  { background: rgba(30, 132, 73, 0.12); }
+.stat-card:has(.stat-icon.green) .stat-sub::before  { background: #1e8449; }
+.stat-card:has(.stat-icon.purple) .stat-sub { background: rgba(108, 92, 231, 0.12); }
+.stat-card:has(.stat-icon.purple) .stat-sub::before { background: #6c5ce7; }
+.stat-card:has(.stat-icon.blue) .stat-sub   { background: rgba(72, 150, 254, 0.12); }
+.stat-card:has(.stat-icon.blue) .stat-sub::before   { background: #4896fe; }
+.stat-card:has(.stat-icon.brown) .stat-sub  { background: rgba(165, 113, 58, 0.12); }
+.stat-card:has(.stat-icon.brown) .stat-sub::before  { background: #a5713a; }
+
+/* keep card text above the wash + arrow */
+.stat-card .stat-icon,
+.stat-card .stat-value,
+.stat-card .stat-label { position: relative; z-index: 1; }
+.stat-card .stat-sub { z-index: 2; }
+
+/* filtered-view "LIVE" chip: bottom-right; the decorative arrow steps
+   aside for it on the cards that show one. */
+.stat-card .stat-live-tag {
+    top: auto;
+    bottom: 12px;
+    right: 12px;
+    left: auto;
+}
+a.stat-card:has(.stat-live-tag)::after { display: none; }
+
+/* ---- Sidebar -----------------------------------------------------
+   Lighter rail; the active item reads as a soft tint + brand colour
+   rather than a heavy solid slab. */
+.sidebar {
+    background: var(--rl-surface);
+    border-right: 1px solid var(--rl-border);
+}
+
+.sidebar-nav a,
+.sidebar-footer a:not(.sidebar-user),
+.sidebar-user {
+    border-radius: 10px;
+}
+
+.sidebar-nav a.active {
+    background: var(--rl-tint);
+    color: var(--rl-primary);
+}
+
+.sidebar-nav a.active svg {
+    color: var(--rl-primary);
+}
+
+.sidebar-nav a:not(.active):hover {
+    background: #f4f4f8;
+}
+
+.sidebar-user.active {
+    background: var(--rl-tint);
+}
+
+.sidebar-brand strong {
+    color: var(--rl-primary);
+    font-size: 16.5px;
+    letter-spacing: -0.02em;
+    /* Pull the "Pangasinan" sub-line up snug under the wordmark - the
+       body default line-height left too much air between the two. */
+    line-height: 1.15;
+}
+.brand-sub {
+    display: block;
+    line-height: 1.15;
+    margin-top: 1px;
+}
+
+/* The refreshed mark carries more internal detail than the old one -
+   a touch larger so it stays legible in the rail. */
+.brand-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+}
+
+/* ---- Controls ---------------------------------------------------- */
+.btn-outline,
+.btn-icon,
+.btn-add-warehouse,
+.btn-primary {
+    border-radius: 10px;
+}
+
+.form-row input,
+.form-row select,
+.form-row textarea {
+    border-radius: 10px;
+}
+
+.btn-add-warehouse {
+    background: var(--rl-primary);
+}
+.btn-add-warehouse:hover {
+    background: var(--rl-primary-strong);
+}
+
+/* ---- Greeting banner -------------------------------------------
+   Soft indigo->violet wash instead of the old heavy navy. */
+.greeting-banner {
+    background:
+        radial-gradient(80% 150% at 88% -40%, rgba(136, 124, 253, 0.45) 0%, rgba(136, 124, 253, 0) 55%),
+        linear-gradient(135deg, #5347ce 0%, #6f63e0 100%);
+}
+
+/* ---- Motion pared back (all roles) ---------------------------------
+   Drops the decorative entrance / looping / hover-lift animations across
+   the whole system. Deliberately KEPT: loading shimmers (they signal
+   "working"), the sidebar collapse transition, flash-toast in/out, and
+   instant colour feedback on controls. */
+
+/* page + panel entrances */
+.dashboard-main { animation: none; }
+
+/* modal pop-in -> modals just appear */
+.rd-modal, .da-modal, .lp-modal,
+.rd-modal-overlay .rd-modal { animation: none; }
+
+/* Modal backdrop: a proper dark dim behind every dialog (the palette
+   swap had left it a pale lavender). One value for all overlay types. */
+.rd-modal-overlay,
+.da-modal-overlay,
+.auth-modal-overlay {
+    background: rgba(19, 18, 40, 0.62);
+}
+
+/* looping "attention" pulses */
+.banner-event-badge-dot { animation: none; }
+.online-indicator.is-online .online-dot { animation: none; }
+
+/* panels + non-clickable stat cards: no hover motion at all */
+.panel:hover, .stat-card:hover { transform: none; }
+.panel:hover { box-shadow: var(--rl-shadow); }
+.stat-card:hover .stat-icon,
+.stat-card:hover .stat-value { transform: none; }
+
+/* Clickable dashboard cards (a.stat-card): a small lift + soft shadow +
+   icon pop on hover, plus the arrow fading in. Higher specificity than
+   the resets just above, so it wins. */
+a.stat-card {
+    transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+a.stat-card:hover {
+    transform: translateY(-3px);
+    border-color: #cfcbf0;
+    box-shadow: 0 9px 22px rgba(83, 71, 206, 0.11);
+}
+a.stat-card:hover .stat-icon {
+    transform: scale(1.06);
+}
+a.stat-card .stat-icon {
+    transition: transform 0.16s ease;
+}
+/* stat-card arrow: fades in on hover, no slide */
+a.stat-card::after { transform: none; }
+a.stat-card:hover::after { transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    a.stat-card, a.stat-card:hover,
+    a.stat-card .stat-icon, a.stat-card:hover .stat-icon { transform: none; }
+}
+
+/* landing page hero entrances */
+.lp-hero-lockup, .lp-hero-desc, .lp-hero-actions, .lp-hero-map { animation: none; }
+
+/* sign-in page: Ken Burns photo drift + staggered element rise */
+.lpg::after { animation: none; }
+.lpg-topbar, .lpg-intro-lockup, .lpg-intro-desc,
+.lpg-main .login-card, .lpg-footer { animation: none; }
+
+/* ---- Kept, on purpose: the stat-card row -------------------------
+   One short, staggered entrance when a KPI row first paints - the one
+   spot where a little motion helps the eye land. Nothing loops, nothing
+   moves on hover. `backwards` fill = no first-frame flash, no retained
+   transform afterwards. */
+@keyframes rl-stat-in {
+    from { opacity: 0; transform: translateY(9px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.stat-cards .stat-card {
+    animation: rl-stat-in 0.34s ease-out backwards;
+}
+.stat-cards .stat-card:nth-child(1) { animation-delay: 0.03s; }
+.stat-cards .stat-card:nth-child(2) { animation-delay: 0.07s; }
+.stat-cards .stat-card:nth-child(3) { animation-delay: 0.11s; }
+.stat-cards .stat-card:nth-child(4) { animation-delay: 0.15s; }
+.stat-cards .stat-card:nth-child(5) { animation-delay: 0.19s; }
+.stat-cards .stat-card:nth-child(6) { animation-delay: 0.23s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .stat-cards .stat-card { animation: none; }
+}

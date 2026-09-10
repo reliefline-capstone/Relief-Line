@@ -8,7 +8,7 @@
 .gis-filters select,
 .gis-filters input[type="text"] {
     padding: 9px 12px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
     font-size: 13px;
     color: #333;
@@ -55,7 +55,7 @@
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: #0f2547;
+    background: #5347ce;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -76,14 +76,14 @@
     letter-spacing: 0.3px;
     padding: 3px 8px;
     border-radius: 5px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     color: #555;
 }
 .btn-generate {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: #0f2547;
+    background: #5347ce;
     color: white;
     border: none;
     border-radius: 8px;
@@ -93,7 +93,7 @@
     text-decoration: none;
     cursor: pointer;
 }
-.btn-generate:hover { background: #16305e; }
+.btn-generate:hover { background: #3f34a0; }
 
 /* ---- Generic report table (Recent Reports + report preview) ---- */
 .rpt-table-wrap { overflow-x: auto; }
@@ -110,10 +110,10 @@
 }
 .rpt-table td {
     padding: 11px 12px;
-    border-bottom: 1px solid #f4f6fa;
+    border-bottom: 1px solid #eceef4;
     color: #333;
 }
-.rpt-table tbody tr:nth-child(even) { background: #fafbfd; }
+.rpt-table tbody tr:nth-child(even) { background: #f9f9fd; }
 
 .format-tag {
     font-size: 11px;
@@ -128,7 +128,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     background: white;
     border-radius: 6px;
     padding: 5px 10px;
@@ -137,7 +137,7 @@
     text-decoration: none;
     margin-right: 6px;
 }
-.btn-mini:hover { background: #f8f9fc; }
+.btn-mini:hover { background: #f4f4fb; }
 
 /* ---- Report preview page ---- */
 .rpt-filterbar {
@@ -146,8 +146,8 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    background: #eaf0fd;
-    border: 1px solid #d7e3fb;
+    background: #efedfd;
+    border: 1px solid #e2ddf9;
     border-radius: 10px;
     padding: 12px 16px;
     margin-bottom: 14px;
@@ -155,13 +155,13 @@
 .rpt-filter-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #333; }
 .rpt-chip {
     background: white;
-    border: 1px solid #d7e3fb;
+    border: 1px solid #e2ddf9;
     border-radius: 6px;
     padding: 4px 10px;
     font-size: 12px;
-    color: #2c5aa0;
+    color: #5347ce;
 }
-.rpt-edit-filters { font-size: 12.5px; color: #2c5aa0; font-weight: 600; text-decoration: none; }
+.rpt-edit-filters { font-size: 12.5px; color: #5347ce; font-weight: 600; text-decoration: none; }
 .rpt-edit-filters:hover { text-decoration: underline; }
 
 .rpt-export-row {
@@ -215,19 +215,19 @@
     flex-wrap: wrap;
     gap: 16px;
     padding-bottom: 16px;
-    border-bottom: 2px solid #0f2547;
+    border-bottom: 2px solid #5347ce;
     margin-bottom: 16px;
 }
 .rpt-doc-brand { display: flex; align-items: flex-start; gap: 12px; }
 .rpt-doc-icon {
     width: 44px; height: 44px;
     border-radius: 10px;
-    background: #0f2547;
+    background: #5347ce;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
 }
 .rpt-doc-eyebrow { display: block; font-size: 10.5px; letter-spacing: 0.4px; color: #8a94a6; }
-.rpt-doc-brand h2 { font-size: 19px; color: #0f2547; margin-top: 4px; }
+.rpt-doc-brand h2 { font-size: 19px; color: #5347ce; margin-top: 4px; }
 .rpt-doc-meta { text-align: right; font-size: 12px; color: #555; display: flex; flex-direction: column; gap: 3px; }
 .rpt-doc-meta span { color: #8a94a6; margin-right: 4px; }
 .rpt-doc-meta strong { color: #1a1a1a; }
@@ -236,25 +236,25 @@
     display: flex;
     flex-wrap: wrap;
     gap: 18px;
-    background: #eaf0fd;
+    background: #efedfd;
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 12.5px;
     color: #333;
     margin-bottom: 18px;
 }
-.rpt-doc-strip strong { color: #0f2547; margin-right: 3px; }
+.rpt-doc-strip strong { color: #5347ce; margin-right: 3px; }
 .rpt-status-ready { color: #1e8449; font-weight: 600; }
 
 .rpt-doc-title {
     font-size: 12px;
     letter-spacing: 0.5px;
-    color: #0f2547;
+    color: #5347ce;
     font-weight: 700;
     margin-bottom: 10px;
 }
 
-.rpt-table thead tr { background: #0f2547; }
+.rpt-table thead tr { background: #5347ce; }
 .rpt-table thead th { color: white; }
 
 .rpt-status-pill {
@@ -269,11 +269,11 @@
 .rpt-status-approved, .rpt-status-released, .rpt-status-delivered { background: #e8faf0; color: #1e8449; }
 .rpt-status-pending, .rpt-status-preparing { background: #fef5e3; color: #d68910; }
 .rpt-status-rejected, .rpt-status-delayed { background: #fdecea; color: #c0392b; }
-.rpt-status-partially-approved { background: #eaf0fd; color: #2c5aa0; }
+.rpt-status-partially-approved { background: #efedfd; color: #5347ce; }
 
 /* Distribution/logistics sub-statuses - same mapping as badge-status-* in distribution.css. */
-.rpt-status-loaded { background: #eaf0fd; color: #2c5aa0; }
-.rpt-status-dispatched { background: #f1edfe; color: #6c5ce7; }
+.rpt-status-loaded { background: #efedfd; color: #5347ce; }
+.rpt-status-dispatched { background: #f1edfe; color: #5347ce; }
 .rpt-status-in-transit { background: #fdf0e4; color: #a5713a; }
 
 .rpt-notes {
@@ -281,7 +281,7 @@
     font-size: 13px;
     color: #333;
 }
-.rpt-notes strong { color: #0f2547; display: block; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.3px; }
+.rpt-notes strong { color: #5347ce; display: block; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.3px; }
 .rpt-notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 
 .rpt-signatures {

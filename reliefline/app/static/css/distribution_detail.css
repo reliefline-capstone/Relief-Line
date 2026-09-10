@@ -42,7 +42,7 @@
     justify-content: center;
     font-size: 13px;
     font-weight: 700;
-    border: 2px solid #e5e9f0;
+    border: 2px solid #e6e7ef;
 }
 
 .dd-step-done .dd-step-circle {
@@ -54,12 +54,12 @@
 /* Current (in-progress, not yet reached) step - keeps showing its number
    instead of a checkmark, just highlighted, so it reads as "here now"
    rather than "already done" (see app.routes.barangay's 3-state stepper). */
-.dd-step-current span { color: #2c5aa0; font-weight: 600; }
-.dd-step-current .dd-step-circle { background: white; border-color: #2c5aa0; color: #2c5aa0; }
+.dd-step-current span { color: #5347ce; font-weight: 600; }
+.dd-step-current .dd-step-circle { background: white; border-color: #5347ce; color: #5347ce; }
 
 .dd-step-line {
     height: 2px;
-    background: #e5e9f0;
+    background: #e6e7ef;
     flex: 1;
     margin-top: 17px;
     min-width: 20px;
@@ -82,7 +82,7 @@
 }
 .dd-update-banner svg { flex-shrink: 0; margin-top: 1px; }
 .dd-update-success { background: #e8faf0; color: #1e8449; }
-.dd-update-pending { background: #eaf0fd; color: #2c5aa0; }
+.dd-update-pending { background: #efedfd; color: #5347ce; }
 
 /* Key-value list */
 .dd-kv-list {
@@ -113,9 +113,9 @@
     display: flex;
     gap: 12px;
     padding: 14px;
-    border: 1px solid #eef1f6;
+    border: 1px solid #eef0f5;
     border-radius: 10px;
-    background: #fbfcfe;
+    background: #f9f9fd;
 }
 
 .dd-confirm-icon {
@@ -126,7 +126,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background: #eef1f6;
+    background: #eef0f5;
     color: #8a94a6;
 }
 
@@ -149,7 +149,7 @@
     letter-spacing: 0.3px;
     padding: 2px 8px;
     border-radius: 20px;
-    background: #eef1f6;
+    background: #eef0f5;
     color: #8a94a6;
 }
 
@@ -174,7 +174,7 @@
 
 .dd-wh-tile {
     flex: 1;
-    background: #f8f9fc;
+    background: #f4f4fb;
     border-radius: 10px;
     padding: 16px;
     text-align: center;
@@ -187,9 +187,9 @@
 .dd-wh-tile span { font-size: 10px; color: #8a94a6; letter-spacing: 0.3px; margin-top: 4px; }
 .dd-wh-tile strong { font-size: 15px; }
 
-.dd-wh-blue { background: #eaf0fd; }
-.dd-wh-blue span { color: #2c5aa0; }
-.dd-wh-blue strong { color: #2c5aa0; }
+.dd-wh-blue { background: #efedfd; }
+.dd-wh-blue span { color: #5347ce; }
+.dd-wh-blue strong { color: #5347ce; }
 
 .dd-wh-green { background: #e8faf0; }
 .dd-wh-green span { color: #1e8449; }
@@ -212,7 +212,7 @@
 
 .dd-link-btn {
     background: none;
-    color: #0f2547;
+    color: #5347ce;
     font-weight: 600;
     font-size: 13px;
     padding: 6px 0;
@@ -224,7 +224,7 @@
 
 /* Route map */
 .dd-route-box {
-    background: #eaf1fb;
+    background: #efedfd;
     border-radius: 10px;
     padding: 40px 30px 20px;
 }
@@ -271,7 +271,7 @@
     color: white;
 }
 
-.dd-route-wh { background: #0f2547; }
+.dd-route-wh { background: #5347ce; }
 .dd-route-pin { background: #e74c3c; border-radius: 50% 50% 50% 0; }
 
 .dd-route-truck {
@@ -288,7 +288,7 @@
 .dd-route-truck span {
     font-size: 10px;
     font-weight: 700;
-    color: #2c5aa0;
+    color: #5347ce;
     background: white;
     padding: 2px 8px;
     border-radius: 8px;
@@ -296,7 +296,7 @@
 
 .dd-route-truck-badge {
     background: white;
-    border: 3px solid #2c5aa0;
+    border: 3px solid #5347ce;
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
@@ -338,12 +338,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #f8f9fc;
-    border: 1px solid #e5e9f0;
+    background: #f4f4fb;
+    border: 1px solid #e6e7ef;
     border-radius: 8px;
     padding: 8px 12px;
     font-size: 12px;
-    color: #2c5aa0;
+    color: #5347ce;
 }
 
 /* Validation photo thumbnail - actual proof-of-delivery image instead of a
@@ -355,7 +355,7 @@
     height: 100px;
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid #e5e9f0;
+    border: 1px solid #e6e7ef;
 }
 .dd-attachment-photo img {
     width: 100%;
@@ -369,8 +369,8 @@
     display: block;
     text-align: center;
     font-size: 30px;
-    color: #0f2547;
-    background: #f8f9fc;
+    color: #5347ce;
+    background: #f4f4fb;
     border-radius: 10px;
     padding: 16px;
 }
@@ -402,7 +402,7 @@
 /* Upload box */
 .dd-upload-box {
     position: relative;
-    border: 1.5px dashed #d8dee8;
+    border: 1.5px dashed #e3e4ec;
     border-radius: 10px;
     padding: 24px;
     text-align: center;

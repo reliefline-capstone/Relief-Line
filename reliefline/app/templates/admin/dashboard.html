@@ -25,30 +25,30 @@
         </section>
 
         <section class="stat-cards stat-cards-4">
-            <div class="stat-card">
+            <a class="stat-card" href="{{ url_for('admin.users') }}">
                 <div class="stat-icon blue">{{ icon('users', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ total_users }}</span>
                 <span class="stat-label">Total Users</span>
                 <span class="stat-sub">across all roles</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('admin.activity') }}">
                 <div class="stat-icon green">{{ icon('activity', 18, '#20bf6b') }}</div>
                 <span class="stat-value">{{ active_sessions }}</span>
                 <span class="stat-label">Active Sessions</span>
                 <span class="stat-sub">online right now</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('admin.users') }}">
                 <div class="stat-icon amber">{{ icon('x-circle', 18, '#f39c12') }}</div>
                 <span class="stat-value">{{ inactive_accounts }}</span>
                 <span class="stat-label">Inactive Accounts</span>
                 <span class="stat-sub">require review</span>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a class="stat-card" href="{{ url_for('admin.activity') }}">
                 <div class="stat-icon purple">{{ icon('file-text', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(activity_entries_this_month) }}</span>
                 <span class="stat-label">Activity Logs</span>
                 <span class="stat-sub">recorded this month</span>
-            </div>
+            </a>
         </section>
 
         <div class="main-grid">

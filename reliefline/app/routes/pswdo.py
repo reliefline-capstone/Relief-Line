@@ -2154,7 +2154,7 @@ def relief_requests():
         cswdo_offices=cswdo_offices,
         status_filter=status_filter, municipality_filter=municipality_filter, search_query=search_query,
         target_lgus=TARGET_LGUS, status_labels=RR_STATUS_LABELS, priority_labels={"high": "High", "medium": "Medium", "low": "Low"},
-        depots=depots, page=page, total_pages=total_pages,
+        depots=depots, page=page, total_pages=total_pages, per_page=per_page,
     )
 
 

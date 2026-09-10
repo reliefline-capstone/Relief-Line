@@ -1,6 +1,6 @@
 /* Municipality summary quick bar (Overview tab) */
 .da-summary-bar {
-    background: #eaf0fd;
+    background: #efedfd;
     border-radius: 10px;
     padding: 14px 18px;
     display: flex;
@@ -16,11 +16,11 @@
     gap: 6px;
     font-size: 13px;
     font-weight: 700;
-    color: #2c5aa0;
+    color: #5347ce;
 }
 
-.da-summary-item span { display: block; font-size: 10px; color: #6c86b8; letter-spacing: 0.3px; }
-.da-summary-item strong { font-size: 15px; color: #0f2547; }
+.da-summary-item span { display: block; font-size: 10px; color: #8579c8; letter-spacing: 0.3px; }
+.da-summary-item strong { font-size: 15px; color: #5347ce; }
 
 .da-summary-pill {
     margin-left: auto;
@@ -63,7 +63,7 @@
 
 .da-filter-bar input[type="text"],
 .da-filter-bar select {
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
     padding: 9px 12px;
     font-size: 13px;
@@ -95,7 +95,7 @@
 .da-table tbody td {
     padding: 14px 16px;
     font-size: 13px;
-    border-bottom: 1px solid #f5f6fa;
+    border-bottom: 1px solid #eceef4;
     vertical-align: middle;
 }
 
@@ -115,14 +115,14 @@
     white-space: nowrap;
 }
 
-.btn-view-sm { border: 1px solid #d8dee8; background: white; color: #333; }
-.btn-view-sm:hover { background: #f8f9fc; }
-.btn-review-sm { background: #0f2547; color: white; }
-.btn-review-sm:hover { background: #16305e; }
+.btn-view-sm { border: 1px solid #e3e4ec; background: white; color: #333; }
+.btn-view-sm:hover { background: #f4f4fb; }
+.btn-review-sm { background: #5347ce; color: white; }
+.btn-review-sm:hover { background: #3f34a0; }
 
 /* Municipality Summary tab */
 .da-summary-header {
-    background: linear-gradient(135deg, #0f2547, #1a3a6b);
+    background: linear-gradient(135deg, #5347ce, #4436b4);
     color: white;
     border-radius: 12px;
     padding: 22px 26px;
@@ -174,8 +174,8 @@
 .da-flood-box.tier-low strong { color: #1e8449; }
 
 .da-cta-banner {
-    background: #eaf0fd;
-    border: 1px solid #c9dafc;
+    background: #efedfd;
+    border: 1px solid #d6d1f4;
     border-radius: 10px;
     padding: 16px 20px;
     display: flex;
@@ -186,14 +186,14 @@
     margin-top: 16px;
 }
 
-.da-cta-banner strong { display: block; color: #0f2547; font-size: 13px; margin-bottom: 2px; }
+.da-cta-banner strong { display: block; color: #5347ce; font-size: 13px; margin-bottom: 2px; }
 .da-cta-banner span { font-size: 12px; color: #556; }
 
 /* Modal */
 .da-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 37, 71, 0.5);
+    background: rgba(83, 71, 206, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -268,7 +268,7 @@
     border-bottom: 2px solid transparent;
 }
 
-.da-modal-tab.active { color: #0f2547; border-bottom-color: #0f2547; }
+.da-modal-tab.active { color: #5347ce; border-bottom-color: #5347ce; }
 
 .da-modal-body { padding: 20px 22px; overflow-y: auto; flex: 1; }
 .da-modal-pane { display: none; }
@@ -307,7 +307,7 @@
 
 .da-evidence-chip {
     width: 100px;
-    background: #eaf0fd;
+    background: #efedfd;
     border-radius: 8px;
     padding: 14px 8px;
     text-align: center;
@@ -339,7 +339,7 @@
 .da-verification-record.status-verified { background: #e8faf0; color: #1e8449; }
 .da-verification-record.status-returned { background: #fdecea; color: #c0392b; }
 
-.da-verify-section { border-top: 1px dashed #e1e5eb; padding-top: 16px; margin-top: 4px; }
+.da-verify-section { border-top: 1px dashed #e6e7ef; padding-top: 16px; margin-top: 4px; }
 .da-verify-section h4 { font-size: 13px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 
 .da-verify-section label {
@@ -351,7 +351,7 @@
 
 .da-verify-section textarea {
     width: 100%;
-    border: 1px solid #d8dee8;
+    border: 1px solid #e3e4ec;
     border-radius: 8px;
     padding: 10px 12px;
     font-size: 13px;
@@ -418,11 +418,11 @@
     grid-template-columns: 1fr 1fr;
     gap: 1px;
     padding: 0;
-    background: #e6e9f0;
+    background: #e6e7ef;
     overflow: hidden;
 }
 .rr-review-decision .rd-amount-tile > div {
-    background: #f8f9fc;
+    background: #f4f4fb;
     padding: 12px 14px;
     text-align: left;
 }

@@ -18,46 +18,46 @@
     <main class="dashboard-main">
 
 
-        <section class="page-header">
-            <div>
-                <h2>Stock Requests</h2>
-                <p>Municipal warehouse replenishment requests from CSWDO/MSWDO offices - the only requests PSWDO decides on.</p>
-            </div>
-            <div style="display:flex; gap:10px;">
-                <a href="{{ url_for('pswdo.transfers') }}" class="btn-outline">{{ icon('truck', 14) }} Transfers</a>
-                <a href="{{ url_for('pswdo.export_relief_requests', status=status_filter, municipality=municipality_filter, q=search_query) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
-                <button type="button" class="btn-add-warehouse" data-open-modal="direct-preposition-modal">{{ icon('plus', 14, 'white') }} Pre-position Stock</button>
-            </div>
-        </section>
-
-        <div class="summary-pills status-filter-pills">
-            {% set pill_defs = [
-                ('all', 'All requests', total_count),
-                ('pending', 'awaiting decision', counts.pending),
-                ('approved', 'approved / in transit', counts.approved),
-                ('fulfilled', 'fulfilled', counts.fulfilled),
-                ('declined', 'declined', counts.declined),
-            ] %}
-            {% for key, label, n in pill_defs %}
-            <a href="{{ url_for('pswdo.relief_requests', status=key, municipality=municipality_filter, q=search_query) }}"
-               class="status-pill status-pill-{{ key }} {{ 'active' if status_filter == key }}">
-                <strong>{{ n }}</strong> {{ label }}
-            </a>
-            {% endfor %}
+        <div class="rr-page-head">
+            <h2>Stock Requests</h2>
+            <p>Municipal warehouse replenishment requests from CSWDO/MSWDO offices - the only requests PSWDO decides on.</p>
         </div>
 
-        <form class="filter-bar" method="GET">
-            <input type="hidden" name="status" value="{{ status_filter }}">
-            <select name="municipality" onchange="this.form.submit()">
-                <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All municipalities</option>
-                {% for lgu in target_lgus %}
-                <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
+        <div class="rr-toolbar">
+            <nav class="status-filter-pills">
+                {% set pill_defs = [
+                    ('all', 'All requests', total_count),
+                    ('pending', 'Awaiting decision', counts.pending),
+                    ('approved', 'Approved / In Transit', counts.approved),
+                    ('fulfilled', 'Fulfilled', counts.fulfilled),
+                    ('declined', 'Declined', counts.declined),
+                ] %}
+                {% for key, label, n in pill_defs %}
+                <a href="{{ url_for('pswdo.relief_requests', status=key, municipality=municipality_filter, q=search_query) }}"
+                   class="status-pill status-pill-{{ key }} {{ 'active' if status_filter == key }}">
+                    {{ label }} <strong>({{ n }})</strong>
+                </a>
                 {% endfor %}
-            </select>
-            <input type="text" name="q" value="{{ search_query }}" placeholder="Search request ID...">
-            <button type="submit" class="btn-outline">{{ icon('search', 14) }} Filter</button>
-            <span class="rr-table-count">{{ total_filtered }} of {{ total_count }}</span>
-        </form>
+            </nav>
+
+            <form class="rr-toolbar-controls" method="GET">
+                <input type="hidden" name="status" value="{{ status_filter }}">
+                <select name="municipality" onchange="this.form.submit()" class="rr-mini-select">
+                    <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All municipalities</option>
+                    {% for lgu in target_lgus %}
+                    <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
+                    {% endfor %}
+                </select>
+                <div class="rr-search-box">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search request ID...">
+                </div>
+                <button type="submit" class="rr-filter-btn">{{ icon('sliders', 14) }} Filter</button>
+                <a href="{{ url_for('pswdo.export_relief_requests', status=status_filter, municipality=municipality_filter, q=search_query) }}"
+                   class="rr-icon-btn" title="Export to CSV">{{ icon('download', 14) }}</a>
+                <button type="button" class="rr-primary-btn" data-open-modal="direct-preposition-modal">{{ icon('plus', 14, 'white') }} Pre-position</button>
+            </form>
+        </div>
 
         <div class="rr-table-wrap">
             <table class="rr-table">
@@ -81,15 +81,24 @@
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
 
-        {% if total_pages > 1 %}
-        <div class="rr-pagination">
-            {% for p in range(1, total_pages + 1) %}
-            <a href="{{ url_for('pswdo.relief_requests', page=p, status=status_filter, municipality=municipality_filter, q=search_query) }}" class="{{ 'active' if p == page }}">{{ p }}</a>
-            {% endfor %}
+            {% if rows %}
+            <div class="rr-pagination">
+                <span>Showing {{ (page - 1) * per_page + 1 }} to {{ (page - 1) * per_page + rows|length }} of {{ total_filtered }} request{{ 's' if total_filtered != 1 }}</span>
+                <div class="pagination-controls">
+                    {% set prev_disabled = page <= 1 %}
+                    {% set next_disabled = page >= total_pages %}
+                    <a class="page-nav {{ 'is-disabled' if prev_disabled }}"
+                       href="{{ '#' if prev_disabled else url_for('pswdo.relief_requests', page=page-1, status=status_filter, municipality=municipality_filter, q=search_query) }}"
+                       aria-label="Previous page">{{ icon('chevron-left', 14) }}</a>
+                    <span class="page-current">{{ page }}</span>
+                    <a class="page-nav {{ 'is-disabled' if next_disabled }}"
+                       href="{{ '#' if next_disabled else url_for('pswdo.relief_requests', page=page+1, status=status_filter, municipality=municipality_filter, q=search_query) }}"
+                       aria-label="Next page">{{ icon('chevron-right', 14) }}</a>
+                </div>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
 
     </main>
 </div>
