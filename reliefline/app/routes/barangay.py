@@ -579,7 +579,7 @@ def _apply_affected_families(report):
 
     report.affected_families_list = [
         ReportAffectedFamily(
-            family_id=f.family_id, family_name=f.family_name, head_name=f.head_name,
+            family_id=f.family_id, family_name=f.family_name, head_name=f.head_name, purok=f.purok,
             member_count=f.member_count, pwd_count=f.pwd_count,
             senior_count=f.senior_count, children_count=f.children_count,
         )
@@ -844,6 +844,104 @@ def family_profile_delete(family_id):
     db.session.commit()
     flash(f"{name} deleted.", "success")
     return redirect(url_for("barangay.family_profiles"))
+
+
+def _family_print_rows(families):
+    """Normalizes either Family (manual selection) or ReportAffectedFamily
+    (a report's checklist) rows into plain dicts for print_family_list.html
+    - the two models don't share every column (Family has purok/contact,
+    ReportAffectedFamily doesn't). Shows the actual packs_given once a
+    report-linked family has already been marked received, else the
+    suggested figure (1 + PWD + senior)."""
+    return [{
+        "family_name": f.family_name,
+        "head_name": getattr(f, "head_name", None),
+        "purok": getattr(f, "purok", None),
+        "member_count": f.member_count,
+        "pwd_count": f.pwd_count,
+        "senior_count": f.senior_count,
+        "children_count": f.children_count,
+        "packs": f.packs_given if getattr(f, "received", False) else f.suggested_packs,
+    } for f in families]
+
+
+@barangay_bp.route("/family-profiles/print")
+@login_required
+@role_required("barangay_user")
+def print_families_selected():
+    """Step 1 of the "select a family" print path (see print_report_families
+    for the "choose a report" half): shows the manually-picked families with
+    an editable Packs field per family - defaulted to the suggested figure
+    (1 + PWD + senior) but the barangay can override it here before
+    generating the actual printable sheet (print_families_generate)."""
+    barangay = _own_barangay_or_404()
+    ids = request.args.getlist("family_ids", type=int)
+    if not ids:
+        flash("Select at least one family to print.", "error")
+        return redirect(url_for("barangay.family_profiles"))
+    families = Family.query.filter(
+        Family.barangay_id == barangay.barangay_id, Family.family_id.in_(ids)
+    ).order_by(Family.purok, Family.family_name).all()
+    if not families:
+        flash("Select at least one family to print.", "error")
+        return redirect(url_for("barangay.family_profiles"))
+
+    return render_template("barangay/print_family_prepare.html", barangay=barangay, families=families)
+
+
+@barangay_bp.route("/family-profiles/print/generate", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def print_families_generate():
+    """Step 2 - renders the actual printable sheet using the pack quantities
+    the barangay set on the prepare step above (falls back to a family's
+    suggested figure for any left blank or invalid)."""
+    barangay = _own_barangay_or_404()
+    ids = request.form.getlist("family_ids", type=int)
+    if not ids:
+        flash("Select at least one family to print.", "error")
+        return redirect(url_for("barangay.family_profiles"))
+    families = Family.query.filter(
+        Family.barangay_id == barangay.barangay_id, Family.family_id.in_(ids)
+    ).order_by(Family.purok, Family.family_name).all()
+    if not families:
+        flash("Select at least one family to print.", "error")
+        return redirect(url_for("barangay.family_profiles"))
+
+    rows = []
+    for f in families:
+        packs = request.form.get(f"packs_{f.family_id}", type=int)
+        rows.append({
+            "family_name": f.family_name, "head_name": f.head_name, "purok": f.purok,
+            "packs": packs if packs and packs > 0 else f.suggested_packs,
+        })
+
+    return render_template(
+        "barangay/print_family_list.html",
+        barangay=barangay, title="Distribution Announcement",
+        subtitle=f"Manually selected - {len(families)} famil{'y' if len(families) == 1 else 'ies'}",
+        rows=rows, generated_at=ph_now(),
+    )
+
+
+@barangay_bp.route("/damage-report/<int:report_id>/print-families")
+@login_required
+@role_required("barangay_user")
+def print_report_families(report_id):
+    """Printable distribution announcement for one Barangay Report's
+    affected-families checklist - the "choose a report" half of this
+    feature (see print_families_selected for the manual-pick half)."""
+    report = _get_own_report_or_404(report_id)
+    if not report.affected_families_list:
+        flash("This report has no affected-families checklist to print.", "error")
+        return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
+
+    return render_template(
+        "barangay/print_family_list.html",
+        barangay=report.barangay, title="Distribution Announcement",
+        subtitle=f"{report.ref}{' - ' + report.event.event_name if report.event else ''}",
+        rows=_family_print_rows(report.affected_families_list), generated_at=ph_now(),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1142,12 +1240,50 @@ def inventory():
             date_filter = ""
     logs = logs_q.order_by(BarangayStockLog.created_at.desc()).limit(30).all()
 
+    families = Family.query.filter_by(
+        barangay_id=barangay.barangay_id, is_active=True
+    ).order_by(Family.purok, Family.family_name).all()
+
     return render_template(
         "barangay/inventory.html",
-        barangay=barangay, on_hand=on_hand, logs=logs,
+        barangay=barangay, on_hand=on_hand, logs=logs, families=families,
         received=received, given_out=given_out,
         type_filter=type_filter, date_filter=date_filter,
     )
+
+
+def _record_barangay_distribution(barangay_id, amount, reason, family_id=None):
+    """The one place barangay stock ever decreases (see inventory_record's
+    docstring) - shared by the manual "Record Distribution" form on the
+    Inventory page and the per-family "Mark Received" checklist on a
+    fulfilled Barangay Report (mark_family_received below), so both write
+    to the same BarangayInventory/BarangayStockLog ledger and can never
+    disagree with each other or with the GIS map's stock-adequacy rating.
+
+    `family_id` optionally tags the log with which registered Family this
+    went to - set by either caller - so a family's distribution history is
+    always the same one query (BarangayStockLog.family_id) regardless of
+    whether the pack was tied to a report or handed out ad hoc.
+
+    Returns an error message string when there isn't enough stock on hand
+    (caller should flash it and bail without committing), or None on
+    success (caller still owns the commit).
+    """
+    inv = BarangayInventory.query.filter_by(
+        barangay_id=barangay_id, item_type="food_pack"
+    ).first()
+    on_hand = inv.quantity_available if inv else 0
+    if inv is None or on_hand < amount:
+        return f"You only have {on_hand:,} food packs on hand."
+
+    inv.quantity_available = on_hand - amount
+    inv.updated_by = current_user.user_id
+    db.session.add(BarangayStockLog(
+        barangay_id=barangay_id, item_type="food_pack", item_name="Food Packs",
+        delta=-amount, source_type="distribution", reason=reason, family_id=family_id,
+        updated_by=current_user.user_id,
+    ))
+    return None
 
 
 @barangay_bp.route("/inventory/record", methods=["POST"])
@@ -1158,7 +1294,13 @@ def inventory_record():
     automatically, via a validated delivery (see _record_barangay_receipt,
     called from confirm_receipt) - a barangay account has no way to add stock
     by hand here, only record having handed packs out to residents. (A manual
-    "Adjust Count" add/subtract used to live here too; removed on purpose.)"""
+    "Adjust Count" add/subtract used to live here too; removed on purpose.)
+
+    This is the generic/manual path - it also doubles as the "Mark Received"
+    checklist's more flexible sibling: an optional family picker lets the
+    barangay name who this went to even when that family isn't tied to any
+    report at all (a resident not on this event's affected list, an older
+    profile, etc.) - see mark_family_received for the report-scoped version."""
     barangay = _own_barangay_or_404()
     amount = request.form.get("amount", type=int) or 0
     reason = request.form.get("reason", "").strip() or None
@@ -1167,24 +1309,109 @@ def inventory_record():
         flash("Enter a number greater than zero.", "error")
         return redirect(url_for("barangay.inventory"))
 
-    inv = BarangayInventory.query.filter_by(
-        barangay_id=barangay.barangay_id, item_type="food_pack"
-    ).first()
-    on_hand = inv.quantity_available if inv else 0
-    if inv is None or on_hand < amount:
-        flash(f"You only have {on_hand:,} food packs on hand.", "error")
+    family_id = request.form.get("family_id", type=int)
+    family = None
+    if family_id:
+        family = Family.query.filter_by(family_id=family_id, barangay_id=barangay.barangay_id).first()
+        if not family:
+            flash("That family isn't in your Family Profiles.", "error")
+            return redirect(url_for("barangay.inventory"))
+
+    if not reason:
+        reason = f"Distributed to {family.family_name}" if family else "Distributed to residents"
+
+    err = _record_barangay_distribution(barangay.barangay_id, amount, reason, family_id=family.family_id if family else None)
+    if err:
+        flash(err, "error")
         return redirect(url_for("barangay.inventory"))
 
-    inv.quantity_available = on_hand - amount
-    inv.updated_by = current_user.user_id
-    db.session.add(BarangayStockLog(
-        barangay_id=barangay.barangay_id, item_type="food_pack", item_name="Food Packs",
-        delta=-amount, source_type="distribution", reason=reason or "Distributed to residents",
-        updated_by=current_user.user_id,
-    ))
     db.session.commit()
-    flash(f"Recorded {amount:,} food packs distributed to residents.", "success")
+    who = f"to {family.family_name}" if family else "to residents"
+    flash(f"Recorded {amount:,} food packs distributed {who}.", "success")
     return redirect(url_for("barangay.inventory"))
+
+
+@barangay_bp.route("/damage-report/<int:report_id>/distribute/<int:raf_id>", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def mark_family_received(report_id, raf_id):
+    """Marks one affected family (from the report's checklist) as having
+    received its food pack(s) - the per-family counterpart to
+    inventory_record. Only actionable once the report is "fulfilled" (the
+    delivery itself has already been confirmed received, so the packs are
+    actually on hand to give out - see confirm_receipt).
+
+    Deducts `packs_given` from the same BarangayInventory/BarangayStockLog
+    ledger inventory_record uses (via _record_barangay_distribution), so
+    "who got a pack" and "how much stock is left" can never drift apart."""
+    report = _get_own_report_or_404(report_id)
+    if report.status != "fulfilled":
+        flash("You can only record distribution once the delivery has been confirmed received.", "error")
+        return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
+
+    raf = next((rf for rf in report.affected_families_list if rf.id == raf_id), None)
+    if not raf:
+        abort(404)
+    if raf.received:
+        flash(f"{raf.family_name} is already marked as received.", "error")
+        return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
+
+    packs = request.form.get("packs_given", type=int)
+    if packs is None:
+        packs = raf.suggested_packs
+    if packs <= 0:
+        flash("Enter a number of packs greater than zero.", "error")
+        return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
+
+    err = _record_barangay_distribution(
+        report.barangay_id, packs, f"{raf.family_name} - {report.ref}", family_id=raf.family_id
+    )
+    if err:
+        flash(err, "error")
+        return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
+
+    raf.received = True
+    raf.received_at = ph_now()
+    raf.packs_given = packs
+    raf.received_by = current_user.user_id
+    db.session.commit()
+    flash(f"Marked {raf.family_name} as received ({packs:,} food pack{'s' if packs != 1 else ''}).", "success")
+    return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
+
+
+@barangay_bp.route("/damage-report/<int:report_id>/distribute/<int:raf_id>/undo", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def undo_family_received(report_id, raf_id):
+    """Reverses a mark_family_received mistake - adds the packs back to
+    on-hand stock (logged as an 'adjustment', not another 'distribution',
+    since nothing actually went back out to anyone) and clears the
+    family's received state so it can be marked again correctly."""
+    report = _get_own_report_or_404(report_id)
+    raf = next((rf for rf in report.affected_families_list if rf.id == raf_id), None)
+    if not raf or not raf.received:
+        abort(404)
+
+    inv = BarangayInventory.query.filter_by(
+        barangay_id=report.barangay_id, item_type="food_pack"
+    ).first()
+    if inv:
+        inv.quantity_available += raf.packs_given
+        inv.updated_by = current_user.user_id
+        db.session.add(BarangayStockLog(
+            barangay_id=report.barangay_id, item_type="food_pack", item_name="Food Packs",
+            delta=raf.packs_given, source_type="adjustment",
+            reason=f"Undo: {raf.family_name} - {report.ref}",
+            updated_by=current_user.user_id,
+        ))
+
+    raf.received = False
+    raf.received_at = None
+    raf.packs_given = 0
+    raf.received_by = None
+    db.session.commit()
+    flash(f"Undid the distribution record for {raf.family_name}.", "success")
+    return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
 
 
 # ---------------------------------------------------------------------------

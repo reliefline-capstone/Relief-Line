@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Set Packs Per Family - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'family_profiles' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <section class="page-header">
+            <div>
+                <a href="{{ url_for('barangay.family_profiles') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Back</a>
+                <h2>Set Packs Per Family</h2>
+                <p>Brgy. {{ barangay.barangay_name }} · {{ families|length }} famil{{ 'y' if families|length == 1 else 'ies' }} selected - review the suggested pack count below, adjust if needed, then generate the printable list.</p>
+            </div>
+        </section>
+
+        <form method="POST" action="{{ url_for('barangay.print_families_generate') }}">
+            <section class="panel wh-table-panel">
+                <table class="wh-table">
+                    <thead>
+                        <tr>
+                            <th>FAMILY / HOUSEHOLD HEAD</th>
+                            <th>MEMBERS</th>
+                            <th>PWD</th>
+                            <th>SENIOR</th>
+                            <th>CHILDREN</th>
+                            <th>PACKS TO GIVE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in families %}
+                        <tr>
+                            <td><strong>{{ f.family_name }}</strong>{% if f.head_name %}<span class="wh-table-sub">{{ f.head_name }}</span>{% endif %}</td>
+                            <td>{{ f.member_count }}</td>
+                            <td>{{ f.pwd_count }}</td>
+                            <td>{{ f.senior_count }}</td>
+                            <td>{{ f.children_count }}</td>
+                            <td>
+                                <input type="hidden" name="family_ids" value="{{ f.family_id }}">
+                                <input type="number" name="packs_{{ f.family_id }}" min="1" value="{{ f.suggested_packs }}" class="fam-distribute-packs">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+
+            <div class="wizard-save-draft-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn-primary">{{ icon('list', 14, 'white') }} Generate Printable List</button>
+            </div>
+        </form>
+
+    </main>
+</div>
+{% endblock %}

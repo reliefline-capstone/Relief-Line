@@ -146,17 +146,9 @@
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
         </div>
         <form method="POST" action="{{ url_for('pswdo.warehouse_inventory_update', inventory_id=item.inventory_id) }}">
-            <div class="rd-form-row">
-                <div>
-                    <label for="quantity-{{ item.inventory_id }}">Quantity to Add / Remove *</label>
-                    <input type="number" name="delta" id="quantity-{{ item.inventory_id }}" step="1" placeholder="e.g. 50 or -10" required
-                           data-current="{{ item.quantity_available }}" oninput="whPreviewTotal(this)">
-                </div>
-                <div>
-                    <label for="unit-{{ item.inventory_id }}">Unit</label>
-                    <input type="text" name="unit" id="unit-{{ item.inventory_id }}" value="{{ item.unit }}">
-                </div>
-            </div>
+            <label for="quantity-{{ item.inventory_id }}">Quantity to Add / Remove ({{ item.unit }}) *</label>
+            <input type="number" name="delta" id="quantity-{{ item.inventory_id }}" step="1" placeholder="e.g. 50 or -10" required
+                   data-current="{{ item.quantity_available }}" data-unit="{{ item.unit }}" oninput="whPreviewTotal(this)">
             <p class="rd-sub rd-stock-preview" id="preview-{{ item.inventory_id }}">Current: <strong>{{ "{:,}".format(item.quantity_available) }}</strong> {{ item.unit }} &rarr; New total: <strong>{{ "{:,}".format(item.quantity_available) }}</strong> {{ item.unit }}</p>
 
             <label for="min_stock_level-{{ item.inventory_id }}">Min Stock Level</label>
@@ -200,8 +192,7 @@ function whPreviewTotal(input) {
     var total = Math.max(current + delta, 0);
     var suffix = input.id.replace('quantity-', '');
     var preview = document.getElementById('preview-' + suffix);
-    var unitInput = document.getElementById('unit-' + suffix);
-    var unit = unitInput ? unitInput.value : '';
+    var unit = input.dataset.unit || '';
     if (preview) {
         preview.innerHTML = 'Current: <strong>' + current.toLocaleString() + '</strong> ' + unit +
             ' &rarr; New total: <strong>' + total.toLocaleString() + '</strong> ' + unit;

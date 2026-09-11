@@ -61,8 +61,18 @@ class BarangayStockLog(db.Model):
     distribution_id = db.Column(
         db.Integer, db.ForeignKey("distribution_records.distribution_id"), nullable=True
     )
+    # Which registered Family this distribution went to, when the barangay
+    # named one - set either from the per-report "Mark Received" checklist
+    # (app.routes.barangay.mark_family_received) or from an optional family
+    # picker on the generic "Record Distribution" form (inventory_record),
+    # which works even for a family with no report at all. NULL means an
+    # anonymous/bulk distribution, same as before this column existed.
+    family_id = db.Column(
+        db.Integer, db.ForeignKey("barangay_families.family_id", ondelete="SET NULL"), nullable=True
+    )
     updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
     barangay = db.relationship("Barangay", backref="stock_logs")
     updated_by_user = db.relationship("User", foreign_keys=[updated_by])
+    family = db.relationship("Family")

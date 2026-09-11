@@ -312,3 +312,9 @@
     .dashboard-main { margin: 0 !important; padding: 0 !important; }
     .rpt-document { box-shadow: none !important; padding: 0 !important; }
 }
+
+/* Distribution announcement print sheet (print_family_list.html) - a blank
+   tally box the barangay can check by hand during actual distribution, and
+   a bold total row. */
+.rpt-tally-box { text-align: center; font-size: 18px; color: #8a94a6; }
+.rpt-total-row td { border-top: 2px solid #d8dee9; background: #f4f4fb; }

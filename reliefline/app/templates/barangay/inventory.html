@@ -106,6 +106,17 @@
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
         <form method="POST" action="{{ url_for('barangay.inventory_record') }}" class="settings-form">
             <div class="form-row">
+                <label for="bi-d-family">Family (optional)</label>
+                <select name="family_id" id="bi-d-family">
+                    <option value="">No specific family / bulk distribution</option>
+                    {% for f in families %}
+                    <option value="{{ f.family_id }}" data-suggested="{{ f.suggested_packs }}">
+                        {{ f.family_name }}{% if f.purok %} · {{ f.purok }}{% endif %}{% if f.head_name %} ({{ f.head_name }}){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
                 <label for="bi-d-amount">Food packs handed out *</label>
                 <input type="number" name="amount" id="bi-d-amount" min="1" max="{{ on_hand }}" required>
                 <span class="form-hint">You have {{ "{:,}".format(on_hand) }} on hand.</span>
@@ -126,4 +137,17 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
+<script>
+(function () {
+    var familySelect = document.getElementById('bi-d-family');
+    var amountInput = document.getElementById('bi-d-amount');
+    if (familySelect && amountInput) {
+        familySelect.addEventListener('change', function () {
+            var opt = familySelect.options[familySelect.selectedIndex];
+            var suggested = opt ? opt.dataset.suggested : '';
+            if (suggested) amountInput.value = suggested;
+        });
+    }
+})();
+</script>
 {% endblock %}
