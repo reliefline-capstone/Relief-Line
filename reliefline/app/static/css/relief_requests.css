@@ -153,6 +153,18 @@
     margin-bottom: 14px;
 }
 
+/* The table itself is wider than a phone screen (see .rr-table-wrap .rr-table
+   td below), and overflow: hidden above simply clipped every column past
+   the first few with no way to reach them. Scope the swap to narrow
+   viewports only, so the rounded-corner clipping above is untouched on
+   desktop/tablet where the table already fits. */
+@media (max-width: 900px) {
+    .rr-table-panel, .rr-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
 .rr-table {
     width: 100%;
     border-collapse: collapse;
@@ -244,6 +256,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 5px;
     padding: 3px 10px;
     border-radius: 999px;
     font-size: 10.5px;
@@ -253,10 +266,15 @@
 }
 
 .badge-status-pending { background: #fef5e3; color: #d68910; }
-.badge-status-approved { background: #e8faf0; color: #1e8449; }
+.badge-status-approved,
+.badge-status-fulfilled { background: #e8faf0; color: #1e8449; }
 .badge-status-released { background: #ede7f6; color: #5347ce; }
 .badge-status-partially_approved { background: #efedfd; color: #5347ce; }
 .badge-status-rejected { background: #fdecea; color: #c0392b; }
+.badge-status-draft { background: #f0f2f6; color: #8a94a6; }
+.badge-status-verified { background: #f0eefc; color: #5347ce; }
+.badge-status-returned,
+.badge-status-declined { background: #fdecea; color: #c0392b; }
 
 .badge-priority {
     display: inline-flex;
@@ -341,6 +359,16 @@
     .filter-bar select[name="municipality"],
     .date-input-wrapper {
         flex: 1 1 100%;
+    }
+}
+
+/* Once the bar wraps (below), margin-left: auto strands this count alone
+   on whichever line still has room, right-aligned with a dead gap on its
+   left - drop it to its own full-width, left-aligned line instead. */
+@media (max-width: 768px) {
+    .rr-table-count {
+        margin-left: 0;
+        width: 100%;
     }
 }
 

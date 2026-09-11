@@ -80,6 +80,17 @@
     overflow: hidden;
 }
 
+/* overflow: hidden above clips the rounded corners but also - on a phone,
+   where .da-table is wider than the viewport - clipped away every column
+   that didn't fit, with no way to reach them. Let it scroll horizontally
+   below the width tables actually need to fit unclipped. */
+@media (max-width: 900px) {
+    .da-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
 .da-table { width: 100%; border-collapse: collapse; }
 
 .da-table thead th {
