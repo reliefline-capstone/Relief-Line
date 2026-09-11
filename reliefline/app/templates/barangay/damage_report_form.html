@@ -108,21 +108,72 @@
             <!-- Step 3: Barangay Data -->
             <section class="panel wizard-step" data-step="3" hidden>
                 <div class="panel-header"><h3>{{ icon('alert-triangle', 18, '#0f2547') }} Barangay Assessment</h3></div>
-                <p class="form-hint">Number of affected persons and damaged properties.</p>
-                <div class="form-row-2col">
+                <p class="form-hint">Check off which of your registered families were affected - families, individuals, PWD, and senior citizen counts are totalled automatically.</p>
+
+                {% if families %}
+                <div class="fam-checklist-toolbar">
+                    <label class="fam-checklist-selectall"><input type="checkbox" id="fam-select-all"> Select All ({{ families|length }})</label>
+                    <a href="{{ url_for('barangay.family_profiles') }}" target="_blank" class="form-hint">{{ icon('external-link', 12) }} Manage Family Profiles</a>
+                </div>
+                <div class="fam-checklist" id="fam-checklist">
+                    {% for f in families %}
+                    <label class="fam-checklist-row">
+                        <input type="checkbox" name="family_ids" class="fam-checkbox" value="{{ f.family_id }}"
+                               data-members="{{ f.member_count }}" data-pwd="{{ f.pwd_count }}"
+                               data-senior="{{ f.senior_count }}" data-children="{{ f.children_count }}"
+                               {{ 'checked' if f.family_id in selected_family_ids }}>
+                        <span class="fam-checklist-name">
+                            {{ f.family_name }}{% if f.purok %} <em>· {{ f.purok }}</em>{% endif %}
+                            {% if f.head_name %}<span class="wh-table-sub">{{ f.head_name }}</span>{% endif %}
+                        </span>
+                        <span class="fam-checklist-badges">
+                            <span class="fam-badge">{{ f.member_count }} member{{ 's' if f.member_count != 1 }}</span>
+                            {% if f.pwd_count %}<span class="fam-badge fam-badge-pwd">{{ f.pwd_count }} PWD</span>{% endif %}
+                            {% if f.senior_count %}<span class="fam-badge fam-badge-senior">{{ f.senior_count }} senior</span>{% endif %}
+                            {% if f.children_count %}<span class="fam-badge fam-badge-child">{{ f.children_count }} children</span>{% endif %}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <div class="fam-checklist-summary">
+                    <div><span>Families</span><strong id="fam-sum-families">0</strong></div>
+                    <div><span>Individuals</span><strong id="fam-sum-individuals">0</strong></div>
+                    <div><span>PWD</span><strong id="fam-sum-pwd">0</strong></div>
+                    <div><span>Senior</span><strong id="fam-sum-senior">0</strong></div>
+                    <div><span>Children</span><strong id="fam-sum-children">0</strong></div>
+                </div>
+                {% else %}
+                <div class="stock-warning" style="margin-bottom:12px;">
+                    {{ icon('info', 14) }}
+                    <span>No Family Profiles registered yet. <a href="{{ url_for('barangay.family_profiles') }}" target="_blank">Add them here</a> to use the checklist next time - for now, enter counts manually below.</span>
+                </div>
+                {% endif %}
+
+                {% set is_manual_default = manual_mode or not families %}
+                <label class="fam-manual-toggle">
+                    <input type="checkbox" id="fam-manual-toggle" {{ 'checked' if is_manual_default }}>
+                    Enter Affected Families / Individuals manually instead
+                </label>
+
+                <div class="form-row-2col" id="fam-manual-fields">
                     <div class="form-row">
-                        <label for="affected_families">Affected Families <span class="required-mark">*</span></label>
-                        <input type="number" id="affected_families" name="affected_families" min="0" required
+                        <label for="manual_affected_families">Affected Families</label>
+                        <input type="number" id="manual_affected_families" min="0" {{ 'readonly' if not is_manual_default }}
                                value="{{ report.affected_families if report else 0 }}">
                         <span class="form-hint">Total households with damage</span>
                     </div>
                     <div class="form-row">
-                        <label for="affected_individuals">Affected Individuals <span class="required-mark">*</span></label>
-                        <input type="number" id="affected_individuals" name="affected_individuals" min="0" required
+                        <label for="manual_affected_individuals">Affected Individuals</label>
+                        <input type="number" id="manual_affected_individuals" min="0" {{ 'readonly' if not is_manual_default }}
                                value="{{ report.affected_individuals if report else 0 }}">
                         <span class="form-hint" id="individuals-hint">Must be &ge; affected families</span>
                     </div>
                 </div>
+
+                <input type="hidden" name="entry_mode" id="entry_mode">
+                <input type="hidden" name="affected_families" id="affected_families">
+                <input type="hidden" name="affected_individuals" id="affected_individuals">
+
                 <div class="form-row-2col">
                     <div class="form-row">
                         <label for="totally_damaged_houses">Totally Damaged Houses <span class="required-mark">*</span></label>
@@ -143,6 +194,10 @@
                            value="{{ report.requested_food_packs if report and report.requested_food_packs else '' }}"
                            placeholder="Leave blank if unsure">
                     <span class="form-hint">If you have an estimate of how many food packs your barangay needs, enter it here.</span>
+                    <div class="fam-suggest-box" id="fam-suggest-box" hidden>
+                        <span id="fam-suggest-text"></span>
+                        <button type="button" id="fam-suggest-use">Use suggested</button>
+                    </div>
                 </div>
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
@@ -258,11 +313,14 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
             return false;
         }
         if (current === 3) {
+            recomputeFamilyCounts();
             var families = parseInt(document.getElementById('affected_families').value || '0', 10);
             var individuals = parseInt(document.getElementById('affected_individuals').value || '0', 10);
             if (individuals < families) {
-                document.getElementById('individuals-hint').classList.add('hint-error');
-                document.getElementById('affected_individuals').reportValidity();
+                var hint = document.getElementById('individuals-hint');
+                hint.classList.add('hint-error');
+                var manualIndividuals = document.getElementById('manual_affected_individuals');
+                if (manualIndividuals) manualIndividuals.focus();
                 return false;
             }
             document.getElementById('individuals-hint').classList.remove('hint-error');
@@ -307,20 +365,107 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
         });
     }
 
-    var familiesInput = document.getElementById('affected_families');
-    var individualsInput = document.getElementById('affected_individuals');
-    if (familiesInput && individualsInput) {
-        individualsInput.addEventListener('input', function () {
-            var hint = document.getElementById('individuals-hint');
-            if (parseInt(individualsInput.value || '0', 10) < parseInt(familiesInput.value || '0', 10)) {
-                hint.classList.add('hint-error');
-                hint.textContent = 'Must be ≥ affected families';
+    // --- Step 3: Family checklist / manual entry -----------------------
+    // Drives the hidden affected_families/affected_individuals fields
+    // (the ones actually submitted) from either the checked Family
+    // Profiles or the manual fallback inputs - see
+    // app.routes.barangay._apply_affected_families for the server side.
+    var famCheckboxes = Array.prototype.slice.call(document.querySelectorAll('.fam-checkbox'));
+    var manualToggle = document.getElementById('fam-manual-toggle');
+    var manualFamiliesInput = document.getElementById('manual_affected_families');
+    var manualIndividualsInput = document.getElementById('manual_affected_individuals');
+    var entryModeField = document.getElementById('entry_mode');
+    var familiesField = document.getElementById('affected_families');
+    var individualsField = document.getElementById('affected_individuals');
+    var selectAll = document.getElementById('fam-select-all');
+    var suggestBox = document.getElementById('fam-suggest-box');
+    var suggestText = document.getElementById('fam-suggest-text');
+    var suggestUseBtn = document.getElementById('fam-suggest-use');
+    var requestedInput = document.getElementById('requested_food_packs');
+
+    function setText(id, val) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = val;
+    }
+
+    function updateIndividualsHint(families, individuals) {
+        var hint = document.getElementById('individuals-hint');
+        if (!hint) return;
+        hint.classList.toggle('hint-error', individuals < families);
+    }
+
+    function recomputeFamilyCounts() {
+        var isManual = !!(manualToggle && manualToggle.checked);
+        if (entryModeField) entryModeField.value = isManual ? 'manual' : 'checklist';
+        // The Affected Families/Individuals boxes stay visible either way -
+        // in checklist mode they're read-only and mirror the checked-off
+        // totals live; switching to manual mode unlocks them for typing.
+        if (manualFamiliesInput) manualFamiliesInput.readOnly = !isManual;
+        if (manualIndividualsInput) manualIndividualsInput.readOnly = !isManual;
+
+        if (isManual) {
+            var mf = num('manual_affected_families');
+            var mi = num('manual_affected_individuals');
+            if (familiesField) familiesField.value = mf;
+            if (individualsField) individualsField.value = mi;
+            if (suggestBox) suggestBox.hidden = true;
+            updateIndividualsHint(mf, mi);
+            return;
+        }
+
+        var famCount = 0, indiv = 0, pwd = 0, senior = 0, children = 0;
+        famCheckboxes.forEach(function (cb) {
+            if (!cb.checked) return;
+            famCount++;
+            indiv += parseInt(cb.dataset.members || '0', 10) || 0;
+            pwd += parseInt(cb.dataset.pwd || '0', 10) || 0;
+            senior += parseInt(cb.dataset.senior || '0', 10) || 0;
+            children += parseInt(cb.dataset.children || '0', 10) || 0;
+        });
+
+        if (familiesField) familiesField.value = famCount;
+        if (individualsField) individualsField.value = indiv;
+        if (manualFamiliesInput) manualFamiliesInput.value = famCount;
+        if (manualIndividualsInput) manualIndividualsInput.value = indiv;
+        setText('fam-sum-families', famCount);
+        setText('fam-sum-individuals', indiv);
+        setText('fam-sum-pwd', pwd);
+        setText('fam-sum-senior', senior);
+        setText('fam-sum-children', children);
+        updateIndividualsHint(famCount, indiv);
+
+        if (selectAll) selectAll.checked = famCheckboxes.length > 0 && famCheckboxes.every(function (cb) { return cb.checked; });
+
+        if (suggestBox && suggestText && suggestUseBtn) {
+            if (famCount > 0) {
+                var suggested = famCount + pwd + senior;
+                suggestBox.hidden = false;
+                suggestText.textContent = 'Suggested: ' + suggested + ' food pack' + (suggested === 1 ? '' : 's') +
+                    ' (' + famCount + ' famil' + (famCount === 1 ? 'y' : 'ies') + ' + ' + pwd + ' PWD + ' + senior + ' senior)';
+                suggestUseBtn.dataset.value = suggested;
             } else {
-                hint.classList.remove('hint-error');
-                hint.textContent = 'Must be ≥ affected families';
+                suggestBox.hidden = true;
             }
+        }
+    }
+
+    famCheckboxes.forEach(function (cb) { cb.addEventListener('change', recomputeFamilyCounts); });
+    if (manualFamiliesInput) manualFamiliesInput.addEventListener('input', recomputeFamilyCounts);
+    if (manualIndividualsInput) manualIndividualsInput.addEventListener('input', recomputeFamilyCounts);
+    if (manualToggle) manualToggle.addEventListener('change', recomputeFamilyCounts);
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            famCheckboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+            recomputeFamilyCounts();
         });
     }
+    if (suggestUseBtn) {
+        suggestUseBtn.addEventListener('click', function () {
+            if (requestedInput) requestedInput.value = suggestUseBtn.dataset.value || '0';
+        });
+    }
+
+    recomputeFamilyCounts();
 
     showStep(1);
 })();

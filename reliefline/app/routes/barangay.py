@@ -18,6 +18,7 @@ from app.models.office import Office
 from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.barangay_report import BarangayReport
+from app.models.family import Family, ReportAffectedFamily
 from app.models.barangay_inventory import BarangayInventory, BarangayStockLog
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
@@ -469,11 +470,32 @@ def _report_form_context(barangay, report=None):
     active_events = DisasterEvent.query.filter_by(status="active").order_by(
         DisasterEvent.start_date.desc()
     ).all()
+    # Families available for the checklist. A report being edited may cite
+    # a family that's since been archived - keep it selectable/visible on
+    # THIS report's form so its checked state (and counts) aren't silently
+    # dropped, even though it no longer shows up when starting a new report.
+    families_q = Family.query.filter_by(barangay_id=barangay.barangay_id, is_active=True)
+    if report:
+        cited_ids = [rf.family_id for rf in report.affected_families_list if rf.family_id]
+        if cited_ids:
+            families_q = Family.query.filter(
+                Family.barangay_id == barangay.barangay_id,
+                db.or_(Family.is_active.is_(True), Family.family_id.in_(cited_ids)),
+            )
+    families = families_q.order_by(Family.purok, Family.family_name).all()
+    selected_family_ids = {rf.family_id for rf in report.affected_families_list} if report else set()
+    # A report filed before this feature (or saved via the manual fallback)
+    # has affected_families/individuals but no checklist rows - default it
+    # back into manual mode so its existing numbers aren't blanked out.
+    manual_mode = bool(report and not report.affected_families_list and (report.affected_families or report.affected_individuals))
     return {
         "barangay": barangay,
         "report": report,
         "active_events": active_events,
         "today": ph_today(),
+        "families": families,
+        "selected_family_ids": selected_family_ids,
+        "manual_mode": manual_mode,
     }
 
 
@@ -517,6 +539,59 @@ def delete_damage_report(report_id):
     return redirect(url_for("barangay.damage_report"))
 
 
+def _apply_affected_families(report):
+    """Fills affected_families/affected_individuals (+ the PWD/senior/
+    children breakdown) either from the Family Profiles checklist (the
+    normal path - see app.models.family.Family) or, when the barangay has
+    no registered profiles yet (or explicitly opts out via the "enter
+    manually" toggle - see damage_report_form.html), from the legacy
+    hand-typed number fields.
+
+    entry_mode="checklist" replaces report.affected_families_list wholesale
+    with a fresh snapshot of the checked families (see
+    app.models.family.ReportAffectedFamily) so editing a family profile
+    later never rewrites this report's already-submitted numbers.
+    """
+    entry_mode = request.form.get("entry_mode", "checklist")
+
+    if entry_mode == "manual":
+        report.affected_families_list = []
+        report.affected_families = request.form.get("affected_families", type=int) or 0
+        report.affected_individuals = request.form.get("affected_individuals", type=int) or 0
+        report.affected_pwd = 0
+        report.affected_seniors = 0
+        report.affected_children = 0
+        return
+
+    family_ids = request.form.getlist("family_ids", type=int)
+    families = []
+    if family_ids:
+        # no_autoflush - report may be a brand-new, not-yet-fully-populated
+        # BarangayReport still pending in the session (required columns like
+        # submitted_by_name are filled in later in _apply_report_form); this
+        # query must not trigger an autoflush that tries to INSERT it early.
+        with db.session.no_autoflush:
+            families = Family.query.filter(
+                Family.barangay_id == report.barangay_id,
+                Family.family_id.in_(family_ids),
+                Family.is_active.is_(True),
+            ).all()
+
+    report.affected_families_list = [
+        ReportAffectedFamily(
+            family_id=f.family_id, family_name=f.family_name, head_name=f.head_name,
+            member_count=f.member_count, pwd_count=f.pwd_count,
+            senior_count=f.senior_count, children_count=f.children_count,
+        )
+        for f in families
+    ]
+    report.affected_families = len(families)
+    report.affected_individuals = sum(f.member_count for f in families)
+    report.affected_pwd = sum(f.pwd_count for f in families)
+    report.affected_seniors = sum(f.senior_count for f in families)
+    report.affected_children = sum(f.children_count for f in families)
+
+
 def _apply_report_form(report):
     incident_date = request.form.get("incident_date", "")
     if incident_date:
@@ -536,8 +611,7 @@ def _apply_report_form(report):
     report.roofs_damaged = 0
     report.wind_signal = None
 
-    report.affected_families = request.form.get("affected_families", type=int) or 0
-    report.affected_individuals = request.form.get("affected_individuals", type=int) or 0
+    _apply_affected_families(report)
     report.totally_damaged_houses = request.form.get("totally_damaged_houses", type=int) or 0
     report.partially_damaged_houses = request.form.get("partially_damaged_houses", type=int) or 0
 
@@ -654,6 +728,122 @@ def submit_damage_report():
 
     flash(f"{report.ref} submitted to {barangay.city_municipality} MSWDO/CSWDO for review.", "success")
     return redirect(url_for("barangay.damage_report"))
+
+
+# ---------------------------------------------------------------------------
+# Family Profiles - the barangay's own resident registry (panelist-requested
+# "profiling" addition). One row per household: member/PWD/senior/children
+# counts. This registry is the checklist a Barangay Report is now built
+# from - see app.models.family.Family / ReportAffectedFamily and
+# _apply_affected_families above.
+# ---------------------------------------------------------------------------
+
+def _get_own_family_or_404(family_id):
+    barangay = _own_barangay_or_404()
+    family = Family.query.filter_by(family_id=family_id, barangay_id=barangay.barangay_id).first()
+    if not family:
+        abort(404)
+    return family
+
+
+def _apply_family_form(family):
+    family.family_name = request.form.get("family_name", "").strip()
+    family.head_name = request.form.get("head_name", "").strip() or None
+    family.purok = request.form.get("purok", "").strip() or None
+    family.contact_number = request.form.get("contact_number", "").strip() or None
+    family.member_count = max(1, request.form.get("member_count", type=int) or 1)
+    family.pwd_count = max(0, request.form.get("pwd_count", type=int) or 0)
+    family.senior_count = max(0, request.form.get("senior_count", type=int) or 0)
+    family.children_count = max(0, request.form.get("children_count", type=int) or 0)
+
+
+@barangay_bp.route("/family-profiles")
+@login_required
+@role_required("barangay_user")
+def family_profiles():
+    barangay = _own_barangay_or_404()
+    search_query = request.args.get("q", "").strip().lower()
+    show_archived = request.args.get("archived") == "1"
+
+    families = Family.query.filter_by(barangay_id=barangay.barangay_id, is_active=(not show_archived))
+    families = families.order_by(Family.purok, Family.family_name).all()
+    if search_query:
+        families = [
+            f for f in families
+            if search_query in f.family_name.lower() or (f.purok and search_query in f.purok.lower())
+        ]
+
+    active_count = Family.query.filter_by(barangay_id=barangay.barangay_id, is_active=True).count()
+    return render_template(
+        "barangay/family_profiles.html",
+        barangay=barangay, families=families, search_query=search_query,
+        show_archived=show_archived, active_count=active_count,
+        total_individuals=sum(f.member_count for f in families) if not show_archived else None,
+        total_pwd=sum(f.pwd_count for f in families) if not show_archived else None,
+        total_seniors=sum(f.senior_count for f in families) if not show_archived else None,
+        total_children=sum(f.children_count for f in families) if not show_archived else None,
+    )
+
+
+@barangay_bp.route("/family-profiles/add", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def family_profile_add():
+    barangay = _own_barangay_or_404()
+    family = Family(barangay_id=barangay.barangay_id)
+    _apply_family_form(family)
+    if not family.family_name:
+        flash("Family / household head name is required.", "error")
+        return redirect(url_for("barangay.family_profiles"))
+    db.session.add(family)
+    db.session.commit()
+    flash(f"{family.family_name} added to your Family Profiles.", "success")
+    return redirect(url_for("barangay.family_profiles"))
+
+
+@barangay_bp.route("/family-profiles/<int:family_id>/edit", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def family_profile_edit(family_id):
+    family = _get_own_family_or_404(family_id)
+    _apply_family_form(family)
+    if not family.family_name:
+        flash("Family / household head name is required.", "error")
+        return redirect(url_for("barangay.family_profiles"))
+    family.updated_at = ph_now()
+    db.session.commit()
+    flash(f"{family.family_name} updated.", "success")
+    return redirect(url_for("barangay.family_profiles"))
+
+
+@barangay_bp.route("/family-profiles/<int:family_id>/archive", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def family_profile_archive(family_id):
+    family = _get_own_family_or_404(family_id)
+    family.is_active = not family.is_active
+    db.session.commit()
+    flash(f"{family.family_name} {'restored' if family.is_active else 'archived'}.", "success")
+    return redirect(url_for("barangay.family_profiles", archived=request.args.get("archived")))
+
+
+@barangay_bp.route("/family-profiles/<int:family_id>/delete", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def family_profile_delete(family_id):
+    family = _get_own_family_or_404(family_id)
+    # A family already cited on a report can't be removed outright - the
+    # report's snapshot (ReportAffectedFamily) survives either way, but
+    # deleting the profile here would strand its "view profile" link.
+    # Archiving is the safe removal path once a family has history.
+    if ReportAffectedFamily.query.filter_by(family_id=family.family_id).first():
+        flash(f"{family.family_name} has been cited on a report and can't be deleted - archive it instead.", "error")
+        return redirect(url_for("barangay.family_profiles"))
+    name = family.family_name
+    db.session.delete(family)
+    db.session.commit()
+    flash(f"{name} deleted.", "success")
+    return redirect(url_for("barangay.family_profiles"))
 
 
 # ---------------------------------------------------------------------------

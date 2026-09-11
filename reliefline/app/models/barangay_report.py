@@ -75,6 +75,14 @@ class BarangayReport(db.Model):
     # Damage Data step
     affected_families = db.Column(db.Integer, default=0)
     affected_individuals = db.Column(db.Integer, default=0)
+    # Breakdown of affected_individuals, summed from the checked families on
+    # the Family Profiles checklist (see app.models.family.Family /
+    # ReportAffectedFamily and app.routes.barangay._apply_report_form). 0 on
+    # reports filed manually (no registered family profiles yet) or filed
+    # before this feature existed.
+    affected_pwd = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+    affected_seniors = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+    affected_children = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
     totally_damaged_houses = db.Column(db.Integer, default=0)
     partially_damaged_houses = db.Column(db.Integer, default=0)
     # No longer collected by the form; left inert on new reports.
@@ -125,3 +133,13 @@ class BarangayReport(db.Model):
     def ref(self):
         year = (self.submitted_at or self.created_at).year
         return f"RR-{year}-{self.report_id:03d}"
+
+    @property
+    def suggested_food_packs(self):
+        """Food-pack suggestion: 1 pack for each affected family + 1 per
+        affected PWD member + 1 per affected senior member (panelist-
+        requested formula). Only meaningful when the checklist was used -
+        falls back to affected_families alone (no PWD/senior data) on
+        manually-entered reports.
+        """
+        return (self.affected_families or 0) + (self.affected_pwd or 0) + (self.affected_seniors or 0)

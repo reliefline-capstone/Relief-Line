@@ -32,23 +32,11 @@
             </div>
         </div>
 
-        <section class="stat-cards stat-cards-4">
-            <div class="stat-card">
-                <div class="stat-icon blue">{{ icon('trending-up', 18, '#3867d6') }}</div>
-                <span class="stat-value">{{ "{:,}".format(predicted_demand) }}</span>
-                <span class="stat-label">Predicted Municipal Demand</span>
-                <span class="stat-sub">Σ of barangay model outputs</span>
-            </div>
+        <section class="stat-cards stat-cards-2">
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('building', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ "{:,}".format(on_hand) }}</span>
                 <span class="stat-label">Warehouse On Hand</span>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon {{ 'red' if shortage else 'purple' }}">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
-                <span class="stat-value">{{ "{:,}".format(shortage) }}</span>
-                <span class="stat-label">Shortage</span>
-                <span class="stat-sub">demand − on hand</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('clock', 18, '#d68910') }}</div>
@@ -64,22 +52,6 @@
         </div>
 
         {% if tab == 'create' %}
-        <div class="rr-panel rr-panel-flush">
-            <div class="rr-panel-header"><div><h3>Projected demand - barangay breakdown</h3><p>Municipal demand = Σ barangay model estimates. PSWDO sees the same breakdown.</p></div></div>
-            <table class="rr-table">
-                <thead><tr><th>Barangay</th><th>Model Estimate (demand)</th></tr></thead>
-                <tbody>
-                    {% for r in breakdown %}
-                    <tr>
-                        <td>{{ r.barangay.barangay_name }}</td>
-                        <td><strong>{{ "{:,}".format(r.demand) }}</strong></td>
-                    </tr>
-                    {% endfor %}
-                    <tr><td><strong>TOTAL</strong></td><td><strong>{{ "{:,}".format(predicted_demand) }}</strong></td></tr>
-                </tbody>
-            </table>
-        </div>
-
         <form method="POST" action="{{ url_for('cswdo.relief_request_save_draft') }}" enctype="multipart/form-data" class="rr-panel">
             {% if editing_draft %}<input type="hidden" name="draft_id" value="{{ editing_draft.batch_id }}">{% endif %}
             <div class="rr-panel-header"><div><h3>Request Details</h3></div></div>
@@ -87,7 +59,7 @@
                 <div class="rr-field">
                     <label>Food Packs to Request from PSWDO <span class="required">*</span></label>
                     <input type="number" name="food_packs" min="1" value="{{ food_packs_value }}" required>
-                    <span class="form-hint" style="display:block; margin-top:6px;">Suggested = shortage ({{ "{:,}".format(shortage) }}). Warehouse holds {{ "{:,}".format(on_hand) }}.</span>
+                    <span class="form-hint" style="display:block; margin-top:6px;">Warehouse holds {{ "{:,}".format(on_hand) }}.</span>
                 </div>
             </div>
             <label style="display:block; font-size:12.5px; font-weight:600; margin:4px 0 8px;">Priority <span class="required">*</span></label>
@@ -101,7 +73,7 @@
             </div>
             <div class="rr-field" style="margin-top:14px;">
                 <label>Reason <span class="required">*</span></label>
-                <textarea name="reason" rows="3" required placeholder="e.g. Barangay relief requests this week have drawn the warehouse down to {{ on_hand }} packs against {{ predicted_demand }} projected demand.">{{ reason_value }}</textarea>
+                <textarea name="reason" rows="3" required placeholder="e.g. Barangay relief requests this week have drawn the warehouse down to {{ on_hand }} packs.">{{ reason_value }}</textarea>
             </div>
             <div class="rr-field" style="margin-top:14px;">
                 <label>Remarks (optional)</label>

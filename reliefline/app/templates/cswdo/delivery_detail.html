@@ -71,9 +71,8 @@
                     <div><span>Scheduled</span><strong>{{ rec.distribution_date.strftime('%b %d, %Y') }}</strong></div>
                     <div><span>Warehouse Before This Release</span><strong>{{ "{:,}".format(stock_before_release) }}</strong></div>
                     <div><span>Warehouse After This Release</span><strong>{{ "{:,}".format(stock_after_release) }} <span class="rd-sub">now: {{ "{:,}".format(on_hand) }}</span></strong></div>
-                    {% if alloc and alloc.source == 'cswdo_direct' %}
-                    <div><span>Model Estimate</span><strong>~{{ "{:,}".format(alloc.predicted_quantity or 0) }} packs</strong> <span class="rd-sub">decision support</span></div>
-                    {% if alloc.remarks %}<div><span>Justification</span><strong>{{ alloc.remarks }}</strong></div>{% endif %}
+                    {% if alloc and alloc.source == 'cswdo_direct' and alloc.remarks %}
+                    <div><span>Justification</span><strong>{{ alloc.remarks }}</strong></div>
                     {% endif %}
                 </div>
             </section>

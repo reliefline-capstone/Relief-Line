@@ -474,3 +474,10 @@
     .rr-review-body { gap: 16px; }
     .rr-review-decision .rd-amount-tile { grid-template-columns: 1fr; }
 }
+
+/* Affected-families chips in the report review modal - mirrors
+   .fam-badge in barangay.css (Family Profiles checklist). */
+.fam-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    background: #eef1f6; color: #5a6472; white-space: nowrap;
+}

@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Family Profiles - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}?v={{ asset_version('css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v={{ asset_version('css/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'family_profiles' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <section class="page-header">
+            <div>
+                <h2>Family Profiles</h2>
+                <p>Brgy. {{ barangay.barangay_name }} · household registry used as the checklist on your Barangay Report</p>
+            </div>
+            <div class="wh-header-actions">
+                <button type="button" class="btn-add-warehouse" data-open-modal="add-family-modal">{{ icon('plus', 14, 'white') }} Add Family</button>
+            </div>
+        </section>
+
+        {% if not show_archived %}
+        <section class="stat-cards stat-cards-4">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('users', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ active_count }}</span>
+                <span class="stat-label">Registered Families</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('user', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ total_individuals or 0 }}</span>
+                <span class="stat-label">Total Individuals</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('shield', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ total_pwd or 0 }}</span>
+                <span class="stat-label">PWD Members</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('clock', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ total_seniors or 0 }}</span>
+                <span class="stat-label">Senior Citizens</span>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="page-header" style="margin-bottom: 12px;">
+            <form method="GET" class="wh-search-form">
+                <div class="wh-search-wrapper">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search family name or purok...">
+                </div>
+                <input type="hidden" name="archived" value="{{ '1' if show_archived else '0' }}">
+            </form>
+            <div class="notif-filter-tabs" style="margin:0;">
+                <a href="{{ url_for('barangay.family_profiles', q=search_query) }}" class="notif-filter-tab {{ 'active' if not show_archived }}">{{ icon('users', 14) }} Active</a>
+                <a href="{{ url_for('barangay.family_profiles', q=search_query, archived=1) }}" class="notif-filter-tab {{ 'active' if show_archived }}">{{ icon('file-text', 14) }} Archived</a>
+            </div>
+        </section>
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table">
+                <thead>
+                    <tr>
+                        <th>FAMILY / HOUSEHOLD HEAD</th>
+                        <th>PUROK</th>
+                        <th>MEMBERS</th>
+                        <th>PWD</th>
+                        <th>SENIOR</th>
+                        <th>CHILDREN</th>
+                        <th>CONTACT</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in families %}
+                    <tr>
+                        <td><strong>{{ f.family_name }}</strong>{% if f.head_name %}<span class="wh-table-sub">{{ f.head_name }}</span>{% endif %}</td>
+                        <td>{{ f.purok or '-' }}</td>
+                        <td>{{ f.member_count }}</td>
+                        <td>{{ f.pwd_count }}</td>
+                        <td>{{ f.senior_count }}</td>
+                        <td>{{ f.children_count }}</td>
+                        <td>{{ f.contact_number or '-' }}</td>
+                        <td style="display:flex; gap:6px;">
+                            {% if not show_archived %}
+                            <button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-family-modal-{{ f.family_id }}">Edit</button>
+                            {% endif %}
+                            <form method="POST" action="{{ url_for('barangay.family_profile_archive', family_id=f.family_id, archived='1' if show_archived else none) }}" style="display:inline;">
+                                <button type="submit" class="admin-btn" style="border:1px solid #d8dee9; background:white;">{{ 'Restore' if show_archived else 'Archive' }}</button>
+                            </form>
+                            {% if show_archived %}
+                            <form method="POST" action="{{ url_for('barangay.family_profile_delete', family_id=f.family_id) }}" data-confirm="Delete {{ f.family_name }} permanently? This can't be undone.">
+                                <button type="submit" class="admin-btn" style="border:1px solid #e0b4b4; background:white; color:#c0392b;">Delete</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="empty-note" style="text-align:center; padding:30px;">
+                        {% if search_query %}No families match your search.
+                        {% elif show_archived %}No archived families.
+                        {% else %}No families registered yet. Add your barangay's households here - they'll show up as a checklist when you file a Barangay Report.{% endif %}
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+
+<!-- Add Family modal -->
+<div class="rd-modal-overlay" id="add-family-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('plus', 18, '#0f2547') }} Add Family</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('barangay.family_profile_add') }}" class="settings-form">
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-fam-name">Family Name *</label>
+                    <input type="text" name="family_name" id="add-fam-name" placeholder="e.g. Dela Cruz Family" required>
+                </div>
+                <div>
+                    <label for="add-fam-head">Household Head Name</label>
+                    <input type="text" name="head_name" id="add-fam-head" placeholder="e.g. Josefa">
+                </div>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-fam-purok">Purok / Sitio</label>
+                    <input type="text" name="purok" id="add-fam-purok">
+                </div>
+                <div>
+                    <label for="add-fam-contact">Contact Number</label>
+                    <input type="text" name="contact_number" id="add-fam-contact" placeholder="09XXXXXXXXX">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="add-fam-members">Total Members *</label>
+                <input type="number" name="member_count" id="add-fam-members" min="1" value="1" required>
+            </div>
+            <div class="rd-form-row" style="grid-template-columns: repeat(3, 1fr);">
+                <div>
+                    <label for="add-fam-pwd">PWD Members</label>
+                    <input type="number" name="pwd_count" id="add-fam-pwd" min="0" value="0">
+                </div>
+                <div>
+                    <label for="add-fam-senior">Senior Citizens</label>
+                    <input type="number" name="senior_count" id="add-fam-senior" min="0" value="0">
+                </div>
+                <div>
+                    <label for="add-fam-children">Children</label>
+                    <input type="number" name="children_count" id="add-fam-children" min="0" value="0">
+                </div>
+            </div>
+            <span class="form-hint">PWD / senior / children are sub-counts of Total Members - a family with 10 members, 2 seniors, and 1 PWD is fine as-is.</span>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Add Family</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Family modals (one per row) -->
+{% for f in families %}
+{% if not show_archived %}
+<div class="rd-modal-overlay" id="edit-family-modal-{{ f.family_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Edit: {{ f.family_name }}</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('barangay.family_profile_edit', family_id=f.family_id) }}" class="settings-form">
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-fam-name-{{ f.family_id }}">Family Name *</label>
+                    <input type="text" name="family_name" id="edit-fam-name-{{ f.family_id }}" value="{{ f.family_name }}" required>
+                </div>
+                <div>
+                    <label for="edit-fam-head-{{ f.family_id }}">Household Head Name</label>
+                    <input type="text" name="head_name" id="edit-fam-head-{{ f.family_id }}" value="{{ f.head_name or '' }}">
+                </div>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-fam-purok-{{ f.family_id }}">Purok / Sitio</label>
+                    <input type="text" name="purok" id="edit-fam-purok-{{ f.family_id }}" value="{{ f.purok or '' }}">
+                </div>
+                <div>
+                    <label for="edit-fam-contact-{{ f.family_id }}">Contact Number</label>
+                    <input type="text" name="contact_number" id="edit-fam-contact-{{ f.family_id }}" value="{{ f.contact_number or '' }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="edit-fam-members-{{ f.family_id }}">Total Members *</label>
+                <input type="number" name="member_count" id="edit-fam-members-{{ f.family_id }}" min="1" value="{{ f.member_count }}" required>
+            </div>
+            <div class="rd-form-row" style="grid-template-columns: repeat(3, 1fr);">
+                <div>
+                    <label for="edit-fam-pwd-{{ f.family_id }}">PWD Members</label>
+                    <input type="number" name="pwd_count" id="edit-fam-pwd-{{ f.family_id }}" min="0" value="{{ f.pwd_count }}">
+                </div>
+                <div>
+                    <label for="edit-fam-senior-{{ f.family_id }}">Senior Citizens</label>
+                    <input type="number" name="senior_count" id="edit-fam-senior-{{ f.family_id }}" min="0" value="{{ f.senior_count }}">
+                </div>
+                <div>
+                    <label for="edit-fam-children-{{ f.family_id }}">Children</label>
+                    <input type="number" name="children_count" id="edit-fam-children-{{ f.family_id }}" min="0" value="{{ f.children_count }}">
+                </div>
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Save Changes</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
+<script>
+document.querySelectorAll('form[data-confirm]').forEach(function (f) {
+    f.addEventListener('submit', function (e) {
+        if (!confirm(f.dataset.confirm)) e.preventDefault();
+    });
+});
+</script>
+{% endblock %}

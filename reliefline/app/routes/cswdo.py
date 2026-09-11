@@ -1191,27 +1191,6 @@ def _save_batch_uploads(batch):
         batch.other_files = ot
 
 
-def municipal_demand_breakdown(office, event):
-    """Per-barangay predicted food-pack demand for this office's LGU, so the
-    municipal figure PSWDO sees is exactly the sum of the barangay-level model
-    outputs (aggregation traceability). Uses the barangay's real active-event
-    Relief Request where one exists, else the model estimate."""
-    lgu = office.area_covered if office else None
-    if not lgu:
-        return [], 0
-    barangays = Barangay.query.filter_by(city_municipality=lgu).order_by(Barangay.barangay_name).all()
-    rows = []
-    for b in barangays:
-        # Projected demand is the model estimate per barangay, aggregated -
-        # barangays no longer state a figure of their own (manuscript: "the
-        # system aggregates barangay-level predictions to derive total
-        # projected food pack demand per area").
-        model = ml_predict.predict_quantity(b) or 0
-        rows.append({"barangay": b, "model": model, "requested": None,
-                     "demand": model, "source": "model"})
-    return rows, sum(r["demand"] for r in rows)
-
-
 @cswdo_bp.route("/relief-requests")
 @login_required
 @role_required("cswdo_admin", "system_admin")
@@ -1233,13 +1212,11 @@ def relief_requests():
 
     fp = _own_food_pack_inventory()
     on_hand = fp.quantity_available if fp else 0
-    breakdown, predicted_demand = municipal_demand_breakdown(office, primary_event)
-    shortage = max(predicted_demand - on_hand, 0)
 
     ctx = {
         "tab": tab, "lgu": lgu, "office": office, "primary_event": primary_event,
         "status_labels": RR_STATUS_LABELS, "priority_labels": RR_PRIORITY_LABELS,
-        "on_hand": on_hand, "predicted_demand": predicted_demand, "shortage": shortage,
+        "on_hand": on_hand,
         "draft_count": len(drafts),
         "pending_count": len([b for b in submitted if b.status == "pending"]),
         "approved_count": len([b for b in submitted if b.status in ("approved", "partially_approved")]),
@@ -1253,9 +1230,8 @@ def relief_requests():
             abort(404)
         ctx.update({
             "editing_draft": editing,
-            "breakdown": breakdown,
-            "food_packs_value": (editing.requested_food_packs if editing else (shortage or predicted_demand)),
-            "priority_value": (editing.priority if editing else ("high" if shortage > on_hand else "medium")),
+            "food_packs_value": editing.requested_food_packs if editing else "",
+            "priority_value": editing.priority if editing else "medium",
             "reason_value": editing.reason if editing else "",
             "remarks_value": editing.remarks if editing else "",
             "today": ph_today(),

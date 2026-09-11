@@ -1783,19 +1783,20 @@ html.sidebar-collapsed .dashboard-main {
 
 .page-tab.active .page-tab-badge { background: #5347ce; color: white; }
 
+.stat-cards-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .stat-cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stat-cards-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .stat-cards-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
 /* These come after the mobile .stat-cards rules above (same specificity,
-   later in the cascade wins), so without their own breakpoints a 3/4/5-up
+   later in the cascade wins), so without their own breakpoints a 2/3/4/5-up
    stat row - e.g. the barangay dashboard - stayed jammed into that many
    columns on a phone regardless of viewport. */
 @media (max-width: 860px) {
-    .stat-cards-3, .stat-cards-4, .stat-cards-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat-cards-2, .stat-cards-3, .stat-cards-4, .stat-cards-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 460px) {
-    .stat-cards-3, .stat-cards-4, .stat-cards-5 { grid-template-columns: 1fr; }
+    .stat-cards-2, .stat-cards-3, .stat-cards-4, .stat-cards-5 { grid-template-columns: 1fr; }
 }
 
 /* ============================================

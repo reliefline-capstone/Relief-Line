@@ -138,7 +138,6 @@
                     </div>
                     <div class="request-detail-grid">
                         <span>Barangay</span><strong>{{ row.barangay.barangay_name }}</strong>
-                        <span>Model est.</span><strong>~{{ "{:,}".format(row.model_estimate or 0) }} packs</strong>
                         <span>Date</span><strong>{{ (row.report.submitted_at or row.report.created_at).strftime('%B %d') }}</strong>
                         {% if row.record %}
                         <span>Allocated</span><strong>{{ "{:,}".format(row.record.allocated_quantity or 0) }} packs</strong>

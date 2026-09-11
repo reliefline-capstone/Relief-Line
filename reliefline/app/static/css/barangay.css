@@ -455,3 +455,82 @@
 @media (max-width: 480px) {
     .drv-side .info-grid { grid-template-columns: 1fr; }
 }
+
+/* Family checklist - Barangay Report Step 3, checking off registered
+   Family Profiles instead of hand-typing affected families/individuals.
+   See app/templates/barangay/damage_report_form.html. */
+.fam-checklist-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 4px 0 8px;
+}
+.fam-checklist-selectall { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #1a1a1a; cursor: pointer; }
+.fam-checklist-toolbar a { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
+
+.fam-checklist {
+    max-height: 320px; overflow-y: auto;
+    border: 1px solid #e5e8ee; border-radius: 10px;
+    margin-bottom: 12px;
+}
+.fam-checklist-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #eef0f5;
+    cursor: pointer;
+}
+.fam-checklist-row:last-child { border-bottom: none; }
+.fam-checklist-row:hover { background: #f8f9fc; }
+.fam-checkbox { width: 16px; height: 16px; flex-shrink: 0; }
+.fam-checklist-name { flex: 1; font-size: 13.5px; color: #1a1a1a; font-weight: 600; }
+.fam-checklist-name em { font-style: normal; font-weight: 400; color: #8a94a6; }
+.fam-checklist-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+.fam-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    background: #eef1f6; color: #5a6472; white-space: nowrap;
+}
+.fam-badge-pwd { background: #eaf0fd; color: #2c5aa0; }
+.fam-badge-senior { background: #fdf1e0; color: #b7791f; }
+.fam-badge-child { background: #eafaf1; color: #1e8449; }
+
+.fam-checklist-summary {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+    background: #f8f9fc; border-radius: 10px; padding: 12px; margin-bottom: 14px;
+}
+.fam-checklist-summary div { text-align: center; }
+.fam-checklist-summary span { display: block; font-size: 10.5px; color: #8a94a6; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 3px; }
+.fam-checklist-summary strong { font-size: 17px; color: #0f2547; }
+@media (max-width: 700px) { .fam-checklist-summary { grid-template-columns: repeat(2, 1fr); } }
+
+.fam-manual-toggle {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: #5a6472; margin: 4px 0 14px; cursor: pointer;
+}
+
+.fam-suggest-box {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: #eaf6ec; border: 1px solid #c7e8cc; border-radius: 8px;
+    padding: 8px 12px; margin-top: 8px; font-size: 12.5px; color: #1e8449;
+}
+.fam-suggest-box button {
+    background: #1e8449; color: white; border: none; border-radius: 6px;
+    padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+
+/* Household head name subtitle under a family's name - Family Profiles
+   table and the Barangay Report checklist. Mirrors .rr-sub. */
+.wh-table-sub {
+    display: block;
+    font-size: 11px;
+    color: #8a94a6;
+    margin-top: 2px;
+}
+
+/* Affected Families/Individuals boxes read-only while checklist mode is
+   driving them (Barangay Report Step 3) - a faint fill signals they're a
+   live total, not a field to type into; manual mode removes readonly and
+   this reverts to the normal input look. */
+#fam-manual-fields input[readonly] {
+    background: #f8f9fc;
+    color: #5a6472;
+    cursor: default;
+}

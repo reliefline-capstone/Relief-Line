@@ -2194,7 +2194,6 @@ def relief_request_detail(batch_id):
     batch = ReliefRequestBatch.query.get_or_404(batch_id)
     if not batch.office or batch.office.office_type != "cswdo":
         abort(404)
-    breakdown, predicted_demand = _municipal_demand_for(batch.office, batch.event)
 
     fp = WarehouseInventory.query.filter_by(office_id=batch.office_id, item_type="food_pack").first()
     cswdo_on_hand = fp.quantity_available if fp else 0
@@ -2204,8 +2203,7 @@ def relief_request_detail(batch_id):
 
     return render_template(
         "pswdo/relief_request_detail.html",
-        batch=batch, breakdown=breakdown, predicted_demand=predicted_demand,
-        cswdo_on_hand=cswdo_on_hand, shortage=max(predicted_demand - cswdo_on_hand, 0),
+        batch=batch, cswdo_on_hand=cswdo_on_hand,
         depots=depots, transfer=transfer,
         status_labels=RR_STATUS_LABELS, priority_labels={"high": "High", "medium": "Medium", "low": "Low"},
         dispatch_labels={"preparing": "Preparing", "in_transit": "In Transit", "delivered": "Delivered"},

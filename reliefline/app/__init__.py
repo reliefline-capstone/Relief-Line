@@ -41,6 +41,7 @@ def create_app():
     from app.models.disaster_event import DisasterEvent
     from app.models.barangay_status import BarangayDisasterStatus
     from app.models.barangay_report import BarangayReport
+    from app.models.family import Family, ReportAffectedFamily
     from app.models.barangay_inventory import BarangayInventory, BarangayStockLog
     from app.models.relief_request_batch import ReliefRequestBatch
     from app.models.activity_log import ActivityLog, DailyOpsStat

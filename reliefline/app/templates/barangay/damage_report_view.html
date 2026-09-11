@@ -6,6 +6,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}?v={{ asset_version('css/reports.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
 {% endblock %}
 
@@ -123,15 +124,27 @@
                     <div class="info-grid">
                         <div class="info-box"><span>Affected Families</span><strong>{{ "{:,}".format(report.affected_families) }}</strong></div>
                         <div class="info-box"><span>Affected Individuals</span><strong>{{ "{:,}".format(report.affected_individuals) }}</strong></div>
+                        <div class="info-box"><span>PWD</span><strong>{{ "{:,}".format(report.affected_pwd) }}</strong></div>
+                        <div class="info-box"><span>Senior Citizens</span><strong>{{ "{:,}".format(report.affected_seniors) }}</strong></div>
+                        <div class="info-box"><span>Children</span><strong>{{ "{:,}".format(report.affected_children) }}</strong></div>
                         <div class="info-box"><span>Totally Damaged</span><strong>{{ report.totally_damaged_houses }}</strong></div>
                         <div class="info-box"><span>Partially Damaged</span><strong>{{ report.partially_damaged_houses }}</strong></div>
                     </div>
+                    {% if report.affected_families_list %}
+                    <p class="form-hint" style="margin:12px 0 6px;">Affected families ({{ report.affected_families_list|length }})</p>
+                    <div class="fam-checklist-badges" style="justify-content:flex-start; flex-wrap:wrap; gap:6px;">
+                        {% for rf in report.affected_families_list %}
+                        <span class="fam-badge" title="{% if rf.head_name %}Head: {{ rf.head_name }} - {% endif %}{{ rf.member_count }} members{% if rf.pwd_count %}, {{ rf.pwd_count }} PWD{% endif %}{% if rf.senior_count %}, {{ rf.senior_count }} senior{% endif %}">{{ rf.family_name }} ({{ rf.member_count }})</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </section>
 
                 <section class="panel">
                     <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Allocation</h3></div>
                     <div class="info-grid">
-                        <div class="info-box"><span>Food Packs Requested</span><strong>{% if report.requested_food_packs %}{{ "{:,}".format(report.requested_food_packs) }}{% else %}Not specified{% endif %}</strong></div>
+                        <div class="info-box"><span>Food Packs Requested</span><strong>{% if report.requested_food_packs %}{{ "{:,}".format(report.requested_food_packs) }}{% else %}Not specified{% endif %}</strong>
+                            {% if report.affected_families_list %}<span class="rd-sub">suggested: {{ "{:,}".format(report.suggested_food_packs) }}</span>{% endif %}</div>
                         <div class="info-box"><span>Food Packs Allocated</span><strong>{% if report.allocation %}{{ "{:,}".format(report.allocation.allocated_quantity) }}{% else %}-{% endif %}</strong></div>
                     </div>
                 </section>
