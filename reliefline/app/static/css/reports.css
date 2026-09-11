@@ -42,6 +42,10 @@
     .report-cards-grid { grid-template-columns: repeat(2, 1fr); }
     .reports-stat-cards { grid-template-columns: repeat(2, 1fr); }
 }
+@media (max-width: 480px) {
+    .report-cards-grid { grid-template-columns: 1fr; }
+    .reports-stat-cards { grid-template-columns: 1fr; }
+}
 
 .report-card {
     background: white;

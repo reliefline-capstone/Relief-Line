@@ -71,6 +71,26 @@
     flex-shrink: 0;
 }
 
+/* On a phone, .admin-user-row-right (timestamp + online dot + status pill)
+   never shrinks while the name/office text on the left wraps to several
+   lines - with align-items: center on the row, that tall left side pushed
+   the right side to sit vertically mid-row, overlapping the wrapped text.
+   Stack the row instead: name block on its own line, then the timestamp/
+   pills wrapping beneath it, indented to align under the name. */
+@media (max-width: 620px) {
+    .admin-user-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    .admin-user-row-left { width: 100%; }
+    .admin-user-row-right {
+        width: 100%;
+        flex-wrap: wrap;
+        padding-left: 44px;
+    }
+}
+
 /* Dashboard - Quick Actions */
 .admin-quick-actions { display: flex; flex-direction: column; gap: 6px; }
 

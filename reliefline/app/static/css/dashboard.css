@@ -964,6 +964,13 @@ html.sidebar-collapsed .dashboard-main {
     justify-content: flex-start;
     text-align: center;
     padding: 56px 190px 70px;
+    /* .map-legend-box (below) goes up to z-index 1000 to clear Leaflet's own
+       panes, which aren't contained in a stacking context of their own -
+       without isolation here, that 1000 was compared globally and floated
+       the legend above the mobile nav drawer/topbar (z-index 180-200)
+       whenever this panel scrolled underneath them. isolation: isolate
+       scopes every descendant z-index to just this box. */
+    isolation: isolate;
 }
 
 .map-placeholder-box .empty-note { max-width: 420px; }
@@ -1069,6 +1076,20 @@ html.sidebar-collapsed .dashboard-main {
 .legend-mark.legend-route {
     width: 14px; height: 0;
     border-top: 2px dashed #8a94a6;
+}
+
+/* On a phone the map card itself is much narrower, so the full-size legend
+   (title + 6 rows) was covering more than half of it. Shrink the box down
+   rather than remove any rows, so it still explains every symbol. */
+@media (max-width: 480px) {
+    .map-legend-box { padding: 8px 10px; }
+    .map-legend-title { font-size: 10px; margin-bottom: 5px; }
+    .map-legend-row { font-size: 10.5px; gap: 6px; margin-bottom: 4px; }
+    .map-legend-divider { margin: 6px 0; }
+    .legend-square, .legend-mark.legend-warehouse, .legend-mark.legend-typhoon {
+        width: 8px; height: 8px;
+    }
+    .legend-mark.legend-route { width: 11px; }
 }
 
 .map-zoom-wrapper {
@@ -1192,23 +1213,94 @@ html.sidebar-collapsed .dashboard-main {
 
 @media (max-width: 1200px) {
     .stat-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .main-grid { grid-template-columns: 1fr; }
+    /* minmax(0, 1fr), not a bare 1fr - same reason as .stat-cards above:
+       a bare 1fr track still respects a grid item's default min-width:auto
+       (its content's own min-content size), so a wide, non-shrinking child
+       - here, the GIS map panel's legend/controls - kept pushing this
+       "single column" wider than the viewport instead of actually
+       collapsing to it. */
+    .main-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
-@media (max-width: 700px) {
-    /* The collapse toggle doesn't buy much on a narrow touch screen, so the
-       rail reverts to its old full-width, in-flow, always-expanded behavior
-       here regardless of the saved collapsed preference - the !important
-       pair is a deliberate, narrow override of html.sidebar-collapsed's
-       higher specificity, scoped to just this breakpoint. */
-    .dashboard-layout { flex-direction: column; }
-    .sidebar, html.sidebar-collapsed .sidebar {
-        position: static;
-        width: 100% !important;
-        height: auto;
-        padding: 20px 16px !important;
+/* ---- Mobile / small-tablet: sidebar becomes a slide-in drawer ---- */
+@media (max-width: 860px) {
+    /* top bar with the hamburger (markup lives in base.html) */
+    .rl-mnav {
+        display: flex;
+        align-items: center;
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 58px;
+        padding: 0 12px;
+        background: #fff;
+        border-bottom: 1px solid #e7e8ef;
+        z-index: 180;
     }
+    .rl-mnav-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px; height: 40px;
+        border-radius: 9px;
+        background: none;
+        color: #5347ce;
+        flex-shrink: 0;
+    }
+    .rl-mnav-btn:active { background: #eef0f5; }
+    /* centered in the bar as its own unit - not just tucked next to the
+       hamburger - so the button on the left doesn't leave the brand looking
+       like it's drifted off to one side with empty space on the right. */
+    .rl-mnav-brand {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .rl-mnav-logo { width: 26px; height: 26px; flex-shrink: 0; }
+    .rl-mnav-title {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+        font-weight: 700;
+        font-size: 15px;
+        color: #5347ce;
+    }
+    .rl-mnav-sub { font-size: 10.5px; font-weight: 500; color: #8a94a6; }
+
+    .rl-mnav-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(19, 18, 40, 0.5);
+        z-index: 190;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.22s ease;
+    }
+    body.rl-mnav-open .rl-mnav-backdrop { opacity: 1; pointer-events: auto; }
+
+    /* the sidebar itself: an off-canvas drawer */
+    .dashboard-layout { display: block; }
+    .sidebar, html.sidebar-collapsed .sidebar {
+        position: fixed;
+        top: 0; left: 0;
+        width: 270px !important;
+        height: 100%;
+        padding: 18px 14px !important;
+        overflow-y: auto;
+        z-index: 200;
+        transform: translateX(-100%);
+        transition: transform 0.24s ease;
+        box-shadow: 0 0 40px rgba(19, 18, 40, 0.28);
+    }
+    body.rl-mnav-open .sidebar,
+    body.rl-mnav-open html.sidebar-collapsed .sidebar { transform: none; }
+
     .sidebar-toggle { display: none; }
+    /* always show full labels inside the drawer */
     .sidebar-label, .sidebar-brand > div, .sidebar-user-info,
     html.sidebar-collapsed .sidebar-label,
     html.sidebar-collapsed .sidebar-brand > div,
@@ -1216,8 +1308,31 @@ html.sidebar-collapsed .dashboard-main {
         opacity: 1;
         max-width: none;
     }
-    .dashboard-main, html.sidebar-collapsed .dashboard-main { margin-left: 0; }
+    html.sidebar-collapsed .sidebar-nav a,
+    html.sidebar-collapsed .sidebar-footer a:not(.sidebar-user),
+    html.sidebar-collapsed .sidebar-user { justify-content: flex-start; gap: 12px; }
+
+    .dashboard-main, html.sidebar-collapsed .dashboard-main {
+        margin-left: 0;
+        padding-top: 58px;               /* clear the fixed top bar */
+    }
     .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 460px) {
+    .stat-cards { grid-template-columns: 1fr; }
+}
+
+/* Greeting banner: .banner-aside (clock, live-weather chip, active-event
+   pill) is right-aligned for the desktop layout, where it sits in its own
+   column beside the greeting. Once the banner wraps to a single narrow
+   column on a phone, that right alignment left the chips stranded off to
+   one side instead of following the greeting text's flow - line them up
+   on the same left edge instead. */
+@media (max-width: 620px) {
+    .banner-aside { align-items: flex-start; width: 100%; }
+    .banner-time { text-align: left; }
+    .banner-weather-live { text-align: left; min-width: 0; }
 }
 /* Warehouse status */
 .link-manage { color: #5347ce; font-size: 12px; font-weight: 600; }
@@ -1318,6 +1433,9 @@ html.sidebar-collapsed .dashboard-main {
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     margin-bottom: 16px;
+}
+@media (max-width: 480px) {
+    .pa-metrics { grid-template-columns: 1fr; }
 }
 
 .pa-metric {
@@ -1563,6 +1681,9 @@ html.sidebar-collapsed .dashboard-main {
     gap: 12px;
     margin-bottom: 14px;
 }
+@media (max-width: 480px) {
+    .inventory-grid { grid-template-columns: 1fr; }
+}
 
 .inventory-box {
     background: #e8faf0;
@@ -1664,6 +1785,18 @@ html.sidebar-collapsed .dashboard-main {
 
 .stat-cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stat-cards-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.stat-cards-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+/* These come after the mobile .stat-cards rules above (same specificity,
+   later in the cascade wins), so without their own breakpoints a 3/4/5-up
+   stat row - e.g. the barangay dashboard - stayed jammed into that many
+   columns on a phone regardless of viewport. */
+@media (max-width: 860px) {
+    .stat-cards-3, .stat-cards-4, .stat-cards-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 460px) {
+    .stat-cards-3, .stat-cards-4, .stat-cards-5 { grid-template-columns: 1fr; }
+}
 
 /* ============================================
    Weather & Typhoon Watch widget

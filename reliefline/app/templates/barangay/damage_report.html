@@ -34,7 +34,7 @@
             <a href="{{ url_for('barangay.damage_report', tab='history') }}" class="notif-filter-tab {{ 'active' if tab == 'history' }}">{{ icon('file-text', 14) }} History</a>
         </div>
 
-        <section class="stat-cards" style="grid-template-columns: repeat(5, 1fr);">
+        <section class="stat-cards stat-cards-5">
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
                 <span class="stat-value">{{ total_count }}</span>

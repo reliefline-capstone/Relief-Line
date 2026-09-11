@@ -23,6 +23,11 @@ svg {
     vertical-align: middle;
 }
 
+/* Mobile dashboard nav bar + drawer backdrop (markup in base.html). Hidden
+   everywhere by default; dashboard.css shows them on narrow screens for
+   pages that actually have a sidebar. */
+.rl-mnav, .rl-mnav-backdrop { display: none; }
+
 body {
     font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
     color: #1a1a1a;

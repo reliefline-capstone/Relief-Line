@@ -528,13 +528,19 @@
 
         var b = outlineLayer.getBounds();
         if (b.isValid()) {
-            map.invalidateSize();
-            map.fitBounds(b.pad(0.02), { animate: false });
+            var fit = function () {
+                map.invalidateSize();
+                // leave room on narrow screens so the LGU pin labels don't
+                // spill past the map (and off the page)
+                var px = window.innerWidth < 620 ? 24 : 12;
+                map.fitBounds(b.pad(0.02), { animate: false, padding: [px, 18] });
+            };
+            fit();
             map.setMaxBounds(b.pad(0.3));
             clipToProvince();
             // re-clip once layout/fonts settle
             setTimeout(clipToProvince, 200);
-            window.addEventListener('resize', clipToProvince);
+            window.addEventListener('resize', function () { fit(); clipToProvince(); });
         } else {
             map.setView([15.99, 120.33], 9);
         }

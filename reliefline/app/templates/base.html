@@ -50,6 +50,18 @@
 <body>
     {% block content %}{% endblock %}
 
+    <!-- Mobile dashboard nav: a fixed top bar with a hamburger that slides the
+         sidebar in as a drawer. Styled/shown only on narrow screens by
+         dashboard.css; inert (display:none) on the public and login pages. -->
+    <header class="rl-mnav">
+        <button type="button" class="rl-mnav-btn" id="rl-mnav-open" aria-label="Open menu" aria-expanded="false">{{ icon('menu', 22) }}</button>
+        <div class="rl-mnav-brand">
+            <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="" class="rl-mnav-logo">
+            <span class="rl-mnav-title">ReliefLine<span class="rl-mnav-sub">Pangasinan</span></span>
+        </div>
+    </header>
+    <div class="rl-mnav-backdrop" id="rl-mnav-backdrop"></div>
+
     <!-- Flash toast stack - rendered once here, as a sibling of the page's
          own content (every role used to include an identical _flash.html
          partial inside their own <main class="dashboard-main">, which
@@ -92,6 +104,26 @@
             var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
             try { localStorage.setItem('reliefline_sidebar_collapsed', collapsed ? '1' : '0'); } catch (err) {}
         });
+    </script>
+    <!-- Mobile sidebar drawer open/close -->
+    <script>
+        (function () {
+            var btn = document.getElementById('rl-mnav-open');
+            var backdrop = document.getElementById('rl-mnav-backdrop');
+            var sidebar = document.querySelector('.dashboard-layout .sidebar');
+            if (!btn || !sidebar || !backdrop) return;
+            function setOpen(on) {
+                document.body.classList.toggle('rl-mnav-open', on);
+                btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+            }
+            btn.addEventListener('click', function () {
+                setOpen(!document.body.classList.contains('rl-mnav-open'));
+            });
+            backdrop.addEventListener('click', function () { setOpen(false); });
+            sidebar.addEventListener('click', function (e) { if (e.target.closest('a')) setOpen(false); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+            window.addEventListener('resize', function () { if (window.innerWidth > 860) setOpen(false); });
+        })();
     </script>
     <!-- Flash message auto-dismiss + manual close for the .flash-banner
          markup rendered above. -->

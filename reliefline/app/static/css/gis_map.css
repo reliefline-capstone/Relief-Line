@@ -92,7 +92,11 @@
 /* Map panel - wrapped in .gis-map-col alongside the routes table below it,
    so this stays sized to its own content (the map) instead of a bare grid
    item that would otherwise stretch to match the taller sidebar next to it. */
-.gis-map-panel { position: relative; padding: 0; overflow: hidden; }
+/* isolation: isolate scopes this panel's own z-index: 1000 overlays (search
+   bar, fullscreen button, results list) to just this box, so they can never
+   out-rank the mobile nav drawer/topbar, which live in a separate part of
+   the DOM entirely and would otherwise be compared against them globally. */
+.gis-map-panel { position: relative; padding: 0; overflow: hidden; isolation: isolate; }
 
 .gis-map-col { min-width: 0; }
 
