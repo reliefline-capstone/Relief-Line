@@ -1,5 +1,10 @@
-/* Warehouse map */
-.wh-map-panel { margin-bottom: 16px; }
+/* Warehouse map. isolation: isolate scopes Leaflet's own internal z-index
+   values (its panes and .leaflet-control layer both go well above 500) to
+   just this panel, so they can never out-rank the mobile nav drawer/topbar
+   - which live in a separate part of the DOM and, without this, get
+   compared against them in the page's shared stacking context. Same fix as
+   .map-placeholder-box / .gis-map-panel. */
+.wh-map-panel { margin-bottom: 16px; position: relative; isolation: isolate; }
 
 .wh-map-legend { gap: 14px; }
 
@@ -84,6 +89,13 @@
     display: flex;
     align-items: center;
     gap: 20px;
+    /* No effect while all three buttons fit on one line (desktop); once the
+       row is narrower than their combined natural width, this lets "Add
+       Item" drop to its own line instead of the whole group overflowing
+       .dashboard-main's right padding (clipped there by overflow-x: hidden,
+       so it read as the button jammed flush against the screen edge). */
+    flex-wrap: wrap;
+    row-gap: 10px;
 }
 
 .wh-text-link {

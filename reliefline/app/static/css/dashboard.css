@@ -294,7 +294,17 @@ html.sidebar-collapsed .sidebar-nav a {
        collapses, instead of the rail overlaying on top of it. */
     margin-left: 250px;
     transition: margin-left 0.22s ease;
+    /* This column scrolls on almost every page, so the OS's default (wide,
+       classic-style) scrollbar reads as a chunky grey column running the
+       full height of the page, right next to the intentional 24px padding
+       - together they looked like one oversized gap. Thinning it down to
+       match the app's other scrollable panels (see .cdt-col) keeps it out
+       of the way visually without hiding it. */
+    scrollbar-width: thin;
 }
+.dashboard-main::-webkit-scrollbar { width: 6px; }
+.dashboard-main::-webkit-scrollbar-thumb { background: #d6d9e3; border-radius: 3px; }
+.dashboard-main::-webkit-scrollbar-track { background: transparent; }
 
 html.sidebar-collapsed .dashboard-main {
     margin-left: 72px;

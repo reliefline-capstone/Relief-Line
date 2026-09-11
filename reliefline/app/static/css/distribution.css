@@ -15,6 +15,14 @@
 .dist-filter-bar { justify-content: flex-start; }
 .dist-filter-bar .btn-outline { margin-left: auto; }
 
+/* Below ~768px .filter-bar wraps onto several lines (relief_requests.css) -
+   margin-left: auto then shoves the Filter button to the far right of
+   whichever line it lands on instead of the end of the whole bar, opening
+   a wide dead gap next to the status dropdown right before it. */
+@media (max-width: 768px) {
+    .dist-filter-bar .btn-outline { margin-left: 0; }
+}
+
 .dist-id { color: #5347ce; }
 .dist-unassigned { color: #b8bfc9; font-style: italic; }
 
