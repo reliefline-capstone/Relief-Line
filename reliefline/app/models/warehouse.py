@@ -46,8 +46,12 @@ class WarehouseStockLog(db.Model):
     # barangay confirms a delivery with damaged packs - those packs come back
     # into this office's warehouse under the "food_pack_damaged" item_type,
     # never mixed into the "food_pack" figure the allocation/prediction
-    # pipeline reads.
-    source_type = db.Column(db.Enum("standard", "donation", "returned_damaged"), nullable=False,
+    # pipeline reads. "expired" is system-generated only (see
+    # app.routes.pswdo._sync_food_pack_batches) when a FoodPackBatch passes
+    # its expiration_date - moved into the separate "food_pack_expired"
+    # item_type, kept apart from "food_pack_damaged" so the cause stays
+    # distinguishable.
+    source_type = db.Column(db.Enum("standard", "donation", "returned_damaged", "expired"), nullable=False,
                              default="standard", server_default="standard")
     donor_name = db.Column(db.String(150), nullable=True)
     updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
@@ -63,3 +67,7 @@ class WarehouseStockLog(db.Model):
     @property
     def is_damaged_return(self):
         return self.source_type == "returned_damaged"
+
+    @property
+    def is_expired(self):
+        return self.source_type == "expired"

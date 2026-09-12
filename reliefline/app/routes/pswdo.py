@@ -18,6 +18,7 @@ from app.models.office import Office
 from app.models.barangay import Barangay
 from app.models.barangay_inventory import food_pack_on_hand
 from app.models.warehouse import WarehouseInventory, WarehouseStockLog
+from app.models.food_pack_batch import FoodPackBatch, FoodPackComponent, FoodPackBatchItem
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.disaster_event import DisasterEvent
@@ -623,6 +624,125 @@ def _food_pack_health(qty, capacity):
     if pct >= _moderate_threshold() * 100:
         return "Moderate"
     return "Low"
+
+
+NEAR_EXPIRY_DAYS = 30
+
+
+def _shelf_status(expiration_date):
+    """Where a food pack batch sits relative to its expiration_date - drives
+    the Food Pack Batches panel's status badge. "expired" here is a display
+    label only; the actual active->expired transition (and the inventory
+    move it triggers) happens in _sync_food_pack_batches."""
+    days_left = (expiration_date - ph_today()).days
+    if days_left < 0:
+        return "expired"
+    if days_left <= NEAR_EXPIRY_DAYS:
+        return "near_expiry"
+    return "fresh"
+
+
+def _sync_food_pack_batches(office_id):
+    """Keeps FoodPackBatch bookkeeping honest against the real "food_pack"
+    WarehouseInventory total, then moves anything past its expiration_date
+    into a separate "food_pack_expired" bucket - same lazy-bucket pattern as
+    "food_pack_damaged" (see cswdo.municipal_inventory_resolve_damaged), kept
+    apart so the cause (expired vs returned-damaged) stays distinguishable.
+
+    Batches only get created when stock is added (see
+    municipal_inventory_update/warehouse_inventory_update/receive_transfer) -
+    outgoing movements (dispatches, transfers out) touch
+    WarehouseInventory.quantity_available directly without picking a batch,
+    so the running batch total can drift ahead of the real on-hand count.
+    Step 1 below reconciles that drift, oldest batch first, on every call -
+    called at the top of every route that renders an office's current stock.
+    """
+    fp = WarehouseInventory.query.filter_by(office_id=office_id, item_type="food_pack").first()
+    on_hand = fp.quantity_available if fp else 0
+
+    active_batches = FoodPackBatch.query.filter_by(office_id=office_id, status="active").order_by(
+        FoodPackBatch.received_date, FoodPackBatch.batch_id
+    ).all()
+
+    batch_total = sum(b.quantity_remaining for b in active_batches)
+    excess = batch_total - on_hand
+    if excess > 0:
+        for b in active_batches:
+            if excess <= 0:
+                break
+            trim = min(b.quantity_remaining, excess)
+            b.quantity_remaining -= trim
+            excess -= trim
+        active_batches = [b for b in active_batches if b.quantity_remaining > 0]
+
+    today = ph_today()
+    expired_batches = [b for b in active_batches if b.expiration_date < today and b.quantity_remaining > 0]
+    if not expired_batches:
+        db.session.commit()
+        return
+
+    expired_qty = sum(b.quantity_remaining for b in expired_batches)
+    if fp:
+        fp.quantity_available = max((fp.quantity_available or 0) - expired_qty, 0)
+
+    expired_item = WarehouseInventory.query.filter_by(office_id=office_id, item_type="food_pack_expired").first()
+    if expired_item is None:
+        expired_item = WarehouseInventory(
+            office_id=office_id, item_type="food_pack_expired",
+            item_name="Food Packs (Expired)", unit="packs", quantity_available=0,
+        )
+        db.session.add(expired_item)
+    expired_item.quantity_available = (expired_item.quantity_available or 0) + expired_qty
+
+    db.session.add(WarehouseStockLog(
+        office_id=office_id, item_type="food_pack", item_name="Food Packs",
+        delta=-expired_qty, source_type="expired",
+        reason=f"{expired_qty:,} food packs passed their expiration date",
+    ))
+    db.session.add(WarehouseStockLog(
+        office_id=office_id, item_type="food_pack_expired", item_name="Food Packs (Expired)",
+        delta=expired_qty, source_type="expired",
+        reason=f"{expired_qty:,} food packs moved to Expired after passing their expiration date",
+    ))
+
+    for b in expired_batches:
+        b.status = "expired"
+        b.expired_at = ph_now()
+
+    db.session.commit()
+
+
+def _create_food_pack_batch(office_id, quantity, received_date, updated_by=None):
+    """Opens one FoodPackBatch for newly-received Food Packs stock, with a
+    FoodPackBatchItem per FoodPackComponent (rice, creamer, canned goods,
+    Ovaltine - see scripts/seed_food_pack_batches.py for the researched
+    shelf life behind each one). The batch's own expiration_date is cached
+    as the earliest of those - in practice always the rice, since it has by
+    far the shortest researched shelf life of the six components - because
+    the whole sealed pack gets pulled together once its most perishable
+    item expires, not unbundled to salvage the canned goods.
+
+    No manual per-component date entry: shelf lives are researched
+    catalog defaults, not a printed date staff transcribe by hand, so
+    every date here is received_date + FoodPackComponent.shelf_life_days.
+    """
+    from datetime import timedelta
+    components = FoodPackComponent.query.all()
+    shortest_shelf_life = min((c.shelf_life_days for c in components), default=180)
+    batch = FoodPackBatch(
+        office_id=office_id, quantity_remaining=quantity,
+        received_date=received_date,
+        expiration_date=received_date + timedelta(days=shortest_shelf_life),
+        updated_by=updated_by,
+    )
+    db.session.add(batch)
+    db.session.flush()
+    for c in components:
+        db.session.add(FoodPackBatchItem(
+            batch_id=batch.batch_id, component_id=c.component_id,
+            expiration_date=received_date + timedelta(days=c.shelf_life_days),
+        ))
+    return batch
 
 
 def _slugify(text):
@@ -1241,6 +1361,7 @@ def warehouse_list():
 @role_required("pswdo_admin", "system_admin")
 def warehouse_detail(office_id):
     office = Office.query.get_or_404(office_id)
+    _sync_food_pack_batches(office_id)
     active_events = DisasterEvent.query.filter_by(status="active").order_by(
         DisasterEvent.start_date.desc()
     ).all()
@@ -1296,6 +1417,7 @@ def warehouse_edit(office_id):
 @role_required("pswdo_admin", "system_admin")
 def warehouse_inventory_items(office_id):
     office = Office.query.get_or_404(office_id)
+    _sync_food_pack_batches(office_id)
     search_query = request.args.get("q", "").strip()
 
     items_q = WarehouseInventory.query.filter_by(office_id=office_id)
@@ -1308,9 +1430,15 @@ def warehouse_inventory_items(office_id):
         for item in items
     ]
 
+    batches = FoodPackBatch.query.filter(
+        FoodPackBatch.office_id == office_id, FoodPackBatch.quantity_remaining > 0
+    ).order_by(FoodPackBatch.expiration_date).all()
+    batch_rows = [{"batch": b, "shelf_status": _shelf_status(b.expiration_date)} for b in batches]
+
     return render_template(
         "pswdo/warehouse_items.html",
         office=office, rows=rows, search_query=search_query,
+        batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
     )
 
 
@@ -1404,6 +1532,12 @@ def warehouse_inventory_update(inventory_id):
         item.min_stock_level = min_stock_level
     item.updated_by = current_user.user_id
 
+    # Food Packs is the only item type with shelf-life tracking - a positive
+    # delta opens a FoodPackBatch (with a per-component expiration date each,
+    # auto-computed from the researched FoodPackComponent catalog).
+    if item.item_type == "food_pack" and delta > 0:
+        _create_food_pack_batch(item.office_id, delta, ph_today(), current_user.user_id)
+
     if delta != 0:
         db.session.add(WarehouseStockLog(
             office_id=item.office_id, item_type=item.item_type, item_name=item.item_name,
@@ -1414,6 +1548,76 @@ def warehouse_inventory_update(inventory_id):
     db.session.commit()
     flash(f"Updated {item.item_name} stock.", "success")
     return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
+
+
+@pswdo_bp.route("/warehouse-inventory/expired-batch/<int:batch_id>/resolve", methods=["POST"])
+@login_required
+@role_required("pswdo_admin", "system_admin")
+def warehouse_inventory_resolve_expired_batch(batch_id):
+    """Disposed/Fixed resolution for one expired FoodPackBatch at a PSWDO
+    warehouse - mirrors cswdo.municipal_inventory_resolve_expired_batch."""
+    batch = FoodPackBatch.query.get_or_404(batch_id)
+    if batch.status != "expired":
+        abort(403)
+    office_id = batch.office_id
+
+    quantity = request.form.get("quantity", type=int)
+    resolution = request.form.get("resolution", "")
+    if not quantity or quantity <= 0:
+        flash("Enter how many expired packs this covers.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+    if quantity > batch.quantity_remaining:
+        flash(f"Only {batch.quantity_remaining:,} expired packs are on record for that batch.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+    if resolution not in ("disposed", "fixed"):
+        flash("Select Disposed or Fixed.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+
+    expired_item = WarehouseInventory.query.filter_by(
+        office_id=office_id, item_type="food_pack_expired"
+    ).first()
+    if expired_item is None or expired_item.quantity_available < quantity:
+        flash("Expired stock record is out of sync - reload and try again.", "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+
+    batch.quantity_remaining -= quantity
+    expired_item.quantity_available -= quantity
+    expired_item.updated_by = current_user.user_id
+
+    if resolution == "disposed":
+        db.session.add(WarehouseStockLog(
+            office_id=office_id, item_type="food_pack_expired", item_name=expired_item.item_name,
+            delta=-quantity, source_type="expired",
+            reason=f"{quantity:,} expired packs disposed / written off",
+            updated_by=current_user.user_id,
+        ))
+        flash(f"{quantity:,} expired packs marked disposed.", "success")
+    else:
+        db.session.add(WarehouseStockLog(
+            office_id=office_id, item_type="food_pack_expired", item_name=expired_item.item_name,
+            delta=-quantity, source_type="expired",
+            reason=f"{quantity:,} expired packs repaired - moved back to usable Food Packs stock",
+            updated_by=current_user.user_id,
+        ))
+        fp = WarehouseInventory.query.filter_by(office_id=office_id, item_type="food_pack").first()
+        if fp is None:
+            fp = WarehouseInventory(
+                office_id=office_id, item_type="food_pack",
+                item_name="Food Packs", unit="packs", quantity_available=0,
+            )
+            db.session.add(fp)
+        fp.quantity_available = (fp.quantity_available or 0) + quantity
+        fp.updated_by = current_user.user_id
+        db.session.add(WarehouseStockLog(
+            office_id=office_id, item_type="food_pack", item_name="Food Packs",
+            delta=quantity, source_type="expired",
+            reason=f"{quantity:,} previously-expired packs repaired and returned to usable stock",
+            updated_by=current_user.user_id,
+        ))
+        flash(f"{quantity:,} expired packs marked fixed and returned to Food Packs stock.", "success")
+
+    db.session.commit()
+    return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
 
 
 @pswdo_bp.route("/warehouse-inventory/inventory/<int:inventory_id>/delete", methods=["POST"])

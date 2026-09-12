@@ -35,6 +35,7 @@ def create_app():
     from app.models.office import Office
     from app.models.barangay import Barangay
     from app.models.warehouse import WarehouseInventory, WarehouseStockLog
+    from app.models.food_pack_batch import FoodPackComponent, FoodPackBatch, FoodPackBatchItem
     from app.models.allocation import AllocationRecord
     from app.models.validation import DistributionRecord
     from app.models.prediction import PredictionLog, ModelMetrics

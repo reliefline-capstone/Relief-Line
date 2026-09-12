@@ -39,8 +39,11 @@ from app.routes.pswdo import (
     _lgu_burn_rate, _recent_stock_movements,
     _gis_scope_lgus, _gis_config,
     _parse_stock_source, _slugify, _full_stock_movements,
+    _shelf_status, _sync_food_pack_batches, NEAR_EXPIRY_DAYS,
+    _create_food_pack_batch,
 )
 from app.models.warehouse import WarehouseStockLog
+from app.models.food_pack_batch import FoodPackBatch
 
 # CSWDO's own link targets for notification "View" buttons - deliberately NOT
 # the pswdo.* links NOTIFICATION_LINK_BUILDERS (app/routes/pswdo.py) resolves
@@ -1415,6 +1418,9 @@ def receive_transfer(transfer_id):
     if transfer.batch:
         transfer.batch.status = "fulfilled"
 
+    if transfer.item_type == "food_pack":
+        _create_food_pack_batch(office.office_id, transfer.quantity, ph_today(), current_user.user_id)
+
     db.session.add(WarehouseStockLog(
         office_id=office.office_id, item_type=transfer.item_type, item_name=inv.item_name,
         delta=transfer.quantity, reason=f"Received from {transfer.from_office.office_name} ({ref})",
@@ -1892,6 +1898,7 @@ def _own_inventory_item_or_403(inventory_id):
 @role_required("cswdo_admin", "system_admin")
 def municipal_inventory():
     office = _own_office_or_404()
+    _sync_food_pack_batches(office.office_id)
     search_query = request.args.get("q", "").strip()
 
     active_events = DisasterEvent.query.filter_by(status="active").order_by(
@@ -1929,12 +1936,18 @@ def municipal_inventory():
         WarehouseTransfer.dispatch_status.in_(("in_transit", "delivered")),
     ).order_by(WarehouseTransfer.requested_at.desc()).all()
 
+    batches = FoodPackBatch.query.filter(
+        FoodPackBatch.office_id == office.office_id, FoodPackBatch.quantity_remaining > 0
+    ).order_by(FoodPackBatch.expiration_date).all()
+    batch_rows = [{"batch": b, "shelf_status": _shelf_status(b.expiration_date)} for b in batches]
+
     return render_template(
         "cswdo/municipal_inventory.html",
         office=office, food_pack_qty=food_pack_qty, capacity=capacity, pct=pct, health=health,
         burn=burn, days_remaining=days_remaining, inventory_summary=rows, rows=rows,
         movements=movements, search_query=search_query, incoming_transfers=incoming,
         stock_in=stock_in, stock_out=stock_out, has_active_event=bool(active_events),
+        batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
     )
 
 
@@ -2024,6 +2037,12 @@ def municipal_inventory_update(inventory_id):
         item.min_stock_level = min_stock_level
     item.updated_by = current_user.user_id
 
+    # Food Packs is the only item type with shelf-life tracking - a positive
+    # delta opens a FoodPackBatch (with a per-component expiration date each,
+    # auto-computed from the researched FoodPackComponent catalog).
+    if item.item_type == "food_pack" and delta > 0:
+        _create_food_pack_batch(item.office_id, delta, ph_today(), current_user.user_id)
+
     if delta != 0:
         db.session.add(WarehouseStockLog(
             office_id=item.office_id, item_type=item.item_type, item_name=item.item_name,
@@ -2095,6 +2114,79 @@ def municipal_inventory_resolve_damaged(inventory_id):
             updated_by=current_user.user_id,
         ))
         flash(f"{quantity:,} damaged packs marked fixed and returned to Food Packs stock.", "success")
+
+    db.session.commit()
+    return redirect(url_for("cswdo.municipal_inventory"))
+
+
+@cswdo_bp.route("/municipal-inventory/expired-batch/<int:batch_id>/resolve", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def municipal_inventory_resolve_expired_batch(batch_id):
+    """Disposed/Fixed resolution for one expired FoodPackBatch - same
+    semantics as municipal_inventory_resolve_damaged, kept as a separate
+    route because it draws from "food_pack_expired" (a batch-backed bucket)
+    rather than the generic "food_pack_damaged" aggregate, and needs to
+    decrement the specific batch's quantity_remaining too."""
+    office = _own_office_or_404()
+    batch = FoodPackBatch.query.get_or_404(batch_id)
+    if batch.office_id != office.office_id or batch.status != "expired":
+        abort(403)
+
+    quantity = request.form.get("quantity", type=int)
+    resolution = request.form.get("resolution", "")
+    if not quantity or quantity <= 0:
+        flash("Enter how many expired packs this covers.", "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+    if quantity > batch.quantity_remaining:
+        flash(f"Only {batch.quantity_remaining:,} expired packs are on record for that batch.", "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+    if resolution not in ("disposed", "fixed"):
+        flash("Select Disposed or Fixed.", "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+
+    expired_item = WarehouseInventory.query.filter_by(
+        office_id=office.office_id, item_type="food_pack_expired"
+    ).first()
+    if expired_item is None or expired_item.quantity_available < quantity:
+        flash("Expired stock record is out of sync - reload and try again.", "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+
+    batch.quantity_remaining -= quantity
+    expired_item.quantity_available -= quantity
+    expired_item.updated_by = current_user.user_id
+
+    if resolution == "disposed":
+        db.session.add(WarehouseStockLog(
+            office_id=office.office_id, item_type="food_pack_expired", item_name=expired_item.item_name,
+            delta=-quantity, source_type="expired",
+            reason=f"{quantity:,} expired packs disposed / written off",
+            updated_by=current_user.user_id,
+        ))
+        flash(f"{quantity:,} expired packs marked disposed.", "success")
+    else:
+        db.session.add(WarehouseStockLog(
+            office_id=office.office_id, item_type="food_pack_expired", item_name=expired_item.item_name,
+            delta=-quantity, source_type="expired",
+            reason=f"{quantity:,} expired packs repaired - moved back to usable Food Packs stock",
+            updated_by=current_user.user_id,
+        ))
+        fp = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first()
+        if fp is None:
+            fp = WarehouseInventory(
+                office_id=office.office_id, item_type="food_pack",
+                item_name="Food Packs", unit="packs", quantity_available=0,
+            )
+            db.session.add(fp)
+        fp.quantity_available = (fp.quantity_available or 0) + quantity
+        fp.updated_by = current_user.user_id
+        db.session.add(WarehouseStockLog(
+            office_id=office.office_id, item_type="food_pack", item_name="Food Packs",
+            delta=quantity, source_type="expired",
+            reason=f"{quantity:,} previously-expired packs repaired and returned to usable stock",
+            updated_by=current_user.user_id,
+        ))
+        flash(f"{quantity:,} expired packs marked fixed and returned to Food Packs stock.", "success")
 
     db.session.commit()
     return redirect(url_for("cswdo.municipal_inventory"))
