@@ -20,63 +20,39 @@
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
         'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
-    // A modal (.rd-modal), or any other scrollable ancestor, clips
-    // .csel-list's position:absolute box the moment it extends past that
-    // ancestor's own edge - the list isn't a descendant of the trigger's
-    // nearest *scroll container* by choice, it just happens to render
-    // inside it, so its dropdown got cut off (or bled behind page content)
-    // instead of just floating on top like the trigger visually implies.
-    // Re-parenting the open list to <body> with position:fixed, coordinates
-    // computed from the trigger's own bounding rect, sidesteps every such
-    // ancestor's overflow/clipping the same way .rd-modal-overlay itself
-    // already gets moved to <body> (see relief_request_detail.js).
+    // Inside a modal, .csel-list renders in normal document flow instead of
+    // overlaying (see .rd-modal .csel-list in custom_select.css) - opening
+    // it there pushes the rest of the form (hint text, Resolve/Cancel)
+    // down and the modal card genuinely grows to fit it, up to .rd-modal's
+    // own max-height: 90vh/overflow-y: auto cap. That's what a short list
+    // (e.g. 3 Resolution options) needs to show every option at once with
+    // no scrollbar and no overlap, without hand-computing available space -
+    // trying to fit the list into whatever gap happened to exist below the
+    // trigger in the modal's *pre-open* layout was exactly what forced a
+    // shorter max-height (and its scrollbar) than the options actually
+    // needed. Outside a modal (e.g. a toolbar filter), it still overlays
+    // via position: absolute, so picking a value there doesn't reflow
+    // whatever sits below it in the page.
     function positionList(wrap, list, trigger) {
+        if (trigger.closest('.rd-modal')) return;
         var rect = trigger.getBoundingClientRect();
-        var margin = 10;
+        var margin = 8;
         var maxListHeight = 260;
-        // Always opens below the trigger - it's allowed to overlap whatever
-        // sits under it (a modal's own hint text/buttons, page content,
-        // etc.), same as a native <select>'s listbox would. Only clamped by
-        // the viewport itself, for the rare case a trigger sits near the
-        // very bottom of the screen with no room to render anything at all.
-        var spaceBelow = window.innerHeight - rect.bottom;
-        list.style.position = 'fixed';
-        list.style.left = rect.left + 'px';
-        list.style.width = rect.width + 'px';
-        list.style.bottom = 'auto';
-        list.style.top = (rect.bottom + margin) + 'px';
-        list.style.maxHeight = Math.min(maxListHeight, spaceBelow - margin * 2) + 'px';
+        var minListHeight = 80;
+        var spaceBelow = window.innerHeight - rect.bottom - margin;
+        var spaceAbove = rect.top - margin;
+        var openUpward = spaceBelow < minListHeight && spaceAbove > spaceBelow;
+        list.classList.toggle('csel-list-up', openUpward);
+        list.style.maxHeight = Math.max(minListHeight, Math.min(maxListHeight, openUpward ? spaceAbove : spaceBelow)) + 'px';
     }
-
-    function repositionOpenLists() {
-        document.querySelectorAll('.csel-wrap.is-open').forEach(function (wrap) {
-            var list = wrap.cselList;
-            var trigger = wrap.querySelector('.csel-trigger');
-            if (list && trigger) positionList(wrap, list, trigger);
-        });
-    }
-    window.addEventListener('scroll', repositionOpenLists, true);
-    window.addEventListener('resize', repositionOpenLists);
 
     function closeDropdown(wrap) {
         wrap.classList.remove('is-open');
-        // Not wrap.querySelector('.csel-list') - openDropdown moves the list
-        // out to <body> while open, so it's no longer a descendant of wrap
-        // to find that way. wrap.cselList (set once in enhance()) still
-        // points to it regardless of which element currently parents it.
         var list = wrap.cselList;
         var trigger = wrap.querySelector('.csel-trigger');
         if (list) {
             list.hidden = true;
-            // Undo the position:fixed/<body> move from openDropdown - back
-            // into wrap, in its normal spot, so nothing else that assumes
-            // .csel-list lives inside .csel-wrap breaks while closed.
-            if (list.parentNode !== wrap) wrap.appendChild(list);
-            list.style.position = '';
-            list.style.top = '';
-            list.style.bottom = '';
-            list.style.left = '';
-            list.style.width = '';
+            list.classList.remove('csel-list-up');
             list.style.maxHeight = '';
         }
         if (trigger) trigger.setAttribute('aria-expanded', 'false');
@@ -104,7 +80,6 @@
         var trigger = wrap.querySelector('.csel-trigger');
         if (list) {
             list.hidden = false;
-            document.body.appendChild(list);
             positionList(wrap, list, trigger);
         }
         if (trigger) trigger.setAttribute('aria-expanded', 'true');
@@ -235,16 +210,19 @@
         document.querySelectorAll('.csel-wrap.is-open').forEach(closeDropdown);
     });
 
-    // An open dropdown's list now lives in <body> (see openDropdown), not
-    // inside whatever modal its trigger is in - so a modal closing via
-    // Escape (relief_request_detail.js sets .hidden straight on the
-    // overlay, no click event to catch above) left it behind, still
-    // floating on screen over whatever's underneath. Closing every open
-    // dropdown whenever any .rd-modal-overlay's hidden attribute changes
-    // covers that and every other way a modal can close, uniformly.
+    // A modal closing (Escape, backdrop click, or its own close button -
+    // relief_request_detail.js sets .hidden straight on the overlay for
+    // Escape, no click event for the listener above to catch) while one of
+    // its own dropdowns is open would otherwise leave that dropdown's
+    // is-open/aria-expanded state stale for next time the same modal opens,
+    // even though .csel-list itself is invisible along with the rest of
+    // the hidden modal now (it's a normal descendant, not something
+    // escaped to <body> that could be left stranded on screen).
     document.querySelectorAll('.rd-modal-overlay').forEach(function (overlay) {
         new MutationObserver(function () {
-            if (overlay.hidden) document.querySelectorAll('.csel-wrap.is-open').forEach(closeDropdown);
+            if (overlay.hidden) {
+                overlay.querySelectorAll('.csel-wrap.is-open').forEach(closeDropdown);
+            }
         }).observe(overlay, { attributes: true, attributeFilter: ['hidden'] });
     });
 })();

@@ -749,3 +749,11 @@
    trails after the export buttons via .rpt-back-link's margin-left:auto). */
 .fam-print-topbar { justify-content: space-between; }
 .fam-print-topbar .rpt-back-link { margin-left: 0; }
+
+/* Clicking anywhere on a row (not just the tiny checkbox square) toggles
+   it for Print Selected - cursor:pointer signals that on the row itself,
+   then reverts to default over the Edit/Archive/Delete actions cell so it
+   doesn't look clickable-as-a-row there too. */
+#fam-table-body tr[data-name] { cursor: pointer; }
+#fam-table-body tr[data-name] td:last-child { cursor: default; }
+#fam-table-body tr[data-name]:hover { background: #f7f7fc; }

@@ -177,6 +177,30 @@ def create_app():
         return dict(pending_stock_requests=count)
 
     @app.context_processor
+    def inject_pending_barangay_reports():
+        # Powers the badge on cswdo/_sidebar.html's "Barangay Reports" link
+        # (included on every cswdo/*.html page). Counts submitted damage
+        # reports still awaiting a CSWDO decision from this office's own
+        # LGU - same "pending" filter as the "queue" tab default on the
+        # Barangay Reports page itself (app.routes.cswdo.damage_assessment),
+        # so the badge and the page it links to never disagree.
+        from flask_login import current_user
+        if not current_user.is_authenticated or current_user.role not in ("cswdo_admin", "system_admin"):
+            return dict(pending_barangay_reports=0)
+        office = current_user.office
+        lgu = office.area_covered if office else None
+        if not lgu:
+            return dict(pending_barangay_reports=0)
+        barangay_ids = [b.barangay_id for b in Barangay.query.filter_by(city_municipality=lgu).all()]
+        if not barangay_ids:
+            return dict(pending_barangay_reports=0)
+        count = BarangayReport.query.filter(
+            BarangayReport.barangay_id.in_(barangay_ids),
+            BarangayReport.status == "pending",
+        ).count()
+        return dict(pending_barangay_reports=count)
+
+    @app.context_processor
     def inject_pending_password_resets():
         # Powers the badge on admin/_sidebar.html's "Password Reset
         # Requests" link, which is included on every admin/*.html page -

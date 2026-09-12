@@ -39,13 +39,13 @@
         {% else %}
         <div class="main-grid">
 
-            <section class="panel">
+            <section class="panel wh-transfer-panel">
                 <div class="panel-header">
                     <h3>Transfer Stock</h3>
                     <span class="wh-reco-meta">Manual status update - no live GPS</span>
                 </div>
 
-                <form method="POST" action="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" id="transfer-form" class="wh-form">
+                <form method="POST" action="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" id="transfer-form" class="wh-form wh-transfer-form">
                     <div class="wh-transfer-row">
                         <div class="wh-transfer-field">
                             <label for="from_office_id">From *</label>
@@ -72,7 +72,7 @@
                         </div>
                     </div>
 
-                    <div class="rd-form-row" style="margin-top:16px;">
+                    <div class="rd-form-row" style="margin-top:18px;">
                         <div>
                             <label for="quantity">Quantity (Food Packs) *</label>
                             <input type="number" name="quantity" id="quantity" min="1" required>
@@ -84,15 +84,23 @@
                     </div>
 
                     <div class="wh-transfer-preview" id="transfer-preview" hidden>
-                        <div>
-                            <span class="wh-transfer-preview-label" id="from-preview-label">WAREHOUSE AFTER TRANSFER</span>
+                        <div class="wh-transfer-preview-col">
+                            <div class="wh-transfer-preview-head">
+                                {{ icon('package', 16, '#5347ce') }}
+                                <span class="wh-transfer-preview-label">FROM WAREHOUSE</span>
+                            </div>
+                            <span class="wh-sub">Remaining after transfer</span>
                             <strong id="from-preview-value">-</strong>
-                            <span class="wh-sub">remaining packs</span>
+                            <span class="wh-transfer-preview-unit">packs</span>
                         </div>
-                        <div>
-                            <span class="wh-transfer-preview-label" id="to-preview-label">WAREHOUSE AFTER TRANSFER</span>
+                        <div class="wh-transfer-preview-col">
+                            <div class="wh-transfer-preview-head">
+                                {{ icon('package', 16, '#5347ce') }}
+                                <span class="wh-transfer-preview-label">TO WAREHOUSE</span>
+                            </div>
+                            <span class="wh-sub">Projected after transfer</span>
                             <strong id="to-preview-value" class="text-green">-</strong>
-                            <span class="wh-sub">projected packs</span>
+                            <span class="wh-transfer-preview-unit">packs</span>
                         </div>
                     </div>
 

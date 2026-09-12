@@ -117,6 +117,22 @@
 
 .csel-list[hidden] { display: none; }
 
+/* Toggled by custom_select.js when there isn't enough room below the
+   trigger but more above it (non-modal pages only - see .rd-modal
+   .csel-list below) - opens above the trigger instead of below. */
+.csel-list.csel-list-up { top: auto; bottom: calc(100% + 4px); }
+
+/* Inside a modal, the list joins normal document flow instead of
+   overlaying (position: absolute above) - opening it pushes the rest of
+   the form down and the modal card (height: auto, capped by its own
+   max-height: 90vh/overflow-y: auto) genuinely grows to fit it, instead
+   of the list being squeezed into whatever gap existed below the trigger
+   before it opened and needing its own scrollbar for a handful of
+   options. See positionList() in custom_select.js, which skips the
+   position/max-height math entirely for a trigger inside .rd-modal since
+   this covers it. */
+.rd-modal .csel-list { position: static; margin-top: 4px; }
+
 .csel-option {
     display: flex;
     align-items: center;

@@ -126,9 +126,8 @@
                                 <button type="submit" class="admin-btn admin-btn-outline">{{ 'Restore' if show_archived else 'Archive' }}</button>
                             </form>
                             {% if show_archived %}
-                            <form method="POST" action="{{ url_for('barangay.family_profile_delete', family_id=f.family_id) }}" data-confirm="Delete {{ f.family_name }} permanently? This can't be undone.">
-                                <button type="submit" class="admin-btn admin-btn-outline-danger">Delete</button>
-                            </form>
+                            <form method="POST" action="{{ url_for('barangay.family_profile_delete', family_id=f.family_id) }}" id="delete-family-form-{{ f.family_id }}"></form>
+                            <button type="button" class="admin-btn admin-btn-outline-danger" data-open-modal="delete-family-modal-{{ f.family_id }}">Delete</button>
                             {% endif %}
                         </td>
                     </tr>
@@ -262,17 +261,30 @@
 {% endif %}
 {% endfor %}
 
+<!-- Delete Family modals (one per archived row) -->
+{% if show_archived %}
+{% for f in families %}
+<div class="rd-modal-overlay" id="delete-family-modal-{{ f.family_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('trash-2', 18, '#c0392b') }} Delete Family</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <p class="form-hint">Delete <strong>{{ f.family_name }}</strong> permanently? This can't be undone.</p>
+        <div class="rd-modal-actions">
+            <button type="submit" form="delete-family-form-{{ f.family_id }}" class="btn-decision btn-reject">{{ icon('trash-2', 16, 'white') }} Delete</button>
+            <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 <script>
-document.querySelectorAll('form[data-confirm]').forEach(function (f) {
-    f.addEventListener('submit', function (e) {
-        if (!confirm(f.dataset.confirm)) e.preventDefault();
-    });
-});
-
 // Print Selected - not a real <form> (the per-row Archive/Delete forms
 // already live inside these table rows, and HTML forms can't nest), so a
 // plain click handler collects the checked family_ids and navigates to
@@ -299,6 +311,21 @@ document.querySelectorAll('form[data-confirm]').forEach(function (f) {
     }
 
     checkboxes.forEach(function (cb) { cb.addEventListener('change', refresh); });
+
+    // Clicking anywhere on a row toggles its checkbox, not just the tiny
+    // checkbox square itself - except on the row's own interactive bits
+    // (the checkbox, which would otherwise double-toggle; the Edit/Archive/
+    // Delete buttons and forms, which have their own separate action).
+    rows.forEach(function (row) {
+        row.addEventListener('click', function (e) {
+            if (e.target.closest('input, button, a, form')) return;
+            var cb = row.querySelector('.fam-print-checkbox');
+            if (!cb) return;
+            cb.checked = !cb.checked;
+            cb.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    });
+
     if (selectAll) {
         selectAll.addEventListener('change', function () {
             visibleCheckboxes().forEach(function (cb) { cb.checked = selectAll.checked; });

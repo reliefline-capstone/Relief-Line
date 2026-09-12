@@ -358,52 +358,128 @@
 
 .wh-form textarea { resize: vertical; }
 
+/* Stock Transfer page - roomier padding than the site's default .panel (18px)
+   so the wider, more spacious form (below) doesn't feel cramped against the
+   panel's edges. */
+.wh-transfer-panel { padding: 22px 26px; }
+.wh-transfer-panel .panel-header h3 { font-size: 18px; }
+
+/* No max-width here on purpose - unlike a centered/capped form, this one is
+   meant to fill the panel's full width, matching the roomier field sizing
+   below instead of looking boxed-in and narrow. */
+.wh-transfer-form { margin-top: 8px; }
+
+/* align-items: center (not flex-end, which put the arrow level with the
+   bottom of each field's hint text below the dropdown) - the arrow's own
+   margin-top then nudges it down past the From/To label so it lands level
+   with the dropdowns themselves instead of the field as a whole (label +
+   dropdown + hint). */
 .wh-transfer-row {
     display: flex;
-    gap: 12px;
-    align-items: flex-end;
+    gap: 18px;
+    align-items: center;
 }
 
 /* Stock Transfer page */
-.wh-transfer-field { flex: 1; }
+.wh-transfer-field { flex: 1; min-width: 0; }
+.wh-transfer-field label,
+.wh-transfer-form .rd-form-row label { font-size: 13px; }
+/* .csel-wrap defaults to display: inline-block (custom_select.css), sized
+   to its own content (the "Select source"/"Select destination" text) -
+   width: 100% is what actually makes it fill its flex: 1 field the same
+   way a plain <input> already does by default, instead of shrink-wrapping
+   to whatever's shorter and leaving the From/To boxes visibly different
+   widths that don't line up with Quantity/Reason below them. */
+.wh-transfer-field .csel-wrap { width: 100%; }
+/* .csel-trigger's own default padding (custom_select.css, 9px top/bottom)
+   is shorter than .wh-form input's - keeping both at the same larger,
+   roomier padding here (rather than the site-wide default) is what gives
+   the dropdowns and the Quantity/Reason inputs below them matching heights. */
+.wh-transfer-field .csel-trigger,
+.wh-transfer-form input {
+    padding: 12px 14px;
+    font-size: 14px;
+}
+
+/* Reason is a free-text input (backend stores it as an optional note), but
+   visually it should read as part of the same matched field set as the
+   From/To/Quantity boxes - this chevron is a purely decorative echo of the
+   dropdown trigger's own arrow, not a functional control. */
+#reason {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%238a94a6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 34px;
+}
 
 .wh-transfer-arrow {
     flex-shrink: 0;
-    width: 34px; height: 34px;
+    width: 42px; height: 42px;
     border-radius: 50%;
     background: #5347ce;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 4px;
+    margin-top: 20px;
+}
+
+@media (max-width: 600px) {
+    .wh-transfer-panel { padding: 20px; }
+    .wh-transfer-row { flex-direction: column; align-items: stretch; }
+    /* Points down instead of right once From/To stack vertically. */
+    .wh-transfer-arrow { align-self: center; margin: 4px 0; transform: rotate(90deg); }
 }
 
 .wh-transfer-preview {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    background: #efedfd;
+    background: #f4f2fd;
     border-radius: 10px;
-    padding: 16px;
-    margin-top: 16px;
-    text-align: center;
+    margin-top: 20px;
+}
+/* warehouse_transfer.js only un-hides this once source/destination/quantity
+   are all filled in - the class-level `display: grid` above otherwise beats
+   the browser's default [hidden]{display:none} rule at equal specificity
+   (same pattern as distribution.css's .nd-request-option[hidden]), so the
+   box showed up with its empty "-" placeholder state from the very start. */
+.wh-transfer-preview[hidden] { display: none; }
+
+.wh-transfer-preview-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 22px;
+    text-align: left;
+}
+/* Vertical divider between the two columns - a plain border would run the
+   full row height including the padding; the gradient fades it out before
+   it touches the box's own top/bottom edge instead. */
+.wh-transfer-preview-col:first-child {
+    border-right: 1px solid transparent;
+    border-image: linear-gradient(to bottom, transparent, rgba(83, 71, 206, 0.18) 15%, rgba(83, 71, 206, 0.18) 85%, transparent) 1;
 }
 
+.wh-transfer-preview-head { display: flex; align-items: center; gap: 10px; }
+
 .wh-transfer-preview-label {
-    display: block;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.4px;
     color: #5347ce;
-    margin-bottom: 4px;
 }
 
-.wh-transfer-preview strong { display: block; font-size: 22px; margin-bottom: 2px; }
+.wh-transfer-preview strong { display: block; font-size: 26px; margin-top: 4px; }
+.wh-transfer-preview-unit { font-size: 12px; color: #8a94a6; }
 
 .wh-transfer-actions {
     display: flex;
     gap: 10px;
     margin-top: 20px;
+}
+
+.wh-transfer-panel .wh-transfer-actions .btn-decision {
+    padding: 12px;
+    font-size: 14px;
 }
 
 .wh-transfer-actions .btn-decision { flex: 2; }

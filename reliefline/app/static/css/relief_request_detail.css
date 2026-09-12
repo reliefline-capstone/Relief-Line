@@ -253,6 +253,14 @@ html.rd-modal-open { overflow: hidden; }
        tall modal past the viewport. */
     max-height: calc(90vh / var(--ui-scale));
     overflow-y: auto;
+    /* Reserves the scrollbar's width whether or not it's actually needed
+       yet, instead of only once content (e.g. a .csel-list opening in
+       normal flow - custom_select.css) grows the modal past max-height.
+       Without this, a classic (non-overlay) scrollbar appearing mid-
+       interaction narrows the content column by its own width, visibly
+       shifting/shrinking every field a few pixels at the exact moment a
+       dropdown opens. */
+    scrollbar-gutter: stable;
     /* @keyframes modalPopIn lives in base.css (loaded on every page) so it
        still applies to .da-modal on pages that never load this stylesheet. */
     animation: modalPopIn 0.18s ease-out both;

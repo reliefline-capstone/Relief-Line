@@ -280,6 +280,9 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                         <span class="review-box-title">Barangay Data</span>
                         <div class="review-row"><span>Families</span><strong id="rv-families"></strong></div>
                         <div class="review-row"><span>Individuals</span><strong id="rv-individuals"></strong></div>
+                        <div class="review-row"><span>PWD</span><strong id="rv-pwd"></strong></div>
+                        <div class="review-row"><span>Senior Citizens</span><strong id="rv-senior"></strong></div>
+                        <div class="review-row"><span>Children</span><strong id="rv-children"></strong></div>
                         <div class="review-row"><span>Totally Damaged</span><strong id="rv-totally"></strong></div>
                         <div class="review-row"><span>Partially Damaged</span><strong id="rv-partially"></strong></div>
                         <div class="review-row"><span>Food Packs Requested</span><strong id="rv-requested"></strong></div>
@@ -386,10 +389,23 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
         return el ? (el.tagName === 'SELECT' ? el.options[el.selectedIndex].text : el.value) : '';
     }
 
+    // fam-sum-pwd/senior/children only exist when the barangay has
+    // registered families to check off (they sit inside Step 3's
+    // families-present branch) - a manual-only barangay never renders
+    // them, so this can't assume getElementById() succeeds the way
+    // textOf() does for the always-present form fields above.
+    function contentOf(id) {
+        var el = document.getElementById(id);
+        return el ? el.textContent : '';
+    }
+
     function populateReview() {
         document.getElementById('rv-date').textContent = (textOf('incident_date') || '-') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
         document.getElementById('rv-families').textContent = textOf('affected_families') || '0';
         document.getElementById('rv-individuals').textContent = textOf('affected_individuals') || '0';
+        document.getElementById('rv-pwd').textContent = contentOf('fam-sum-pwd') || '0';
+        document.getElementById('rv-senior').textContent = contentOf('fam-sum-senior') || '0';
+        document.getElementById('rv-children').textContent = contentOf('fam-sum-children') || '0';
         document.getElementById('rv-totally').textContent = textOf('totally_damaged_houses') || '0';
         document.getElementById('rv-partially').textContent = textOf('partially_damaged_houses') || '0';
         document.getElementById('rv-requested').textContent = textOf('requested_food_packs') || 'Not specified';
@@ -465,6 +481,13 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
             if (familiesField) familiesField.value = mf;
             if (individualsField) individualsField.value = mi;
             if (suggestBox) suggestBox.hidden = true;
+            // No checklist selection to tally PWD/senior/children from in
+            // manual mode - zero these out instead of leaving whatever was
+            // last computed from a checklist selection made before the
+            // toggle was switched on.
+            setText('fam-sum-pwd', 0);
+            setText('fam-sum-senior', 0);
+            setText('fam-sum-children', 0);
             updateIndividualsHint(mf, mi);
             return;
         }
