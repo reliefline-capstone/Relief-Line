@@ -128,13 +128,13 @@
                             <div class="wh-item-name-cell">
                                 <span class="wh-item-icon">{{ icon('package', 14, '#3867d6') }}</span>
                                 <strong>{{ item.item_name }}</strong>
-                                {% if item.item_type == 'food_pack' %}<span class="wh-sub">predictive / allocation item</span>{% endif %}
+                                {% if item.item_type == 'food_pack_damaged' %}<span class="wh-sub">returned by barangay</span>{% endif %}
                             </div>
                         </td>
                         <td><strong>{{ "{:,}".format(item.quantity_available) }}</strong></td>
                         <td>{{ item.unit }}</td>
-                        <td>{{ "{:,}".format(item.min_stock_level) }}</td>
-                        <td><span class="badge-health badge-{{ row.status|lower }}">{{ 'Low Stock' if row.status == 'Low' else row.status }}</span></td>
+                        <td>{{ "{:,}".format(item.min_stock_level) if item.item_type != 'food_pack_damaged' else '-' }}</td>
+                        <td>{% if item.item_type != 'food_pack_damaged' %}<span class="badge-health badge-{{ row.status|lower }}">{{ 'Low Stock' if row.status == 'Low' else row.status }}</span>{% else %}-{% endif %}</td>
                         <td>
                             <div class="wh-row-actions">
                                 <button type="button" class="wh-icon-btn" title="Update stock" data-open-modal="mi-update-modal-{{ item.inventory_id }}">{{ icon('external-link', 15, '#2c5aa0') }}</button>
@@ -228,6 +228,24 @@
             <h3>Update: {{ item.item_name }}</h3>
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
         </div>
+        {% if item.item_type == 'food_pack_damaged' %}
+        <form method="POST" action="{{ url_for('cswdo.municipal_inventory_resolve_damaged', inventory_id=item.inventory_id) }}">
+            <label for="mi-dq-{{ item.inventory_id }}">Quantity ({{ item.unit }}) *</label>
+            <input type="number" name="quantity" id="mi-dq-{{ item.inventory_id }}" min="1" max="{{ item.quantity_available }}" required>
+            <p class="rd-sub">Currently on record: <strong>{{ "{:,}".format(item.quantity_available) }}</strong> {{ item.unit }}</p>
+            <label for="mi-dr-{{ item.inventory_id }}">Resolution *</label>
+            <select name="resolution" id="mi-dr-{{ item.inventory_id }}" required>
+                <option value="" selected disabled>Select...</option>
+                <option value="disposed">Disposed - written off</option>
+                <option value="fixed">Fixed - return to Food Packs stock</option>
+            </select>
+            <p class="form-hint">Disposed removes these packs from the record for good. Fixed moves them back into the office's usable Food Packs stock.</p>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Resolve</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+        {% else %}
         <form method="POST" action="{{ url_for('cswdo.municipal_inventory_update', inventory_id=item.inventory_id) }}">
             <label for="mi-q-{{ item.inventory_id }}">Quantity to Add / Remove ({{ item.unit }}) *</label>
             <input type="number" name="delta" id="mi-q-{{ item.inventory_id }}" step="1" placeholder="e.g. 50 or -10" required
@@ -251,6 +269,7 @@
                 <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
             </div>
         </form>
+        {% endif %}
     </div>
 </div>
 {% endfor %}

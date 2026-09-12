@@ -44,7 +44,11 @@ class BarangayStockLog(db.Model):
 
     source_type: 'delivery' (a confirmed CSWDO delivery, distribution_id set),
     'distribution' (barangay handed goods to residents), 'adjustment' (manual
-    correction - recount, spoilage).
+    correction - recount, spoilage), 'damaged_return' (informational only,
+    delta always 0 - damaged packs from a delivery never entered this
+    barangay's usable stock in the first place, see app.routes.barangay.
+    _return_damaged_packs; this row just records, for the barangay's own
+    history, that they were sent back to the fulfilling office's warehouse).
     """
     __tablename__ = "barangay_stock_logs"
 
@@ -55,7 +59,7 @@ class BarangayStockLog(db.Model):
     delta = db.Column(db.Integer, nullable=False)
     reason = db.Column(db.String(255), nullable=True)
     source_type = db.Column(
-        db.Enum("delivery", "distribution", "adjustment"),
+        db.Enum("delivery", "distribution", "adjustment", "damaged_return"),
         nullable=False, default="adjustment", server_default="adjustment",
     )
     distribution_id = db.Column(

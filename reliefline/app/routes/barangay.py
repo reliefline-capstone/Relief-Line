@@ -22,6 +22,7 @@ from app.models.family import Family, ReportAffectedFamily
 from app.models.barangay_inventory import BarangayInventory, BarangayStockLog
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
+from app.models.warehouse import WarehouseInventory, WarehouseStockLog
 from app.models.activity_log import ActivityLog
 from app.models.user import User
 from app.utils import weather as weather_service
@@ -1148,6 +1149,7 @@ def confirm_receipt(distribution_id):
     rec.submitted_by = current_user.user_id
 
     _record_barangay_receipt(rec)
+    _return_damaged_packs(rec)
 
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="distribution_receipt_confirmed",
@@ -1203,6 +1205,56 @@ def _record_barangay_receipt(rec):
             rep.status = "fulfilled"
 
 
+def _return_damaged_packs(rec):
+    """Damaged packs never enter the barangay's usable stock (see
+    _record_barangay_receipt's `good_count`-only bump) - they physically stay
+    with/come back to whichever office fulfilled the delivery. Credit them
+    back to that office's warehouse under a distinct "food_pack_damaged" item
+    so they're visible for disposal/write-off decisions without ever being
+    counted in the "food_pack" figure the allocation/prediction pipeline
+    reads. Called once, right after confirm_receipt sets rec.quantity_damaged
+    (the route's own "already confirmed" guard keeps this from double-firing)."""
+    if not rec.damaged_count:
+        return
+    alloc = rec.allocation
+    office_id = alloc.fulfilling_office_id if alloc else None
+    if not office_id:
+        return
+
+    inv = WarehouseInventory.query.filter_by(
+        office_id=office_id, item_type="food_pack_damaged"
+    ).first()
+    if inv is None:
+        inv = WarehouseInventory(
+            office_id=office_id, item_type="food_pack_damaged",
+            item_name="Damaged Food Packs (Returned)", unit="packs", quantity_available=0,
+        )
+        db.session.add(inv)
+    inv.quantity_available = (inv.quantity_available or 0) + rec.damaged_count
+    inv.updated_by = current_user.user_id
+
+    ref = f"D-{rec.distribution_date.year}-{rec.distribution_id:03d}"
+    office_name = alloc.fulfilling_office.office_name if alloc.fulfilling_office else "the warehouse"
+    db.session.add(WarehouseStockLog(
+        office_id=office_id, item_type="food_pack_damaged", item_name="Damaged Food Packs (Returned)",
+        delta=rec.damaged_count, source_type="returned_damaged",
+        reason=f"Damaged on delivery {ref} to Brgy. {rec.barangay.barangay_name} - returned for disposal/write-off",
+        updated_by=current_user.user_id,
+    ))
+
+    # Mirror the same event on the barangay's own ledger - delta 0 since the
+    # damaged packs never entered BarangayInventory to begin with (see
+    # _record_barangay_receipt); this row exists purely so the barangay's own
+    # Movement History shows where the damaged packs went instead of them
+    # just disappearing from the count.
+    db.session.add(BarangayStockLog(
+        barangay_id=rec.barangay_id, item_type="food_pack", item_name="Food Packs",
+        delta=0, source_type="damaged_return", distribution_id=rec.distribution_id,
+        updated_by=current_user.user_id,
+        reason=f"{rec.damaged_count:,} damaged packs from {ref} returned to {office_name}",
+    ))
+
+
 # ---------------------------------------------------------------------------
 # Inventory - the barangay's own food-pack stock. A plain +/- ledger for
 # operational visibility (CSWDO/PSWDO can also see it). Goes UP automatically
@@ -1240,6 +1292,20 @@ def inventory():
             date_filter = ""
     logs = logs_q.order_by(BarangayStockLog.created_at.desc()).limit(30).all()
 
+    # Delivery/damaged-return log rows link back to the DistributionRecord
+    # they came from - fetched in one query so the Movement History can show
+    # a released/good/short/damaged breakdown on click, without a query per row.
+    distribution_ids = {
+        l.distribution_id for l in logs
+        if l.source_type in ("delivery", "damaged_return") and l.distribution_id
+    }
+    delivery_recs = {}
+    if distribution_ids:
+        for rec in DistributionRecord.query.filter(
+            DistributionRecord.distribution_id.in_(distribution_ids)
+        ).all():
+            delivery_recs[rec.distribution_id] = rec
+
     families = Family.query.filter_by(
         barangay_id=barangay.barangay_id, is_active=True
     ).order_by(Family.purok, Family.family_name).all()
@@ -1247,7 +1313,7 @@ def inventory():
     return render_template(
         "barangay/inventory.html",
         barangay=barangay, on_hand=on_hand, logs=logs, families=families,
-        received=received, given_out=given_out,
+        received=received, given_out=given_out, delivery_recs=delivery_recs,
         type_filter=type_filter, date_filter=date_filter,
     )
 

@@ -653,7 +653,7 @@ def _parse_stock_source(form):
 def _full_stock_movements(office_ids, type_filter="all", date_str=""):
     """Structured movement ledger (releases, completed transfers, manual stock
     adjustments) for warehouses in office_ids - real data, not free-text logs.
-    type_filter: all | released | transferred_out | transferred_in | received"""
+    type_filter: all | released | transferred_out | transferred_in | received | returned_damaged | damaged_resolved"""
     movements = []
     filter_date = None
     if date_str:
@@ -718,11 +718,15 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
                     "is_donation": False,
                 })
 
-    if type_filter in ("all", "received"):
+    if type_filter in ("all", "received", "returned_damaged"):
         log_q = WarehouseStockLog.query.filter(
             WarehouseStockLog.office_id.in_(office_ids),
             WarehouseStockLog.delta > 0
         )
+        if type_filter == "received":
+            log_q = log_q.filter(WarehouseStockLog.source_type != "returned_damaged")
+        elif type_filter == "returned_damaged":
+            log_q = log_q.filter(WarehouseStockLog.source_type == "returned_damaged")
         if filter_date:
             log_q = log_q.filter(db.func.date(WarehouseStockLog.created_at) == filter_date)
         for log in log_q.order_by(WarehouseStockLog.created_at.desc()).all():
@@ -731,15 +735,46 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
                 context = f"Donated by {log.donor_name}" + (f" - {log.reason}" if log.reason else "")
             else:
                 context = base_context
+            if log.is_damaged_return:
+                direction = "Returned - Damaged"
+            elif log.is_donation:
+                direction = "Received - Donation"
+            else:
+                direction = "Received"
             movements.append({
                 "office_id": log.office_id,
                 "office_name": log.office.office_name,
-                "direction": "Received - Donation" if log.is_donation else "Received",
+                "direction": direction,
                 "qty": log.delta,
                 "context": context,
                 "when": log.created_at.date(),
                 "sort_at": log.created_at,
                 "is_donation": log.is_donation,
+            })
+
+    if type_filter in ("all", "damaged_resolved"):
+        # "food_pack_damaged" is never touched by an ordinary release/transfer
+        # (those only ever move "food_pack"), so every negative log here is a
+        # Disposed or Fixed resolution from cswdo.municipal_inventory_resolve_
+        # damaged - safe to surface without double-counting the "released"
+        # bucket above.
+        resolved_q = WarehouseStockLog.query.filter(
+            WarehouseStockLog.office_id.in_(office_ids),
+            WarehouseStockLog.item_type == "food_pack_damaged",
+            WarehouseStockLog.delta < 0,
+        )
+        if filter_date:
+            resolved_q = resolved_q.filter(db.func.date(WarehouseStockLog.created_at) == filter_date)
+        for log in resolved_q.order_by(WarehouseStockLog.created_at.desc()).all():
+            movements.append({
+                "office_id": log.office_id,
+                "office_name": log.office.office_name,
+                "direction": "Damaged - Resolved",
+                "qty": log.delta,
+                "context": log.reason or f"{log.item_name} stock update",
+                "when": log.created_at.date(),
+                "sort_at": log.created_at,
+                "is_donation": False,
             })
 
     movements.sort(key=lambda m: m["sort_at"], reverse=True)

@@ -135,7 +135,7 @@
                     <div class="gis-priority-row-right">
                         <span class="badge-priority badge-priority-{{ r.priority_tier }}"><i class="priority-dot"></i> {{ r.priority_label }}</span>
                         <strong>{{ "{:,}".format(r.packs_needed) }} packs{% if r.need_source == 'model' %}*{% endif %}</strong>
-                        {% if can_allocate and event and r.need_source == 'model' and r.undelivered > 0 %}
+                        {% if can_allocate and r.need_source == 'model' and r.undelivered > 0 %}
                         <button type="button" class="btn-view-sm" data-open-modal="pa-allocate-modal"
                                 data-barangay-id="{{ r.barangay_id }}" data-barangay-name="{{ r.name }}"
                                 data-predicted="{{ r.suggested_allocation or r.undelivered }}"
@@ -292,15 +292,22 @@
                     your own warehouse ahead of one, based on the model's estimate below - the number is
                     yours to set; the model only supports the decision, it doesn't make it.
                 </p>
-                {% if event %}
                 <form method="POST" action="{{ url_for('cswdo.proactive_allocate') }}" class="settings-form">
                     <input type="hidden" name="barangay_id" id="pa-am-barangay-id">
-                    <input type="hidden" name="event_id" value="{{ event.event_id }}">
+                    <div class="form-row">
+                        <label for="pa-am-event">Disaster event (optional)</label>
+                        <select name="event_id" id="pa-am-event">
+                            <option value="" {{ 'selected' if not event }}>No event - routine restocking</option>
+                            {% for e in active_events %}
+                            <option value="{{ e.event_id }}" {{ 'selected' if event and event.event_id == e.event_id }}>{{ e.event_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <div class="form-row">
                         <label for="pa-am-quantity">Food packs to allocate *</label>
                         <input type="number" name="quantity" id="pa-am-quantity" min="1" required>
                         <span class="form-hint" id="pa-am-hint">Prefilled with the model's estimate net of the barangay's own stock (decision support only) ·
-                            your warehouse: {{ "{:,}".format(total_food_packs) }} on hand · event: {{ event.event_name }}</span>
+                            your warehouse: {{ "{:,}".format(total_food_packs) }} on hand{% if event %} · event: {{ event.event_name }}{% endif %}</span>
                     </div>
                     <div class="form-row">
                         <label for="pa-am-remarks">Justification *</label>
@@ -312,9 +319,6 @@
                     </div>
                     <p class="form-hint">Recorded as a proactive, model-informed allocation. The barangay still confirms receipt once delivered - recording how many packs arrived and their condition - same accountability trail as every other delivery.</p>
                 </form>
-                {% else %}
-                <p class="empty-note">Select an active disaster event above before allocating proactively.</p>
-                {% endif %}
             </div>
         </div>
         {% endif %}

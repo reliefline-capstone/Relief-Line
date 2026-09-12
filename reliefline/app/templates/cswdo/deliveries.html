@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}?v={{ asset_version('css/distribution.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}?v={{ asset_version('css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -24,7 +25,12 @@
                 <h2>Deliveries</h2>
                 <p>{{ lgu or '-' }} · food packs released from your warehouse to barangays</p>
             </div>
-            <a href="{{ url_for('cswdo.damage_assessment') }}" class="btn-outline">{{ icon('clipboard', 16) }} Barangay Reports</a>
+            <div style="display:flex; gap:10px;">
+                <a href="{{ url_for('cswdo.damage_assessment') }}" class="btn-outline">{{ icon('clipboard', 16) }} Barangay Reports</a>
+                {% if can_allocate %}
+                <button type="button" class="btn-primary" data-open-modal="dv-allocate-modal">{{ icon('package', 16, 'white') }} Allocate</button>
+                {% endif %}
+            </div>
         </div>
 
         <section class="stat-cards stat-cards-4">
@@ -104,6 +110,61 @@
             </table>
         </section>
 
+        {% if can_allocate %}
+        <div class="rd-modal-overlay" id="dv-allocate-modal" hidden>
+            <div class="rd-modal" style="max-width:560px;">
+                <div class="rd-modal-header">
+                    <h3>{{ icon('package', 18, '#0f2547') }} Allocate to Barangay</h3>
+                    <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+                </div>
+                <p class="form-hint">
+                    Release food packs from your own warehouse to any barangay in {{ lgu or 'your LGU' }} - with or
+                    without a Barangay Report behind it. The number is yours to set; any model estimate is decision
+                    support only.
+                </p>
+                <form method="POST" action="{{ url_for('cswdo.proactive_allocate') }}" class="settings-form">
+                    <input type="hidden" name="next" value="deliveries">
+                    <div class="form-row">
+                        <label for="dv-am-barangay">Barangay *</label>
+                        <select name="barangay_id" id="dv-am-barangay" required>
+                            <option value="">Select a barangay...</option>
+                            {% for b in lgu_barangays %}
+                            <option value="{{ b.barangay_id }}">{{ b.barangay_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="dv-am-event">Disaster event (optional)</label>
+                        <select name="event_id" id="dv-am-event">
+                            <option value="" selected>No event - routine restocking</option>
+                            {% for e in active_events %}
+                            <option value="{{ e.event_id }}">{{ e.event_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="dv-am-quantity">Food packs to allocate *</label>
+                        <input type="number" name="quantity" id="dv-am-quantity" min="1" required>
+                        <span class="form-hint">Your warehouse: {{ "{:,}".format(total_food_packs) }} on hand</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="dv-am-remarks">Justification *</label>
+                        <textarea name="remarks" id="dv-am-remarks" rows="2" required
+                                  placeholder="Why allocate now, without a barangay request?"></textarea>
+                    </div>
+                    <div class="rd-modal-actions">
+                        <button type="submit" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Allocate</button>
+                    </div>
+                    <p class="form-hint">The barangay still confirms receipt once delivered - recording how many packs arrived and their condition - same accountability trail as every other delivery.</p>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
     </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 {% endblock %}

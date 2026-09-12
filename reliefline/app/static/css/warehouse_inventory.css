@@ -508,6 +508,9 @@
 
 .wh-movement-row:last-child { border-bottom: none; }
 
+.wh-movement-row-clickable { cursor: pointer; border-radius: 8px; }
+.wh-movement-row-clickable:hover { background: #f7f8fc; }
+
 .wh-movement-more { border-top: 1px solid #f0f2f6; }
 .wh-movement-more > summary {
     list-style: none;
