@@ -197,6 +197,17 @@
 .admin-btn-success { background: #e8faf0; color: #1e8449; }
 .admin-btn-success:hover { background: #d7f5e3; }
 
+/* Was an inline style="border:...; background:white;" (Family Profiles'
+   Archive/Restore button) - being on the element itself, that permanently
+   wins over any :hover rule a stylesheet could add, so the button never
+   gave hover feedback. */
+.admin-btn-outline { background: white; color: #333; border: 1px solid #d8dee9; }
+.admin-btn-outline:hover { background: #f4f4fb; }
+
+/* Same fix, for the red-outline Delete button next to it (same page). */
+.admin-btn-outline-danger { background: white; color: #c0392b; border: 1px solid #e0b4b4; }
+.admin-btn-outline-danger:hover { background: #fdecea; }
+
 /* Roles & Permissions matrix */
 .perm-table-panel { padding: 0; overflow-x: auto; }
 

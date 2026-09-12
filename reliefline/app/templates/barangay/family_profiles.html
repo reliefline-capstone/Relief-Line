@@ -57,24 +57,36 @@
         </section>
         {% endif %}
 
+        {% set puroks = families|map(attribute='purok')|reject('none')|unique|sort|list %}
         <section class="page-header" style="margin-bottom: 12px;">
-            <form method="GET" class="wh-search-form">
-                <div class="wh-search-wrapper">
+            <div class="fam-filter-bar" style="margin-bottom:0; flex:1;">
+                <div class="fam-search-wrapper">
                     {{ icon('search', 14, '#8a94a6') }}
-                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search family name or purok...">
+                    <input type="text" id="fam-search" placeholder="Search family name or purok...">
                 </div>
-                <input type="hidden" name="archived" value="{{ '1' if show_archived else '0' }}">
-            </form>
+                {% if puroks|length > 1 %}
+                <select id="fam-purok-filter">
+                    <option value="">All Puroks</option>
+                    {% for p in puroks %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+                </select>
+                {% endif %}
+                <select id="fam-category-filter">
+                    <option value="">All Families</option>
+                    <option value="pwd">With PWD Members</option>
+                    <option value="senior">With Senior Citizens</option>
+                    <option value="children">With Children</option>
+                </select>
+            </div>
             <div class="notif-filter-tabs" style="margin:0;">
-                <a href="{{ url_for('barangay.family_profiles', q=search_query) }}" class="notif-filter-tab {{ 'active' if not show_archived }}">{{ icon('users', 14) }} Active</a>
-                <a href="{{ url_for('barangay.family_profiles', q=search_query, archived=1) }}" class="notif-filter-tab {{ 'active' if show_archived }}">{{ icon('file-text', 14) }} Archived</a>
+                <a href="{{ url_for('barangay.family_profiles') }}" class="notif-filter-tab {{ 'active' if not show_archived }}">{{ icon('users', 14) }} Active</a>
+                <a href="{{ url_for('barangay.family_profiles', archived=1) }}" class="notif-filter-tab {{ 'active' if show_archived }}">{{ icon('file-text', 14) }} Archived</a>
             </div>
         </section>
 
         <section class="panel wh-table-panel fam-sticky-panel">
             {% if not show_archived and families %}
             <div class="fam-print-bar">
-                <label class="fam-checklist-selectall"><input type="checkbox" id="fam-print-select-all"> Select All</label>
+                <label class="fam-checklist-selectall"><input type="checkbox" id="fam-print-select-all"> Select All (<span id="fam-print-select-all-count">{{ families|length }}</span>)</label>
                 <button type="button" class="btn-outline" id="fam-print-btn" disabled>{{ icon('list', 14) }} Print Selected</button>
             </div>
             {% endif %}
@@ -92,42 +104,46 @@
                         <th>ACTIONS</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="fam-table-body">
                     {% for f in families %}
-                    <tr>
+                    <tr data-name="{{ (f.family_name ~ ' ' ~ (f.head_name or ''))|lower }}" data-purok="{{ f.purok or '' }}"
+                        data-pwd="{{ 1 if f.pwd_count else 0 }}" data-senior="{{ 1 if f.senior_count else 0 }}" data-children="{{ 1 if f.children_count else 0 }}">
                         {% if not show_archived %}
                         <td><input type="checkbox" name="family_ids" value="{{ f.family_id }}" class="fam-print-checkbox"></td>
                         {% endif %}
                         <td><strong>{{ f.family_name }}</strong>{% if f.head_name %}<span class="wh-table-sub">{{ f.head_name }}</span>{% endif %}</td>
                         <td>{{ f.purok or '-' }}</td>
                         <td>{{ f.member_count }}</td>
-                        <td>{{ f.pwd_count }}</td>
-                        <td>{{ f.senior_count }}</td>
-                        <td>{{ f.children_count }}</td>
+                        <td>{% if f.pwd_count %}<span class="fam-count-badge fam-count-pwd">{{ f.pwd_count }}</span>{% else %}<span class="fam-count-zero">0</span>{% endif %}</td>
+                        <td>{% if f.senior_count %}<span class="fam-count-badge fam-count-senior">{{ f.senior_count }}</span>{% else %}<span class="fam-count-zero">0</span>{% endif %}</td>
+                        <td>{% if f.children_count %}<span class="fam-count-badge fam-count-child">{{ f.children_count }}</span>{% else %}<span class="fam-count-zero">0</span>{% endif %}</td>
                         <td>{{ f.contact_number or '-' }}</td>
                         <td style="display:flex; gap:6px;">
                             {% if not show_archived %}
                             <button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-family-modal-{{ f.family_id }}">Edit</button>
                             {% endif %}
                             <form method="POST" action="{{ url_for('barangay.family_profile_archive', family_id=f.family_id, archived='1' if show_archived else none) }}" style="display:inline;">
-                                <button type="submit" class="admin-btn" style="border:1px solid #d8dee9; background:white;">{{ 'Restore' if show_archived else 'Archive' }}</button>
+                                <button type="submit" class="admin-btn admin-btn-outline">{{ 'Restore' if show_archived else 'Archive' }}</button>
                             </form>
                             {% if show_archived %}
                             <form method="POST" action="{{ url_for('barangay.family_profile_delete', family_id=f.family_id) }}" data-confirm="Delete {{ f.family_name }} permanently? This can't be undone.">
-                                <button type="submit" class="admin-btn" style="border:1px solid #e0b4b4; background:white; color:#c0392b;">Delete</button>
+                                <button type="submit" class="admin-btn admin-btn-outline-danger">Delete</button>
                             </form>
                             {% endif %}
                         </td>
                     </tr>
                     {% else %}
                     <tr><td colspan="9" class="empty-note" style="text-align:center; padding:30px;">
-                        {% if search_query %}No families match your search.
-                        {% elif show_archived %}No archived families.
+                        {% if show_archived %}No archived families.
                         {% else %}No families registered yet. Add your barangay's households here - they'll show up as a checklist when you file a Barangay Report.{% endif %}
                     </td></tr>
                     {% endfor %}
+                    {% if families %}
+                    <tr id="fam-no-match-row" hidden><td colspan="9" class="empty-note" style="text-align:center; padding:30px;">No families match your search or filters.</td></tr>
+                    {% endif %}
                 </tbody>
             </table>
+            <p class="fam-checklist-hint" id="fam-table-hint" style="padding:0 16px 12px;"></p>
         </section>
 
     </main>
@@ -264,29 +280,74 @@ document.querySelectorAll('form[data-confirm]').forEach(function (f) {
 (function () {
     var checkboxes = Array.prototype.slice.call(document.querySelectorAll('.fam-print-checkbox'));
     var selectAll = document.getElementById('fam-print-select-all');
+    var selectAllCount = document.getElementById('fam-print-select-all-count');
     var printBtn = document.getElementById('fam-print-btn');
-    if (!printBtn) return;
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#fam-table-body tr[data-name]'));
+
+    function visibleCheckboxes() {
+        return checkboxes.filter(function (cb) { return !cb.closest('tr').hidden; });
+    }
 
     function refresh() {
+        if (!printBtn) return;
         var checked = checkboxes.filter(function (cb) { return cb.checked; });
         printBtn.disabled = checked.length === 0;
-        if (selectAll) selectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+        if (selectAll) {
+            var visible = visibleCheckboxes();
+            selectAll.checked = visible.length > 0 && visible.every(function (cb) { return cb.checked; });
+        }
     }
 
     checkboxes.forEach(function (cb) { cb.addEventListener('change', refresh); });
     if (selectAll) {
         selectAll.addEventListener('change', function () {
-            checkboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+            visibleCheckboxes().forEach(function (cb) { cb.checked = selectAll.checked; });
             refresh();
         });
     }
-    printBtn.addEventListener('click', function () {
-        var ids = checkboxes.filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
-        if (!ids.length) return;
-        var params = ids.map(function (id) { return 'family_ids=' + encodeURIComponent(id); }).join('&');
-        window.location.href = "{{ url_for('barangay.print_families_selected') }}?" + params;
-    });
-    refresh();
+    if (printBtn) {
+        printBtn.addEventListener('click', function () {
+            var ids = checkboxes.filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
+            if (!ids.length) return;
+            var params = ids.map(function (id) { return 'family_ids=' + encodeURIComponent(id); }).join('&');
+            window.location.href = "{{ url_for('barangay.print_families_selected') }}?" + params;
+        });
+    }
+
+    // --- Search + purok/category filters for the table -------------------
+    var famSearch = document.getElementById('fam-search');
+    var famPurokFilter = document.getElementById('fam-purok-filter');
+    var famCategoryFilter = document.getElementById('fam-category-filter');
+    var famTableHint = document.getElementById('fam-table-hint');
+    var famNoMatchRow = document.getElementById('fam-no-match-row');
+
+    function applyFamFilter() {
+        if (!rows.length) return;
+        var q = famSearch ? famSearch.value.trim().toLowerCase() : '';
+        var purok = famPurokFilter ? famPurokFilter.value : '';
+        var category = famCategoryFilter ? famCategoryFilter.value : '';
+        var visible = 0;
+        rows.forEach(function (row) {
+            var matchesName = !q || row.dataset.name.indexOf(q) !== -1;
+            var matchesPurok = !purok || row.dataset.purok === purok;
+            var matchesCategory = !category || row.dataset[category] === '1';
+            var show = matchesName && matchesPurok && matchesCategory;
+            row.hidden = !show;
+            if (show) visible++;
+        });
+        if (famTableHint) {
+            famTableHint.textContent = (visible === rows.length)
+                ? ''
+                : 'Showing ' + visible + ' of ' + rows.length + ' families';
+        }
+        if (famNoMatchRow) famNoMatchRow.hidden = visible !== 0;
+        if (selectAllCount) selectAllCount.textContent = visible;
+        refresh();
+    }
+    if (famSearch) famSearch.addEventListener('input', applyFamFilter);
+    if (famPurokFilter) famPurokFilter.addEventListener('change', applyFamFilter);
+    if (famCategoryFilter) famCategoryFilter.addEventListener('change', applyFamFilter);
+    applyFamFilter();
 })();
 </script>
 {% endblock %}

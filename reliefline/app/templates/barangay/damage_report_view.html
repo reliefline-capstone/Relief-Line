@@ -31,6 +31,11 @@
                 {% if report.status in ('draft', 'pending', 'returned') %}
                 <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-outline" style="text-decoration:none;">{{ icon('file-text', 14) }} Edit Report</a>
                 {% endif %}
+                {% if report.status == 'pending' %}
+                <form method="POST" action="{{ url_for('barangay.unsubmit_damage_report', report_id=report.report_id) }}" id="unsubmit-form">
+                    <button type="submit" class="btn-outline btn-outline-accent">{{ icon('rotate-ccw', 14, '#5347ce') }} Unsubmit</button>
+                </form>
+                {% endif %}
             </div>
         </section>
 
@@ -114,24 +119,30 @@
         <div class="main-grid drv-grid" style="margin-top:16px;">
             <section class="panel">
                 <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Report Information</h3></div>
-                <div class="review-row"><span>Report ID</span><strong>{{ report.ref }}</strong></div>
-                <div class="review-row"><span>Barangay</span><strong>{{ report.barangay.barangay_name }}</strong></div>
-                <div class="review-row"><span>Submitted By</span><strong>{{ report.submitted_by_name }}{% if report.submitted_by_designation %} ({{ report.submitted_by_designation }}){% endif %}</strong></div>
-                <div class="review-row"><span>Date Submitted</span><strong>{{ report.submitted_at.strftime('%B %d, %Y · %I:%M %p') if report.submitted_at else 'Not yet submitted' }}</strong></div>
-                <div class="review-row"><span>Typhoon Event</span><strong>{{ report.event.event_name if report.event else '-' }}</strong></div>
-                <div class="review-row"><span>Incident Date</span><strong>{{ report.incident_date.strftime('%B %d, %Y') if report.incident_date else '-' }}</strong></div>
-                <div class="review-row"><span>Incident Time</span><strong>{{ report.incident_time.strftime('%I:%M %p') if report.incident_time else '-' }}</strong></div>
+                <div class="review-row-list">
+                    <div class="review-row"><span>Report ID</span><strong>{{ report.ref }}</strong></div>
+                    <div class="review-row"><span>Barangay</span><strong>{{ report.barangay.barangay_name }}</strong></div>
+                    <div class="review-row"><span>Submitted By</span><strong>{{ report.submitted_by_name }}{% if report.submitted_by_designation %} ({{ report.submitted_by_designation }}){% endif %}</strong></div>
+                    <div class="review-row"><span>Date Submitted</span><strong>{{ report.submitted_at.strftime('%B %d, %Y · %I:%M %p') if report.submitted_at else 'Not yet submitted' }}</strong></div>
+                    <div class="review-row"><span>Typhoon Event</span><strong>{{ report.event.event_name if report.event else '-' }}</strong></div>
+                    <div class="review-row"><span>Incident Date</span><strong>{{ report.incident_date.strftime('%B %d, %Y') if report.incident_date else '-' }}</strong></div>
+                    <div class="review-row"><span>Incident Time</span><strong>{{ report.incident_time.strftime('%I:%M %p') if report.incident_time else '-' }}</strong></div>
+                </div>
             </section>
 
             <div class="drv-side">
                 <section class="panel">
                     <div class="panel-header"><h3>{{ icon('users', 18, '#0f2547') }} Barangay Assessment</h3></div>
-                    <div class="info-grid">
-                        <div class="info-box"><span>Affected Families</span><strong>{{ "{:,}".format(report.affected_families) }}</strong></div>
-                        <div class="info-box"><span>Affected Individuals</span><strong>{{ "{:,}".format(report.affected_individuals) }}</strong></div>
-                        <div class="info-box"><span>PWD</span><strong>{{ "{:,}".format(report.affected_pwd) }}</strong></div>
-                        <div class="info-box"><span>Senior Citizens</span><strong>{{ "{:,}".format(report.affected_seniors) }}</strong></div>
-                        <div class="info-box"><span>Children</span><strong>{{ "{:,}".format(report.affected_children) }}</strong></div>
+                    <div class="assess-pills assess-pills-2">
+                        <div class="fam-pill fam-pill-purple"><span>Affected Families</span><strong>{{ "{:,}".format(report.affected_families) }}</strong></div>
+                        <div class="fam-pill fam-pill-blue"><span>Affected Individuals</span><strong>{{ "{:,}".format(report.affected_individuals) }}</strong></div>
+                    </div>
+                    <div class="assess-pills assess-pills-3">
+                        <div class="fam-pill fam-pill-green"><span>PWD</span><strong>{{ "{:,}".format(report.affected_pwd) }}</strong></div>
+                        <div class="fam-pill fam-pill-amber"><span>Senior Citizens</span><strong>{{ "{:,}".format(report.affected_seniors) }}</strong></div>
+                        <div class="fam-pill fam-pill-red"><span>Children</span><strong>{{ "{:,}".format(report.affected_children) }}</strong></div>
+                    </div>
+                    <div class="info-grid" style="grid-template-columns: 1fr 1fr;">
                         <div class="info-box"><span>Totally Damaged</span><strong>{{ report.totally_damaged_houses }}</strong></div>
                         <div class="info-box"><span>Partially Damaged</span><strong>{{ report.partially_damaged_houses }}</strong></div>
                     </div>
@@ -220,4 +231,60 @@
 
     </main>
 </div>
+
+{% if report.status == 'pending' %}
+<!-- Unsubmit confirmation - replaces the native confirm() dialog, same
+     pattern as damage_report.html's delete-draft modal. -->
+<div class="rd-modal-overlay" id="unsubmit-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('rotate-ccw', 18, '#5347ce') }} Unsubmit Report</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <p class="form-hint">Pull <strong>{{ report.ref }}</strong> back to draft? It will be removed from the MSWDO/CSWDO review queue until you submit it again.</p>
+        <div class="rd-modal-actions">
+            <button type="button" class="btn-decision btn-verify-only" id="unsubmit-confirm-btn">{{ icon('rotate-ccw', 16, 'white') }} Unsubmit</button>
+            <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var form = document.getElementById('unsubmit-form');
+    var modal = document.getElementById('unsubmit-modal');
+    if (!form || !modal) return;
+
+    // Reparent to <body> so position:fixed pins to the viewport, not the
+    // animated .dashboard-main (same reasoning as relief_request_detail.js).
+    if (modal.parentNode !== document.body) document.body.appendChild(modal);
+
+    function openModal() {
+        modal.hidden = false;
+        document.documentElement.classList.add('rd-modal-open');
+    }
+    function closeModal() {
+        modal.hidden = true;
+        document.documentElement.classList.remove('rd-modal-open');
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        openModal();
+    });
+    document.getElementById('unsubmit-confirm-btn').addEventListener('click', function () {
+        form.submit();
+    });
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    modal.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+        btn.addEventListener('click', closeModal);
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.hidden) closeModal();
+    });
+})();
+</script>
 {% endblock %}

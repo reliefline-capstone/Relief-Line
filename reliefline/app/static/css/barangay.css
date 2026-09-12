@@ -129,6 +129,17 @@
 .info-box span { display: block; font-size: 11px; color: #8a94a6; margin-bottom: 3px; }
 .info-box strong { font-size: 17px; color: #1a1a1a; }
 
+/* Barangay Assessment panel (damage_report_view.html) - the 5 people-stats
+   grouped into evenly-filled rows (2 then 3) using the same colored
+   .fam-pill look as the report-wizard's stat pills, instead of a flat 2-col
+   .info-grid whose 7 items left a lone box dangling on the last row. */
+.assess-pills { display: grid; gap: 10px; margin-bottom: 10px; }
+.assess-pills-2 { grid-template-columns: repeat(2, 1fr); }
+.assess-pills-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 480px) {
+    .assess-pills-2, .assess-pills-3 { grid-template-columns: 1fr; }
+}
+
 /* Confirm-receipt inline form (Relief Monitoring) */
 .confirm-receipt-box {
     margin-top: 12px;
@@ -436,22 +447,31 @@
 }
 .dm-confirm-btn:hover { background: #196f3d; }
 
-/* Damage report view - the left "Report Information" panel and the right
-   column (Damage Summary + Relief Needs) should bottom-align as an
-   equal-height pair. .main-grid defaults to align-items: start, so each
-   column would otherwise size to its own content and end at a different
-   point. */
+/* Damage report view - "Report Information" and the sidebar (Barangay
+   Assessment + Relief Allocation) bottom-align as an equal-height pair.
+   .review-row-list is the flex child that actually absorbs the stretched
+   height and spaces its rows out to fill it (space-between), rather than
+   the rows clumping at the top and leaving a dead gap below them - see
+   .review-row-list below. */
 .drv-grid { align-items: stretch; }
 .drv-grid > .panel { display: flex; flex-direction: column; }
+.review-row-list { display: flex; flex-direction: column; flex: 1; justify-content: space-between; }
+/* Divider under each row so the space-between gaps above read as a spaced
+   list with clear boundaries, not disconnected floating label/value pairs. */
+.review-row-list .review-row { padding: 10px 0; border-bottom: 1px solid #eef0f4; font-size: 13.5px; }
+.review-row-list .review-row:last-child { border-bottom: none; }
+.review-row-list .review-row span { font-weight: 600; }
+.review-row-list .review-row strong { font-size: 14px; }
 .drv-side { display: flex; flex-direction: column; gap: 16px; }
 .drv-side > .panel:last-child { flex: 1; }
+@media (max-width: 1200px) {
+    .drv-grid { align-items: start; }
+    .review-row-list { justify-content: flex-start; gap: 3px; }
+    .drv-side > .panel:last-child { flex: none; }
+}
 /* The sidebar column is too narrow for auto-fit to ever place a second
    tile, so pin these to two columns regardless. */
 .drv-side .info-grid { grid-template-columns: 1fr 1fr; }
-@media (max-width: 1200px) {
-    .drv-grid { align-items: start; }
-    .drv-side > .panel:last-child { flex: none; }
-}
 @media (max-width: 480px) {
     .drv-side .info-grid { grid-template-columns: 1fr; }
 }
@@ -459,24 +479,42 @@
 /* Family checklist - Barangay Report Step 3, checking off registered
    Family Profiles instead of hand-typing affected families/individuals.
    See app/templates/barangay/damage_report_form.html. */
-.fam-checklist-toolbar {
-    display: flex; align-items: center; justify-content: space-between;
-    margin: 4px 0 8px;
-}
-.fam-checklist-selectall { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #1a1a1a; cursor: pointer; }
-.fam-checklist-toolbar a { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
-
-.fam-checklist {
-    max-height: 320px; overflow-y: auto;
-    border: 1px solid #e5e8ee; border-radius: 10px;
+/* .fam-checklist-frame carries the rounded border and clips (overflow:
+   hidden) - .fam-checklist inside it is the actual scroll container. Split
+   this way so the frame's rounded corners mask the native scrollbar's own
+   square corner instead of it poking through where they'd otherwise
+   overlap (border-radius on a scrolling element doesn't clip its own
+   scrollbar). */
+.fam-checklist-frame {
+    border: 1px solid #e5e8ee; border-radius: 10px; overflow: hidden;
     margin-bottom: 12px;
 }
+.fam-checklist { max-height: 480px; overflow-y: auto; }
+
+/* Sticky header row inside .fam-checklist (not a separate box above it) -
+   stays pinned in view while the rows beneath it scroll. */
+.fam-checklist-toolbar {
+    position: sticky; top: 0; z-index: 1;
+    background: #f4f2fd;
+    padding: 9px 14px;
+    border-bottom: 1px solid #e5e8ee;
+}
+.fam-checklist-selectall {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; color: #5347ce; cursor: pointer;
+}
+.fam-checklist-selectall input { accent-color: #5347ce; width: 15px; height: 15px; }
 .fam-checklist-row {
     display: flex; align-items: center; gap: 12px;
     padding: 10px 14px;
     border-bottom: 1px solid #eef0f5;
     cursor: pointer;
 }
+/* Search/purok/category filtering toggles the `hidden` attribute per row via
+   JS - the class-level `display: flex` above beats the UA [hidden]{display:
+   none} rule at equal specificity, so without this override filtered-out
+   rows kept rendering (same pattern as .step3-predict-card[hidden] below). */
+.fam-checklist-row[hidden] { display: none; }
 .fam-checklist-row:last-child { border-bottom: none; }
 .fam-checklist-row:hover { background: #f8f9fc; }
 .fam-checkbox { width: 16px; height: 16px; flex-shrink: 0; }
@@ -492,28 +530,110 @@
 .fam-badge-senior { background: #fdf1e0; color: #b7791f; }
 .fam-badge-child { background: #eafaf1; color: #1e8449; }
 
-.fam-checklist-summary {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
-    background: #f8f9fc; border-radius: 10px; padding: 12px; margin-bottom: 14px;
+/* Family Profiles table (family_profiles.html) - PWD/Senior/Children counts
+   as a small colored pill when > 0, so a barangay official scanning the
+   table can spot at-risk categories at a glance instead of reading every
+   number in the column. Colors match the Barangay Report's Assessment
+   stat pills (.fam-pill-green/-amber/-red) for the same three categories. */
+.fam-count-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; padding: 2px 8px; border-radius: 20px;
+    font-weight: 700; font-size: 12.5px;
 }
-.fam-checklist-summary div { text-align: center; }
-.fam-checklist-summary span { display: block; font-size: 10.5px; color: #8a94a6; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 3px; }
-.fam-checklist-summary strong { font-size: 17px; color: #0f2547; }
-@media (max-width: 700px) { .fam-checklist-summary { grid-template-columns: repeat(2, 1fr); } }
+.fam-count-pwd { background: #eafaf1; color: #1e8449; }
+.fam-count-senior { background: #fdf1e0; color: #b7791f; }
+.fam-count-child { background: #fdecea; color: #c0392b; }
+.fam-count-zero { color: #b7bec9; }
+
+/* Search + purok/category filters above the checklist. The search box is
+   capped (not flex-grown to fill the row) so it sits proportioned next to
+   the two dropdowns instead of stretching to dominate the whole row width. */
+.fam-filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.fam-search-wrapper {
+    flex: 1 1 220px; max-width: 360px; display: flex; align-items: center; gap: 8px;
+    border: 1px solid #e3e4ec; border-radius: 8px; padding: 8px 12px; background: white;
+}
+.fam-search-wrapper input {
+    border: none; outline: none; font-size: 13px; width: 100%; background: none;
+}
+.fam-filter-bar select {
+    border: 1px solid #e3e4ec; border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; color: #333; background: white; flex: 0 0 auto;
+}
+.fam-manage-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-left: auto; font-size: 13px; font-weight: 600; color: #5347ce; text-decoration: none;
+    white-space: nowrap;
+}
+
+.fam-checklist-chevron { flex-shrink: 0; display: flex; }
+.fam-checklist-row:has(.fam-checkbox:checked) { background: #f4f2fd; }
+
+.fam-checklist-hint-row { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; }
+.fam-checklist-hint { font-size: 11.5px; color: #8a94a6; margin: 0; }
+
+/* "Scroll to view more" pill - sits beside the "Showing X of Y families"
+   hint text instead of overlaying the checklist itself; JS toggles [hidden]
+   on scroll/filter based on the checklist's actual scroll position (see
+   #fam-scroll-hint in damage_report_form.html). */
+.fam-scroll-hint {
+    display: flex; align-items: center; gap: 4px;
+    background: #eef0f5; color: #5a6472;
+    font-size: 10.5px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+}
+.fam-scroll-hint[hidden] { display: none; }
+
+/* Colour-coded stat pills, replacing the old plain 5-column summary grid -
+   each also shows how many of this barangay's total registered profiles
+   the current selection covers. */
+.fam-stat-pills {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+    margin-bottom: 14px;
+}
+.fam-pill {
+    border-radius: 10px; padding: 12px 10px; text-align: center;
+}
+.fam-pill span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.75; margin-bottom: 4px; }
+.fam-pill strong { display: block; font-size: 19px; }
+.fam-pill em { display: block; font-style: normal; font-size: 10px; opacity: 0.75; margin-top: 2px; }
+.fam-pill-purple { background: #efedfd; color: #5347ce; }
+.fam-pill-blue { background: #eaf0fd; color: #2c5aa0; }
+.fam-pill-green { background: #eafaf1; color: #1e8449; }
+.fam-pill-amber { background: #fdf1e0; color: #b7791f; }
+.fam-pill-red { background: #fdecea; color: #c0392b; }
+@media (max-width: 700px) { .fam-stat-pills { grid-template-columns: repeat(2, 1fr); } }
 
 .fam-manual-toggle {
     display: flex; align-items: center; gap: 8px;
     font-size: 12.5px; color: #5a6472; margin: 4px 0 14px; cursor: pointer;
 }
 
-.fam-suggest-box {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    background: #eaf6ec; border: 1px solid #c7e8cc; border-radius: 8px;
-    padding: 8px 12px; margin-top: 8px; font-size: 12.5px; color: #1e8449;
+/* Predicted food-pack need - sits to the right of the Food Packs Requested
+   field (mirrors the same suggestion this used to show as a small inline
+   box next to that input - see #fam-suggest-use in damage_report_form.html).
+   .step3-predict-row pairs them side by side like .form-row-2col; when the
+   card is hidden (no prediction yet) the input keeps its normal width
+   instead of stretching to fill the empty column. */
+.step3-predict-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; align-items: stretch; margin-bottom: 10px; max-width: 680px; }
+.step3-predict-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    background: linear-gradient(135deg, #5347ce 0%, #887cfd 100%);
+    border-radius: 12px; padding: 16px 20px; color: white;
 }
-.fam-suggest-box button {
-    background: #1e8449; color: white; border: none; border-radius: 6px;
-    padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+.step3-predict-card[hidden] { display: none; }
+.step3-predict-eyebrow { display: flex; align-items: center; gap: 6px; font-size: 11px; opacity: 0.85; margin-bottom: 6px; }
+.step3-predict-figure { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.step3-predict-figure strong { font-size: 28px; font-weight: 700; line-height: 1; }
+.step3-predict-unit { font-size: 12px; opacity: 0.85; }
+.step3-predict-card p { font-size: 11.5px; opacity: 0.85; margin: 0; }
+.step3-predict-card button {
+    flex-shrink: 0; background: white; color: #5347ce; border: none; border-radius: 8px;
+    padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+@media (max-width: 700px) { .step3-predict-row { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+    .step3-predict-card { flex-direction: column; align-items: stretch; text-align: center; }
+    .step3-predict-figure, .step3-predict-eyebrow { justify-content: center; }
 }
 
 /* Household head name subtitle under a family's name - Family Profiles
@@ -571,18 +691,37 @@
    table no longer gets its own horizontal scrollbar on a narrow viewport,
    which is fine for Family Profiles' column count on a normal screen. */
 .wh-table-panel.fam-sticky-panel { overflow-x: visible; }
+/* ...but on a narrow viewport there's no room left to shrink columns into -
+   headers/cells were wrapping into a squashed, hard-to-read mess instead.
+   Below this width, trade the sticky header/select-all bar back for a
+   normal horizontally-scrolling table (position:sticky needs a non-static
+   ancestor purely for its own vertical pinning, which a horizontally
+   scrolling one doesn't give cleanly - simplest is to just turn it off). */
+@media (max-width: 700px) {
+    .wh-table-panel.fam-sticky-panel { overflow-x: auto; }
+    .fam-print-bar, .fam-sticky-table thead th { position: static; }
+    /* .wh-table has no explicit table-layout/white-space, so at 100% width
+       with not enough room it wraps header/cell text instead of actually
+       overflowing into the scrollbar overflow-x:auto now provides - forcing
+       nowrap here is what makes that scrollbar do anything. */
+    .fam-sticky-table th, .fam-sticky-table td { white-space: nowrap; }
+}
 
 .fam-print-bar {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 16px;
-    border-bottom: 1px solid #eef0f5;
+    border-bottom: 1px solid #e5e8ee;
     /* Sticks to the top of .dashboard-main's scroll as the family list
        scrolls past it - paired with .fam-sticky-table's <th> below so the
-       column headers stay visible right underneath it. */
+       column headers stay visible right underneath it. .wh-table-panel has
+       no padding of its own, so this bar sits flush against the panel's
+       edges - top corners rounded to match .panel's 12px radius, otherwise
+       its square corners poke past the panel's rounded ones. */
     position: sticky;
     top: 0;
     z-index: 3;
     background: white;
+    border-radius: 12px 12px 0 0;
 }
 
 /* Sticky column headers on the Family Profiles table (family_profiles.html

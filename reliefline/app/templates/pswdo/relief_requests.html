@@ -19,8 +19,15 @@
 
 
         <div class="rr-page-head">
-            <h2>Stock Requests</h2>
-            <p>Municipal warehouse replenishment requests from CSWDO/MSWDO offices - the only requests PSWDO decides on.</p>
+            <div>
+                <h2>Stock Requests</h2>
+                <p>Municipal warehouse replenishment requests from CSWDO/MSWDO offices - the only requests PSWDO decides on.</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <a href="{{ url_for('pswdo.export_relief_requests', status=status_filter, municipality=municipality_filter, q=search_query) }}"
+                   class="rr-icon-btn" title="Export to CSV">{{ icon('download', 14) }}</a>
+                <button type="button" class="rr-primary-btn" data-open-modal="direct-preposition-modal">{{ icon('plus', 14, 'white') }} Pre-position</button>
+            </div>
         </div>
 
         <div class="rr-toolbar">
@@ -53,9 +60,6 @@
                     <input type="text" name="q" value="{{ search_query }}" placeholder="Search request ID...">
                 </div>
                 <button type="submit" class="rr-filter-btn">{{ icon('sliders', 14) }} Filter</button>
-                <a href="{{ url_for('pswdo.export_relief_requests', status=status_filter, municipality=municipality_filter, q=search_query) }}"
-                   class="rr-icon-btn" title="Export to CSV">{{ icon('download', 14) }}</a>
-                <button type="button" class="rr-primary-btn" data-open-modal="direct-preposition-modal">{{ icon('plus', 14, 'white') }} Pre-position</button>
             </form>
         </div>
 

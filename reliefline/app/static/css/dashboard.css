@@ -426,9 +426,23 @@ html.sidebar-collapsed .dashboard-main {
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
+    /* A <button> using this class (e.g. an unsubmit/undo action next to
+       plain <a class="btn-outline"> links) is shorter than its <a> siblings
+       with identical padding - the browser's UA button default is
+       line-height: normal (~1.15) instead of inheriting the page's 1.5,
+       shrinking its line box. Forcing inherit keeps both tags the same
+       height. */
+    line-height: inherit;
 }
 
 .btn-outline:hover { background: #f4f4fb; }
+
+/* Purple-accented variant of .btn-outline - same size and neutral border as
+   its siblings, but the text/icon color calls out a state-changing action
+   (e.g. Unsubmit) among plain view/navigate buttons like Print/Edit next
+   to it. */
+.btn-outline-accent { color: #5347ce; }
+.btn-outline-accent:hover { background: #efedfd; }
 
 /* Label-above-field modal/settings form layout, used across admin, pswdo,
    cswdo and barangay forms. Moved here (from profile_settings.css) since

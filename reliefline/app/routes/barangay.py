@@ -731,6 +731,33 @@ def submit_damage_report():
     return redirect(url_for("barangay.damage_report"))
 
 
+@barangay_bp.route("/damage-report/<int:report_id>/unsubmit", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def unsubmit_damage_report(report_id):
+    """Pulls a report back out of the MSWDO/CSWDO review queue into draft, in
+    case the barangay submitted too early and wants to fix something first.
+    Only while it's still "pending" - once a reviewer has acted (verified/
+    approved/declined/returned), the decision is on record and stands."""
+    report = _get_own_report_or_404(report_id)
+    if report.status != "pending":
+        flash("Only a report that's still awaiting review can be unsubmitted.", "error")
+        return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
+
+    report.status = "draft"
+    report.submitted_at = None
+
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, action_type="damage_report_unsubmitted",
+        description=f"{report.ref} unsubmitted by Brgy. {report.barangay.barangay_name} - pulled back to draft",
+        barangay_id=report.barangay_id,
+    ))
+    db.session.commit()
+
+    flash(f"{report.ref} pulled back to draft. Edit it and submit again when ready.", "success")
+    return redirect(url_for("barangay.edit_damage_report", report_id=report.report_id))
+
+
 # ---------------------------------------------------------------------------
 # Family Profiles - the barangay's own resident registry (panelist-requested
 # "profiling" addition). One row per household: member/PWD/senior/children
@@ -763,21 +790,20 @@ def _apply_family_form(family):
 @role_required("barangay_user")
 def family_profiles():
     barangay = _own_barangay_or_404()
-    search_query = request.args.get("q", "").strip().lower()
     show_archived = request.args.get("archived") == "1"
 
+    # Search/purok/category are all filtered client-side (see #fam-search
+    # etc. in family_profiles.html, same pattern as the Barangay Report
+    # wizard's family checklist) - the full list always renders so clearing
+    # a filter doesn't need a round trip, and the stat cards below stay
+    # fixed totals instead of fluctuating with whatever's currently searched.
     families = Family.query.filter_by(barangay_id=barangay.barangay_id, is_active=(not show_archived))
     families = families.order_by(Family.purok, Family.family_name).all()
-    if search_query:
-        families = [
-            f for f in families
-            if search_query in f.family_name.lower() or (f.purok and search_query in f.purok.lower())
-        ]
 
     active_count = Family.query.filter_by(barangay_id=barangay.barangay_id, is_active=True).count()
     return render_template(
         "barangay/family_profiles.html",
-        barangay=barangay, families=families, search_query=search_query,
+        barangay=barangay, families=families,
         show_archived=show_archived, active_count=active_count,
         total_individuals=sum(f.member_count for f in families) if not show_archived else None,
         total_pwd=sum(f.pwd_count for f in families) if not show_archived else None,

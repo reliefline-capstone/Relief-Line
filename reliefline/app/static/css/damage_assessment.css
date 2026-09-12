@@ -118,7 +118,14 @@
 .btn-view-sm, .btn-review-sm {
     font-size: 12px;
     font-weight: 600;
-    padding: 7px 12px;
+    padding: 6px 12px;
+    /* Matches .btn-view's padding/line-height (relief_requests.css) exactly -
+       this class is also declared there with different padding and no
+       line-height, and since both files load on the same barangay report
+       list page, the two partial declarations were mixing into a box a
+       couple pixels shorter than its .btn-view sibling in the same
+       actions cell. */
+    line-height: 1.4;
     border-radius: 6px;
     display: inline-flex;
     align-items: center;

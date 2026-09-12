@@ -95,7 +95,7 @@
                         <td>{{ r.reviewed_by_user.name if r.reviewed_by_user else '-' }} {% if r.reviewed_by_user %}(MSWDO){% endif %}</td>
                         <td>
                             {% if r.status == 'draft' %}
-                            <a href="{{ url_for('barangay.edit_damage_report', report_id=r.report_id) }}" class="btn-view-sm" style="text-decoration:none; background:#2c5aa0; color:white;">{{ icon('file-text', 12, 'white') }} Resume</a>
+                            <a href="{{ url_for('barangay.edit_damage_report', report_id=r.report_id) }}" class="btn-view-sm btn-sm-blue" style="text-decoration:none;">{{ icon('file-text', 12, 'white') }} Resume</a>
                             {% else %}
                             <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
                             {% endif %}
@@ -118,7 +118,7 @@
         <div class="stock-warning" style="margin-top:16px;">
             {{ icon('chevron-left', 14, '#c0392b') }}
             <span>{{ returned_reports|length }} report{{ 's' if returned_reports|length != 1 }} returned by MSWDO. Please review and resubmit with corrections.</span>
-            <a href="{{ url_for('barangay.edit_damage_report', report_id=returned_reports[0].report_id) }}" class="btn-view-sm" style="margin-left:auto; text-decoration:none; background:#c0392b; color:white;">View Returned →</a>
+            <a href="{{ url_for('barangay.edit_damage_report', report_id=returned_reports[0].report_id) }}" class="btn-view-sm btn-sm-danger" style="margin-left:auto; text-decoration:none;">View Returned →</a>
         </div>
         {% endif %}
 
@@ -136,16 +136,16 @@
                         <td>{{ r.event.event_name if r.event else '-' }}</td>
                         <td>{{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at else '-' }}</td>
                         <td><span class="badge-status badge-status-{{ r.status }}"><i class="priority-dot"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
-                        <td>
+                        <td style="display:flex; gap:8px; align-items:center;">
                             {% if r.status != 'draft' %}
                             <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
                             {% endif %}
                             {% if r.status in ('draft', 'returned') %}
-                            <a href="{{ url_for('barangay.edit_damage_report', report_id=r.report_id) }}" class="btn-view-sm" style="text-decoration:none; background:#2c5aa0; color:white;">{{ icon('file-text', 12, 'white') }} {{ 'Resume' if r.status == 'draft' else 'Edit' }}</a>
+                            <a href="{{ url_for('barangay.edit_damage_report', report_id=r.report_id) }}" class="btn-view-sm btn-sm-blue" style="text-decoration:none;">{{ icon('file-text', 12, 'white') }} {{ 'Resume' if r.status == 'draft' else 'Edit' }}</a>
                             {% endif %}
                             {% if r.status == 'draft' %}
-                            <form method="POST" action="{{ url_for('barangay.delete_damage_report', report_id=r.report_id) }}" style="display:inline-flex;" class="draft-delete-form" data-ref="{{ r.ref }}">
-                                <button type="submit" class="btn-view-sm" style="border:none; cursor:pointer; background:#c0392b; color:white;">{{ icon('trash-2', 12, 'white') }} Delete</button>
+                            <form method="POST" action="{{ url_for('barangay.delete_damage_report', report_id=r.report_id) }}" class="draft-delete-form" data-ref="{{ r.ref }}">
+                                <button type="submit" class="btn-view-sm btn-sm-danger" style="cursor:pointer;">{{ icon('trash-2', 12, 'white') }} Delete</button>
                             </form>
                             {% endif %}
                         </td>

@@ -111,13 +111,34 @@
                 <p class="form-hint">Check off which of your registered families were affected - families, individuals, PWD, and senior citizen counts are totalled automatically.</p>
 
                 {% if families %}
-                <div class="fam-checklist-toolbar">
-                    <label class="fam-checklist-selectall"><input type="checkbox" id="fam-select-all"> Select All ({{ families|length }})</label>
-                    <a href="{{ url_for('barangay.family_profiles') }}" target="_blank" class="form-hint">{{ icon('external-link', 12) }} Manage Family Profiles</a>
+                {% set puroks = families|map(attribute='purok')|reject('none')|unique|sort|list %}
+                <div class="fam-filter-bar">
+                    <div class="fam-search-wrapper">
+                        {{ icon('search', 14, '#8a94a6') }}
+                        <input type="text" id="fam-search" placeholder="Search family name...">
+                    </div>
+                    {% if puroks|length > 1 %}
+                    <select id="fam-purok-filter">
+                        <option value="">All Puroks</option>
+                        {% for p in puroks %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+                    </select>
+                    {% endif %}
+                    <select id="fam-category-filter">
+                        <option value="">All Families</option>
+                        <option value="pwd">With PWD Members</option>
+                        <option value="senior">With Senior Citizens</option>
+                        <option value="children">With Children</option>
+                    </select>
+                    <a href="{{ url_for('barangay.family_profiles') }}" target="_blank" class="fam-manage-link">{{ icon('external-link', 12) }} Manage Family Profiles</a>
                 </div>
+                <div class="fam-checklist-frame">
                 <div class="fam-checklist" id="fam-checklist">
+                    <div class="fam-checklist-toolbar">
+                        <label class="fam-checklist-selectall"><input type="checkbox" id="fam-select-all"> Select All (<span id="fam-select-all-count">{{ families|length }}</span>)</label>
+                    </div>
                     {% for f in families %}
-                    <label class="fam-checklist-row">
+                    <label class="fam-checklist-row" data-name="{{ (f.family_name ~ ' ' ~ (f.head_name or ''))|lower }}" data-purok="{{ f.purok or '' }}"
+                           data-pwd="{{ 1 if f.pwd_count else 0 }}" data-senior="{{ 1 if f.senior_count else 0 }}" data-children="{{ 1 if f.children_count else 0 }}">
                         <input type="checkbox" name="family_ids" class="fam-checkbox" value="{{ f.family_id }}"
                                data-members="{{ f.member_count }}" data-pwd="{{ f.pwd_count }}"
                                data-senior="{{ f.senior_count }}" data-children="{{ f.children_count }}"
@@ -132,15 +153,22 @@
                             {% if f.senior_count %}<span class="fam-badge fam-badge-senior">{{ f.senior_count }} senior</span>{% endif %}
                             {% if f.children_count %}<span class="fam-badge fam-badge-child">{{ f.children_count }} children</span>{% endif %}
                         </span>
+                        <span class="fam-checklist-chevron">{{ icon('chevron-right', 14, '#cdcfe0') }}</span>
                     </label>
                     {% endfor %}
                 </div>
-                <div class="fam-checklist-summary">
-                    <div><span>Families</span><strong id="fam-sum-families">0</strong></div>
-                    <div><span>Individuals</span><strong id="fam-sum-individuals">0</strong></div>
-                    <div><span>PWD</span><strong id="fam-sum-pwd">0</strong></div>
-                    <div><span>Senior</span><strong id="fam-sum-senior">0</strong></div>
-                    <div><span>Children</span><strong id="fam-sum-children">0</strong></div>
+                </div><!-- /.fam-checklist-frame -->
+                <div class="fam-checklist-hint-row">
+                    <p class="fam-checklist-hint" id="fam-checklist-hint"></p>
+                    <span class="fam-scroll-hint" id="fam-scroll-hint" hidden>{{ icon('chevron-down', 12) }} Scroll to view more</span>
+                </div>
+
+                <div class="fam-stat-pills">
+                    <div class="fam-pill fam-pill-purple"><span>Affected Families</span><strong id="fam-sum-families">0</strong><em>of {{ families|length }} registered</em></div>
+                    <div class="fam-pill fam-pill-blue"><span>Individuals</span><strong id="fam-sum-individuals">0</strong><em>of {{ families|sum(attribute='member_count') }} registered</em></div>
+                    <div class="fam-pill fam-pill-green"><span>PWD</span><strong id="fam-sum-pwd">0</strong><em>of {{ families|sum(attribute='pwd_count') }} registered</em></div>
+                    <div class="fam-pill fam-pill-amber"><span>Senior</span><strong id="fam-sum-senior">0</strong><em>of {{ families|sum(attribute='senior_count') }} registered</em></div>
+                    <div class="fam-pill fam-pill-red"><span>Children</span><strong id="fam-sum-children">0</strong><em>of {{ families|sum(attribute='children_count') }} registered</em></div>
                 </div>
                 {% else %}
                 <div class="stock-warning" style="margin-bottom:12px;">
@@ -188,17 +216,25 @@
                         <span class="form-hint">Enter 0 if none</span>
                     </div>
                 </div>
-                <div class="form-row">
-                    <label for="requested_food_packs">Food Packs Requested <span style="font-weight:400; color:#8a94a6;">(optional)</span></label>
-                    <input type="number" id="requested_food_packs" name="requested_food_packs" min="0"
-                           value="{{ report.requested_food_packs if report and report.requested_food_packs else '' }}"
-                           placeholder="Leave blank if unsure">
-                    <span class="form-hint">If you have an estimate of how many food packs your barangay needs, enter it here.</span>
-                    <div class="fam-suggest-box" id="fam-suggest-box" hidden>
-                        <span id="fam-suggest-text"></span>
+                <div class="step3-predict-row">
+                    <div class="form-row">
+                        <label for="requested_food_packs">Food Packs Requested <span style="font-weight:400; color:#8a94a6;">(optional)</span></label>
+                        <input type="number" id="requested_food_packs" name="requested_food_packs" min="0"
+                               value="{{ report.requested_food_packs if report and report.requested_food_packs else '' }}"
+                               placeholder="Leave blank if unsure">
+                        <span class="form-hint">If you have an estimate of how many food packs your barangay needs, enter it here.</span>
+                    </div>
+
+                    <div class="step3-predict-card" id="fam-suggest-box" hidden>
+                        <div class="step3-predict-info">
+                            <span class="step3-predict-eyebrow">{{ icon('package', 14, 'white') }} Suggestion</span>
+                            <div class="step3-predict-figure"><strong id="fam-suggest-value">0</strong><span class="step3-predict-unit">packs</span></div>
+                            <p id="fam-suggest-text"></p>
+                        </div>
                         <button type="button" id="fam-suggest-use">Use suggested</button>
                     </div>
                 </div>
+
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
                     <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
@@ -298,6 +334,11 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
         document.getElementById('wizard-pct').textContent = pct + '% complete';
         current = n;
         if (n === totalSteps) populateReview();
+        // .fam-checklist has 0 scrollHeight/clientHeight while its wizard step
+        // is hidden (display:none), so the scroll-hint's initial computation
+        // at page load sees "nothing to scroll" - recompute once this step
+        // is actually visible and laid out.
+        if (typeof updateFamScrollHint === 'function') updateFamScrollHint();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -379,9 +420,24 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
     var individualsField = document.getElementById('affected_individuals');
     var selectAll = document.getElementById('fam-select-all');
     var suggestBox = document.getElementById('fam-suggest-box');
+    var suggestValue = document.getElementById('fam-suggest-value');
     var suggestText = document.getElementById('fam-suggest-text');
     var suggestUseBtn = document.getElementById('fam-suggest-use');
     var requestedInput = document.getElementById('requested_food_packs');
+    var famRows = Array.prototype.slice.call(document.querySelectorAll('.fam-checklist-row'));
+    var famSearch = document.getElementById('fam-search');
+    var famPurokFilter = document.getElementById('fam-purok-filter');
+    var famCategoryFilter = document.getElementById('fam-category-filter');
+    var famChecklistHint = document.getElementById('fam-checklist-hint');
+    var famChecklistEl = document.getElementById('fam-checklist');
+    var famScrollHint = document.getElementById('fam-scroll-hint');
+
+    function updateFamScrollHint() {
+        if (!famChecklistEl || !famScrollHint) return;
+        var hasMore = famChecklistEl.scrollHeight - famChecklistEl.scrollTop - famChecklistEl.clientHeight > 4;
+        famScrollHint.hidden = !hasMore;
+    }
+    if (famChecklistEl) famChecklistEl.addEventListener('scroll', updateFamScrollHint);
 
     function setText(id, val) {
         var el = document.getElementById(id);
@@ -434,20 +490,49 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
         setText('fam-sum-children', children);
         updateIndividualsHint(famCount, indiv);
 
-        if (selectAll) selectAll.checked = famCheckboxes.length > 0 && famCheckboxes.every(function (cb) { return cb.checked; });
+        if (selectAll) {
+            var visibleCbs = famCheckboxes.filter(function (cb) { return !cb.closest('.fam-checklist-row').hidden; });
+            selectAll.checked = visibleCbs.length > 0 && visibleCbs.every(function (cb) { return cb.checked; });
+        }
+
 
         if (suggestBox && suggestText && suggestUseBtn) {
-            if (famCount > 0) {
-                var suggested = famCount + pwd + senior;
-                suggestBox.hidden = false;
-                suggestText.textContent = 'Suggested: ' + suggested + ' food pack' + (suggested === 1 ? '' : 's') +
-                    ' (' + famCount + ' famil' + (famCount === 1 ? 'y' : 'ies') + ' + ' + pwd + ' PWD + ' + senior + ' senior)';
-                suggestUseBtn.dataset.value = suggested;
-            } else {
-                suggestBox.hidden = true;
-            }
+            var suggested = famCount + pwd + senior;
+            suggestBox.hidden = false;
+            if (suggestValue) suggestValue.textContent = suggested;
+            suggestText.textContent = 'Based on ' + famCount + ' famil' + (famCount === 1 ? 'y' : 'ies') + ' + ' + pwd + ' PWD + ' + senior + ' senior';
+            suggestUseBtn.dataset.value = suggested;
         }
     }
+
+    // --- Step 3: search + purok/category filters for the checklist ------
+    function applyFamFilter() {
+        if (!famRows.length) return;
+        var q = famSearch ? famSearch.value.trim().toLowerCase() : '';
+        var purok = famPurokFilter ? famPurokFilter.value : '';
+        var category = famCategoryFilter ? famCategoryFilter.value : '';
+        var visible = 0;
+        famRows.forEach(function (row) {
+            var matchesName = !q || row.dataset.name.indexOf(q) !== -1;
+            var matchesPurok = !purok || row.dataset.purok === purok;
+            var matchesCategory = !category || row.dataset[category] === '1';
+            var show = matchesName && matchesPurok && matchesCategory;
+            row.hidden = !show;
+            if (show) visible++;
+        });
+        if (famChecklistHint) {
+            famChecklistHint.textContent = (visible === famRows.length)
+                ? 'Showing all ' + famRows.length + ' families'
+                : 'Showing ' + visible + ' of ' + famRows.length + ' families';
+        }
+        setText('fam-select-all-count', visible);
+        recomputeFamilyCounts();
+        updateFamScrollHint();
+    }
+    if (famSearch) famSearch.addEventListener('input', applyFamFilter);
+    if (famPurokFilter) famPurokFilter.addEventListener('change', applyFamFilter);
+    if (famCategoryFilter) famCategoryFilter.addEventListener('change', applyFamFilter);
+    applyFamFilter();
 
     famCheckboxes.forEach(function (cb) { cb.addEventListener('change', recomputeFamilyCounts); });
     if (manualFamiliesInput) manualFamiliesInput.addEventListener('input', recomputeFamilyCounts);
@@ -455,7 +540,9 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
     if (manualToggle) manualToggle.addEventListener('change', recomputeFamilyCounts);
     if (selectAll) {
         selectAll.addEventListener('change', function () {
-            famCheckboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+            famCheckboxes.forEach(function (cb) {
+                if (!cb.closest('.fam-checklist-row').hidden) cb.checked = selectAll.checked;
+            });
             recomputeFamilyCounts();
         });
     }

@@ -313,6 +313,7 @@
     font-size: 12px;
     font-weight: 600;
 }
+.btn-view:hover { background: #efedfd; }
 
 .rr-pagination {
     display: flex;
@@ -438,11 +439,22 @@
     background: #ded9f7;
 }
 
-/* Filled colour variants for draft-row Edit / Delete */
-.btn-sm-primary { background: #5347ce; border-color: #5347ce; color: #fff; }
-.btn-sm-primary:hover { background: #4a3fb4; border-color: #4a3fb4; }
-.btn-sm-danger { background: #c0392b; border-color: #c0392b; color: #fff; }
-.btn-sm-danger:hover { background: #a53125; border-color: #a53125; }
+/* Filled colour variants for draft-row Edit / Delete. Compound selector
+   (.btn-view-sm.btn-sm-*, not just .btn-sm-*) so these always beat plain
+   .btn-view-sm's own background/border on specificity - pages that also
+   load damage_assessment.css (which redeclares .btn-view-sm's background/
+   border) sort after this file, and at equal specificity a same-class
+   selector loaded later would otherwise silently win and grey these out. */
+.btn-view-sm.btn-sm-primary { background: #5347ce; border-color: #5347ce; color: #fff; }
+.btn-view-sm.btn-sm-primary:hover { background: #4a3fb4; border-color: #4a3fb4; }
+.btn-view-sm.btn-sm-danger { background: #c0392b; border-color: #c0392b; color: #fff; }
+.btn-view-sm.btn-sm-danger:hover { background: #a53125; border-color: #a53125; }
+/* Same idea for the barangay report list's Resume action - was an inline
+   style="background:#2c5aa0" before, which (being on the element itself)
+   permanently wins over any :hover rule a stylesheet could ever add, so
+   the button never gave hover feedback. */
+.btn-view-sm.btn-sm-blue { background: #2c5aa0; border-color: #2c5aa0; color: #fff; }
+.btn-view-sm.btn-sm-blue:hover { background: #234b7d; border-color: #234b7d; }
 
 .rr-table .da-barangay-name { font-weight: 700; color: #1a1a1a; }
 
@@ -489,7 +501,11 @@
    Compact toolbar layout (Stock Requests list) - tabs on the left,
    search / filter / actions on the right, all on one wrapping row.
    ================================================================ */
-.rr-page-head { margin-bottom: 14px; }
+.rr-page-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    flex-wrap: wrap; gap: 12px;
+    margin-bottom: 14px;
+}
 .rr-page-head h2 { font-size: 20px; color: #5347ce; margin-bottom: 3px; }
 .rr-page-head p { font-size: 12.5px; color: #8a94a6; }
 
