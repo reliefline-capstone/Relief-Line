@@ -534,3 +534,71 @@
     color: #5a6472;
     cursor: default;
 }
+
+/* Distribution Tracking - per-family "who got a pack" list on the Barangay
+   Report view (damage_report_view.html). Reuses .fam-badge/.fam-checklist-
+   badges from the Family Profiles checklist above. */
+.fam-distribute-list {
+    display: flex; flex-direction: column;
+    border: 1px solid #e5e8ee; border-radius: 10px; overflow: hidden;
+}
+.fam-distribute-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #eef0f5;
+    flex-wrap: wrap;
+}
+.fam-distribute-row:last-child { border-bottom: none; }
+.fam-distribute-row.fam-distribute-done { background: #f7fcf8; }
+.fam-distribute-info { display: flex; flex-direction: column; gap: 4px; min-width: 180px; }
+.fam-distribute-info strong { font-size: 13.5px; color: #1a1a1a; }
+.fam-distribute-sub { font-size: 12px; color: #8a94a6; }
+
+.fam-distribute-action { display: flex; align-items: center; gap: 8px; }
+.fam-distribute-packs { width: 64px; padding: 6px 8px; border: 1px solid #d8dee9; border-radius: 6px; font-size: 13px; }
+.fam-mark-received-btn { background: #1e8449; color: white; border: none; cursor: pointer; }
+.fam-received-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #1e8449; }
+.fam-distribute-waiting { font-size: 12px; color: #8a94a6; font-style: italic; }
+
+/* Print Selected bar on Family Profiles (print_families_selected). */
+/* .wh-table-panel's own overflow-x:auto (warehouse_inventory.css) makes IT
+   the nearest scroll container for any position:sticky descendant - and
+   since that panel's height is intrinsic (its content never actually needs
+   to scroll within the panel itself), the sticky bar/header below just sat
+   static instead of pinning to .dashboard-main's real scroll. Undoing it
+   here (scoped to this page only, via .fam-sticky-panel) lets stickiness
+   resolve against .dashboard-main as intended - the trade-off is this
+   table no longer gets its own horizontal scrollbar on a narrow viewport,
+   which is fine for Family Profiles' column count on a normal screen. */
+.wh-table-panel.fam-sticky-panel { overflow-x: visible; }
+
+.fam-print-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid #eef0f5;
+    /* Sticks to the top of .dashboard-main's scroll as the family list
+       scrolls past it - paired with .fam-sticky-table's <th> below so the
+       column headers stay visible right underneath it. */
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: white;
+}
+
+/* Sticky column headers on the Family Profiles table (family_profiles.html
+   sets --fam-thead-top inline: 0 when .fam-print-bar isn't rendered - e.g.
+   the Archived tab - or its real height when it is, so the header always
+   sits flush under it instead of overlapping). Applied per-<th>, not on
+   <thead> itself, for consistent cross-browser sticky behavior. */
+.fam-sticky-table thead th {
+    position: sticky;
+    top: var(--fam-thead-top, 0px);
+    z-index: 2;
+    background: #f4f4fb;
+}
+
+/* print_family_list.html's top bar - Back pinned left, Print pinned right
+   (reversed from reports.css's default .rpt-export-row layout, where Back
+   trails after the export buttons via .rpt-back-link's margin-left:auto). */
+.fam-print-topbar { justify-content: space-between; }
+.fam-print-topbar .rpt-back-link { margin-left: 0; }

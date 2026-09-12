@@ -586,7 +586,8 @@ def _push_proactive_allocation(barangay, quantity, office, event, remarks):
     reference/traceability, but allocated_quantity is always whatever the
     CSWDO admin actually entered on the form - the model never decides the
     number on its own (manuscript Ch.2: predicted output is decision support,
-    not an automatic final allocation)."""
+    not an automatic final allocation). `event` is optional - allocations can
+    be made without an active disaster event (e.g. routine restocking)."""
     fp = _own_food_pack_inventory()
     available = fp.quantity_available if fp else 0
     if quantity > available:
@@ -600,7 +601,7 @@ def _push_proactive_allocation(barangay, quantity, office, event, remarks):
         predicted_quantity=ml_predict.predict_quantity(barangay) or 0,
         allocated_quantity=quantity,
         historical_allocation=ml_predict.historical_allocation_for(barangay.barangay_id),
-        allocation_date=ph_today(), event_id=event.event_id,
+        allocation_date=ph_today(), event_id=event.event_id if event else None,
         status="approved", fulfilling_office_id=office.office_id,
         source="cswdo_direct", barangay_report_id=None,
         created_by=current_user.user_id, decided_by=current_user.user_id,
@@ -618,10 +619,11 @@ def _push_proactive_allocation(barangay, quantity, office, event, remarks):
 
     fp.quantity_available -= quantity
     fp.updated_by = current_user.user_id
+    event_note = f" ({event.event_name})" if event else ""
     db.session.add(WarehouseStockLog(
         office_id=office.office_id, item_type="food_pack", item_name="Food Packs",
         delta=-quantity,
-        reason=f"Proactively allocated to Brgy. {barangay.barangay_name} ({event.event_name})",
+        reason=f"Proactively allocated to Brgy. {barangay.barangay_name}{event_note}",
         source_type="standard", updated_by=current_user.user_id,
     ))
     db.session.flush()
@@ -632,55 +634,67 @@ def _push_proactive_allocation(barangay, quantity, office, event, remarks):
 @login_required
 @role_required("cswdo_admin", "system_admin")
 def proactive_allocate():
-    """Push food packs to a barangay ahead of any Relief Request - the
-    manuscript's pre-positioning phase applied at the barangay tier, driven
-    by the Predictive Analytics ranking (see prediction.index / _barangay_
-    snapshot's 'model'-sourced rows). Scoped to an active disaster event on
-    purpose, so this stays typhoon-related pre-positioning rather than an
-    everyday bypass of the request workflow."""
+    """Push food packs to a barangay ahead of any Relief Request - reachable
+    from the Predictive Analytics ranking (see prediction.index / _barangay_
+    snapshot's 'model'-sourced rows) for a model-flagged barangay, or from the
+    Deliveries page for any barangay in the LGU. An active disaster event may
+    be attached for typhoon-related pre-positioning, but it's optional -
+    CSWDO/MSWDO can also allocate for routine restocking with no event behind
+    it."""
+    # Deliveries only ever ranks the top handful of barangays on Predictive
+    # Analytics; this lets the form come from either page and bounce back to
+    # wherever it was submitted from.
+    next_page = "cswdo.deliveries" if request.form.get("next") == "deliveries" else "prediction.index"
+
+    def _redirect(event_id=None):
+        if next_page == "cswdo.deliveries":
+            return redirect(url_for(next_page))
+        return redirect(url_for(next_page, event_id=event_id))
+
     office = current_user.office
     if not office:
         flash("No office on file for this account.", "error")
-        return redirect(url_for("prediction.index"))
+        return _redirect()
 
     barangay_id = request.form.get("barangay_id", type=int)
     barangay = Barangay.query.get(barangay_id) if barangay_id else None
     if not barangay or barangay.city_municipality != office.area_covered:
         flash("Select a barangay in your own LGU.", "error")
-        return redirect(url_for("prediction.index"))
+        return _redirect()
 
     event_id = request.form.get("event_id", type=int)
     event = DisasterEvent.query.get(event_id) if event_id else None
-    if not event or event.status != "active":
-        flash("Select an active disaster event before allocating proactively.", "error")
-        return redirect(url_for("prediction.index"))
+    if event_id and (not event or event.status != "active"):
+        flash("That disaster event is no longer active - reselect one or leave it blank to allocate without an event.", "error")
+        return _redirect()
 
     quantity = request.form.get("quantity", type=int)
     if not quantity or quantity <= 0:
         flash("Enter the number of food packs to allocate.", "error")
-        return redirect(url_for("prediction.index", event_id=event_id))
+        return _redirect(event_id)
 
     remarks = request.form.get("remarks", "").strip()
     if not remarks:
         flash("Add a short justification for this proactive allocation (no barangay request backs it, so this is the record of why).", "error")
-        return redirect(url_for("prediction.index", event_id=event_id))
+        return _redirect(event_id)
 
     alloc, error = _push_proactive_allocation(barangay, quantity, office, event, remarks)
     if error:
         flash(error, "error")
-        return redirect(url_for("prediction.index", event_id=event_id))
+        return _redirect(event_id)
 
+    event_note = f" ({event.event_name})" if event else " (no event - routine restocking)"
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="cswdo_proactive_allocation",
         description=f"{office.office_name} proactively allocated {quantity:,} food packs to "
-                    f"Brgy. {barangay.barangay_name} ({event.event_name}) - model estimate was "
+                    f"Brgy. {barangay.barangay_name}{event_note} - model estimate was "
                     f"{alloc.predicted_quantity:,}",
         office_id=office.office_id, barangay_id=barangay.barangay_id,
         allocation_id=alloc.allocation_id,
     ))
     db.session.commit()
     flash(f"{quantity:,} food packs proactively allocated to Brgy. {barangay.barangay_name}.", "success")
-    return redirect(url_for("prediction.index", event_id=event_id))
+    return _redirect(event_id)
 
 
 def _sync_barangay_disaster_status(report):
@@ -951,6 +965,11 @@ def deliveries():
         "awaiting_validation": _awaiting_validation(r),
     } for r in recs]
 
+    fp = _own_food_pack_inventory()
+    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        DisasterEvent.start_date.desc()
+    ).all()
+
     return render_template(
         "cswdo/deliveries.html",
         lgu=lgu, rows=rows, status_filter=status_filter, search_query=search_query,
@@ -960,6 +979,10 @@ def deliveries():
         awaiting_validation_count=sum(1 for r in all_recs if _awaiting_validation(r)),
         validated_count=sum(1 for r in all_recs if r.status == "confirmed"),
         packs_in_transit=sum(r.quantity_released for r in all_recs if r.dispatch_status in ("dispatched", "in_transit")),
+        can_allocate=bool(current_user.office),
+        lgu_barangays=lgu_barangays,
+        active_events=active_events,
+        total_food_packs=fp.quantity_available if fp else 0,
     )
 
 
@@ -2009,6 +2032,71 @@ def municipal_inventory_update(inventory_id):
         ))
     db.session.commit()
     flash(f"Updated {item.item_name} stock.", "success")
+    return redirect(url_for("cswdo.municipal_inventory"))
+
+
+@cswdo_bp.route("/municipal-inventory/<int:inventory_id>/resolve-damaged", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def municipal_inventory_resolve_damaged(inventory_id):
+    """Dedicated resolution flow for the "Damaged Food Packs (Returned)" item
+    only - Disposed (written off, gone for good) or Fixed (repaired/usable
+    again, so it moves back into the office's real "food_pack" stock). Kept
+    separate from the generic municipal_inventory_update since "Fixed" touches
+    two inventory rows at once, not one delta on the item being edited."""
+    item = _own_inventory_item_or_403(inventory_id)
+    if item.item_type != "food_pack_damaged":
+        flash("That item isn't a damaged-stock entry.", "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+
+    quantity = request.form.get("quantity", type=int)
+    resolution = request.form.get("resolution", "")
+    if not quantity or quantity <= 0:
+        flash("Enter how many damaged packs this covers.", "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+    if quantity > item.quantity_available:
+        flash(f"Only {item.quantity_available:,} damaged packs are on record.", "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+    if resolution not in ("disposed", "fixed"):
+        flash("Select Disposed or Fixed.", "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+
+    item.quantity_available -= quantity
+    item.updated_by = current_user.user_id
+
+    if resolution == "disposed":
+        db.session.add(WarehouseStockLog(
+            office_id=item.office_id, item_type="food_pack_damaged", item_name=item.item_name,
+            delta=-quantity, source_type="standard",
+            reason=f"{quantity:,} damaged packs disposed / written off",
+            updated_by=current_user.user_id,
+        ))
+        flash(f"{quantity:,} damaged packs marked disposed.", "success")
+    else:
+        db.session.add(WarehouseStockLog(
+            office_id=item.office_id, item_type="food_pack_damaged", item_name=item.item_name,
+            delta=-quantity, source_type="standard",
+            reason=f"{quantity:,} damaged packs repaired - moved back to usable Food Packs stock",
+            updated_by=current_user.user_id,
+        ))
+        fp = WarehouseInventory.query.filter_by(office_id=item.office_id, item_type="food_pack").first()
+        if fp is None:
+            fp = WarehouseInventory(
+                office_id=item.office_id, item_type="food_pack",
+                item_name="Food Packs", unit="packs", quantity_available=0,
+            )
+            db.session.add(fp)
+        fp.quantity_available = (fp.quantity_available or 0) + quantity
+        fp.updated_by = current_user.user_id
+        db.session.add(WarehouseStockLog(
+            office_id=item.office_id, item_type="food_pack", item_name="Food Packs",
+            delta=quantity, source_type="standard",
+            reason=f"{quantity:,} previously-damaged packs repaired and returned to usable stock",
+            updated_by=current_user.user_id,
+        ))
+        flash(f"{quantity:,} damaged packs marked fixed and returned to Food Packs stock.", "success")
+
+    db.session.commit()
     return redirect(url_for("cswdo.municipal_inventory"))
 
 

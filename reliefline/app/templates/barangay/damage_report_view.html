@@ -24,9 +24,14 @@
                 <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Back</a>
                 <h2>{{ report.ref }} <span class="badge-status status-{{ report.status }}" style="vertical-align:middle;">{{ status_labels.get(report.status, report.status) }}</span></h2>
             </div>
-            {% if report.status in ('draft', 'pending', 'returned') %}
-            <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-outline" style="text-decoration:none;">{{ icon('file-text', 14) }} Edit Report</a>
-            {% endif %}
+            <div style="display:flex; gap:10px;">
+                {% if report.affected_families_list %}
+                <a href="{{ url_for('barangay.print_report_families', report_id=report.report_id) }}" class="btn-outline" style="text-decoration:none;">{{ icon('list', 14) }} Print Family List</a>
+                {% endif %}
+                {% if report.status in ('draft', 'pending', 'returned') %}
+                <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-outline" style="text-decoration:none;">{{ icon('file-text', 14) }} Edit Report</a>
+                {% endif %}
+            </div>
         </section>
 
         {% set reviewer = report.reviewed_by_user.name ~ ' (MSWDO/CSWDO)' if report.reviewed_by_user else 'MSWDO/CSWDO' %}
@@ -130,14 +135,6 @@
                         <div class="info-box"><span>Totally Damaged</span><strong>{{ report.totally_damaged_houses }}</strong></div>
                         <div class="info-box"><span>Partially Damaged</span><strong>{{ report.partially_damaged_houses }}</strong></div>
                     </div>
-                    {% if report.affected_families_list %}
-                    <p class="form-hint" style="margin:12px 0 6px;">Affected families ({{ report.affected_families_list|length }})</p>
-                    <div class="fam-checklist-badges" style="justify-content:flex-start; flex-wrap:wrap; gap:6px;">
-                        {% for rf in report.affected_families_list %}
-                        <span class="fam-badge" title="{% if rf.head_name %}Head: {{ rf.head_name }} - {% endif %}{{ rf.member_count }} members{% if rf.pwd_count %}, {{ rf.pwd_count }} PWD{% endif %}{% if rf.senior_count %}, {{ rf.senior_count }} senior{% endif %}">{{ rf.family_name }} ({{ rf.member_count }})</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
                 </section>
 
                 <section class="panel">
@@ -150,6 +147,55 @@
                 </section>
             </div>
         </div>
+
+        {% if report.affected_families_list %}
+        {% set received_count = report.affected_families_list|selectattr('received')|list|length %}
+        {% set packs_given_total = report.affected_families_list|sum(attribute='packs_given') %}
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('users', 18, '#0f2547') }} Distribution Tracking</h3>
+                {% if report.status == 'fulfilled' %}
+                <span class="rd-sub">{{ received_count }} of {{ report.affected_families_list|length }} families given · {{ "{:,}".format(packs_given_total) }} packs distributed</span>
+                {% endif %}
+            </div>
+            {% if report.status != 'fulfilled' %}
+            <p class="form-hint" style="margin-bottom:10px;">
+                {% if report.status == 'approved' %}Recording who received a pack will be available once the delivery is confirmed received on <a href="{{ url_for('barangay.relief_monitoring') }}">Relief Monitoring</a>.
+                {% else %}This report's affected-families list, for reference.{% endif %}
+            </p>
+            {% endif %}
+            <div class="fam-distribute-list">
+                {% for rf in report.affected_families_list %}
+                <div class="fam-distribute-row {{ 'fam-distribute-done' if rf.received }}">
+                    <div class="fam-distribute-info">
+                        <strong>{{ rf.family_name }}</strong>{% if rf.head_name %}<span class="fam-distribute-sub">{{ rf.head_name }}</span>{% endif %}
+                        <span class="fam-checklist-badges" style="justify-content:flex-start;">
+                            <span class="fam-badge">{{ rf.member_count }} member{{ 's' if rf.member_count != 1 }}</span>
+                            {% if rf.pwd_count %}<span class="fam-badge fam-badge-pwd">{{ rf.pwd_count }} PWD</span>{% endif %}
+                            {% if rf.senior_count %}<span class="fam-badge fam-badge-senior">{{ rf.senior_count }} senior</span>{% endif %}
+                            {% if rf.children_count %}<span class="fam-badge fam-badge-child">{{ rf.children_count }} children</span>{% endif %}
+                        </span>
+                    </div>
+                    {% if rf.received %}
+                    <div class="fam-distribute-action">
+                        <span class="fam-received-tag">{{ icon('check-circle', 13, '#1e8449') }} {{ rf.packs_given }} pack{{ 's' if rf.packs_given != 1 }} · {{ rf.received_at.strftime('%b %d, %I:%M %p') if rf.received_at else '' }}</span>
+                        <form method="POST" action="{{ url_for('barangay.undo_family_received', report_id=report.report_id, raf_id=rf.id) }}">
+                            <button type="submit" class="btn-view-sm">Undo</button>
+                        </form>
+                    </div>
+                    {% elif report.status == 'fulfilled' %}
+                    <form method="POST" action="{{ url_for('barangay.mark_family_received', report_id=report.report_id, raf_id=rf.id) }}" class="fam-distribute-action">
+                        <input type="number" name="packs_given" min="1" value="{{ rf.suggested_packs }}" class="fam-distribute-packs" title="Food packs given">
+                        <button type="submit" class="btn-view-sm fam-mark-received-btn">Mark Received</button>
+                    </form>
+                    {% else %}
+                    <span class="fam-distribute-action fam-distribute-waiting">Not yet delivered</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
 
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Remarks</h3></div>

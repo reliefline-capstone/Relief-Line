@@ -71,10 +71,17 @@
             </div>
         </section>
 
-        <section class="panel wh-table-panel">
-            <table class="wh-table">
+        <section class="panel wh-table-panel fam-sticky-panel">
+            {% if not show_archived and families %}
+            <div class="fam-print-bar">
+                <label class="fam-checklist-selectall"><input type="checkbox" id="fam-print-select-all"> Select All</label>
+                <button type="button" class="btn-outline" id="fam-print-btn" disabled>{{ icon('list', 14) }} Print Selected</button>
+            </div>
+            {% endif %}
+            <table class="wh-table fam-sticky-table" style="--fam-thead-top: {{ '56px' if (not show_archived and families) else '0px' }};">
                 <thead>
                     <tr>
+                        {% if not show_archived %}<th></th>{% endif %}
                         <th>FAMILY / HOUSEHOLD HEAD</th>
                         <th>PUROK</th>
                         <th>MEMBERS</th>
@@ -88,6 +95,9 @@
                 <tbody>
                     {% for f in families %}
                     <tr>
+                        {% if not show_archived %}
+                        <td><input type="checkbox" name="family_ids" value="{{ f.family_id }}" class="fam-print-checkbox"></td>
+                        {% endif %}
                         <td><strong>{{ f.family_name }}</strong>{% if f.head_name %}<span class="wh-table-sub">{{ f.head_name }}</span>{% endif %}</td>
                         <td>{{ f.purok or '-' }}</td>
                         <td>{{ f.member_count }}</td>
@@ -110,7 +120,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="8" class="empty-note" style="text-align:center; padding:30px;">
+                    <tr><td colspan="9" class="empty-note" style="text-align:center; padding:30px;">
                         {% if search_query %}No families match your search.
                         {% elif show_archived %}No archived families.
                         {% else %}No families registered yet. Add your barangay's households here - they'll show up as a checklist when you file a Barangay Report.{% endif %}
@@ -246,5 +256,37 @@ document.querySelectorAll('form[data-confirm]').forEach(function (f) {
         if (!confirm(f.dataset.confirm)) e.preventDefault();
     });
 });
+
+// Print Selected - not a real <form> (the per-row Archive/Delete forms
+// already live inside these table rows, and HTML forms can't nest), so a
+// plain click handler collects the checked family_ids and navigates to
+// the print route itself.
+(function () {
+    var checkboxes = Array.prototype.slice.call(document.querySelectorAll('.fam-print-checkbox'));
+    var selectAll = document.getElementById('fam-print-select-all');
+    var printBtn = document.getElementById('fam-print-btn');
+    if (!printBtn) return;
+
+    function refresh() {
+        var checked = checkboxes.filter(function (cb) { return cb.checked; });
+        printBtn.disabled = checked.length === 0;
+        if (selectAll) selectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+    }
+
+    checkboxes.forEach(function (cb) { cb.addEventListener('change', refresh); });
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            checkboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+            refresh();
+        });
+    }
+    printBtn.addEventListener('click', function () {
+        var ids = checkboxes.filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
+        if (!ids.length) return;
+        var params = ids.map(function (id) { return 'family_ids=' + encodeURIComponent(id); }).join('&');
+        window.location.href = "{{ url_for('barangay.print_families_selected') }}?" + params;
+    });
+    refresh();
+})();
 </script>
 {% endblock %}

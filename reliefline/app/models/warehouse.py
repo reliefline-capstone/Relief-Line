@@ -41,9 +41,14 @@ class WarehouseStockLog(db.Model):
     # "standard" covers provincial supply, transfers-in, and any other routine
     # restock; "donation" is a special relief supply from an external agency
     # (NGO, LGU partner, private donor). donor_name is only meaningful when
-    # source_type="donation" - NULL otherwise.
-    source_type = db.Column(db.Enum("standard", "donation"), nullable=False, default="standard",
-                             server_default="standard")
+    # source_type="donation" - NULL otherwise. "returned_damaged" is system-
+    # generated only (see app.routes.barangay._return_damaged_packs) when a
+    # barangay confirms a delivery with damaged packs - those packs come back
+    # into this office's warehouse under the "food_pack_damaged" item_type,
+    # never mixed into the "food_pack" figure the allocation/prediction
+    # pipeline reads.
+    source_type = db.Column(db.Enum("standard", "donation", "returned_damaged"), nullable=False,
+                             default="standard", server_default="standard")
     donor_name = db.Column(db.String(150), nullable=True)
     updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
@@ -54,3 +59,7 @@ class WarehouseStockLog(db.Model):
     @property
     def is_donation(self):
         return self.source_type == "donation"
+
+    @property
+    def is_damaged_return(self):
+        return self.source_type == "returned_damaged"

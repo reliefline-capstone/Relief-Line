@@ -69,16 +69,30 @@ class ReportAffectedFamily(db.Model):
 
     family_name = db.Column(db.String(150), nullable=False)
     head_name = db.Column(db.String(150), nullable=True)
+    purok = db.Column(db.String(100), nullable=True)
     member_count = db.Column(db.Integer, nullable=False, default=0)
     pwd_count = db.Column(db.Integer, nullable=False, default=0)
     senior_count = db.Column(db.Integer, nullable=False, default=0)
     children_count = db.Column(db.Integer, nullable=False, default=0)
+
+    # Distribution tracking - "who among the affected families actually got
+    # their food pack(s)" (panelist-requested: the barangay needs this
+    # visible, not just the aggregate delivered quantity). Only actionable
+    # once the report is "fulfilled" (delivery confirmed received - see
+    # app.routes.barangay.mark_family_received), and marking a family
+    # received deducts `packs_given` from BarangayInventory via the same
+    # ledger inventory_record uses, so the two never disagree.
+    received = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("0"))
+    received_at = db.Column(db.DateTime, nullable=True)
+    packs_given = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+    received_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
 
     report = db.relationship(
         "BarangayReport",
         backref=db.backref("affected_families_list", cascade="all, delete-orphan", order_by="ReportAffectedFamily.family_name"),
     )
     family = db.relationship("Family")
+    received_by_user = db.relationship("User", foreign_keys=[received_by])
 
     @property
     def suggested_packs(self):
