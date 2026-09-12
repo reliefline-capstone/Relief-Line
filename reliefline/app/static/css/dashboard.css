@@ -1257,17 +1257,11 @@ html.sidebar-collapsed .dashboard-main {
         flex-shrink: 0;
     }
     .rl-mnav-btn:active { background: #eef0f5; }
-    /* centered in the bar as its own unit - not just tucked next to the
-       hamburger - so the button on the left doesn't leave the brand looking
-       like it's drifted off to one side with empty space on the right. */
     .rl-mnav-brand {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
         display: flex;
         align-items: center;
         gap: 8px;
+        margin-left: 8px;
     }
     .rl-mnav-logo { width: 26px; height: 26px; flex-shrink: 0; }
     .rl-mnav-title {
@@ -1324,7 +1318,10 @@ html.sidebar-collapsed .dashboard-main {
 
     .dashboard-main, html.sidebar-collapsed .dashboard-main {
         margin-left: 0;
-        padding-top: 58px;               /* clear the fixed top bar */
+        /* 58px clears the fixed top bar exactly, with zero buffer - the
+           greeting banner's rounded top corners then sat almost flush
+           against the bar's bottom edge. A little extra breathing room. */
+        padding-top: 72px;
     }
     .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

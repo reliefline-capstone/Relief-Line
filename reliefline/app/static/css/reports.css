@@ -39,16 +39,14 @@
 /* ---- Report type cards ---- */
 /* auto-fit (not a fixed repeat(3, ...)) so a role with fewer report types
    (barangay has 2) fills the row instead of leaving a dead empty-column
-   gap - it also stops the last row of a longer list (pswdo/cswdo have 7)
-   from stranding a lone card in an otherwise-empty row. The 320px minmax
-   floor is what naturally caps this at 3-per-row on a normal desktop width
-   and drops to fewer, wider columns as the column narrows - same effect
-   the old fixed 1100px/640px breakpoints gave, without the dead columns. */
+   gap. The 320px minmax floor is what naturally caps this at 3-per-row on
+   a normal desktop width and drops to fewer, wider columns as the column
+   narrows - same effect the old fixed 1100px/640px breakpoints gave. */
 .report-cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 16px;
-    margin-bottom: 8px;
+    margin-bottom: 20px;
 }
 @media (max-width: 1100px) {
     .reports-stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }

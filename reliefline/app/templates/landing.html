@@ -711,8 +711,13 @@
             function bulge(y1, y2, edge, dir) {
                 var mid = (y1 + y2) / 2;
                 var r = Math.abs(y2 - y1) / 2;
-                var lim = dir < 0 ? edge - 10 : W - 10 - edge;   // room to the edge of view
-                r = Math.min(r, Math.abs(lim));
+                // room to the edge of view - on a full-width mobile card
+                // `edge` can sit at (or past) W - 10, which used to send this
+                // negative and Math.abs() turned that "no room" signal back
+                // into "still bulge 10px", overshooting the container's own
+                // edge. Floor it at 0 so it flattens instead of escaping.
+                var lim = Math.max(0, dir < 0 ? edge - 10 : W - 10 - edge);
+                r = Math.min(r, lim);
                 var outer = edge + dir * r;
                 var kr = K * r;
                 return ' C ' + n1(edge + dir * kr) + ' ' + n1(y1) + ' ' +
