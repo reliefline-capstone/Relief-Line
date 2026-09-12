@@ -313,6 +313,30 @@ html.rd-modal-open { overflow: hidden; }
     outline: none;
 }
 
+/* custom_select.js swaps every <select> for a .csel-wrap/.csel-trigger
+   pair (see custom_select.css) - the rule above still matches the original
+   <select> underneath, but that's now visually hidden, so it no longer
+   makes anything full-width on screen. .csel-wrap sizes to its own content
+   outside of a flex column (.form-row's align-items: stretch), which is
+   why a <select> in a form here that isn't wrapped in .form-row (e.g.
+   municipal_inventory.html's damaged-item resolution field) rendered
+   narrower than the <input> above it instead of matching its width. */
+.rd-modal form .csel-wrap { width: 100%; }
+/* .csel-trigger's own default padding (custom_select.css) is 1px shorter
+   top/bottom than the 10px .rd-modal form input/select/textarea use above,
+   so a select and the text input right next to it (e.g. Quantity above
+   Resolution) rendered at very slightly different heights instead of
+   lining up as a matched pair of fields. */
+.rd-modal form .csel-trigger { padding: 10px 12px; }
+
+/* Opt-in roomier spacing for a modal form whose fields feel cramped at the
+   default row rhythm - so far just municipal_inventory.html's damaged-item
+   Resolve form (Quantity + Resolution + hint + actions all stacked close
+   together). Scoped via this class rather than widening every .rd-modal
+   form's spacing app-wide. */
+.rd-modal form.rd-form-roomy label { margin-top: 22px; }
+.rd-form-roomy .rd-modal-actions { margin-top: 24px; }
+
 .rd-modal form textarea { resize: vertical; }
 
 [data-toggle-field] { display: none; }

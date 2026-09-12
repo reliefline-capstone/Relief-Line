@@ -548,7 +548,11 @@
 /* Search + purok/category filters above the checklist. The search box is
    capped (not flex-grown to fill the row) so it sits proportioned next to
    the two dropdowns instead of stretching to dominate the whole row width. */
-.fam-filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+/* flex:1 here is for Family Profiles, where this bar is a flex item sharing
+   its row with the Active/Archived tabs (.page-header's other child) -
+   harmless no-op in the Barangay Report wizard, where it has no such
+   sibling to share space with. */
+.fam-filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; flex: 1; }
 .fam-search-wrapper {
     flex: 1 1 220px; max-width: 360px; display: flex; align-items: center; gap: 8px;
     border: 1px solid #e3e4ec; border-radius: 8px; padding: 8px 12px; background: white;
@@ -564,6 +568,22 @@
     display: inline-flex; align-items: center; gap: 4px;
     margin-left: auto; font-size: 13px; font-weight: 600; color: #5347ce; text-decoration: none;
     white-space: nowrap;
+}
+
+/* On Family Profiles, .fam-filter-bar shares its row with the Active/
+   Archived tabs (.page-header's other flex child) via its own flex:1 -
+   at a narrow width that leaves it only a sliver of the row, too little
+   for its search box + two selects to wrap sensibly (each select ends up
+   stranded on its own separate line instead of pairing up). Forcing the
+   bar onto a full-width line of its own (pushing Active/Archived down)
+   and the search box onto its own line within that gives the two selects
+   room to wrap together as a pair below it. Placed after the base rules
+   above (not just wrapped in a preceding @media) since equal-specificity
+   rules resolve by source order regardless of nesting - any earlier
+   position here would just lose to those unconditional base rules. */
+@media (max-width: 700px) {
+    .fam-filter-bar { flex-basis: 100%; }
+    .fam-search-wrapper { flex-basis: 100%; }
 }
 
 .fam-checklist-chevron { flex-shrink: 0; display: flex; }
@@ -674,67 +694,55 @@
 .fam-distribute-info strong { font-size: 13.5px; color: #1a1a1a; }
 .fam-distribute-sub { font-size: 12px; color: #8a94a6; }
 
-.fam-distribute-action { display: flex; align-items: center; gap: 8px; }
-.fam-distribute-packs { width: 64px; padding: 6px 8px; border: 1px solid #d8dee9; border-radius: 6px; font-size: 13px; }
-.fam-mark-received-btn { background: #1e8449; color: white; border: none; cursor: pointer; }
+.fam-distribute-action { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fam-distribute-packs { width: 64px; padding: 6px 8px; border: 1px solid #d8dee9; border-radius: 6px; font-size: 13px; flex-shrink: 0; }
+/* Was relying on .btn-view-sm for padding/border-radius/font-size/nowrap,
+   but this page (damage_report_view.html) doesn't load either stylesheet
+   that defines that class - it fell back to the browser's bare default
+   button padding, so the pill looked cramped and its text could wrap/
+   overflow under any width pressure from its flex row. Styled standalone
+   instead of pulling in a whole other stylesheet for one shared class name. */
+.fam-mark-received-btn {
+    background: #1e8449; color: white; border: none; cursor: pointer;
+    padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    white-space: nowrap; flex-shrink: 0;
+}
+.fam-mark-received-btn:hover { background: #196f3d; }
+/* Same missing-.btn-view-sm issue for the "Undo" button next to a
+   received tag. */
+.fam-undo-btn {
+    background: white; color: #333; border: 1px solid #e3e4ec; cursor: pointer;
+    padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    white-space: nowrap; flex-shrink: 0;
+}
+.fam-undo-btn:hover { background: #f4f4fb; }
 .fam-received-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #1e8449; }
 .fam-distribute-waiting { font-size: 12px; color: #8a94a6; font-style: italic; }
 
-/* Print Selected bar on Family Profiles (print_families_selected). */
-/* .wh-table-panel's own overflow-x:auto (warehouse_inventory.css) makes IT
-   the nearest scroll container for any position:sticky descendant - and
-   since that panel's height is intrinsic (its content never actually needs
-   to scroll within the panel itself), the sticky bar/header below just sat
-   static instead of pinning to .dashboard-main's real scroll. Undoing it
-   here (scoped to this page only, via .fam-sticky-panel) lets stickiness
-   resolve against .dashboard-main as intended - the trade-off is this
-   table no longer gets its own horizontal scrollbar on a narrow viewport,
-   which is fine for Family Profiles' column count on a normal screen. */
-.wh-table-panel.fam-sticky-panel { overflow-x: visible; }
-/* ...but on a narrow viewport there's no room left to shrink columns into -
-   headers/cells were wrapping into a squashed, hard-to-read mess instead.
-   Below this width, trade the sticky header/select-all bar back for a
-   normal horizontally-scrolling table (position:sticky needs a non-static
-   ancestor purely for its own vertical pinning, which a horizontally
-   scrolling one doesn't give cleanly - simplest is to just turn it off). */
-@media (max-width: 700px) {
-    .wh-table-panel.fam-sticky-panel { overflow-x: auto; }
-    .fam-print-bar, .fam-sticky-table thead th { position: static; }
-    /* .wh-table has no explicit table-layout/white-space, so at 100% width
-       with not enough room it wraps header/cell text instead of actually
-       overflowing into the scrollbar overflow-x:auto now provides - forcing
-       nowrap here is what makes that scrollbar do anything. */
-    .fam-sticky-table th, .fam-sticky-table td { white-space: nowrap; }
-}
-
+/* Print Selected bar on Family Profiles (print_families_selected). Plain
+   (non-sticky) - a sticky bar/header here needed .wh-table-panel's own
+   overflow-x:auto turned off so stickiness could resolve against
+   .dashboard-main's real scroll instead of the panel's own, which in turn
+   broke the table's horizontal scroll on a narrow viewport (headers/cells
+   wrapped into a squashed mess instead of just scrolling sideways) - not
+   worth that trade-off for a bar/header that's short to scroll past anyway. */
 .fam-print-bar {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 16px;
     border-bottom: 1px solid #e5e8ee;
-    /* Sticks to the top of .dashboard-main's scroll as the family list
-       scrolls past it - paired with .fam-sticky-table's <th> below so the
-       column headers stay visible right underneath it. .wh-table-panel has
-       no padding of its own, so this bar sits flush against the panel's
-       edges - top corners rounded to match .panel's 12px radius, otherwise
-       its square corners poke past the panel's rounded ones. */
-    position: sticky;
-    top: 0;
-    z-index: 3;
     background: white;
     border-radius: 12px 12px 0 0;
 }
 
-/* Sticky column headers on the Family Profiles table (family_profiles.html
-   sets --fam-thead-top inline: 0 when .fam-print-bar isn't rendered - e.g.
-   the Archived tab - or its real height when it is, so the header always
-   sits flush under it instead of overlapping). Applied per-<th>, not on
-   <thead> itself, for consistent cross-browser sticky behavior. */
-.fam-sticky-table thead th {
-    position: sticky;
-    top: var(--fam-thead-top, 0px);
-    z-index: 2;
-    background: #f4f4fb;
+/* .wh-table has no explicit table-layout/white-space, so on a narrow
+   viewport it wraps header/cell text (a squashed, hard-to-read mess)
+   instead of just overflowing into .wh-table-panel's own horizontal
+   scrollbar. Forcing nowrap here is what makes that scrollbar do anything. */
+@media (max-width: 700px) {
+    .fam-sticky-table th, .fam-sticky-table td { white-space: nowrap; }
 }
+
+.fam-sticky-table thead th { background: #f4f4fb; }
 
 /* print_family_list.html's top bar - Back pinned left, Print pinned right
    (reversed from reports.css's default .rpt-export-row layout, where Back

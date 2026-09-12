@@ -139,9 +139,8 @@
                             <div class="wh-row-actions">
                                 <button type="button" class="wh-icon-btn" title="Update stock" data-open-modal="mi-update-modal-{{ item.inventory_id }}">{{ icon('external-link', 15, '#2c5aa0') }}</button>
                                 {% if item.item_type != 'food_pack' %}
-                                <form method="POST" action="{{ url_for('cswdo.municipal_inventory_delete', inventory_id=item.inventory_id) }}" onsubmit="return confirm('Remove {{ item.item_name }} from this warehouse?');">
-                                    <button type="submit" class="wh-icon-btn wh-icon-btn-danger" title="Delete item">{{ icon('x-circle', 15, '#c0392b') }}</button>
-                                </form>
+                                <form method="POST" action="{{ url_for('cswdo.municipal_inventory_delete', inventory_id=item.inventory_id) }}" id="mi-delete-form-{{ item.inventory_id }}"></form>
+                                <button type="button" class="wh-icon-btn wh-icon-btn-danger" title="Delete item" data-open-modal="mi-delete-modal-{{ item.inventory_id }}">{{ icon('x-circle', 15, '#c0392b') }}</button>
                                 {% endif %}
                             </div>
                         </td>
@@ -229,7 +228,7 @@
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
         </div>
         {% if item.item_type == 'food_pack_damaged' %}
-        <form method="POST" action="{{ url_for('cswdo.municipal_inventory_resolve_damaged', inventory_id=item.inventory_id) }}">
+        <form method="POST" action="{{ url_for('cswdo.municipal_inventory_resolve_damaged', inventory_id=item.inventory_id) }}" class="rd-form-roomy">
             <label for="mi-dq-{{ item.inventory_id }}">Quantity ({{ item.unit }}) *</label>
             <input type="number" name="quantity" id="mi-dq-{{ item.inventory_id }}" min="1" max="{{ item.quantity_available }}" required>
             <p class="rd-sub">Currently on record: <strong>{{ "{:,}".format(item.quantity_available) }}</strong> {{ item.unit }}</p>
@@ -272,6 +271,21 @@
         {% endif %}
     </div>
 </div>
+{% if item.item_type != 'food_pack' %}
+<div class="rd-modal-overlay" id="mi-delete-modal-{{ item.inventory_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('x-circle', 18, '#c0392b') }} Remove Item</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <p class="form-hint">Remove <strong>{{ item.item_name }}</strong> from this warehouse?</p>
+        <div class="rd-modal-actions">
+            <button type="submit" form="mi-delete-form-{{ item.inventory_id }}" class="btn-decision btn-reject">{{ icon('x-circle', 16, 'white') }} Remove</button>
+            <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endfor %}
 
 {% endblock %}

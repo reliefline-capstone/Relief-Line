@@ -59,7 +59,7 @@
 
         {% set puroks = families|map(attribute='purok')|reject('none')|unique|sort|list %}
         <section class="page-header" style="margin-bottom: 12px;">
-            <div class="fam-filter-bar" style="margin-bottom:0; flex:1;">
+            <div class="fam-filter-bar" style="margin-bottom:0;">
                 <div class="fam-search-wrapper">
                     {{ icon('search', 14, '#8a94a6') }}
                     <input type="text" id="fam-search" placeholder="Search family name or purok...">
@@ -90,7 +90,7 @@
                 <button type="button" class="btn-outline" id="fam-print-btn" disabled>{{ icon('list', 14) }} Print Selected</button>
             </div>
             {% endif %}
-            <table class="wh-table fam-sticky-table" style="--fam-thead-top: {{ '56px' if (not show_archived and families) else '0px' }};">
+            <table class="wh-table fam-sticky-table">
                 <thead>
                     <tr>
                         {% if not show_archived %}<th></th>{% endif %}

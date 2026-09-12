@@ -191,13 +191,13 @@
                     <div class="fam-distribute-action">
                         <span class="fam-received-tag">{{ icon('check-circle', 13, '#1e8449') }} {{ rf.packs_given }} pack{{ 's' if rf.packs_given != 1 }} · {{ rf.received_at.strftime('%b %d, %I:%M %p') if rf.received_at else '' }}</span>
                         <form method="POST" action="{{ url_for('barangay.undo_family_received', report_id=report.report_id, raf_id=rf.id) }}">
-                            <button type="submit" class="btn-view-sm">Undo</button>
+                            <button type="submit" class="fam-undo-btn">Undo</button>
                         </form>
                     </div>
                     {% elif report.status == 'fulfilled' %}
                     <form method="POST" action="{{ url_for('barangay.mark_family_received', report_id=report.report_id, raf_id=rf.id) }}" class="fam-distribute-action">
                         <input type="number" name="packs_given" min="1" value="{{ rf.suggested_packs }}" class="fam-distribute-packs" title="Food packs given">
-                        <button type="submit" class="btn-view-sm fam-mark-received-btn">Mark Received</button>
+                        <button type="submit" class="fam-mark-received-btn">Mark Received</button>
                     </form>
                     {% else %}
                     <span class="fam-distribute-action fam-distribute-waiting">Not yet delivered</span>

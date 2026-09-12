@@ -75,9 +75,8 @@
                             <div class="wh-row-actions">
                                 <button type="button" class="wh-icon-btn" title="Update stock" data-open-modal="update-stock-modal-{{ item.inventory_id }}">{{ icon('external-link', 15, '#2c5aa0') }}</button>
                                 {% if item.item_type != 'food_pack' %}
-                                <form method="POST" action="{{ url_for('pswdo.warehouse_inventory_delete', inventory_id=item.inventory_id) }}" onsubmit="return confirm('Remove {{ item.item_name }} from this warehouse?');">
-                                    <button type="submit" class="wh-icon-btn wh-icon-btn-danger" title="Delete item">{{ icon('x-circle', 15, '#c0392b') }}</button>
-                                </form>
+                                <form method="POST" action="{{ url_for('pswdo.warehouse_inventory_delete', inventory_id=item.inventory_id) }}" id="delete-form-{{ item.inventory_id }}"></form>
+                                <button type="button" class="wh-icon-btn wh-icon-btn-danger" title="Delete item" data-open-modal="delete-modal-{{ item.inventory_id }}">{{ icon('x-circle', 15, '#c0392b') }}</button>
                                 {% endif %}
                             </div>
                         </td>
@@ -175,6 +174,21 @@
         </form>
     </div>
 </div>
+{% if item.item_type != 'food_pack' %}
+<div class="rd-modal-overlay" id="delete-modal-{{ item.inventory_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('x-circle', 18, '#c0392b') }} Remove Item</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <p class="form-hint">Remove <strong>{{ item.item_name }}</strong> from this warehouse?</p>
+        <div class="rd-modal-actions">
+            <button type="submit" form="delete-form-{{ item.inventory_id }}" class="btn-decision btn-reject">{{ icon('x-circle', 16, 'white') }} Remove</button>
+            <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endfor %}
 
 {% endblock %}
