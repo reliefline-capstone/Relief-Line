@@ -71,7 +71,8 @@
                      data-geo="{{ url_for('static', filename='geo/pangasinan_municipalities.json') }}"
                      data-outline="{{ url_for('static', filename='geo/pangasinan_outline.json') }}"
                      role="img"
-                     aria-label="Map of the Province of Pangasinan with Calasiao, Santa Barbara, and Urdaneta City highlighted. Decorative boundary map."></div>
+                     aria-label="Map of the Province of Pangasinan. Decorative boundary map."></div>
+                <span class="lp-map-label" aria-hidden="true">Pangasinan</span>
             </div>
 
         </div>
@@ -413,19 +414,13 @@
 <script>
 // Hero map - a Leaflet basemap clipped to the outline of the Province of
 // Pangasinan, so the province floats on the page (drop shadow in
-// landing.css) with no card or frame. The three pilot LGUs (Calasiao,
-// Santa Barbara, Urdaneta City) are drawn on top. Static.
+// landing.css) with no card or frame. Static, and drawn as one uniform
+// province-wide shape (no single LGU singled out) - ReliefLine covers all
+// of Pangasinan, not a handful of pilot towns, so the map shouldn't imply
+// otherwise.
 (function () {
     var el = document.getElementById('lp-map');
     if (!el || typeof L === 'undefined' || !el.dataset.geo) return;
-
-    // name in the boundary file -> { label shown on the pin, accent colour }
-    var TARGET_META = {
-        'City of Urdaneta': { label: 'Urdaneta City', color: '#5347ce', dir: 'up' },
-        'Santa Barbara':    { label: 'Santa Barbara', color: '#e67e22', dir: 'down' },
-        'Calasiao':         { label: 'Calasiao',      color: '#16c8c7', dir: 'left' },
-    };
-    var TARGETS = { 'Calasiao': 1, 'Santa Barbara': 1, 'City of Urdaneta': 1 };
 
     var map = L.map(el, {
         attributionControl: false, zoomControl: false,
@@ -473,37 +468,13 @@
             style: { color: '#8f88c9', weight: 1.5, opacity: 0.9, fill: false },
         }).addTo(map);
 
-        // The three pilot LGUs - a soft tinted fill in each one's accent
-        // colour, white casing, then a labelled pin dropped at its centre.
-        L.geoJSON(muni, {
+        // Province-wide accent tint - same soft-fill treatment the old
+        // three-pilot-LGU highlight used, just applied across the whole
+        // outline instead of singling any towns out, since ReliefLine
+        // covers all of Pangasinan, not a handful of pilot municipalities.
+        L.geoJSON(outline, {
             pane: 'lpTarget', interactive: false,
-            filter: function (f) { return TARGETS[f.properties.name] === 1; },
-            style: function (f) {
-                var m = TARGET_META[f.properties.name] || { color: '#5347ce' };
-                return { color: '#ffffff', weight: 2.5, fillColor: m.color, fillOpacity: 0.28 };
-            },
-        }).addTo(map);
-        L.geoJSON(muni, {
-            pane: 'lpTarget', interactive: false,
-            filter: function (f) { return TARGETS[f.properties.name] === 1; },
-            style: function (f) {
-                var m = TARGET_META[f.properties.name] || { color: '#5347ce' };
-                return { color: m.color, weight: 1.4, opacity: 0.55, fill: false };
-            },
-            onEachFeature: function (f, layer) {
-                var m = TARGET_META[f.properties.name];
-                if (!m) return;
-                var c = layer.getBounds().getCenter();
-                L.marker(c, {
-                    pane: 'lpTarget', interactive: false, keyboard: false,
-                    icon: L.divIcon({
-                        className: 'lp-map-pin lp-map-pin-' + m.dir,
-                        iconSize: null,
-                        html: '<span class="lp-map-chip" style="--pin:' + m.color + '">' +
-                              m.label + '</span><span class="lp-map-dot" style="--pin:' + m.color + '"></span>',
-                    }),
-                }).addTo(map);
-            },
+            style: { color: '#ffffff', weight: 2.5, fillColor: '#5347ce', fillOpacity: 0.1 },
         }).addTo(map);
 
         // Flatten the outline (Polygon or MultiPolygon) to a list of rings.

@@ -196,6 +196,14 @@ html { scroll-behavior: smooth; }
     animation: lp-fade-in 0.6s ease-out 0.15s both;
     filter: drop-shadow(0 18px 30px rgba(83, 71, 206, 0.20))
             drop-shadow(0 5px 10px rgba(28, 30, 58, 0.12));
+    /* Lets .lp-map-label size itself off THIS element's actual rendered
+       width (cqw units below) instead of the viewport's - the map's width
+       comes from a CSS Grid column (.lp-hero-split), which doesn't track
+       viewport width 1:1, so a viewport-based media-query breakpoint could
+       still leave the label sized for a wider column than this one
+       actually squeezed down to, overflowing past the (also-narrower)
+       silhouette's own edges. */
+    container-type: inline-size;
 }
 
 #lp-map {
@@ -204,61 +212,51 @@ html { scroll-behavior: smooth; }
        the column with little empty space above/below. */
     height: 360px;
     background: transparent;
-    overflow: visible;
+    /* Leaflet pads its internal SVG layer wider than the container it
+       sits in (room to pan smoothly, even with panning disabled here) -
+       the province silhouette itself is already clipped to shape via JS
+       (clip-path, set once the outline loads), but that oversized SVG's
+       own layout box was still contributing to the PAGE's horizontal
+       scroll width at viewports between the 720px and ~1150px mobile/
+       desktop breakpoints, where .lp-hero-split leaves this column
+       narrower than the SVG wants to be. hidden here (not just clip-path)
+       is what actually keeps that invisible overflow off the page. */
+    overflow: hidden;
 }
 
-/* Soft lift on the highlighted LGUs so they read on top of the mesh. */
+/* Province name, over the silhouette - aria-hidden (span, not the #lp-map
+   element itself) since #lp-map's own role="img"/aria-label already names
+   the province for assistive tech; this is a purely visual echo of it.
+   Nudged right/down of the shape's bounding-box centre (50%/50%) - the
+   silhouette itself carries more of its landmass toward the east/lower
+   half, so a bbox-centred label sat visibly left-and-high of where the
+   shape reads as "centred". */
+.lp-map-label {
+    position: absolute;
+    left: 53%;
+    top: 59%;
+    transform: translate(-50%, -50%);
+    /* Scales with the map's own rendered width (cqw, via container-type
+       on .lp-hero-map above) rather than a fixed size + breakpoint jump,
+       so "PANGASINAN" keeps the same proportion of the silhouette's width
+       - and stays inside its edges - at every size in between, not just
+       at the one breakpoint a media query would target. */
+    font-size: clamp(8px, 2.8cqw, 15px);
+    font-weight: 700;
+    letter-spacing: clamp(0.2px, 0.25cqw, 2px);
+    text-transform: uppercase;
+    color: #5347ce;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 14px rgba(255, 255, 255, 0.9);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* Soft lift on the province-wide accent tint so it reads on top of the
+   mesh (landing.html's lpTarget pane - used to hold a highlight per pilot
+   LGU, now one uniform province-wide fill instead). */
 #lp-map .leaflet-pane.leaflet-lpTarget-pane {
     filter: drop-shadow(0 2px 5px rgba(28, 30, 58, 0.24));
     overflow: visible;
-}
-
-/* --- Labelled pins on the three pilot LGUs --- */
-.lp-map-pin { overflow: visible; }
-.lp-map-dot {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 13px;
-    height: 13px;
-    margin: -6.5px 0 0 -6.5px;
-    border-radius: 50%;
-    background: var(--pin, #5347ce);
-    border: 3px solid #fff;
-    box-shadow: 0 2px 6px rgba(28, 30, 58, 0.32);
-}
-.lp-map-chip {
-    position: absolute;
-    left: 0;
-    top: 0;
-    transform: translate(-50%, calc(-100% - 18px));
-    padding: 2.5px 8px;
-    border-radius: 999px;
-    background: #fff;
-    color: var(--pin, #5347ce);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1px;
-    white-space: nowrap;
-    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.2);
-}
-/* faint tether from the chip toward its dot */
-.lp-map-chip::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 100%;
-    width: 1.5px;
-    height: 14px;
-    transform: translateX(-50%);
-    background: var(--pin, #5347ce);
-    opacity: 0.5;
-}
-.lp-map-pin-down .lp-map-chip { transform: translate(-50%, 22px); }
-.lp-map-pin-down .lp-map-chip::after { top: auto; bottom: 100%; }
-.lp-map-pin-left .lp-map-chip { transform: translate(calc(-100% - 16px), -50%); }
-.lp-map-pin-left .lp-map-chip::after {
-    left: 100%; top: 50%; width: 14px; height: 1.5px; transform: translateY(-50%);
 }
 
 .lp-map-failed { display: flex; align-items: center; justify-content: center; }
@@ -975,7 +973,7 @@ html { scroll-behavior: smooth; }
     .lp-section-head { margin-bottom: 28px; }
     .lp-hero-desc { font-size: 14.5px; margin-top: 16px; }
     .lp-hero-map { width: 100%; max-width: 380px; overflow: hidden; border-radius: 8px; }
-    #lp-map { height: 290px; overflow: hidden; }
+    #lp-map { height: 290px; }
 }
 
 @media (max-width: 560px) {
@@ -1005,10 +1003,6 @@ html { scroll-behavior: smooth; }
     .lp-more-pill { font-size: 12px; padding: 8px 14px; gap: 7px; }
     .lp-more-track { gap: 10px; }
 
-    /* the pin labels can't fit beside a phone-width map - show just the
-       coloured dots (the three LGUs are already tinted on the map itself) */
-    .lp-map-chip { display: none; }
-    .lp-map-dot { width: 16px; height: 16px; margin: -8px 0 0 -8px; }
     #lp-map { height: 300px; }
 }
 
