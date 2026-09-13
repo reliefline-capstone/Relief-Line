@@ -19,7 +19,13 @@ from app.models.warehouse import WarehouseInventory
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.disaster_event import DisasterEvent
+from app.models.event_barangay import EventBarangay
 from app.models.barangay_status import BarangayDisasterStatus
+from app.utils.disaster_events import (
+    resolve_effective_event, event_covers_barangay,
+    blocking_event_for_municipality, blocking_event_for_province,
+    relevant_active_events_query,
+)
 from app.utils import weather as weather_service
 from app.models.barangay_report import BarangayReport
 from app.models.barangay_inventory import food_pack_on_hand
@@ -194,6 +200,95 @@ def _cswdo_notification_view(log):
     }
 
 
+@cswdo_bp.route("/disaster-events/declare", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def declare_disaster_event():
+    """A CSWDO's own local counterpart to pswdo.declare_disaster_event -
+    scoped to this office's own city/municipality and, via EventBarangay, an
+    explicit subset of its own barangays (defaults to all of them - the
+    dashboard's checklist starts fully checked). Blocked while either the
+    province-wide event or this town's own local one is already active; does
+    not block, and is not blocked by, another town's local event."""
+    office = current_user.office
+    lgu, lgu_barangays = _own_lgu_barangays()
+    if not lgu:
+        flash("No office/municipality on file for this account.", "error")
+        return redirect(url_for("cswdo.dashboard"))
+
+    existing = blocking_event_for_municipality(lgu)
+    if existing:
+        flash(f"“{existing.event_name}” is already active for {lgu}. End it before declaring a new event.", "error")
+        return redirect(url_for("cswdo.dashboard"))
+
+    event_name = request.form.get("event_name", "").strip()
+    if not event_name:
+        flash("Event name is required to declare a disaster event.", "error")
+        return redirect(url_for("cswdo.dashboard"))
+
+    start_date_raw = request.form.get("start_date", "")
+    try:
+        start_date = datetime.strptime(start_date_raw, "%Y-%m-%d").date() if start_date_raw else ph_today()
+    except ValueError:
+        start_date = ph_today()
+
+    weather_condition = request.form.get("weather_condition", "").strip() or None
+
+    # Checkbox list, all pre-checked in the template - only barangays actually
+    # left checked end up covered by this event (see EventBarangay).
+    selected_ids = set(request.form.getlist("barangay_ids", type=int))
+    own_barangay_ids = {b.barangay_id for b in lgu_barangays}
+    covered_ids = selected_ids & own_barangay_ids
+
+    event = DisasterEvent(
+        event_name=event_name, event_type="typhoon", status="active",
+        weather_condition=weather_condition, start_date=start_date,
+        created_by=current_user.user_id,
+        scope="municipality", city_municipality=lgu,
+    )
+    db.session.add(event)
+    db.session.flush()
+    for barangay_id in covered_ids:
+        db.session.add(EventBarangay(event_id=event.event_id, barangay_id=barangay_id))
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, office_id=office.office_id if office else None,
+        action_type="disaster_event_declared",
+        description=f"Declared {event_name} as {lgu}'s active local disaster event ({len(covered_ids)} of {len(own_barangay_ids)} barangays).",
+    ))
+    db.session.commit()
+
+    flash(f"{event_name} has been declared as {lgu}'s active local disaster event.", "success")
+    return redirect(url_for("cswdo.dashboard"))
+
+
+@cswdo_bp.route("/disaster-events/<int:event_id>/end", methods=["POST"])
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def end_disaster_event(event_id):
+    """Counterpart to declare_disaster_event above - a CSWDO may only end its
+    own local event, never PSWDO's province-wide one or another town's."""
+    office = current_user.office
+    lgu = office.area_covered if office else None
+    event = DisasterEvent.query.get_or_404(event_id)
+    if event.scope != "municipality" or event.city_municipality != lgu:
+        abort(403)
+    if event.status != "active":
+        flash(f"{event.event_name} is not currently active.", "error")
+        return redirect(url_for("cswdo.dashboard"))
+
+    event.status = "ended"
+    event.end_date = ph_today()
+    db.session.add(ActivityLog(
+        actor_id=current_user.user_id, office_id=office.office_id if office else None,
+        action_type="disaster_event_ended",
+        description=f"Marked {event.event_name} as ended.",
+    ))
+    db.session.commit()
+
+    flash(f"{event.event_name} has been marked as ended.", "success")
+    return redirect(url_for("cswdo.dashboard"))
+
+
 @cswdo_bp.route("/dashboard")
 @login_required
 @role_required("cswdo_admin", "system_admin")
@@ -202,14 +297,27 @@ def dashboard():
     office = current_user.office
     lgu = office.area_covered if office else None
 
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
-    primary_event = active_events[0] if active_events else None
+    # This town's own effective event - its own CSWDO-declared local event if
+    # active, else PSWDO's province-wide one (see app.utils.disaster_events).
+    primary_event, applicable_barangay_ids = resolve_effective_event(lgu)
+    # Distinct from primary_event above: specifically THIS office's own local
+    # declare, if any - drives the Declare/End Event widget, so ending never
+    # points at a province event this office doesn't own (see
+    # cswdo.end_disaster_event's ownership check).
+    own_local_event = primary_event if primary_event and primary_event.scope == "municipality" else None
+    # Visibility only - PSWDO's province-wide event, if one is ALSO active
+    # alongside this office's own local declare (own_local_event above
+    # already takes precedence for this dashboard's own KPI/report numbers;
+    # this is purely so CSWDO isn't unaware PSWDO has separately declared).
+    province_event = blocking_event_for_province() if own_local_event else None
 
     lgu_barangays = Barangay.query.filter_by(city_municipality=lgu).all() if lgu else []
     lgu_barangay_ids = [b.barangay_id for b in lgu_barangays]
     total_barangays = len(lgu_barangays)
+    # Only barangays the effective event actually covers (all of them for a
+    # province event or a local event with nothing unchecked).
+    event_barangay_ids = ([b for b in lgu_barangay_ids if event_covers_barangay(applicable_barangay_ids, b)]
+                           if primary_event else lgu_barangay_ids)
 
     # Affected barangays + families - straight from what the barangays reported
     # for the current active event (this LGU only). No severity grading and no
@@ -220,10 +328,10 @@ def dashboard():
     # stacking on top of it.
     affected_barangays_count = 0
     total_affected_families = 0
-    if primary_event and lgu_barangay_ids:
+    if primary_event and event_barangay_ids:
         event_reports = BarangayReport.query.filter(
             BarangayReport.event_id == primary_event.event_id,
-            BarangayReport.barangay_id.in_(lgu_barangay_ids),
+            BarangayReport.barangay_id.in_(event_barangay_ids),
             BarangayReport.status != "draft",
         ).order_by(
             BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
@@ -378,7 +486,9 @@ def dashboard():
         office=office,
         lgu=lgu,
         primary_event=primary_event,
-        active_events=active_events,
+        own_local_event=own_local_event,
+        province_event=province_event,
+        lgu_barangays=lgu_barangays,
         total_barangays=total_barangays,
         affected_barangays_count=affected_barangays_count,
         total_affected_families=total_affected_families,
@@ -422,13 +532,14 @@ def gis_map():
     endpoints, which is fine to share: those are now scoped per-user via
     _gis_scope_lgus(), so a CSWDO admin hitting them only ever gets their own
     municipality back, same as if the logic were duplicated here."""
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    scope_lgus = _gis_scope_lgus()
+    # Event picker: the province-wide event plus this viewer's own town's
+    # municipality-scoped event, if any (mirrors pswdo.gis_map's picker).
+    active_events = relevant_active_events_query(scope_lgus).all()
     return render_template(
         "cswdo/gis_map.html",
         active_events=active_events,
-        target_lgus=_gis_scope_lgus(),
+        target_lgus=scope_lgus,
         gis_config=_gis_config(),
     )
 
@@ -481,10 +592,7 @@ def damage_assessment():
     tab = request.args.get("tab", "queue")
     search_query = request.args.get("q", "").strip().lower()
 
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
-    primary_event = active_events[0] if active_events else None
+    primary_event, _ = resolve_effective_event(lgu)
 
     barangay_ids = [b.barangay_id for b in lgu_barangays]
     reports = []
@@ -969,9 +1077,7 @@ def deliveries():
     } for r in recs]
 
     fp = _own_food_pack_inventory()
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    active_events = relevant_active_events_query([lgu]).all()
 
     return render_template(
         "cswdo/deliveries.html",
@@ -1225,10 +1331,7 @@ def relief_requests():
     lgu = office.area_covered if office else None
     tab = request.args.get("tab", "overview")
 
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
-    primary_event = active_events[0] if active_events else None
+    primary_event, _ = resolve_effective_event(lgu)
 
     batches = ReliefRequestBatch.query.filter_by(office_id=office.office_id).order_by(
         ReliefRequestBatch.created_at.desc()
@@ -1290,9 +1393,7 @@ def relief_request_save_draft():
     if not office:
         flash("No office on file for this account.", "error")
         return redirect(url_for("cswdo.relief_requests"))
-    primary_event = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).first()
+    primary_event, _ = resolve_effective_event(office.area_covered)
     draft_id = request.form.get("draft_id", type=int)
     batch = _own_batch_or_404(draft_id) if draft_id else None
     if batch and not batch.is_draft:
@@ -1341,9 +1442,7 @@ def relief_request_submit():
     if not office:
         flash("No office on file for this account.", "error")
         return redirect(url_for("cswdo.relief_requests"))
-    primary_event = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).first()
+    primary_event, _ = resolve_effective_event(office.area_covered)
     draft_id = request.form.get("draft_id", type=int)
     batch = _own_batch_or_404(draft_id) if draft_id else None
     if batch and not batch.is_draft:
@@ -1755,9 +1854,7 @@ def report_view(report_type):
 
     filters = _resolve_cswdo_report_filters(lgu)
     report = build_report(report_type, filters, current_user)
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    active_events = relevant_active_events_query([lgu]).all()
 
     return render_template(
         "cswdo/report_view.html",
@@ -1901,9 +1998,7 @@ def municipal_inventory():
     _sync_food_pack_batches(office.office_id)
     search_query = request.args.get("q", "").strip()
 
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    active_events = relevant_active_events_query([office.area_covered]).all()
 
     food_pack_item = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first()
     food_pack_qty = food_pack_item.quantity_available if food_pack_item else 0

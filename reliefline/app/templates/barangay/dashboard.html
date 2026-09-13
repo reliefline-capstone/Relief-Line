@@ -41,6 +41,12 @@
                     <span class="banner-event-badge-label">Active Event: {{ primary_event.event_name }}{% if primary_event.weather_condition %} · {{ primary_event.weather_condition }}{% endif %}</span>
                 </div>
                 {% endif %}
+                {% if province_event %}
+                <div class="banner-event-badge banner-event-badge-secondary" title="Province-wide event declared by PSWDO">
+                    <span class="banner-event-badge-dot"></span>
+                    <span class="banner-event-badge-label">PSWDO also declared: {{ province_event.event_name }}</span>
+                </div>
+                {% endif %}
             </div>
         </section>
 

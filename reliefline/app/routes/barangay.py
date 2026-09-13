@@ -17,6 +17,10 @@ from app.utils.decorators import role_required
 from app.models.office import Office
 from app.models.disaster_event import DisasterEvent
 from app.models.barangay_status import BarangayDisasterStatus
+from app.utils.disaster_events import (
+    resolve_effective_event, event_covers_barangay, relevant_active_events_query,
+    blocking_event_for_province, events_covering_barangay,
+)
 from app.models.barangay_report import BarangayReport
 from app.models.family import Family, ReportAffectedFamily
 from app.models.barangay_inventory import BarangayInventory, BarangayStockLog
@@ -118,8 +122,16 @@ def _own_barangay_or_404():
     return barangay
 
 
-def _active_event():
-    return DisasterEvent.query.filter_by(status="active").order_by(DisasterEvent.start_date.desc()).first()
+def _active_event(barangay):
+    """This barangay's effective event - its own town's CSWDO-declared local
+    event if active AND this barangay is one of the ones it covers, else
+    PSWDO's province-wide event, else None (see app.utils.disaster_events).
+    A barangay left unchecked out of its town's local event simply has no
+    active event, even while that event is running for the rest of the town."""
+    event, applicable_barangay_ids = resolve_effective_event(barangay.city_municipality)
+    if event and not event_covers_barangay(applicable_barangay_ids, barangay.barangay_id):
+        return None
+    return event
 
 
 def _own_activity_scope():
@@ -227,10 +239,19 @@ def dashboard():
     now = ph_now()
     barangay = _own_barangay_or_404()
 
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
-    primary_event = active_events[0] if active_events else None
+    primary_event = _active_event(barangay)
+    # Visibility only - PSWDO's province-wide event, if one is ALSO active
+    # while this barangay's own town has a local event in effect (whether or
+    # not this barangay is one it covers). primary_event above still drives
+    # this dashboard's own figures; this is purely so the barangay isn't
+    # unaware PSWDO has separately declared.
+    province_event = None
+    if primary_event and primary_event.scope == "municipality":
+        province_event = blocking_event_for_province()
+    elif not primary_event:
+        # Also surface it when this barangay was left out of its town's local
+        # event and so has no primary_event of its own at all.
+        province_event = blocking_event_for_province()
 
     # Current Standing - this barangay's status for the active event. Prefer
     # the MSWDO-synced BarangayDisasterStatus (set once a report is approved);
@@ -297,6 +318,7 @@ def dashboard():
         now=now,
         barangay=barangay,
         primary_event=primary_event,
+        province_event=province_event,
         affected_families=affected_families,
         status_row=status_row,
         latest_report=latest_report,
@@ -353,7 +375,7 @@ def _save_report_upload(report):
 @role_required("barangay_user")
 def damage_report():
     barangay = _own_barangay_or_404()
-    primary_event = _active_event()
+    primary_event = _active_event(barangay)
     tab = request.args.get("tab", "dashboard")
 
     all_reports = _own_reports_all(barangay.barangay_id)
@@ -468,9 +490,20 @@ def view_damage_report(report_id):
 
 
 def _report_form_context(barangay, report=None):
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    # Events this barangay may file under - normally just the one effective
+    # event (see _active_event), but when a CSWDO-declared local event and
+    # PSWDO's province-wide event are BOTH active at once, this barangay is
+    # entitled to either (see app.utils.disaster_events) - let the filer
+    # choose instead of silently picking one.
+    event_options = events_covering_barangay(barangay.city_municipality, barangay.barangay_id)
+    # A report already tied to an event that has since ended keeps that
+    # event selectable (and as the default) so editing a draft never
+    # silently reassigns it to whatever happens to be active now.
+    default_event = (report.event if report and report.event else None) or _active_event(barangay)
+    if report and report.event and report.event not in event_options:
+        event_options = [report.event] + event_options
+    default_event_id = default_event.event_id if default_event else None
+
     # Families available for the checklist. A report being edited may cite
     # a family that's since been archived - keep it selectable/visible on
     # THIS report's form so its checked state (and counts) aren't silently
@@ -492,7 +525,9 @@ def _report_form_context(barangay, report=None):
     return {
         "barangay": barangay,
         "report": report,
-        "active_events": active_events,
+        "event_options": event_options,
+        "default_event": default_event,
+        "default_event_id": default_event_id,
         "today": ph_today(),
         "families": families,
         "selected_family_ids": selected_family_ids,
@@ -639,15 +674,39 @@ def _apply_report_form(report):
     report.submitted_by_designation = request.form.get("submitted_by_designation", "").strip() or current_user.designation
 
 
+def _resolve_submitted_event_id(barangay, report):
+    """Validates the event_id the filer picked in damage_report_form.html's
+    Step 1 dropdown (see _report_form_context) against what this barangay may
+    actually file under - the province event, its own town's covered local
+    event, or (if editing) whatever event this report is already tied to.
+    Falls back to the auto-resolved default rather than trusting a tampered
+    or stale form value outright."""
+    submitted = request.form.get("event_id", type=int)
+    options = events_covering_barangay(barangay.city_municipality, barangay.barangay_id)
+    allowed_ids = {e.event_id for e in options}
+    if report and report.event_id:
+        allowed_ids.add(report.event_id)
+    if submitted and submitted in allowed_ids:
+        return submitted
+    # Fall back to the most specific option (events_covering_barangay lists
+    # the local event before the province one) rather than trusting a
+    # tampered/stale value - NOT _active_event, which returns None for a
+    # barangay excluded from its town's local event even when the province
+    # event still applies to it.
+    return options[0].event_id if options else None
+
+
 def _get_or_create_report(barangay, report_id, event_id):
     if report_id:
         report = _get_own_report_or_404(report_id)
         if report.status not in ("draft", "pending", "returned"):
             abort(403)
-        # A report started before PSWDO declared an event carries no event_id -
-        # attach it to whatever event is active now that it's being saved or
-        # submitted, so it stops being a standing/orphan record.
-        if report.event_id is None and event_id is not None:
+        # Follows whatever event the filer has selected as of this save - a
+        # report started before any event was active (or before PSWDO/CSWDO
+        # declared) picks one up once available, and a filer who initially
+        # chose one of two simultaneously-applicable events may switch to the
+        # other while still editable (see _resolve_submitted_event_id).
+        if event_id is not None and report.event_id != event_id:
             report.event_id = event_id
         return report, False
     report = BarangayReport(barangay_id=barangay.barangay_id, event_id=event_id)
@@ -661,11 +720,14 @@ def _get_or_create_report(barangay, report_id, event_id):
 def save_damage_report_draft():
     barangay = _own_barangay_or_404()
     report_id = request.form.get("report_id", type=int)
-    # Auto-links to whichever event PSWDO currently has declared, or leaves
-    # this report standalone (event_id=None) - filing no longer requires
-    # PSWDO to have declared anything first.
-    active_event = _active_event()
-    event_id = active_event.event_id if active_event else None
+    existing = _get_own_report_or_404(report_id) if report_id else None
+    # Uses whichever event the filer picked in Step 1 (see
+    # _resolve_submitted_event_id) - normally just the one event that
+    # applies, but a barangay covered by both its town's local event and
+    # PSWDO's province-wide one gets to choose. Leaves this report
+    # standalone (event_id=None) if no event applies at all - filing no
+    # longer requires PSWDO to have declared anything first.
+    event_id = _resolve_submitted_event_id(barangay, existing)
 
     report, is_new = _get_or_create_report(barangay, report_id, event_id)
     # Once a report has left draft state (sent to MSWDO/CSWDO as "pending", or
@@ -694,8 +756,8 @@ def save_damage_report_draft():
 def submit_damage_report():
     barangay = _own_barangay_or_404()
     report_id = request.form.get("report_id", type=int)
-    active_event = _active_event()
-    event_id = active_event.event_id if active_event else None
+    existing = _get_own_report_or_404(report_id) if report_id else None
+    event_id = _resolve_submitted_event_id(barangay, existing)
 
     report, is_new = _get_or_create_report(barangay, report_id, event_id)
     _apply_report_form(report)
@@ -1640,9 +1702,7 @@ def report_view(report_type):
     barangay = _own_barangay_or_404()
     filters = resolve_barangay_filters(request.args)
     report = build_barangay_report(report_type, barangay, filters, current_user)
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    active_events = relevant_active_events_query([barangay.city_municipality]).all()
 
     return render_template(
         "barangay/report_view.html",

@@ -22,7 +22,12 @@ from app.models.food_pack_batch import FoodPackBatch, FoodPackComponent, FoodPac
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.disaster_event import DisasterEvent
+from app.models.event_barangay import EventBarangay
 from app.models.barangay_status import BarangayDisasterStatus
+from app.utils.disaster_events import (
+    resolve_effective_event, event_covers_barangay,
+    blocking_event_for_province, relevant_active_events_query,
+)
 from app.models.activity_log import ActivityLog, DailyOpsStat
 from app.models.logistics import WarehouseTransfer
 from app.models.relief_request_batch import ReliefRequestBatch
@@ -70,7 +75,7 @@ DEFAULT_PRIORITY = {"label": "Unrated", "tier": "unrated", "detail": "No status 
 # reported damage). Used ONLY by the GIS map and the Predictive Analytics
 # ranking: "can this barangay cover its own reported caseload from its own
 # food-pack stock right now?"
-#   need  = affected_families + affected_individuals  (latest report; 0 if none)
+#   need  = affected_families  (latest report; 0 if none)
 #   ratio = need / barangay food-pack stock on hand
 #     ratio <= 50%      -> Low      (green)
 #     50% < ratio <= 80% -> Medium   (yellow)
@@ -397,8 +402,8 @@ def _target_barangay_geojson(lgu, event_id):
             on_hand = food_pack_on_hand(barangay.barangay_id)
             # GIS colour = STOCK ADEQUACY, not disaster severity - "can this
             # barangay cover its own reported caseload from its own stock?"
-            stock_need = ((report_row.affected_families or 0)
-                          + (report_row.affected_individuals or 0)) if report_row else 0
+            # need = affected_families only (~1 pack/family in real practice).
+            stock_need = (report_row.affected_families or 0) if report_row else 0
             adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
             props = {
                 "name": name,
@@ -963,16 +968,19 @@ def dashboard():
     selected_year = period_start.year if is_filtered else None
 
     if is_filtered:
-        # Historical view: any event whose date range overlaps the selected
-        # month/year, regardless of its current status (an event that has
-        # since ended still "happened" in the month being viewed).
+        # Historical view: any province-wide event whose date range overlaps
+        # the selected month/year, regardless of its current status (an event
+        # that has since ended still "happened" in the month being viewed).
+        # scope="province" keeps this consistent with the live branch below -
+        # a CSWDO's local event stays on that CSWDO's own pages.
         active_events = DisasterEvent.query.filter(
+            DisasterEvent.scope == "province",
             DisasterEvent.start_date <= period_end,
             db.or_(DisasterEvent.end_date.is_(None), DisasterEvent.end_date >= period_start)
         ).order_by(DisasterEvent.start_date.desc()).all()
     else:
         # Live view: only what's active right now - the dashboard's original behavior.
-        active_events = DisasterEvent.query.filter_by(status="active").order_by(
+        active_events = DisasterEvent.query.filter_by(status="active", scope="province").order_by(
             DisasterEvent.start_date.desc()
         ).all()
     primary_event = active_events[0] if active_events else None
@@ -1051,7 +1059,7 @@ def dashboard():
     # Today's Distribution Progress (3 target LGUs, TODAY's actual active event -
     # deliberately independent of the month/year filter above, which only
     # scopes the historical KPI cards, never this always-live "today" panel).
-    today_active_event = DisasterEvent.query.filter_by(status="active").order_by(
+    today_active_event = DisasterEvent.query.filter_by(status="active", scope="province").order_by(
         DisasterEvent.start_date.desc()
     ).first()
     # Scoped to the active event when one exists; otherwise every approved/
@@ -1175,11 +1183,12 @@ def declare_disaster_event():
     once PSWDO decides a real detected system warrants an official response,
     though the form works with any manually-entered name too.
 
-    Only one event may be active at a time - every dashboard's "primary_event"
-    logic already assumes a single current event, so a second concurrent one
-    would make "the" active typhoon ambiguous everywhere it's used.
+    Only one province-wide event may be active at a time. A CSWDO's own
+    local (scope="municipality") event does not block this - it coexists
+    with whatever PSWDO declares province-wide (see
+    app.utils.disaster_events for the precedence rule between the two).
     """
-    existing = DisasterEvent.query.filter_by(status="active").first()
+    existing = blocking_event_for_province()
     if existing:
         flash(f"“{existing.event_name}” is already active. End it before declaring a new event.", "error")
         return redirect(url_for("pswdo.dashboard"))
@@ -1205,7 +1214,7 @@ def declare_disaster_event():
     event = DisasterEvent(
         event_name=event_name, event_type=event_type, status="active",
         weather_condition=weather_condition, start_date=start_date,
-        created_by=current_user.user_id,
+        created_by=current_user.user_id, scope="province",
     )
     db.session.add(event)
     db.session.add(ActivityLog(
@@ -1247,7 +1256,7 @@ def end_disaster_event(event_id):
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def warehouse_inventory():
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+    active_events = DisasterEvent.query.filter_by(status="active", scope="province").order_by(
         DisasterEvent.start_date.desc()
     ).all()
 
@@ -1362,7 +1371,7 @@ def warehouse_list():
 def warehouse_detail(office_id):
     office = Office.query.get_or_404(office_id)
     _sync_food_pack_batches(office_id)
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
+    active_events = DisasterEvent.query.filter_by(status="active", scope="province").order_by(
         DisasterEvent.start_date.desc()
     ).all()
 
@@ -1919,13 +1928,15 @@ def _gis_config():
 @login_required
 @role_required("pswdo_admin", "cswdo_admin", "system_admin")
 def gis_map():
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
+    scope_lgus = _gis_scope_lgus()
+    # Event picker: the province-wide event plus any municipality-scoped
+    # event for an LGU this viewer can actually see (a cswdo_admin's own
+    # town's local event included, other towns' excluded).
+    active_events = relevant_active_events_query(scope_lgus).all()
     return render_template(
         "pswdo/gis_map.html",
         active_events=active_events,
-        target_lgus=_gis_scope_lgus(),
+        target_lgus=scope_lgus,
         gis_config=_gis_config(),
     )
 
@@ -1934,7 +1945,7 @@ def gis_map():
 @login_required
 @role_required("pswdo_admin", "cswdo_admin", "system_admin")
 def gis_map_data():
-    event_id = _resolve_event_id(request.args.get("event_id", type=int))
+    explicit_event_id = request.args.get("event_id", type=int)
     scope_lgus = _gis_scope_lgus()
     full_scope = set(scope_lgus) == set(TARGET_LGUS)
 
@@ -1942,8 +1953,14 @@ def gis_map_data():
     # model actually covers. Everything else on the map is neutral context.
     # Scoped to scope_lgus, not TARGET_LGUS - a CSWDO/MSWDO admin only ever
     # gets their own municipality's barangays back from this endpoint.
+    # Each lgu resolves its own effective event (its own CSWDO-declared event
+    # takes precedence over the province one) rather than sharing one event
+    # across every municipality - see _resolve_event_id.
+    lgu_event_ids = {lgu: _resolve_event_id(explicit_event_id, lgu) for lgu in scope_lgus}
+
     target_features = []
     for lgu in scope_lgus:
+        event_id = lgu_event_ids[lgu]
         fc = _target_barangay_geojson(lgu, event_id)
         for feature in fc["features"]:
             feature["properties"]["lgu"] = lgu
@@ -2140,7 +2157,7 @@ def gis_map_data():
                 "capacity": closest["capacity"],
             }
 
-        relief = _relief_summary(barangay_ids, event_id)
+        relief = _relief_summary(barangay_ids, lgu_event_ids[lgu])
         # Predicted demand - sum of each tracked barangay's food_packs_current
         # (real submitted request where one exists, else the Linear
         # Regression model's live estimate; see _current_packs_needed). Same
@@ -2166,6 +2183,16 @@ def gis_map_data():
             "current_distribution": current_distribution,
         })
 
+    # Single "banner" event for the whole page. A single-LGU view (a CSWDO
+    # admin's own scope) uses that town's own effective event; a multi-LGU
+    # view (PSWDO/system_admin) has no one town to defer to, so it shows the
+    # province-wide event only - each municipality's own rollup above still
+    # reflects its own local event regardless of what this banner shows.
+    if len(scope_lgus) == 1:
+        event_id = lgu_event_ids[scope_lgus[0]]
+    else:
+        province_event = blocking_event_for_province()
+        event_id = province_event.event_id if province_event else None
     event = DisasterEvent.query.get(event_id) if event_id else None
 
     return {
@@ -2192,13 +2219,19 @@ def gis_map_data():
     }
 
 
-def _resolve_event_id(event_id):
+def _resolve_event_id(event_id, lgu=None):
+    """An explicit event_id (viewing a past event) passes through unchanged.
+    Otherwise resolve "the" currently-effective event for lgu - that town's
+    own active CSWDO-declared event if it has one, else the active
+    province-wide event (see app.utils.disaster_events). With no lgu given,
+    falls back to province-only, matching the old system-wide behavior."""
     if event_id:
         return event_id
-    primary_event = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).first()
-    return primary_event.event_id if primary_event else None
+    if lgu:
+        event, _ = resolve_effective_event(lgu)
+    else:
+        event = blocking_event_for_province()
+    return event.event_id if event else None
 
 
 @pswdo_bp.route("/gis-map/barangay/<int:barangay_id>")
@@ -2209,7 +2242,7 @@ def gis_map_barangay_detail(barangay_id):
     if barangay.city_municipality not in _gis_scope_lgus():
         abort(404)
 
-    event_id = _resolve_event_id(request.args.get("event_id", type=int))
+    event_id = _resolve_event_id(request.args.get("event_id", type=int), barangay.city_municipality)
 
     status_row = None
     report_row = None
@@ -2228,8 +2261,7 @@ def gis_map_barangay_detail(barangay_id):
         ).first()
     status_key = status_row.status if status_row else "normal"
     on_hand = food_pack_on_hand(barangay_id)
-    stock_need = ((report_row.affected_families or 0)
-                  + (report_row.affected_individuals or 0)) if report_row else 0
+    stock_need = (report_row.affected_families or 0) if report_row else 0
     adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
 
     relief = _relief_summary([barangay_id], event_id)
@@ -2279,13 +2311,13 @@ def gis_map_municipality_report(lgu):
     if lgu not in _gis_scope_lgus():
         abort(404)
 
-    event_id = _resolve_event_id(request.args.get("event_id", type=int))
+    event_id = _resolve_event_id(request.args.get("event_id", type=int), lgu)
     fc = _target_barangay_geojson(lgu, event_id)
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow([
-        "Barangay", "Stock Adequacy", "Need (fam+indiv)", "Barangay Stock",
+        "Barangay", "Stock Adequacy", "Need (families)", "Barangay Stock",
         "Need/Stock %", "Affected Families", "Population", "Households",
         "Poverty Incidence (%)", "Disaster Risk Index",
         "Food Packs Requested", "Food Packs Approved", "Food Packs Released",
@@ -2687,9 +2719,10 @@ def transfer_issue(transfer_id):
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def recommendations_page():
-    active_event = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).first()
+    # Province-wide page (all TARGET_LGUS) - shows PSWDO's own event only.
+    # _municipal_demand_for below is purely model-based per municipality and
+    # doesn't actually read this event; it's just the banner display.
+    active_event = blocking_event_for_province()
     _, warehouses, total_food_packs = _load_warehouses()
     depots = [w for w in warehouses if w["office"].office_type == "pswdo"]
     healthiest = max(depots, key=lambda w: w["food_pack_qty"], default=None)
@@ -2760,7 +2793,7 @@ def _filtered_distributions():
     status_filter = request.args.get("status", "all")
     search_query = request.args.get("q", "").strip()
 
-    primary_event = DisasterEvent.query.filter_by(status="active").order_by(
+    primary_event = DisasterEvent.query.filter_by(status="active", scope="province").order_by(
         DisasterEvent.start_date.desc()
     ).first()
 
@@ -3142,7 +3175,7 @@ def confirm_delivery(distribution_id):
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def completed_deliveries():
-    primary_event = DisasterEvent.query.filter_by(status="active").order_by(
+    primary_event = DisasterEvent.query.filter_by(status="active", scope="province").order_by(
         DisasterEvent.start_date.desc()
     ).first()
 

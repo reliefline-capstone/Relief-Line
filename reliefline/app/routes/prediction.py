@@ -14,6 +14,9 @@ from app.models.prediction import ModelMetrics
 from app.models.barangay_inventory import food_pack_on_hand
 from app.models.barangay_report import BarangayReport
 from app.ml import predict as ml_predict
+from app.utils.disaster_events import (
+    resolve_effective_event, blocking_event_for_province, relevant_active_events_query,
+)
 
 # Reused rather than re-implemented - this is the same TARGET_LGUS scope,
 # warehouse loader, stock-transfer recommendation, and stock-adequacy tier
@@ -49,10 +52,29 @@ def _is_cswdo():
     return current_user.role == "cswdo_admin"
 
 
-def _resolve_event(event_id):
-    if event_id:
-        return DisasterEvent.query.get(event_id)
-    return DisasterEvent.query.filter_by(status="active").order_by(DisasterEvent.start_date.desc()).first()
+def _resolve_event_map(explicit_event_id, lgus):
+    """Per-LGU event ids for this page, plus a single "page" event for the
+    banner/burn-rate stat cards.
+
+    An explicit event_id (viewing one specific past event from the dropdown)
+    applies uniformly to every lgu, same as before. Otherwise each town
+    resolves its own effective event - its own CSWDO-declared local one if
+    active, else PSWDO's province-wide one (see app.utils.disaster_events) -
+    so a system_admin's province-wide ranking doesn't force one town's event
+    onto another's barangays.
+    """
+    if explicit_event_id:
+        event = DisasterEvent.query.get(explicit_event_id)
+        event_id = event.event_id if event else None
+        return {lgu: event_id for lgu in lgus}, event
+
+    lgu_events = {lgu: resolve_effective_event(lgu)[0] for lgu in lgus}
+    lgu_event_ids = {lgu: (e.event_id if e else None) for lgu, e in lgu_events.items()}
+    if len(lgus) == 1:
+        page_event = lgu_events[lgus[0]]
+    else:
+        page_event = blocking_event_for_province()
+    return lgu_event_ids, page_event
 
 
 def _barangay_snapshot(barangay, status_row, event_id):
@@ -78,8 +100,7 @@ def _barangay_snapshot(barangay, status_row, event_id):
         ).order_by(
             BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
         ).first()
-    stock_need = ((report_row.affected_families or 0)
-                  + (report_row.affected_individuals or 0)) if report_row else 0
+    stock_need = (report_row.affected_families or 0) if report_row else 0
     adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
 
     if has_request:
@@ -120,12 +141,7 @@ def _barangay_snapshot(barangay, status_row, event_id):
 @login_required
 @role_required("cswdo_admin", "system_admin")
 def index():
-    active_events = DisasterEvent.query.filter_by(status="active").order_by(
-        DisasterEvent.start_date.desc()
-    ).all()
-    event_id = request.args.get("event_id", type=int)
-    event = _resolve_event(event_id)
-    event_id = event.event_id if event else None
+    explicit_event_id = request.args.get("event_id", type=int)
 
     scope_lgus = _scope_lgus()
     is_cswdo = _is_cswdo()
@@ -141,13 +157,18 @@ def index():
         lgus = scope_lgus
     days_filter = request.args.get("days", 30, type=int)
 
+    active_events = relevant_active_events_query(scope_lgus).all()
+    lgu_event_ids, event = _resolve_event_map(explicit_event_id, lgus)
+    event_id = event.event_id if event else None
+
     barangays = Barangay.query.filter(Barangay.city_municipality.in_(lgus)).order_by(
         Barangay.city_municipality, Barangay.barangay_name
     ).all()
 
+    relevant_event_ids = {eid for eid in lgu_event_ids.values() if eid}
     status_map = {}
-    if event_id:
-        rows = BarangayDisasterStatus.query.filter_by(event_id=event_id).all()
+    if relevant_event_ids:
+        rows = BarangayDisasterStatus.query.filter(BarangayDisasterStatus.event_id.in_(relevant_event_ids)).all()
         status_map = {r.barangay_id: r for r in rows}
 
     # Snapshots below log a real PredictionLog row (deduped per barangay/day)
@@ -155,7 +176,8 @@ def index():
     # submitted request - see _barangay_snapshot / log_prediction_once_per_day.
     snapshots = []
     for b in barangays:
-        snap = _barangay_snapshot(b, status_map.get(b.barangay_id), event_id)
+        b_event_id = lgu_event_ids.get(b.city_municipality)
+        snap = _barangay_snapshot(b, status_map.get(b.barangay_id), b_event_id)
         if snap["need_source"] == "model" and snap["predicted_quantity"] is not None:
             ml_predict.log_prediction_once_per_day(b, snap["predicted_quantity"])
         snapshots.append(snap)
@@ -319,9 +341,7 @@ def export_forecast():
     import csv
     import io
 
-    event_id = request.args.get("event_id", type=int)
-    event = _resolve_event(event_id)
-    event_id = event.event_id if event else None
+    explicit_event_id = request.args.get("event_id", type=int)
     scope_lgus = _scope_lgus()
     municipality_filter = request.args.get("municipality", "all")
     if municipality_filter != "all" and municipality_filter in scope_lgus:
@@ -329,23 +349,27 @@ def export_forecast():
     else:
         lgus = scope_lgus
 
+    lgu_event_ids, _ = _resolve_event_map(explicit_event_id, lgus)
+
     barangays = Barangay.query.filter(Barangay.city_municipality.in_(lgus)).order_by(
         Barangay.city_municipality, Barangay.barangay_name
     ).all()
+    relevant_event_ids = {eid for eid in lgu_event_ids.values() if eid}
     status_map = {}
-    if event_id:
-        rows = BarangayDisasterStatus.query.filter_by(event_id=event_id).all()
+    if relevant_event_ids:
+        rows = BarangayDisasterStatus.query.filter(BarangayDisasterStatus.event_id.in_(relevant_event_ids)).all()
         status_map = {r.barangay_id: r for r in rows}
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow([
-        "Municipality", "Barangay", "Stock Adequacy", "Need (fam+indiv)",
+        "Municipality", "Barangay", "Stock Adequacy", "Need (families)",
         "Barangay Stock", "Need/Stock %", "Affected Families",
         "Packs Needed", "Need Source", "Delivered", "Undelivered",
     ])
     for b in barangays:
-        s = _barangay_snapshot(b, status_map.get(b.barangay_id), event_id)
+        b_event_id = lgu_event_ids.get(b.city_municipality)
+        s = _barangay_snapshot(b, status_map.get(b.barangay_id), b_event_id)
         writer.writerow([
             s["lgu"], s["name"], s["priority_label"], s["stock_need"],
             "" if s["on_hand_stock"] is None else s["on_hand_stock"],

@@ -22,7 +22,7 @@
             <div>
                 <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Cancel</a>
                 <h2>{{ 'Edit ' + report.ref if report else 'New Barangay Report' }}</h2>
-                <p>Brgy. {{ barangay.barangay_name }} · {{ (report.event.event_name if report and report.event else (active_events[0].event_name if active_events else 'Standing Request')) }}</p>
+                <p>Brgy. {{ barangay.barangay_name }} · {{ default_event.event_name if default_event else 'Standing Request' }}</p>
             </div>
         </section>
 
@@ -71,9 +71,21 @@
                 </div>
                 <input type="hidden" name="submitted_by_name" value="{{ report.submitted_by_name if report else current_user.name }}">
                 <input type="hidden" name="submitted_by_designation" value="{{ (report.submitted_by_designation if report else current_user.designation) or '' }}">
-                {% if active_events %}
-                <p class="form-hint">This report will be linked to the active typhoon-related event: <strong>{{ active_events[0].event_name }}</strong>.</p>
+                {% if event_options|length > 1 %}
+                <div class="form-row">
+                    <label for="event_id">Typhoon-Related Event</label>
+                    <select name="event_id" id="event_id">
+                        {% for e in event_options %}
+                        <option value="{{ e.event_id }}" {% if e.event_id == default_event_id %}selected{% endif %}>{{ e.event_name }}{% if e.scope == 'province' %} (Province-wide){% else %} (Local){% endif %}{% if e.status != 'active' %} - ended{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="form-hint">More than one active typhoon-related event applies to your barangay right now - choose which one this report is for.</p>
+                </div>
+                {% elif event_options %}
+                <input type="hidden" name="event_id" value="{{ event_options[0].event_id }}">
+                <p class="form-hint">This report will be linked to the active typhoon-related event: <strong>{{ event_options[0].event_name }}</strong>.</p>
                 {% else %}
+                <input type="hidden" name="event_id" value="">
                 <p class="form-hint">There is no PSWDO-declared active event right now - this will be filed as a standing report.</p>
                 {% endif %}
                 <div class="wizard-nav"><span></span><button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button></div>
@@ -83,7 +95,7 @@
             <section class="panel wizard-step" data-step="2" hidden>
                 <div class="panel-header"><h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Incident Details</h3></div>
                 <p class="form-hint">
-                    This report is for the current <strong>typhoon-related event</strong>{% if active_events %} ({{ active_events[0].event_name }}){% endif %}.
+                    This report is for the <strong>typhoon-related event</strong> selected in Step 1{% if event_options|length == 1 %} ({{ event_options[0].event_name }}){% endif %}.
                     When did the impact happen in your barangay?
                 </p>
 
@@ -273,7 +285,7 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                 <div class="review-grid">
                     <div class="review-box">
                         <span class="review-box-title">Incident</span>
-                        <div class="review-row"><span>Typhoon Event</span><strong>{{ active_events[0].event_name if active_events else '-' }}</strong></div>
+                        <div class="review-row"><span>Typhoon Event</span><strong id="rv-event">{{ default_event.event_name if default_event else '-' }}</strong></div>
                         <div class="review-row"><span>Date of Incident</span><strong id="rv-date"></strong></div>
                     </div>
                     <div class="review-box">
@@ -400,6 +412,9 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
     }
 
     function populateReview() {
+        if (document.getElementById('event_id')) {
+            document.getElementById('rv-event').textContent = textOf('event_id') || '-';
+        }
         document.getElementById('rv-date').textContent = (textOf('incident_date') || '-') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
         document.getElementById('rv-families').textContent = textOf('affected_families') || '0';
         document.getElementById('rv-individuals').textContent = textOf('affected_individuals') || '0';

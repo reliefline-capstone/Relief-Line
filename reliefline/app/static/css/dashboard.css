@@ -506,6 +506,31 @@ html.sidebar-collapsed .dashboard-main {
     color: #8a94a6;
 }
 
+/* Barangay checklist - Declare Local Disaster Event modal (CSWDO dashboard),
+   narrowing a locally-declared event to a subset of the town's barangays. */
+.declare-barangay-checklist {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px 12px;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #e3e4ec;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.declare-barangay-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 400;
+    color: #1a1a1a;
+    cursor: pointer;
+}
+
+.declare-barangay-item input { accent-color: #5347ce; width: 15px; height: 15px; }
+
 /* Small muted caption/hint text and a light callout box for remarks -
    moved here (from profile_settings.css / damage_assessment.css
    respectively) for the same reason as .settings-form/.form-row above:
@@ -625,6 +650,20 @@ html.sidebar-collapsed .dashboard-main {
     0% { box-shadow: 0 0 0 0 rgba(255, 107, 92, 0.5); }
     70% { box-shadow: 0 0 0 5px rgba(255, 107, 92, 0); }
     100% { box-shadow: 0 0 0 0 rgba(255, 107, 92, 0); }
+}
+
+/* Informational variant - a province-wide event PSWDO declared, shown
+   alongside (never instead of) a CSWDO's own local event badge above. Cool
+   tint instead of the alert red so it doesn't compete for urgency with the
+   office's own active event. */
+.banner-event-badge-secondary {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.32);
+}
+
+.banner-event-badge-secondary .banner-event-badge-dot {
+    background: #ffffff;
+    animation: none;
 }
 
 .greeting-main { display: flex; flex-direction: column; }
