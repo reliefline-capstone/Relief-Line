@@ -50,6 +50,15 @@
                     <span class="banner-event-badge-label">PSWDO also declared: {{ province_event.event_name }}</span>
                 </div>
                 {% endif %}
+                <!-- Declare/End Disaster Event - moved here (from the now-
+                     removed Weather & Typhoon Watch panel) since that panel's
+                     own live weather/forecast only duplicated this same
+                     banner's weather chip and 4-day forecast box above. -->
+                {% if own_local_event %}
+                <button type="button" class="banner-event-action" data-open-modal="end-event-modal">{{ icon('check-circle', 14) }} End Disaster Event</button>
+                {% else %}
+                <button type="button" class="banner-event-action" data-open-modal="declare-event-modal">{{ icon('cloud-lightning', 14) }} Declare Disaster Event</button>
+                {% endif %}
             </div>
         </section>
 
@@ -95,22 +104,16 @@
             </a>
         </section>
 
-        <!-- Weather & Typhoon Watch (live, via app/utils/weather.py) - same
-             shared widget/JS as pswdo/dashboard.html (static/js/weather_widget.js
-             already wires Declare/End for any [data-weather-widget] panel),
-             pointed at this office's own municipality and its own local
-             declare/end routes. See app.routes.cswdo.declare_disaster_event. -->
-        <div class="weather-widget" data-weather-widget data-endpoint="{{ url_for('cswdo.dashboard_weather') }}"
-             data-can-declare-events="true"
-             data-active-event-id="{{ own_local_event.event_id if own_local_event else '' }}"
-             data-active-event-name="{{ own_local_event.event_name if own_local_event else '' }}"
-             data-declare-url="{{ url_for('cswdo.declare_disaster_event') }}"
-             data-end-url="{{ url_for('cswdo.end_disaster_event', event_id=own_local_event.event_id) if own_local_event else '' }}">
-            <div class="weather-widget-header">
-                <span class="weather-widget-title">{{ icon('cloud', 16) }} Weather &amp; Typhoon Watch</span>
-            </div>
-            <p class="weather-empty skeleton-shimmer">Loading live weather…</p>
-        </div>
+        <!-- The Weather & Typhoon Watch panel that used to live here (live,
+             via app/utils/weather.py) was removed - its per-city weather and
+             4-day forecast only duplicated the greeting banner's own weather
+             chip and forecast box above. Its Declare/End Disaster Event
+             action moved into that banner instead (see banner-aside above)
+             so removing the panel didn't also remove the only way to
+             declare/end a local event. -->
+        {% if own_local_event %}
+        <form method="POST" action="{{ url_for('cswdo.end_disaster_event', event_id=own_local_event.event_id) }}" id="end-event-form" hidden></form>
+        {% endif %}
 
         <!-- Declare Local Disaster Event modal - see
              app.routes.cswdo.declare_disaster_event. Unlike PSWDO's version,
@@ -119,42 +122,44 @@
              default). Blocked while a province-wide or your own local event
              is already active. -->
         <div class="rd-modal-overlay" id="declare-event-modal" hidden>
-            <div class="rd-modal">
+            <div class="rd-modal rd-modal-declare">
                 <div class="rd-modal-header">
                     <h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Declare Local Disaster Event</h3>
                     <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
                 </div>
-                <p class="form-hint">This opens a new active <strong>typhoon-related event</strong> scoped to {{ lgu or 'your municipality' }} only, and ties this town's relief requests and allocations to it until you end it. Only available while PSWDO hasn't already declared a province-wide event.</p>
-                <form method="POST" action="{{ url_for('cswdo.declare_disaster_event') }}" class="settings-form">
-                    <div class="form-row">
-                        <label for="declare-event-name">Event Name *</label>
-                        <input type="text" name="event_name" id="declare-event-name" placeholder="e.g. Typhoon Josie" required>
-                    </div>
-                    <div class="form-row">
-                        <label for="declare-start-date">Start Date *</label>
-                        <input type="date" name="start_date" id="declare-start-date" value="{{ now.strftime('%Y-%m-%d') }}" required>
-                    </div>
-                    <div class="form-row">
-                        <label for="declare-weather-condition">Weather Condition</label>
-                        <input type="text" name="weather_condition" id="declare-weather-condition" placeholder="e.g. Super Typhoon">
-                    </div>
-                    <div class="form-row">
-                        <label>Barangays Covered</label>
-                        <p class="form-hint">All checked by default - untick any barangay this event shouldn't cover.</p>
-                        <div class="declare-barangay-checklist">
-                            {% for b in lgu_barangays %}
-                            <label class="declare-barangay-item">
-                                <input type="checkbox" name="barangay_ids" value="{{ b.barangay_id }}" checked>
-                                {{ b.barangay_name }}
-                            </label>
-                            {% endfor %}
+                <div class="rd-modal-body">
+                    <p class="form-hint">This opens a new active <strong>typhoon-related event</strong> scoped to {{ lgu or 'your municipality' }} only, and ties this town's relief requests and allocations to it until you end it. Only available while PSWDO hasn't already declared a province-wide event.</p>
+                    <form method="POST" action="{{ url_for('cswdo.declare_disaster_event') }}" class="settings-form" id="declare-event-form">
+                        <div class="form-row">
+                            <label for="declare-event-name">Event Name *</label>
+                            <input type="text" name="event_name" id="declare-event-name" placeholder="e.g. Typhoon Josie" required>
                         </div>
-                    </div>
-                    <div class="rd-modal-actions">
-                        <button type="submit" class="btn-decision btn-partial">{{ icon('cloud-lightning', 16, 'white') }} Declare Event</button>
-                        <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
-                    </div>
-                </form>
+                        <div class="form-row">
+                            <label for="declare-start-date">Start Date *</label>
+                            <input type="date" name="start_date" id="declare-start-date" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="declare-weather-condition">Weather Condition</label>
+                            <input type="text" name="weather_condition" id="declare-weather-condition" placeholder="e.g. Super Typhoon">
+                        </div>
+                        <div class="form-row">
+                            <label>Barangays Covered</label>
+                            <p class="form-hint">All checked by default - untick any barangay this event shouldn't cover.</p>
+                            <div class="declare-barangay-checklist">
+                                {% for b in lgu_barangays %}
+                                <label class="declare-barangay-item">
+                                    <input type="checkbox" name="barangay_ids" value="{{ b.barangay_id }}" checked>
+                                    {{ b.barangay_name }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="rd-modal-actions">
+                    <button type="submit" form="declare-event-form" class="btn-decision btn-partial">{{ icon('cloud-lightning', 16, 'white') }} Declare Event</button>
+                    <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+                </div>
             </div>
         </div>
 
@@ -165,9 +170,9 @@
                     <h3>{{ icon('check-circle', 18, '#0f2547') }} End Disaster Event</h3>
                     <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
                 </div>
-                <p class="form-hint">End "<strong id="end-event-name"></strong>" as {{ lgu or 'your municipality' }}'s active disaster event? New relief requests and allocations will no longer be tied to it once it's closed out.</p>
+                <p class="form-hint">End "<strong>{{ own_local_event.event_name if own_local_event else '' }}</strong>" as {{ lgu or 'your municipality' }}'s active disaster event? New relief requests and allocations will no longer be tied to it once it's closed out.</p>
                 <div class="rd-modal-actions">
-                    <button type="button" class="btn-decision btn-partial" id="end-event-confirm-btn">{{ icon('check-circle', 16, 'white') }} End Event</button>
+                    <button type="submit" form="end-event-form" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} End Event</button>
                     <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
                 </div>
             </div>

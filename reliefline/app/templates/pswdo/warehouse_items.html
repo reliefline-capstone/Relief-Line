@@ -96,7 +96,7 @@
                 <h3>Food Pack Batches</h3>
                 <span class="rd-sub">Shelf-life tracking per delivery - {{ near_expiry_days }} days or less to expiry is flagged Near Expiry.</span>
             </div>
-            <table class="wh-table">
+            <table class="wh-table wh-batches-table">
                 <thead>
                     <tr>
                         <th>RECEIVED</th><th>EARLIEST EXPIRY</th><th>DAYS LEFT / OVERDUE</th><th>QUANTITY</th><th>CONTENTS</th><th>STATUS</th><th>ACTIONS</th>
@@ -112,21 +112,25 @@
                         <td>{% if days_left < 0 %}{{ -days_left }} days overdue{% else %}{{ days_left }} days{% endif %}</td>
                         <td><strong>{{ "{:,}".format(batch.quantity_remaining) }}</strong></td>
                         <td>
-                            <details class="wh-batch-contents">
-                                <summary>View contents ({{ batch.items|length }})</summary>
-                                <ul>
+                            <div class="wh-batch-contents">
+                                <button type="button" class="wh-batch-toggle" data-batch-toggle aria-expanded="false" data-count="{{ batch.items|length }}">
+                                    <span class="wh-batch-toggle-arrow">{{ icon('chevron-right', 10) }}</span>
+                                    <span class="wh-batch-toggle-label">View contents ({{ batch.items|length }})</span>
+                                </button>
+                                <ul class="wh-batch-list">
                                     {% for bi in batch.items %}
                                     {% set item_status = shelf_status_fn(bi.expiration_date) %}
                                     <li>
-                                        <strong>{{ bi.component.name }}</strong> ({{ bi.component.quantity_label }}) -
-                                        expires {{ bi.expiration_date.strftime('%b %d, %Y') }}
-                                        {% if item_status == 'expired' %}<span class="badge-health badge-low">Expired</span>
-                                        {% elif item_status == 'near_expiry' %}<span class="badge-health badge-moderate">Near Expiry</span>
-                                        {% else %}<span class="badge-health badge-healthy">Fresh</span>{% endif %}
+                                        <span class="wh-batch-item-name">{{ bi.component.name }}</span>
+                                        <span class="wh-batch-item-qty">{{ bi.component.quantity_label }}</span>
+                                        <span class="wh-batch-item-expiry">Expires {{ bi.expiration_date.strftime('%b %d, %Y') }}</span>
+                                        {% if item_status == 'expired' %}<span class="badge-health badge-low wh-batch-item-status">Expired</span>
+                                        {% elif item_status == 'near_expiry' %}<span class="badge-health badge-moderate wh-batch-item-status">Near Expiry</span>
+                                        {% else %}<span class="badge-health badge-healthy wh-batch-item-status">Fresh</span>{% endif %}
                                     </li>
                                     {% endfor %}
                                 </ul>
-                            </details>
+                            </div>
                         </td>
                         <td>
                             {% if row.shelf_status == 'expired' %}<span class="badge-health badge-low">Expired</span>
@@ -144,7 +148,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <p class="form-hint" style="margin-top:8px;">Earliest Expiry reflects whichever component (usually the rice) spoils first - the whole batch is pulled together once it does, since a sealed pack isn't unbundled to save the canned goods.</p>
+            <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry reflects whichever component (usually the rice) spoils first - the whole batch is pulled together once it does, since a sealed pack isn't unbundled to save the canned goods.</p>
         </section>
 
     </main>

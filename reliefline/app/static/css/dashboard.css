@@ -507,16 +507,20 @@ html.sidebar-collapsed .dashboard-main {
 }
 
 /* Barangay checklist - Declare Local Disaster Event modal (CSWDO dashboard),
-   narrowing a locally-declared event to a subset of the town's barangays. */
+   narrowing a locally-declared event to a subset of the town's barangays.
+   No max-height/overflow-y of its own any more - it used to scroll inside
+   its own 220px box AND inside .rd-modal's own overflow-y:auto at the same
+   time, two visible scrollbars at once. .rd-modal-declare (relief_request_
+   detail.css) now gives the modal a single scrolling body instead, so this
+   just grows to fit its content and lets that one outer scrollbar handle it. */
 .declare-barangay-checklist {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 4px 12px;
-    max-height: 220px;
-    overflow-y: auto;
+    gap: 2px 8px;
+    align-items: stretch;
     border: 1px solid #e3e4ec;
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 6px 8px;
 }
 
 .declare-barangay-item {
@@ -527,9 +531,19 @@ html.sidebar-collapsed .dashboard-main {
     font-weight: 400;
     color: #1a1a1a;
     cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background-color 0.15s ease;
 }
+/* Same "checked -> tinted chip" treatment as the other checklist widgets
+   in the app (.fam-checklist-row, .severity-card) - a plain checkbox
+   grid gave no visual weight to which barangays were actually covered
+   versus unticked, easy to lose track of in a longer municipality list. */
+.declare-barangay-item:has(input:checked) { background: #f4f2fd; }
+.declare-barangay-item:hover { background: #f8f8fc; }
+.declare-barangay-item:has(input:checked):hover { background: #efedfd; }
 
-.declare-barangay-item input { accent-color: #5347ce; width: 15px; height: 15px; }
+.declare-barangay-item input { accent-color: #5347ce; width: 15px; height: 15px; flex-shrink: 0; }
 
 /* Small muted caption/hint text and a light callout box for remarks -
    moved here (from profile_settings.css / damage_assessment.css
@@ -665,6 +679,29 @@ html.sidebar-collapsed .dashboard-main {
     background: #ffffff;
     animation: none;
 }
+
+/* Declare/End Disaster Event - moved into the greeting banner (from the
+   Weather & Typhoon Watch panel, cswdo/dashboard.html) so removing that
+   panel's now-redundant weather/forecast didn't also remove the only way
+   to declare or end a local event. Same translucent-white pill look as
+   .banner-event-badge-secondary above, just an actual button. */
+.banner-event-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    color: white;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    padding: 5px 13px;
+    border-radius: 20px;
+    width: fit-content;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+.banner-event-action:hover { background: rgba(255, 255, 255, 0.24); }
 
 .greeting-main { display: flex; flex-direction: column; }
 

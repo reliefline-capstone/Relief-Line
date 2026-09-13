@@ -74,6 +74,39 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Food Pack Batches "View contents" toggle (warehouse_items.html,
+    // municipal_inventory.html) - a plain button instead of native
+    // <details>/<summary> specifically so this can animate: max-height
+    // only transitions between two real px values, so scrollHeight (the
+    // list's natural height) has to be read and set explicitly on open,
+    // then snapped back to 0 to collapse - animating to/from "auto" isn't
+    // possible, and the native element's open/close is an instant
+    // block/none swap with no hook to animate at all.
+    document.querySelectorAll('[data-batch-toggle]').forEach(function (btn) {
+        var list = btn.closest('.wh-batch-contents').querySelector('.wh-batch-list');
+        var label = btn.querySelector('.wh-batch-toggle-label');
+        var count = btn.dataset.count;
+        if (!list || !label) return;
+        btn.addEventListener('click', function () {
+            var open = btn.getAttribute('aria-expanded') === 'true';
+            if (open) {
+                list.style.maxHeight = list.scrollHeight + 'px';
+                requestAnimationFrame(function () { list.style.maxHeight = '0px'; });
+                btn.setAttribute('aria-expanded', 'false');
+                label.textContent = 'View contents (' + count + ')';
+            } else {
+                // aria-expanded flips first - :has() off it (warehouse_
+                // inventory.css) is what gives the list its padding/
+                // background once open, and scrollHeight has to be read
+                // AFTER that so the measured height already accounts for
+                // it, not the collapsed (zero-padding) box.
+                btn.setAttribute('aria-expanded', 'true');
+                list.style.maxHeight = list.scrollHeight + 'px';
+                label.textContent = 'Hide contents (' + count + ')';
+            }
+        });
+    });
+
     // Live "stock after transfer" calculation for warehouse -> warehouse moves
     // (Pre-position Stock modal + Approve Stock Request modal).
     function fmt(n) { return n.toLocaleString('en-US'); }

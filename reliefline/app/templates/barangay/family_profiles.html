@@ -90,7 +90,7 @@
                 <button type="button" class="btn-outline" id="fam-print-btn" disabled>{{ icon('list', 14) }} Print Selected</button>
             </div>
             {% endif %}
-            <table class="wh-table fam-sticky-table">
+            <table class="wh-table fam-sticky-table {{ 'fam-has-print-bar' if not show_archived and families }}">
                 <thead>
                     <tr>
                         {% if not show_archived %}<th></th>{% endif %}

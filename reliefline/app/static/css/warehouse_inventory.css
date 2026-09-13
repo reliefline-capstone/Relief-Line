@@ -587,9 +587,100 @@
 .wh-receive-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .wh-receive-form input[type="date"] { padding: 6px 8px; border: 1px solid #dfe3ec; border-radius: 6px; font-size: 13px; }
 
-.wh-batch-contents summary { cursor: pointer; color: #2c5aa0; font-size: 13px; }
-.wh-batch-contents ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.wh-batch-contents li { font-size: 12.5px; color: #4a5568; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* Replaces a native <details>/<summary> (couldn't animate its instant
+   block/none toggle, and its default marker/spacing fought the compact
+   layout below) with a plain button - same data-open-modal-style pattern
+   used elsewhere in the app (relief_request_detail.js) rather than a one-
+   off widget. */
+.wh-batch-toggle {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; padding: 0; margin: 0;
+    cursor: pointer; color: #2c5aa0; font-size: 13px; font-family: inherit;
+}
+.wh-batch-toggle-arrow {
+    display: inline-block;
+    transition: transform 0.2s ease;
+    font-size: 10px;
+}
+.wh-batch-toggle[aria-expanded="true"] .wh-batch-toggle-arrow { transform: rotate(90deg); }
+
+/* max-height (not height) is what lets this animate at all without
+   knowing the content's height up front - relief_request_detail.js sets
+   the actual px value (scrollHeight) on open/close so the transition has
+   real start/end points to interpolate between instead of jumping
+   instantly the way animating to/from "auto" would. display:contents on
+   each <li> (below) lifts its own spans up to be direct children of this
+   grid, so NAME/QTY/EXPIRY/STATUS line up in columns across every row
+   without a nested table. */
+.wh-batch-list {
+    display: grid;
+    grid-template-columns: minmax(110px, max-content) max-content minmax(150px, max-content) max-content;
+    column-gap: 16px;
+    row-gap: 0;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+}
+/* A light card of its own (instead of floating loose on the row's
+   background) is what actually reads as "a compact inventory list", not
+   just a few lines of stray text - background/border/radius live on the
+   grid itself so they animate open/closed along with max-height. */
+.wh-batch-contents:has(.wh-batch-toggle[aria-expanded="true"]) .wh-batch-list {
+    margin: 10px 0 2px;
+    background: #fbfbfd;
+    border: 1px solid #eef0f5;
+    border-radius: 8px;
+    padding: 4px 14px;
+}
+.wh-batch-list li { display: contents; }
+
+/* Every cell in a row gets the same bottom border/padding - four separate
+   borders that happen to line up edge-to-edge read as one continuous
+   divider under the row, since display:contents on <li> (above) means
+   there's no single row box left to put a real per-row border on.
+   padding-block (not the padding shorthand) only sets top/bottom - the
+   status cell is also a .badge-health pill with its own left/right
+   padding from dashboard.css, and warehouse_inventory.css loads after
+   it, so a plain `padding: 9px 0` here would win the cascade on ALL four
+   sides and flatten that pill's horizontal padding to 0. */
+.wh-batch-item-name, .wh-batch-item-qty, .wh-batch-item-expiry, .wh-batch-item-status {
+    padding-block: 9px;
+    border-bottom: 1px solid #eef0f5;
+}
+.wh-batch-list li:last-child .wh-batch-item-name,
+.wh-batch-list li:last-child .wh-batch-item-qty,
+.wh-batch-list li:last-child .wh-batch-item-expiry,
+.wh-batch-list li:last-child .wh-batch-item-status {
+    border-bottom: none;
+}
+
+.wh-batch-item-name { font-size: 12.5px; font-weight: 600; color: #2b3242; word-break: break-word; }
+.wh-batch-item-qty, .wh-batch-item-expiry { font-size: 12px; color: #6b7280; white-space: nowrap; }
+/* The "· " separator lives here instead of as its own grid column/DOM
+   node - one less column to keep in sync with the template, and it
+   disappears along with its column automatically if that value is ever
+   empty. */
+.wh-batch-item-qty::before, .wh-batch-item-expiry::before { content: '\00b7\0020'; color: #c7cad6; }
+.wh-batch-item-status { justify-self: start; }
+
+/* Food Pack Batches table - QUANTITY/STATUS/ACTIONS all hold short,
+   fixed-width content (a number, a one-word badge, one icon button), but
+   plain table auto-layout stretches every column to fill the panel's full
+   width, giving each of those three a wide dead zone of trailing empty
+   space. width:1% is the standard auto-layout trick for "shrink this
+   column to its content" - white-space:nowrap stops it from wrapping
+   instead - which frees that space for RECEIVED/EARLIEST EXPIRY/DAYS LEFT/
+   CONTENTS to share, since those actually have longer content. */
+.wh-batches-table th:nth-child(4), .wh-batches-table td:nth-child(4),
+.wh-batches-table th:nth-child(6), .wh-batches-table td:nth-child(6),
+.wh-batches-table th:nth-child(7), .wh-batches-table td:nth-child(7) {
+    width: 1%;
+    white-space: nowrap;
+}
 
 .wh-movement-row-clickable { cursor: pointer; border-radius: 8px; }
 .wh-movement-row-clickable:hover { background: #f7f8fc; }

@@ -264,7 +264,16 @@ html.rd-modal-open { overflow: hidden; }
     /* @keyframes modalPopIn lives in base.css (loaded on every page) so it
        still applies to .da-modal on pages that never load this stylesheet. */
     animation: modalPopIn 0.18s ease-out both;
+    /* Same thin-scrollbar treatment as .dashboard-main (dashboard.css) -
+       without it, any modal whose content grows past max-height falls
+       back to the browser's default classic scrollbar (a chunky grey
+       column with its own up/down arrow buttons) instead of matching
+       every other scrollable panel in the app. */
+    scrollbar-width: thin;
 }
+.rd-modal::-webkit-scrollbar { width: 6px; }
+.rd-modal::-webkit-scrollbar-thumb { background: #d6d9e3; border-radius: 3px; }
+.rd-modal::-webkit-scrollbar-track { background: transparent; }
 
 .rd-modal-header {
     display: flex;
@@ -286,6 +295,58 @@ html.rd-modal-open { overflow: hidden; }
    instead of just being ignored like it would on a plain inline <span>,
    nearly doubling the gap after that one field versus every other row. */
 .rd-modal > .form-hint { margin: 0 0 18px; }
+
+/* Wider + fixed-header/footer variant of the shared .rd-modal above,
+   scoped to the Declare Local Disaster Event modal (cswdo/dashboard.html)
+   rather than changing the base class every other modal in the app also
+   uses. Its barangay checklist can run long enough that the base
+   .rd-modal's own overflow-y:auto plus the checklist's own inner scroll
+   (dashboard.css) used to stack into two visible scrollbars at once, with
+   the Declare/Cancel buttons scrolling out of reach along with
+   everything else - a flex column with one scrolling body between a
+   fixed header and footer fixes both at once. */
+.rd-modal-declare {
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    /* The modal box itself no longer scrolls (that was the outer half of
+       the double-scrollbar) - .rd-modal-body below does instead, while
+       max-height/scrollbar-gutter still come from the shared .rd-modal
+       rule above (this class only adds to it, doesn't replace it). */
+    overflow: hidden;
+}
+.rd-modal-declare .rd-modal-header {
+    padding: 18px 22px 0;
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+.rd-modal-declare .rd-modal-body {
+    flex: 1;
+    /* Without this, a flex child's default min-height:auto keeps it at
+       its content's full natural height regardless of `flex:1`, so it
+       would just push the footer down/offscreen instead of shrinking to
+       the space actually left and scrolling its own overflow. */
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    padding: 14px 22px 4px;
+    /* Same thin-scrollbar treatment as .dashboard-main (dashboard.css) -
+       without it this is the browser's default classic scrollbar, a
+       chunky grey column with its own up/down arrow buttons that looks
+       out of place against everything else in the modal. */
+    scrollbar-width: thin;
+}
+.rd-modal-declare .rd-modal-body::-webkit-scrollbar { width: 6px; }
+.rd-modal-declare .rd-modal-body::-webkit-scrollbar-thumb { background: #d6d9e3; border-radius: 3px; }
+.rd-modal-declare .rd-modal-body::-webkit-scrollbar-track { background: transparent; }
+.rd-modal-declare .rd-modal-body > .form-hint:first-child { margin: 0 0 14px; }
+.rd-modal-declare .rd-modal-actions {
+    flex-shrink: 0;
+    margin-top: 0;
+    padding: 14px 22px 18px;
+    border-top: 1px solid #eef0f5;
+}
 
 .rd-modal-banner {
     display: flex;
