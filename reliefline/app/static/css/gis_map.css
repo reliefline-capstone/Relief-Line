@@ -256,10 +256,79 @@
 
 .legend-square.no-data { background: #e3e4ec; }
 
+/* "Highlighted vs Neutral" coverage rows (PSWDO template only - CSWDO/
+   MSWDO's single-LGU scope has no "some municipalities have detailed
+   data, others don't" distinction to explain). Same swatch shape/size as
+   .legend-square above, just matching provinceStyle()'s own target/
+   neutral fill+border pair 1:1 so the legend and the map agree exactly. */
+.legend-mark.legend-coverage-highlighted {
+    width: 14px; height: 10px;
+    background: #5347ce;
+    border: 1.5px solid #3d31b0;
+    border-radius: 2px;
+}
+.legend-mark.legend-coverage-neutral {
+    width: 14px; height: 10px;
+    background: #e7e9ee;
+    border: 1px solid #b7bcc8;
+    border-radius: 2px;
+}
+
+@media (max-width: 480px) {
+    .legend-mark.legend-coverage-highlighted,
+    .legend-mark.legend-coverage-neutral {
+        width: 11px; height: 8px;
+    }
+}
+
+/* Coverage rows carry a name/description sub-line under their heading, so
+   the icon aligns to the top of that stack instead of its vertical center. */
+.map-legend-row.map-legend-row-stacked { align-items: flex-start; }
+.map-legend-text { display: flex; flex-direction: column; gap: 1px; }
+.map-legend-text strong { font-size: 12px; font-weight: 600; color: #333; }
+.map-legend-text small { font-size: 10.5px; color: #8a94a6; }
+
+/* A class-level `display: flex`/`border-top` (dashboard.css's
+   .map-legend-row/.map-legend-divider) beats the UA [hidden]{display:none}
+   rule at equal specificity - these rows are toggled via JS (see
+   updateLegendVisibility in gis_map.js), so without this override a
+   "hidden" tier/warehouse/route row would still render. */
+.map-legend-row[hidden],
+.map-legend-divider[hidden] { display: none; }
+
+.map-legend-subtitle {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #8a94a6;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin: 2px 0 6px;
+}
+
 /* Leaflet popup tweaks to match app typography */
 .leaflet-popup-content { font-family: 'Inter', 'Segoe UI', sans-serif; font-size: 13px; }
 .leaflet-popup-content strong { display: block; margin-bottom: 4px; font-size: 13px; }
 .leaflet-popup-content span { display: block; color: #666; font-size: 12px; }
+
+/* Municipalities/cities with real detailed data (gis_map.js provinceStyle)
+   get a soft purple glow behind their crisp border, on top of the color
+   fill/border difference alone, so "this one has detailed coverage"
+   reads even at a glance before a viewer consciously compares colors. */
+.gis-target-muni { filter: drop-shadow(0 0 4px rgba(83, 71, 206, 0.55)); }
+
+/* Tooltip shown when hovering/clicking a municipality outside current
+   detailed coverage (gis_map.js) - a small, auto-dismissing label, not a
+   modal popup: plain text, no stock/request figures, since none exist for
+   it. This note is what explains why, instead of the click doing nothing. */
+.leaflet-tooltip.gis-neutral-tooltip {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 10px;
+    line-height: 1.4;
+}
+.gis-neutral-tooltip strong { display: block; font-size: 12.5px; color: #1a1a1a; }
+.gis-neutral-tt-note { display: block; color: #8a94a6; font-size: 11px; margin-top: 1px; max-width: 200px; }
 
 /* Warehouse popup (PSWDO) - the food-pack figure and its status badge sit
    on one row instead of as two more plain text lines among everything
@@ -337,35 +406,23 @@
 .gis-btn-dark { background: #1a1a1a; }
 .gis-btn-dark:hover { background: #000; }
 
-/* Warehouse marker */
+/* Warehouse marker - a plain building icon in a circle colored by stock
+   health, replacing the old 2-3 letter name-abbreviation badge ("C"/"SB"/
+   "UC" etc.) that read as an unexplained code with no legend entry of its
+   own. Health color now fills the whole marker instead of a small corner
+   dot, so it's readable at a glance rather than a detail to notice. */
 .gis-wh-marker { position: relative; }
-.gis-wh-marker span {
+.gis-wh-marker-pin {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
-    background: #5347ce;
-    color: white;
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 6px;
-    border: 2px solid white;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-    white-space: nowrap;
-}
-
-.gis-wh-marker::after {
-    content: '';
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    width: 9px;
-    height: 9px;
     border-radius: 50%;
-    border: 2px solid white;
+    border: 2.5px solid white;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
 }
 
-.gis-wh-healthy::after { background: #27ae60; }
-.gis-wh-moderate::after { background: #f1c40f; }
-.gis-wh-low::after { background: #e74c3c; }
+.gis-wh-healthy .gis-wh-marker-pin { background: #27ae60; }
+.gis-wh-moderate .gis-wh-marker-pin { background: #f1c40f; }
+.gis-wh-low .gis-wh-marker-pin { background: #e74c3c; }

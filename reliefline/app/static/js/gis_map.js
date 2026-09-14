@@ -69,39 +69,45 @@ document.addEventListener('DOMContentLoaded', function () {
             // flat color, so the map itself answers "which municipality
             // needs attention" at a glance - updates automatically whenever
             // the underlying barangay status/allocation data changes, since
-            // this is computed fresh from currentData on every render.
+            // this is computed fresh from currentData on every render. The
+            // ReliefLine-purple border (instead of the demand tier's own
+            // color) plus className glow is what still marks these as "in
+            // detailed coverage" independently of whatever demand color
+            // they're currently showing.
             var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === feature.properties.lgu; }) : null;
             var demandColor = TIER_COLORS[muni ? muni.status_tier : 'unrated'];
             var isSelected = state.lgu === feature.properties.lgu;
             return {
-                color: isSelected ? '#0f2547' : '#55606b',
-                weight: isSelected ? 3 : 1.5,
+                color: '#5347ce',
+                weight: isSelected ? 3.5 : 2.5,
                 fillColor: demandColor,
-                fillOpacity: isSelected ? 0.6 : 0.45,
+                fillOpacity: isSelected ? 0.65 : 0.5,
+                className: 'gis-target-muni',
             };
         }
-        return {
-            // Every non-target (or CSWDO-scope) municipality gets the same
-            // on-brand blue fill so the whole province reads as one shaded
-            // region against neighboring provinces (Nueva Ecija, Tarlac, La
-            // Union, Benguet) - target LGUs stand out further on top of that
-            // with a bolder navy border and a touch more fill.
-            //
-            // Non-target municipalities have no real barangay-level source
-            // data (out of this project's scope - see Scope and Limitations),
-            // so pangasinan_municipalities.json carries only crude, low-point
-            // placeholder shapes for them - some render as an obvious
-            // near-rectangle. Rather than inventing a more accurate boundary
-            // (explicitly against project rules), the border is dropped
-            // entirely for non-target munis: a soft fill with no hard edge
-            // never draws attention to how few points a shape actually has,
-            // while target LGUs (real, accurate boundaries) keep their
-            // border as before.
-            color: isTarget ? '#0f2547' : 'transparent',
-            weight: isTarget ? 3 : 0,
-            fillColor: isTarget ? '#2c5aa0' : '#bcd4f0',
-            fillOpacity: isTarget ? 0.12 : 0.4,
-        };
+        if (isTarget) {
+            // CSWDO/MSWDO scope - same purple "in detailed coverage" border,
+            // no demand-tier fill (that's a PSWDO-only province-wide read;
+            // this account's own dashboards already cover it).
+            return { color: '#5347ce', weight: 3, fillColor: '#5347ce', fillOpacity: 0.18, className: 'gis-target-muni' };
+        }
+        // Every other municipality - a plain neutral grey, distinct from
+        // both the purple "in coverage" fill above and the map's own blue
+        // water/basemap tones, so it can't be mistaken for either "in
+        // scope" or "no geography here at all". A visible (if faint)
+        // border is what actually puts these on the map as real,
+        // clickable municipalities rather than an inert backdrop wash -
+        // dropping it entirely (as before) made every non-target
+        // municipality read as empty space, the exact "looks like only 3
+        // areas have coverage" impression this is meant to fix.
+        //
+        // Non-target municipalities have no real barangay-level source
+        // data (out of this project's scope - see Scope and Limitations),
+        // so pangasinan_municipalities.json carries only crude, low-point
+        // placeholder shapes for them - some render as an obvious
+        // near-rectangle. That's an accepted tradeoff for showing them at
+        // all, not a reason to hide them.
+        return { color: '#b7bcc8', weight: 1, fillColor: '#e7e9ee', fillOpacity: 0.55 };
     }
 
     var provinceLayer = L.geoJSON(null, {
@@ -120,10 +126,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 ) : '';
                 layer.bindTooltip('<strong>' + escapeHtml(p.lgu) + '</strong>' + demandLine + '<br><em>Click to view</em>', { sticky: true });
                 layer.on('click', function () { setLevel('municipality', p.lgu); });
-                layer.on('mouseover', function () { layer.setStyle({ weight: 2.5 }); });
-                layer.on('mouseout', function () { layer.setStyle({ weight: 1.5 }); });
+                layer.on('mouseover', function () { layer.setStyle({ weight: 3.5 }); });
+                layer.on('mouseout', function () { layer.setStyle({ weight: state.lgu === p.lgu ? 3.5 : 2.5 }); });
             } else {
-                layer.bindTooltip(escapeHtml(p.name));
+                // Outside current detailed coverage - hover or click both
+                // answer with just the name plus why nothing else shows, as
+                // a small, auto-dismissing tooltip rather than a modal-style
+                // popup with its own close button. Deliberately stops
+                // there: no stock/request/prediction figures, because none
+                // exist for this municipality (see
+                // app.routes.pswdo.TARGET_LGUS) and inventing any would
+                // misrepresent real coverage.
+                layer.bindTooltip(
+                    '<strong>' + escapeHtml(p.name) + '</strong>' +
+                    '<span class="gis-neutral-tt-note">Outside current detailed data coverage</span>',
+                    { className: 'gis-neutral-tooltip', sticky: true }
+                );
+                layer.on('click', function (e) { layer.openTooltip(e.latlng); });
+                layer.on('mouseover', function () { layer.setStyle({ weight: 2, color: '#8a94a6' }); });
+                layer.on('mouseout', function () { layer.setStyle({ weight: 1, color: '#b7bcc8' }); });
             }
         },
     }).addTo(map);
@@ -174,32 +195,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // which stay exactly as they were.
     var osrmRouteLayer = L.layerGroup().addTo(map);
 
-    function warehouseCode(w) {
-        var m = w.name.match(/warehouse\s+([a-z0-9]+)/i);
-        if (m) return 'WH-' + m[1].toUpperCase();
-        // Generic names like "PSWDO Warehouse" and "PSWDO Warehouse -
-        // Alaminos" both reduce to the same "PW" initials - the dash isn't
-        // a word character, so the regex above never sees "Alaminos" at
-        // all. Falling back to the office's own area instead (already on
-        // every warehouse marker) is what actually tells two such
-        // warehouses apart on the map.
-        if (w.area_covered) {
-            return w.area_covered.split(' ').map(function (word) { return word[0]; }).slice(0, 3).join('').toUpperCase();
-        }
-        return w.name.split(' ').map(function (word) { return word[0]; }).slice(0, 2).join('').toUpperCase();
-    }
-
     function renderWarehouses(warehouses) {
         warehouseLayer.clearLayers();
         warehouses.forEach(function (w) {
             var healthClass = (w.health || 'low').toLowerCase();
+            // A plain building icon, colored by stock health, instead of a
+            // 2-3 letter abbreviation of the warehouse's name - "C"/"SB"/
+            // "UC" read as unexplained codes to anyone who hasn't memorized
+            // which warehouse each stands for. The full name is still one
+            // click away in the popup below.
             var icon = L.divIcon({
                 className: 'gis-wh-marker gis-wh-' + healthClass,
-                html: '<span>' + escapeHtml(warehouseCode(w)) + '</span>',
-                iconSize: [60, 26],
-                iconAnchor: [30, 13],
+                html: '<span class="gis-wh-marker-pin">' + ICON.warehouse + '</span>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15],
             });
-            var marker = L.marker([w.lat, w.lng], { icon: icon });
+            var marker = L.marker([w.lat, w.lng], { icon: icon, title: w.name });
             // Food packs are the one figure every warehouse popup leads
             // with, everywhere in the app - the badge next to it is the
             // same badge-health used on the Dashboard/Warehouse Inventory,
@@ -238,9 +249,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function renderRoutes(lines) {
         routeLayer.clearLayers();
+        // Thinner and lower-opacity than before - still a real straight-
+        // line indicator of "something is in transit here" (never claimed
+        // to be an actual road, see the tooltip), just no longer bold
+        // enough to compete with the province/target styling above it or
+        // read as a "confusing" extra layer on first look at the map.
         lines.forEach(function (line) {
             L.polyline([line.from, line.to], {
-                color: '#3867d6', weight: 2, dashArray: '6,6', opacity: 0.8,
+                color: '#3867d6', weight: 1.5, dashArray: '4,5', opacity: 0.55,
             }).bindTooltip('In transit to ' + escapeHtml(line.barangay)).addTo(routeLayer);
         });
     }
@@ -382,6 +398,28 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    // Keeps the legend honest: a row only shows when the map is actually
+    // displaying what it describes (a stock tier no current target LGU is
+    // in, or a layer with nothing in it right now, gets hidden rather than
+    // left as an item with no matching map element). No-ops safely on the
+    // CSWDO/MSWDO template, which doesn't render these ids/attributes.
+    function updateLegendVisibility() {
+        if (!currentData) return;
+        var tiersPresent = {};
+        currentData.municipalities.forEach(function (m) { tiersPresent[m.status_tier] = true; });
+        document.querySelectorAll('.map-legend-row[data-tier]').forEach(function (row) {
+            row.hidden = !tiersPresent[row.getAttribute('data-tier')];
+        });
+        var hasWarehouse = !!(currentData.warehouses && currentData.warehouses.length);
+        var hasRoute = !!(currentData.in_transit_lines && currentData.in_transit_lines.length);
+        var whRow = document.getElementById('legend-row-warehouse');
+        var routeRow = document.getElementById('legend-row-route');
+        var divider = document.getElementById('legend-extra-divider');
+        if (whRow) whRow.hidden = !hasWarehouse;
+        if (routeRow) routeRow.hidden = !hasRoute;
+        if (divider) divider.hidden = !(hasWarehouse || hasRoute);
+    }
+
     function renderStats(stats) {
         return '' +
             '<section class="stat-cards gis-stat-cards">' +
@@ -413,6 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
         arrow: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
         clipboard: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>',
         download: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+        warehouse: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg>',
     };
 
     function tierBadge(tier, label) {
@@ -702,27 +741,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function focusMap() {
         if (!currentData) return;
         if (state.level === 'overview') {
-            if (IS_MUNI_ONLY) {
-                // PSWDO overview: fit to just the 3 target MUNICIPALITY
-                // polygons (province_context, is_target features) - not the
-                // whole province, and not barangay polygons (those sit in a
-                // narrow N-S sliver and stretched the map's aspect ratio
-                // when tried before; see the CSWDO branch below for that
-                // history). CSWDO/MSWDO is untouched - still fits the whole
-                // province_context exactly as before.
-                var targetFeats = currentData.province_context.features.filter(function (f) { return f.properties.is_target; });
-                if (targetFeats.length) {
-                    var tb = L.geoJSON({ type: 'FeatureCollection', features: targetFeats }).getBounds();
-                    if (tb.isValid()) { map.fitBounds(tb.pad(0.08)); return; }
-                }
-                // Fall back to the whole-province fit below if, for some
-                // reason, no target features came back.
-            }
-            // Whole province, not just the target LGUs' barangays - those sit
-            // in a narrow N-S sliver, so fitting to them alone stretched the
-            // map's east-west extent to match the container's wide aspect
-            // ratio and left far-off municipalities (e.g. Alaminos, San
-            // Carlos) misleadingly in frame instead of the intended overview.
+            // Whole province (every municipality in province_context, not
+            // just the 3 target LGUs, and not the target LGUs' barangays -
+            // those sit in a narrow N-S sliver, so fitting to them alone
+            // stretched the map's east-west extent to match the
+            // container's wide aspect ratio and left far-off municipalities
+            // e.g. Alaminos, San Carlos) out of frame instead of the
+            // intended province-wide overview. Applies to PSWDO and
+            // CSWDO/MSWDO alike - the geographic overview is the same
+            // regardless of how much of it has detailed data.
             var b = provinceLayer.getBounds();
             if (b && b.isValid()) map.fitBounds(b.pad(0.02));
             return;
@@ -818,6 +845,7 @@ document.addEventListener('DOMContentLoaded', function () {
             provinceLayer.addData(data.province_context);
             renderWarehouses(data.warehouses);
             renderRoutes(data.in_transit_lines);
+            updateLegendVisibility();
 
             if (pendingNav) {
                 var nav = pendingNav;

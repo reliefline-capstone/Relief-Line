@@ -204,8 +204,8 @@
                 <tbody>
                     {% for r in active_rows %}
                     {% set rep = r.report %}
-                    <tr>
-                        <td>{{ rep.ref }}</td>
+                    <tr class="{{ 'da-row-new' if rep.status == 'pending' }}">
+                        <td>{{ rep.ref }}{% if rep.status == 'pending' %}<span class="da-new-badge">New</span>{% endif %}</td>
                         <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
                         <td>{{ rep.event.event_name if rep.event else '-' }}</td>
                         <td>{{ "{:,}".format(rep.affected_families or 0) }}</td>

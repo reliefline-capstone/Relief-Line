@@ -4,7 +4,6 @@
 {% block title %}ReliefLine - Disaster Relief Management System{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}?v={{ asset_version('css/login.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}?v={{ asset_version('css/landing.css') }}">
 {% endblock %}
@@ -66,13 +65,131 @@
             </div>
 
             <div class="lp-hero-map">
-                {# Province + LGU boundaries: PSA/PSGC via faeldon/philippines-json-maps. #}
-                <div id="lp-map"
-                     data-geo="{{ url_for('static', filename='geo/pangasinan_municipalities.json') }}"
-                     data-outline="{{ url_for('static', filename='geo/pangasinan_outline.json') }}"
-                     role="img"
-                     aria-label="Map of the Province of Pangasinan. Decorative boundary map."></div>
-                <span class="lp-map-label" aria-hidden="true">Pangasinan</span>
+                {# Static SVG map of Pangasinan - projected once from PSA/PSGC
+                   municipal boundary data (app/static/geo/pangasinan_*.json) into
+                   plain path data at build time. Per-municipality fill buckets
+                   (lp-svgmap-poly-0..4) are a fixed, deterministic assignment
+                   purely for visual depth/variety - not tied to any real metric. #}
+                <svg class="lp-svgmap" viewBox="0 0 600 419.8" role="img"
+                     aria-label="Map of the Province of Pangasinan with Lingayen, Dagupan City, Urdaneta City, Alaminos City, and San Carlos City marked. Decorative boundary map."
+                     xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="lp-map-grad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#eceefc"/>
+                            <stop offset="100%" stop-color="#c7d2f5"/>
+                        </linearGradient>
+                        <filter id="lp-map-glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="5"/>
+                        </filter>
+                    </defs>
+                    <path class="lp-svgmap-glow" filter="url(#lp-map-glow)" d="M9.9 237.5 L16.3 224.0 L21.7 210.0 L13.4 193.4 L16.8 164.6 L23.9 158.7 L16.9 119.3 L23.4 104.6 L23.9 76.9 L29.3 55.6 L43.1 42.1 L62.8 38.0 L74.5 26.8 L85.1 26.2 L99.3 41.3 L91.4 71.3 L93.6 97.7 L96.3 99.3 L122.6 107.3 L141.9 135.8 L142.4 135.7 L148.3 126.3 L174.2 140.0 L184.4 155.8 L177.9 166.9 L187.9 189.2 L204.4 201.6 L227.2 196.5 L241.7 202.2 L258.0 200.3 L287.8 190.2 L312.1 174.4 L320.5 164.3 L343.5 140.1 L340.7 119.1 L363.2 118.8 L384.9 118.1 L391.7 104.8 L410.5 112.3 L445.3 131.0 L471.9 129.4 L489.3 124.9 L515.0 122.4 L550.9 136.9 L566.2 169.3 L582.7 206.5 L585.7 222.8 L590.1 237.2 L580.7 263.8 L567.0 272.0 L566.3 285.9 L558.1 301.5 L549.8 304.2 L539.8 323.0 L525.5 306.1 L496.2 294.4 L472.6 304.3 L438.7 311.9 L433.1 289.6 L432.8 289.4 L426.5 288.7 L421.4 299.1 L417.2 313.2 L410.0 333.4 L365.6 358.1 L345.9 342.5 L329.2 341.6 L313.5 351.6 L311.5 363.3 L296.4 378.7 L288.1 396.6 L265.5 399.3 L259.2 409.9 L239.2 375.5 L219.3 346.1 L212.5 333.6 L208.4 311.7 L196.6 306.6 L194.5 305.3 L186.4 308.1 L164.0 298.0 L151.8 282.9 L143.7 283.9 L133.4 309.9 L120.8 317.2 L85.3 316.1 L90.7 301.9 L81.4 280.2 L62.0 239.2 L61.6 239.1 L40.9 242.4 L37.1 258.8 L14.7 248.5 L9.9 237.5 Z M100.9 74.1 L109.9 55.6 L128.8 47.0 L133.0 60.4 L143.8 66.4 L133.6 81.2 L143.5 96.2 L133.2 109.6 L100.9 74.1 Z M90.4 25.5 L91.3 11.0 L101.1 9.9 L114.7 22.9 L114.7 37.4 L90.4 25.5 Z"/>
+                    <path class="lp-svgmap-casing" d="M9.9 237.5 L16.3 224.0 L21.7 210.0 L13.4 193.4 L16.8 164.6 L23.9 158.7 L16.9 119.3 L23.4 104.6 L23.9 76.9 L29.3 55.6 L43.1 42.1 L62.8 38.0 L74.5 26.8 L85.1 26.2 L99.3 41.3 L91.4 71.3 L93.6 97.7 L96.3 99.3 L122.6 107.3 L141.9 135.8 L142.4 135.7 L148.3 126.3 L174.2 140.0 L184.4 155.8 L177.9 166.9 L187.9 189.2 L204.4 201.6 L227.2 196.5 L241.7 202.2 L258.0 200.3 L287.8 190.2 L312.1 174.4 L320.5 164.3 L343.5 140.1 L340.7 119.1 L363.2 118.8 L384.9 118.1 L391.7 104.8 L410.5 112.3 L445.3 131.0 L471.9 129.4 L489.3 124.9 L515.0 122.4 L550.9 136.9 L566.2 169.3 L582.7 206.5 L585.7 222.8 L590.1 237.2 L580.7 263.8 L567.0 272.0 L566.3 285.9 L558.1 301.5 L549.8 304.2 L539.8 323.0 L525.5 306.1 L496.2 294.4 L472.6 304.3 L438.7 311.9 L433.1 289.6 L432.8 289.4 L426.5 288.7 L421.4 299.1 L417.2 313.2 L410.0 333.4 L365.6 358.1 L345.9 342.5 L329.2 341.6 L313.5 351.6 L311.5 363.3 L296.4 378.7 L288.1 396.6 L265.5 399.3 L259.2 409.9 L239.2 375.5 L219.3 346.1 L212.5 333.6 L208.4 311.7 L196.6 306.6 L194.5 305.3 L186.4 308.1 L164.0 298.0 L151.8 282.9 L143.7 283.9 L133.4 309.9 L120.8 317.2 L85.3 316.1 L90.7 301.9 L81.4 280.2 L62.0 239.2 L61.6 239.1 L40.9 242.4 L37.1 258.8 L14.7 248.5 L9.9 237.5 Z M100.9 74.1 L109.9 55.6 L128.8 47.0 L133.0 60.4 L143.8 66.4 L133.6 81.2 L143.5 96.2 L133.2 109.6 L100.9 74.1 Z M90.4 25.5 L91.3 11.0 L101.1 9.9 L114.7 22.9 L114.7 37.4 L90.4 25.5 Z"/>
+                    <path class="lp-svgmap-fill" d="M9.9 237.5 L16.3 224.0 L21.7 210.0 L13.4 193.4 L16.8 164.6 L23.9 158.7 L16.9 119.3 L23.4 104.6 L23.9 76.9 L29.3 55.6 L43.1 42.1 L62.8 38.0 L74.5 26.8 L85.1 26.2 L99.3 41.3 L91.4 71.3 L93.6 97.7 L96.3 99.3 L122.6 107.3 L141.9 135.8 L142.4 135.7 L148.3 126.3 L174.2 140.0 L184.4 155.8 L177.9 166.9 L187.9 189.2 L204.4 201.6 L227.2 196.5 L241.7 202.2 L258.0 200.3 L287.8 190.2 L312.1 174.4 L320.5 164.3 L343.5 140.1 L340.7 119.1 L363.2 118.8 L384.9 118.1 L391.7 104.8 L410.5 112.3 L445.3 131.0 L471.9 129.4 L489.3 124.9 L515.0 122.4 L550.9 136.9 L566.2 169.3 L582.7 206.5 L585.7 222.8 L590.1 237.2 L580.7 263.8 L567.0 272.0 L566.3 285.9 L558.1 301.5 L549.8 304.2 L539.8 323.0 L525.5 306.1 L496.2 294.4 L472.6 304.3 L438.7 311.9 L433.1 289.6 L432.8 289.4 L426.5 288.7 L421.4 299.1 L417.2 313.2 L410.0 333.4 L365.6 358.1 L345.9 342.5 L329.2 341.6 L313.5 351.6 L311.5 363.3 L296.4 378.7 L288.1 396.6 L265.5 399.3 L259.2 409.9 L239.2 375.5 L219.3 346.1 L212.5 333.6 L208.4 311.7 L196.6 306.6 L194.5 305.3 L186.4 308.1 L164.0 298.0 L151.8 282.9 L143.7 283.9 L133.4 309.9 L120.8 317.2 L85.3 316.1 L90.7 301.9 L81.4 280.2 L62.0 239.2 L61.6 239.1 L40.9 242.4 L37.1 258.8 L14.7 248.5 L9.9 237.5 Z M100.9 74.1 L109.9 55.6 L128.8 47.0 L133.0 60.4 L143.8 66.4 L133.6 81.2 L143.5 96.2 L133.2 109.6 L100.9 74.1 Z M90.4 25.5 L91.3 11.0 L101.1 9.9 L114.7 22.9 L114.7 37.4 L90.4 25.5 Z"/>
+                    <g class="lp-svgmap-mesh">
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M70.5 153.9 L58.3 150.8 L44.7 132.3 L16.9 119.3 L23.9 158.9 L16.8 164.6 L13.4 193.4 L21.7 209.9 L16.3 224.0 L43.9 213.0 L50.7 183.2 L73.3 163.9 L70.5 153.9 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-4" d="M282.0 290.5 L256.6 265.1 L234.3 273.5 L224.9 286.3 L196.6 306.6 L208.6 311.7 L212.5 333.6 L219.3 346.1 L228.9 336.6 L260.2 315.4 L269.5 299.7 L282.0 290.5 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-3" d="M174.2 140.0 L148.3 126.3 L142.1 136.2 L122.6 107.3 L96.3 99.3 L107.4 106.5 L103.6 124.8 L96.6 125.3 L85.6 144.1 L85.5 154.1 L106.8 163.0 L132.0 196.5 L140.2 177.1 L144.9 151.1 L174.2 140.0 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M409.0 286.0 L393.2 292.4 L389.4 283.0 L367.2 293.3 L370.7 304.1 L373.8 309.9 L410.9 318.2 L417.3 313.2 L421.4 299.1 L409.0 286.0 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M128.8 47.0 L109.9 55.6 L100.9 74.1 L133.2 109.6 L143.5 96.2 L133.6 81.2 L143.8 66.4 L133.0 60.4 L128.8 47.0 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M484.6 209.2 L471.2 207.7 L445.5 196.9 L437.0 215.8 L447.8 233.8 L434.2 247.2 L455.2 254.2 L462.6 236.3 L483.6 222.2 L484.6 209.2 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-4" d="M488.7 249.5 L461.5 254.2 L461.7 280.7 L472.6 304.3 L496.1 294.3 L487.5 268.9 L492.8 252.6 L488.7 249.5 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M93.6 97.7 L75.5 104.8 L41.4 83.3 L23.9 76.9 L23.4 104.6 L16.9 119.3 L44.7 132.3 L58.3 150.8 L70.5 153.9 L85.5 154.1 L85.6 144.1 L96.6 125.3 L103.6 124.8 L107.4 106.5 L96.3 99.3 L93.6 97.7 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-4" d="M331.0 273.7 L315.9 278.7 L315.4 289.1 L325.9 295.6 L349.4 296.8 L331.0 273.7 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M417.3 313.2 L410.9 318.2 L373.8 309.9 L370.7 304.1 L361.4 311.4 L359.8 326.1 L410.0 333.4 L417.3 313.2 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M370.7 304.1 L367.2 293.3 L349.4 296.8 L325.9 295.6 L314.8 327.3 L329.3 341.6 L345.9 342.5 L365.6 358.1 L410.0 333.4 L359.8 326.1 L361.4 311.4 L370.7 304.1 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-4" d="M438.4 168.1 L421.4 175.6 L413.1 178.3 L411.4 191.7 L419.6 213.5 L437.0 215.8 L445.5 196.9 L443.1 171.9 L438.4 168.1 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M291.5 216.3 L287.7 190.2 L258.1 200.3 L264.9 234.3 L278.3 242.4 L293.9 234.7 L291.5 216.3 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M90.4 25.5 L114.7 37.4 L114.7 22.9 L101.1 9.9 L91.3 11.0 L90.4 25.5 Z M93.6 97.7 L91.4 71.4 L99.3 41.3 L85.1 26.2 L74.5 26.8 L62.8 38.0 L43.1 42.1 L29.3 55.6 L23.9 76.9 L41.4 83.3 L75.5 104.8 L93.6 97.7 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-3" d="M266.9 253.0 L259.4 241.1 L226.0 218.6 L218.2 234.8 L203.6 238.3 L180.3 256.7 L188.1 262.9 L194.4 305.2 L196.6 306.6 L224.9 286.3 L234.3 273.5 L256.6 265.1 L266.9 253.0 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M85.2 215.1 L91.6 207.2 L88.0 187.2 L77.3 179.9 L73.3 163.9 L50.7 183.2 L43.9 213.0 L16.3 224.0 L9.9 237.5 L14.7 248.5 L30.4 236.6 L45.3 233.7 L67.3 212.0 L85.2 215.1 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M295.1 225.5 L293.1 219.0 L291.8 216.8 L292.0 216.1 L321.0 203.1 L321.9 203.2 L322.3 203.8 L322.1 205.7 L323.1 207.9 L324.1 207.8 L325.3 208.5 L325.4 209.5 L327.6 211.1 L325.4 214.4 L323.6 215.3 L323.3 216.8 L321.2 217.9 L323.5 223.3 L324.4 229.1 L328.0 233.4 L331.8 239.8 L331.9 244.6 L331.2 244.9 L330.1 244.0 L327.9 244.1 L327.0 243.6 L325.9 241.5 L325.8 239.2 L324.7 239.5 L323.9 242.1 L321.0 242.3 L316.1 240.9 L315.1 239.3 L315.2 238.4 L311.0 238.5 L299.6 235.1 L294.5 234.7 L294.1 234.0 L294.8 231.7 L295.1 225.5 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M322.6 172.9 L320.5 164.3 L312.1 174.4 L287.7 190.2 L291.5 216.3 L321.8 202.8 L311.6 187.1 L322.6 172.9 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M85.2 215.1 L67.3 212.0 L45.3 233.7 L30.4 236.6 L14.7 248.5 L37.1 258.8 L40.8 242.4 L61.9 239.0 L81.4 280.2 L90.3 274.7 L104.3 279.3 L139.0 260.9 L125.5 245.9 L110.0 246.5 L97.8 220.2 L85.2 215.1 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-4" d="M180.3 256.7 L168.5 268.0 L152.7 257.1 L139.0 260.9 L104.3 279.3 L90.3 274.7 L81.4 280.2 L90.7 302.0 L85.3 316.1 L120.8 317.2 L133.4 309.9 L143.7 283.8 L152.0 282.9 L164.0 298.0 L186.4 308.1 L194.4 305.2 L188.1 262.9 L180.3 256.7 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M204.4 201.6 L187.9 189.3 L171.6 208.6 L155.9 214.3 L173.7 231.1 L180.3 256.7 L203.6 238.3 L218.2 234.8 L226.0 218.6 L213.9 216.3 L204.4 201.6 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M258.1 200.3 L241.7 202.2 L227.2 196.5 L204.4 201.6 L213.9 216.3 L226.0 218.6 L259.4 241.1 L266.9 253.0 L278.3 242.4 L264.9 234.3 L258.1 200.3 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-3" d="M85.5 154.1 L70.5 153.9 L73.3 163.9 L77.3 179.9 L88.0 187.2 L91.6 207.2 L85.2 215.1 L97.8 220.2 L110.0 246.5 L125.5 245.9 L139.0 260.9 L152.7 257.1 L168.5 268.0 L180.3 256.7 L173.7 231.1 L155.9 214.3 L145.1 201.3 L132.0 196.5 L106.8 163.0 L85.5 154.1 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M376.0 237.3 L359.4 235.8 L331.4 245.2 L327.6 244.1 L331.0 273.7 L349.4 296.8 L367.2 293.3 L389.4 283.0 L390.4 266.2 L381.8 251.8 L376.0 237.3 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M397.6 183.1 L378.0 182.3 L359.7 198.3 L372.5 213.0 L373.9 225.6 L377.7 226.3 L403.6 224.9 L407.1 220.4 L385.3 204.4 L397.6 183.1 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M343.5 172.2 L322.6 172.9 L311.6 187.1 L321.8 202.8 L325.2 208.3 L341.6 206.6 L354.3 199.1 L345.9 194.9 L343.5 172.2 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-3" d="M287.6 302.9 L282.0 290.5 L269.5 299.7 L260.2 315.4 L228.9 336.6 L219.3 346.1 L239.2 375.5 L259.2 409.9 L265.4 399.3 L288.1 396.6 L296.4 378.7 L311.5 363.3 L313.5 351.6 L329.3 341.6 L314.8 327.3 L305.1 325.0 L287.6 302.9 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-3" d="M373.9 225.6 L372.5 213.0 L359.7 198.3 L354.3 199.1 L341.6 206.6 L373.9 225.6 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-3" d="M582.7 206.5 L566.2 169.2 L532.3 184.1 L515.1 197.0 L521.0 216.9 L540.3 216.1 L582.7 206.5 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M421.4 175.6 L411.9 144.5 L372.9 151.7 L378.0 182.3 L397.6 183.1 L413.1 178.3 L421.4 175.6 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-3" d="M461.5 254.2 L451.2 255.6 L437.9 272.3 L428.6 276.6 L426.3 288.7 L433.1 289.4 L438.7 311.9 L472.6 304.3 L461.7 280.7 L461.5 254.2 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-3" d="M327.6 244.1 L293.9 234.7 L278.3 242.4 L266.9 253.0 L256.6 265.1 L282.0 290.5 L287.6 302.9 L301.9 300.2 L315.4 289.1 L315.9 278.7 L331.0 273.7 L327.6 244.1 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M363.2 118.8 L340.7 119.1 L343.6 140.0 L320.5 164.3 L322.6 172.9 L343.5 172.2 L359.3 171.3 L369.6 150.4 L363.2 118.8 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M372.9 151.7 L369.6 150.4 L359.3 171.3 L343.5 172.2 L345.9 194.9 L354.3 199.1 L359.7 198.3 L378.0 182.3 L372.9 151.7 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M490.6 198.4 L490.9 186.4 L476.6 153.0 L489.3 124.9 L471.9 129.4 L445.3 131.0 L453.1 145.0 L449.9 162.0 L438.4 168.1 L443.1 171.9 L445.5 196.9 L471.2 207.7 L484.6 209.2 L490.6 198.4 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M566.2 169.2 L550.9 136.9 L515.0 122.4 L489.3 124.9 L476.6 153.0 L490.9 186.4 L490.6 198.4 L515.1 197.0 L532.3 184.1 L566.2 169.2 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M585.7 222.8 L582.7 206.5 L540.3 216.1 L521.0 216.9 L509.1 232.1 L488.7 249.5 L492.8 252.6 L516.9 242.3 L530.3 242.2 L556.4 234.7 L585.7 222.8 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M321.5 218.4 L323.4 216.7 L323.7 215.1 L325.3 214.5 L327.7 211.3 L327.4 210.4 L326.7 210.5 L325.7 209.6 L326.2 208.2 L330.4 207.7 L331.8 209.0 L336.9 207.4 L339.7 207.5 L341.6 206.8 L352.4 214.7 L353.5 214.8 L362.1 219.8 L364.0 219.8 L366.1 221.0 L367.2 221.9 L367.2 223.2 L369.5 225.0 L371.6 224.3 L373.9 225.6 L376.4 226.2 L376.0 236.8 L375.4 237.3 L358.1 235.9 L335.5 243.8 L334.5 243.6 L332.4 244.7 L331.8 242.6 L331.8 239.8 L328.0 233.4 L324.1 228.4 L324.2 225.8 L323.4 224.3 L322.9 220.9 L321.5 218.4 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M509.1 232.1 L483.6 222.2 L462.6 236.3 L455.2 254.2 L451.2 255.6 L461.5 254.2 L488.7 249.5 L509.1 232.1 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-3" d="M428.6 276.6 L409.0 286.0 L421.4 299.1 L426.3 288.7 L428.6 276.6 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-1" d="M445.3 131.0 L410.5 112.3 L391.7 104.8 L385.0 118.1 L363.2 118.8 L369.6 150.4 L372.9 151.7 L411.9 144.5 L421.4 175.6 L438.4 168.1 L449.9 162.0 L453.1 145.0 L445.3 131.0 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M187.9 189.3 L177.8 166.8 L184.4 155.8 L174.2 140.0 L144.9 151.1 L140.2 177.1 L132.0 196.5 L145.1 201.3 L155.9 214.3 L171.6 208.6 L187.9 189.3 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-4" d="M521.0 216.9 L515.1 197.0 L490.6 198.4 L484.6 209.2 L483.6 222.2 L509.1 232.1 L521.0 216.9 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-4" d="M496.1 294.3 L525.5 306.1 L539.8 323.0 L549.8 304.1 L558.1 301.5 L566.3 285.9 L567.0 272.0 L580.7 263.8 L590.1 237.2 L585.7 222.8 L556.4 234.7 L530.3 242.2 L516.9 242.3 L492.8 252.6 L487.5 268.9 L496.1 294.3 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M315.4 289.1 L301.9 300.2 L287.6 302.9 L305.1 325.0 L314.8 327.3 L325.9 295.6 L315.4 289.1 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M376.1 229.4 L376.6 226.8 L377.2 226.3 L390.5 225.6 L392.0 226.3 L393.0 225.5 L395.5 225.4 L396.7 226.0 L398.1 225.2 L403.6 224.9 L405.5 223.7 L405.2 223.0 L405.7 222.3 L408.0 223.2 L409.6 220.5 L412.3 219.4 L412.2 218.5 L413.4 216.9 L415.5 215.7 L418.0 215.4 L419.9 213.5 L422.6 213.9 L423.5 215.2 L427.3 216.6 L430.8 215.0 L436.8 215.9 L439.3 220.2 L441.2 225.2 L444.6 228.5 L447.5 233.5 L443.1 235.6 L439.9 239.0 L439.1 239.1 L434.2 247.2 L424.0 253.2 L411.5 251.0 L409.7 252.8 L407.6 252.3 L406.4 252.7 L394.4 252.2 L393.5 251.7 L391.2 252.1 L390.0 251.2 L387.4 250.5 L384.1 251.9 L382.2 251.8 L381.6 251.5 L379.8 246.7 L379.1 237.9 L376.1 236.8 L376.1 229.4 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-2" d="M455.2 254.2 L434.2 247.2 L424.0 253.3 L381.8 251.8 L390.4 266.2 L389.4 283.0 L393.2 292.4 L409.0 286.0 L428.6 276.6 L437.9 272.3 L451.2 255.6 L455.2 254.2 Z"/>
+                    <path class="lp-svgmap-poly lp-svgmap-poly-0" d="M413.1 178.3 L397.6 183.1 L385.3 204.4 L407.1 220.4 L419.6 213.5 L411.4 191.7 L413.1 178.3 Z"/>
+                    </g>
+                    <path class="lp-svgmap-outline" d="M9.9 237.5 L16.3 224.0 L21.7 210.0 L13.4 193.4 L16.8 164.6 L23.9 158.7 L16.9 119.3 L23.4 104.6 L23.9 76.9 L29.3 55.6 L43.1 42.1 L62.8 38.0 L74.5 26.8 L85.1 26.2 L99.3 41.3 L91.4 71.3 L93.6 97.7 L96.3 99.3 L122.6 107.3 L141.9 135.8 L142.4 135.7 L148.3 126.3 L174.2 140.0 L184.4 155.8 L177.9 166.9 L187.9 189.2 L204.4 201.6 L227.2 196.5 L241.7 202.2 L258.0 200.3 L287.8 190.2 L312.1 174.4 L320.5 164.3 L343.5 140.1 L340.7 119.1 L363.2 118.8 L384.9 118.1 L391.7 104.8 L410.5 112.3 L445.3 131.0 L471.9 129.4 L489.3 124.9 L515.0 122.4 L550.9 136.9 L566.2 169.3 L582.7 206.5 L585.7 222.8 L590.1 237.2 L580.7 263.8 L567.0 272.0 L566.3 285.9 L558.1 301.5 L549.8 304.2 L539.8 323.0 L525.5 306.1 L496.2 294.4 L472.6 304.3 L438.7 311.9 L433.1 289.6 L432.8 289.4 L426.5 288.7 L421.4 299.1 L417.2 313.2 L410.0 333.4 L365.6 358.1 L345.9 342.5 L329.2 341.6 L313.5 351.6 L311.5 363.3 L296.4 378.7 L288.1 396.6 L265.5 399.3 L259.2 409.9 L239.2 375.5 L219.3 346.1 L212.5 333.6 L208.4 311.7 L196.6 306.6 L194.5 305.3 L186.4 308.1 L164.0 298.0 L151.8 282.9 L143.7 283.9 L133.4 309.9 L120.8 317.2 L85.3 316.1 L90.7 301.9 L81.4 280.2 L62.0 239.2 L61.6 239.1 L40.9 242.4 L37.1 258.8 L14.7 248.5 L9.9 237.5 Z M100.9 74.1 L109.9 55.6 L128.8 47.0 L133.0 60.4 L143.8 66.4 L133.6 81.2 L143.5 96.2 L133.2 109.6 L100.9 74.1 Z M90.4 25.5 L91.3 11.0 L101.1 9.9 L114.7 22.9 L114.7 37.4 L90.4 25.5 Z"/>
+                    <g class="lp-svgmap-muni-labels">
+                    <text class="lp-svgmap-muni-label" x="37.0" y="170.8" text-anchor="middle">Agno</text>
+                    <text class="lp-svgmap-muni-label" x="239.2" y="302.1" text-anchor="middle">Aguilar</text>
+                    <text class="lp-svgmap-muni-label" x="395.3" y="301.1" text-anchor="middle">Alcala</text>
+                    <text class="lp-svgmap-muni-label" x="123.9" y="76.2" text-anchor="middle">Anda</text>
+                    <text class="lp-svgmap-muni-label" x="457.4" y="223.2" text-anchor="middle">Asingan</text>
+                    <text class="lp-svgmap-muni-label" x="477.4" y="275.5" text-anchor="middle">Balungao</text>
+                    <text class="lp-svgmap-muni-label" x="60.9" y="117.0" text-anchor="middle">Bani</text>
+                    <text class="lp-svgmap-muni-label" x="329.9" y="286.6" text-anchor="middle">Basista</text>
+                    <text class="lp-svgmap-muni-label" x="386.0" y="320.9" text-anchor="middle">Bautista</text>
+                    <text class="lp-svgmap-muni-label" x="352.9" y="325.3" text-anchor="middle">Bayambang</text>
+                    <text class="lp-svgmap-muni-label" x="429.4" y="192.3" text-anchor="middle">Binalonan</text>
+                    <text class="lp-svgmap-muni-label" x="277.0" y="216.5" text-anchor="middle">Binmaley</text>
+                    <text class="lp-svgmap-muni-label" x="69.8" y="60.6" text-anchor="middle">Bolinao</text>
+                    <text class="lp-svgmap-muni-label" x="221.0" y="259.9" text-anchor="middle">Bugallon</text>
+                    <text class="lp-svgmap-muni-label" x="55.7" y="206.9" text-anchor="middle">Burgos</text>
+                    <text class="lp-svgmap-muni-label" x="312.1" y="224.2" text-anchor="middle">Calasiao</text>
+                    <text class="lp-svgmap-muni-label" x="83.7" y="246.6" text-anchor="middle">Dasol</text>
+                    <text class="lp-svgmap-muni-label" x="138.3" y="287.2" text-anchor="middle">Infanta</text>
+                    <text class="lp-svgmap-muni-label" x="191.3" y="221.6" text-anchor="middle">Labrador</text>
+                    <text class="lp-svgmap-muni-label" x="124.7" y="213.9" text-anchor="middle">Mabini</text>
+                    <text class="lp-svgmap-muni-label" x="359.1" y="265.4" text-anchor="middle">Malasiqui</text>
+                    <text class="lp-svgmap-muni-label" x="382.3" y="205.3" text-anchor="middle">Manaoag</text>
+                    <text class="lp-svgmap-muni-label" x="331.8" y="190.1" text-anchor="middle">Mangaldan</text>
+                    <text class="lp-svgmap-muni-label" x="272.7" y="350.7" text-anchor="middle">Mangatarem</text>
+                    <text class="lp-svgmap-muni-label" x="360.0" y="210.2" text-anchor="middle">Mapandan</text>
+                    <text class="lp-svgmap-muni-label" x="548.8" y="196.6" text-anchor="middle">Natividad</text>
+                    <text class="lp-svgmap-muni-label" x="396.4" y="164.7" text-anchor="middle">Pozorrubio</text>
+                    <text class="lp-svgmap-muni-label" x="449.6" y="285.7" text-anchor="middle">Rosales</text>
+                    <text class="lp-svgmap-muni-label" x="348.8" y="149.0" text-anchor="middle">San Fabian</text>
+                    <text class="lp-svgmap-muni-label" x="361.5" y="178.7" text-anchor="middle">San Jacinto</text>
+                    <text class="lp-svgmap-muni-label" x="466.8" y="169.8" text-anchor="middle">San Manuel</text>
+                    <text class="lp-svgmap-muni-label" x="517.0" y="158.6" text-anchor="middle">San Nicolas</text>
+                    <text class="lp-svgmap-muni-label" x="541.3" y="227.5" text-anchor="middle">San Quintin</text>
+                    <text class="lp-svgmap-muni-label" x="345.9" y="225.7" text-anchor="middle">Santa Barbara</text>
+                    <text class="lp-svgmap-muni-label" x="480.5" y="239.0" text-anchor="middle">Santa Maria</text>
+                    <text class="lp-svgmap-muni-label" x="420.2" y="287.3" text-anchor="middle">Santo Tomas</text>
+                    <text class="lp-svgmap-muni-label" x="410.3" y="137.9" text-anchor="middle">Sison</text>
+                    <text class="lp-svgmap-muni-label" x="161.5" y="177.9" text-anchor="middle">Sual</text>
+                    <text class="lp-svgmap-muni-label" x="502.3" y="213.2" text-anchor="middle">Tayug</text>
+                    <text class="lp-svgmap-muni-label" x="538.0" y="268.9" text-anchor="middle">Umingan</text>
+                    <text class="lp-svgmap-muni-label" x="309.3" y="307.9" text-anchor="middle">Urbiztondo</text>
+                    <text class="lp-svgmap-muni-label" x="414.4" y="266.5" text-anchor="middle">Villasis</text>
+                    <text class="lp-svgmap-muni-label" x="403.5" y="200.4" text-anchor="middle">Laoac</text>
+                    </g>
+                    <text class="lp-svgmap-label" x="320" y="248" text-anchor="middle">PANGASINAN</text>
+                    <g class="lp-svgmap-city-chips">
+                    <text class="lp-svgmap-muni-label" x="411.6" y="221.2" text-anchor="middle">Urdaneta City</text>
+                    <text class="lp-svgmap-muni-label" x="242.7" y="221.2" text-anchor="middle">Lingayen</text>
+                    <text class="lp-svgmap-muni-label" x="304.5" y="197.4" text-anchor="middle">Dagupan City</text>
+                    <text class="lp-svgmap-muni-label" x="122.8" y="148.8" text-anchor="middle">Alaminos City</text>
+                    <text class="lp-svgmap-muni-label" x="296.5" y="269.5" text-anchor="middle">San Carlos City</text>
+                    </g>
+                </svg>
             </div>
 
         </div>
@@ -410,117 +527,6 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script>
-// Hero map - a Leaflet basemap clipped to the outline of the Province of
-// Pangasinan, so the province floats on the page (drop shadow in
-// landing.css) with no card or frame. Static, and drawn as one uniform
-// province-wide shape (no single LGU singled out) - ReliefLine covers all
-// of Pangasinan, not a handful of pilot towns, so the map shouldn't imply
-// otherwise.
-(function () {
-    var el = document.getElementById('lp-map');
-    if (!el || typeof L === 'undefined' || !el.dataset.geo) return;
-
-    var map = L.map(el, {
-        attributionControl: false, zoomControl: false,
-        dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
-        boxZoom: false, keyboard: false, touchZoom: false,
-    });
-
-    // No tile basemap - the province is drawn entirely from the local
-    // boundary GeoJSON (faint municipality mesh + outline), so there are
-    // no place-name labels and no third-party tile watermark. The map is
-    // decorative and static; only the three LGU pins carry text.
-    map.createPane('lpBase').style.zIndex = 390;
-    map.createPane('lpOutline').style.zIndex = 410;
-    map.createPane('lpTarget').style.zIndex = 450;
-
-    var grab = function (url, tag) {
-        return fetch(url).then(function (r) {
-            if (!r.ok) throw new Error(tag + ' ' + r.status);
-            return r.json();
-        });
-    };
-
-    Promise.all([
-        grab(el.dataset.geo, 'geo'),
-        grab(el.dataset.outline, 'outline'),
-    ]).then(function (res) {
-        var muni = res[0], outline = res[1];
-
-        // Faint municipality mesh - a soft off-white fill with hairline
-        // borders, so the province reads as a clean shape with a little
-        // internal texture instead of a flat blob.
-        L.geoJSON(muni, {
-            pane: 'lpBase', interactive: false,
-            style: { color: '#cfccec', weight: 0.7, opacity: 0.7, fillColor: '#f1f0f8', fillOpacity: 0.96 },
-        }).addTo(map);
-
-        // Province boundary - a white casing then a soft line so the
-        // silhouette stays crisp against the page.
-        L.geoJSON(outline, {
-            pane: 'lpOutline', interactive: false,
-            style: { color: '#ffffff', weight: 4, opacity: 0.9, fill: false },
-        }).addTo(map);
-        var outlineLayer = L.geoJSON(outline, {
-            pane: 'lpOutline', interactive: false,
-            style: { color: '#8f88c9', weight: 1.5, opacity: 0.9, fill: false },
-        }).addTo(map);
-
-        // Province-wide accent tint - same soft-fill treatment the old
-        // three-pilot-LGU highlight used, just applied across the whole
-        // outline instead of singling any towns out, since ReliefLine
-        // covers all of Pangasinan, not a handful of pilot municipalities.
-        L.geoJSON(outline, {
-            pane: 'lpTarget', interactive: false,
-            style: { color: '#ffffff', weight: 2.5, fillColor: '#5347ce', fillOpacity: 0.1 },
-        }).addTo(map);
-
-        // Flatten the outline (Polygon or MultiPolygon) to a list of rings.
-        var rings = [];
-        var g = outline.features[0].geometry;
-        var polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
-        polys.forEach(function (poly) {
-            poly.forEach(function (ring) { rings.push(ring); });
-        });
-
-        function clipToProvince() {
-            if (!rings.length) return;
-            var d = rings.map(function (ring) {
-                return ring.map(function (c, i) {
-                    var p = map.latLngToContainerPoint([c[1], c[0]]);
-                    return (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1);
-                }).join(' ') + 'Z';
-            }).join(' ');
-            el.style.clipPath = 'path("' + d + '")';
-            el.style.webkitClipPath = el.style.clipPath;
-        }
-
-        var b = outlineLayer.getBounds();
-        if (b.isValid()) {
-            var fit = function () {
-                map.invalidateSize();
-                // leave room on narrow screens so the LGU pin labels don't
-                // spill past the map (and off the page)
-                var px = window.innerWidth < 620 ? 24 : 12;
-                map.fitBounds(b.pad(0.02), { animate: false, padding: [px, 18] });
-            };
-            fit();
-            map.setMaxBounds(b.pad(0.3));
-            clipToProvince();
-            // re-clip once layout/fonts settle
-            setTimeout(clipToProvince, 200);
-            window.addEventListener('resize', function () { fit(); clipToProvince(); });
-        } else {
-            map.setView([15.99, 120.33], 9);
-        }
-    }).catch(function (err) {
-        if (window.console) console.error('lp-map:', err);
-        el.classList.add('lp-map-failed');
-    });
-})();
-</script>
 <script>
 (function () {
     var toggle = document.getElementById('lp-nav-toggle');

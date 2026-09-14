@@ -154,8 +154,8 @@
                                 {% for b in lgu_barangays %}
                                 <label class="declare-barangay-item">
                                     <input type="checkbox" name="barangay_ids" value="{{ b.barangay_id }}" checked>
-                                    <span class="declare-barangay-name">{{ b.barangay_name }}</span>
                                     <span class="declare-barangay-check">{{ icon('check', 13, 'white') }}</span>
+                                    <span class="declare-barangay-name">{{ b.barangay_name }}</span>
                                 </label>
                                 {% endfor %}
                             </div>

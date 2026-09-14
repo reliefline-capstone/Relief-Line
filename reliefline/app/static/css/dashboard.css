@@ -526,11 +526,16 @@ html.sidebar-collapsed .dashboard-main {
 .declare-barangay-checklist {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 10px;
     align-items: stretch;
     border: 1px solid #e3e4ec;
-    border-radius: 12px;
-    padding: 10px;
+    border-radius: 14px;
+    padding: 12px;
+    /* Faint tray behind the white cards - without it, both this and each
+       .declare-barangay-item were the same near-white tone, so the cards'
+       own shadow/border was the only thing separating them from their
+       shared container, easy to miss at a glance. */
+    background: #fafafc;
 }
 @media (max-width: 480px) { .declare-barangay-checklist { grid-template-columns: 1fr; } }
 
@@ -543,21 +548,54 @@ html.sidebar-collapsed .dashboard-main {
    solid with a check glyph once :has(input:checked) matches - the same
    hide-the-real-control-draw-a-fake-one trick as .rr-priority-option
    (cswdo_relief_requests.css) and .event-radio-option (barangay.css). */
+/* .rd-modal form label (relief_request_detail.css) is 2 classes + a type
+   selector - more specific than this class alone - and forces display:
+   block plus its own margin on every <label> in this modal's form,
+   including this one. Without the override below, that beat this rule's
+   own display:flex outright, so the checkbox and name stacked as two
+   block-level lines instead of sitting side by side on one row. Repeating
+   the selector at the same specificity here, later in the cascade, is
+   what actually wins - a bare .declare-barangay-item rule does not. */
+.rd-modal form .declare-barangay-item,
 .declare-barangay-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 10px;
-    background: #f9f9fd;
+    margin: 0;
+    background: white;
     border: 1px solid #e3e4ec;
     border-radius: 10px;
-    padding: 10px 12px;
+    padding: 11px 13px;
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 1px 2px rgba(28, 30, 58, 0.03);
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+                box-shadow 0.15s ease, transform 0.15s ease;
 }
-.declare-barangay-item:hover { border-color: #c7c9e8; }
-.declare-barangay-item:has(input:checked) { background: #f4f2fd; border-color: #5347ce; }
-.declare-barangay-item:has(input:checked):hover { background: #efedfd; }
+.declare-barangay-item:hover {
+    border-color: #c7c9e8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(28, 30, 58, 0.07);
+}
+/* A full-strength purple border on every card reads as flat/monotone once
+   most or all of them are checked (the default state) - the whole grid
+   ends up one uniform color with no hierarchy. Softening the border to a
+   muted lavender here, while the checkbox itself (.declare-barangay-check
+   below) keeps the strong #5347ce fill, keeps that one purple accent per
+   card doing the "this is checked" signalling instead of competing with a
+   same-color border around it. A slight purple-tinted lift (vs. the
+   neutral grey one above) on top of it echoes that accent instead of
+   fighting it. */
+.declare-barangay-item:has(input:checked) {
+    background: #f4f2fd;
+    border-color: #d3cdf0;
+    box-shadow: 0 2px 6px rgba(83, 71, 206, 0.1);
+}
+.declare-barangay-item:has(input:checked):hover {
+    background: #efedfd;
+    border-color: #c2baea;
+    box-shadow: 0 5px 12px rgba(83, 71, 206, 0.16);
+}
 
 .declare-barangay-item input { position: absolute; opacity: 0; width: 0; height: 0; }
 
@@ -565,18 +603,19 @@ html.sidebar-collapsed .dashboard-main {
 
 .declare-barangay-check {
     display: flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px;
-    border-radius: 6px;
+    width: 21px; height: 21px;
+    border-radius: 7px;
     border: 1.5px solid #d1d3e2;
     background: white;
     flex-shrink: 0;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.declare-barangay-check svg { opacity: 0; transition: opacity 0.15s ease; }
+.declare-barangay-check svg { opacity: 0; transition: opacity 0.15s ease, transform 0.15s ease; transform: scale(0.6); }
 .declare-barangay-item:has(input:checked) .declare-barangay-check {
-    background: #5347ce; border-color: #5347ce;
+    background: #5347ce;
+    border-color: #5347ce;
 }
-.declare-barangay-item:has(input:checked) .declare-barangay-check svg { opacity: 1; }
+.declare-barangay-item:has(input:checked) .declare-barangay-check svg { opacity: 1; transform: scale(1); }
 
 /* Small muted caption/hint text and a light callout box for remarks -
    moved here (from profile_settings.css / damage_assessment.css

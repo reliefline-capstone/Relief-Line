@@ -31,7 +31,7 @@
         </div>
 
         <div class="rr-toolbar">
-            <nav class="status-filter-pills">
+            <nav class="page-tabs">
                 {% set pill_defs = [
                     ('all', 'All requests', total_count),
                     ('pending', 'Awaiting decision', counts.pending),
@@ -41,8 +41,8 @@
                 ] %}
                 {% for key, label, n in pill_defs %}
                 <a href="{{ url_for('pswdo.relief_requests', status=key, municipality=municipality_filter, q=search_query) }}"
-                   class="status-pill status-pill-{{ key }} {{ 'active' if status_filter == key }}">
-                    {{ label }} <strong>({{ n }})</strong>
+                   class="page-tab {{ 'active' if status_filter == key }}">
+                    {{ label }} <span class="page-tab-badge">{{ n }}</span>
                 </a>
                 {% endfor %}
             </nav>

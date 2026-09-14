@@ -518,42 +518,16 @@
     margin-bottom: 14px;
 }
 
-/* Clickable status filter tabs - flat text, the active one boxed. */
-.status-filter-pills {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 2px;
-}
-.status-pill {
-    padding: 7px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    background: transparent;
-    color: #7b8494;
-    border: 1px solid transparent;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    white-space: nowrap;
-    transition: background .12s ease, color .12s ease, border-color .12s ease;
-}
-.status-pill strong { font-weight: 700; opacity: 0.85; }
-.status-pill:hover { background: #f1f0f8; }
-.status-pill-all     { color: #55606f; }
-.status-pill-pending  { color: #d68910; }
-.status-pill-approved { color: #5347ce; }
-.status-pill-fulfilled { color: #1e8449; }
-.status-pill-declined { color: #c0392b; }
-
-/* Active tab: keeps its own colour, sits in a white chip. */
-.status-pill.active {
-    background: #fff;
-    border-color: #e4e5ee;
-    box-shadow: 0 1px 3px rgba(28, 30, 58, 0.08);
-}
-.status-pill.active strong { opacity: 1; }
+/* Status filter tabs - shared .page-tabs/.page-tab component
+   (dashboard.css, same underline-tab style as e.g. cswdo's Barangay
+   Reports queue tabs) rather than this page's own one-off pill/colored-
+   text style, so the two read as the same design language. Nested inside
+   .rr-toolbar's row (alongside the municipality/search filter form)
+   instead of .page-tabs' usual standalone full-width placement, so its
+   own border-bottom/margin-bottom (meant to separate it from unrelated
+   content below) would otherwise add a stray partial-width line and
+   misalign it against .rr-toolbar-controls on the same row. */
+.rr-toolbar .page-tabs { border-bottom: none; margin-bottom: 0; }
 
 /* Right-hand controls */
 .rr-toolbar-controls {
