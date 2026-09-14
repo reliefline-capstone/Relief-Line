@@ -208,6 +208,38 @@
 .autofill-field span { display: block; font-size: 11px; color: #8a94a6; margin-bottom: 2px; }
 .autofill-field strong { font-size: 14px; color: #1a1a1a; font-weight: 600; }
 
+/* Typhoon-Related Event picker (Barangay Report step 1) - a plain <select>
+   read as an oddly bare dropdown next to the rest of the Basic Information
+   step's card-style layout, so this renders each active event as its own
+   selectable radio card instead - name + scope/status tag, highlighted
+   when checked. Only shown at all when there's more than one active event
+   to choose between (see event_options|length > 1 in the template). */
+.event-radio-group { display: flex; flex-direction: column; gap: 8px; }
+
+.event-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #e3e4ec;
+    border-radius: 10px;
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.event-radio-option:hover { border-color: #c7c9e8; }
+.event-radio-option:has(input:checked) { border-color: #5347ce; background: #f4f2fd; }
+
+.event-radio-option input[type="radio"] {
+    width: 16px; height: 16px; flex-shrink: 0; accent-color: #5347ce;
+}
+
+.event-radio-name { font-size: 13.5px; font-weight: 700; color: #1a1a1a; }
+.event-radio-tag { margin-left: auto; font-size: 11.5px; font-weight: 600; color: #8a94a6; white-space: nowrap; }
+
+/* An ended event is still selectable (the report may need to stay linked
+   to it) but shouldn't read as equally "current" as an active one. */
+.event-radio-option.is-ended { opacity: 0.65; }
+
 .wizard-cancel {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: 12px; color: #8a94a6; text-decoration: none; margin-bottom: 6px;

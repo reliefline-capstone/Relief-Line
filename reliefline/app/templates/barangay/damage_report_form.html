@@ -24,6 +24,11 @@
                 <h2>{{ 'Edit ' + report.ref if report else 'New Barangay Report' }}</h2>
                 <p>Brgy. {{ barangay.barangay_name }} · {{ default_event.event_name if default_event else 'Standing Request' }}</p>
             </div>
+            {% if not report or report.status == 'draft' %}
+            <div class="wh-header-actions">
+                <button type="submit" form="damage-report-form" formaction="{{ url_for('barangay.save_damage_report_draft') }}" formnovalidate class="btn-outline">{{ icon('file-text', 14) }} Save Draft</button>
+            </div>
+            {% endif %}
         </section>
 
         {% if report and report.status == 'returned' %}
@@ -73,12 +78,16 @@
                 <input type="hidden" name="submitted_by_designation" value="{{ (report.submitted_by_designation if report else current_user.designation) or '' }}">
                 {% if event_options|length > 1 %}
                 <div class="form-row">
-                    <label for="event_id">Typhoon-Related Event</label>
-                    <select name="event_id" id="event_id">
+                    <label>Typhoon-Related Event</label>
+                    <div class="event-radio-group">
                         {% for e in event_options %}
-                        <option value="{{ e.event_id }}" {% if e.event_id == default_event_id %}selected{% endif %}>{{ e.event_name }}{% if e.scope == 'province' %} (Province-wide){% else %} (Local){% endif %}{% if e.status != 'active' %} - ended{% endif %}</option>
+                        <label class="event-radio-option{{ ' is-ended' if e.status != 'active' }}">
+                            <input type="radio" name="event_id" value="{{ e.event_id }}" {% if e.event_id == default_event_id %}checked{% endif %}>
+                            <span class="event-radio-name">{{ e.event_name }}</span>
+                            <span class="event-radio-tag">{{ 'Province-wide' if e.scope == 'province' else 'Local' }}{% if e.status != 'active' %} · ended{% endif %}</span>
+                        </label>
                         {% endfor %}
-                    </select>
+                    </div>
                     <p class="form-hint">More than one active typhoon-related event applies to your barangay right now - choose which one this report is for.</p>
                 </div>
                 {% elif event_options %}
@@ -165,7 +174,6 @@
                             {% if f.senior_count %}<span class="fam-badge fam-badge-senior">{{ f.senior_count }} senior</span>{% endif %}
                             {% if f.children_count %}<span class="fam-badge fam-badge-child">{{ f.children_count }} children</span>{% endif %}
                         </span>
-                        <span class="fam-checklist-chevron">{{ icon('chevron-right', 14, '#cdcfe0') }}</span>
                     </label>
                     {% endfor %}
                 </div>
@@ -314,12 +322,6 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
                     <button type="submit" formaction="{{ url_for('barangay.submit_damage_report') }}" class="btn-submit-final">{{ icon('arrow-right', 14, 'white') }} Submit to MSWDO</button>
                 </div>
             </section>
-
-            {% if not report or report.status == 'draft' %}
-            <div class="wizard-save-draft-row">
-                <button type="submit" formaction="{{ url_for('barangay.save_damage_report_draft') }}" formnovalidate class="btn-outline">{{ icon('file-text', 14) }} Save Draft</button>
-            </div>
-            {% endif %}
         </form>
 
     </main>
@@ -412,8 +414,14 @@ Example: Flood water reached approximately 1.5 meters. Several roads are not pas
     }
 
     function populateReview() {
-        if (document.getElementById('event_id')) {
-            document.getElementById('rv-event').textContent = textOf('event_id') || '-';
+        // Typhoon Event is a radio group (see .event-radio-group), not a
+        // single element with its own id, so it can't use textOf() like
+        // the plain inputs below - only present at all when more than one
+        // active event exists (event_options|length > 1 in the template).
+        var checkedEvent = document.querySelector('.event-radio-group input[name="event_id"]:checked');
+        if (checkedEvent) {
+            var nameEl = checkedEvent.closest('.event-radio-option').querySelector('.event-radio-name');
+            document.getElementById('rv-event').textContent = (nameEl ? nameEl.textContent : '') || '-';
         }
         document.getElementById('rv-date').textContent = (textOf('incident_date') || '-') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
         document.getElementById('rv-families').textContent = textOf('affected_families') || '0';

@@ -878,23 +878,24 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
             })
 
     if type_filter in ("all", "damaged_resolved"):
-        # "food_pack_damaged" is never touched by an ordinary release/transfer
-        # (those only ever move "food_pack"), so every negative log here is a
-        # Disposed or Fixed resolution from cswdo.municipal_inventory_resolve_
-        # damaged - safe to surface without double-counting the "released"
-        # bucket above.
+        # Neither "food_pack_damaged" nor "food_pack_expired" is ever touched
+        # by an ordinary release/transfer (those only ever move "food_pack"),
+        # so every negative log on either bucket here is a Disposed or Fixed
+        # resolution from *_resolve_damaged / *_resolve_expired_batch - safe
+        # to surface without double-counting the "released" bucket above.
         resolved_q = WarehouseStockLog.query.filter(
             WarehouseStockLog.office_id.in_(office_ids),
-            WarehouseStockLog.item_type == "food_pack_damaged",
+            WarehouseStockLog.item_type.in_(("food_pack_damaged", "food_pack_expired")),
             WarehouseStockLog.delta < 0,
         )
         if filter_date:
             resolved_q = resolved_q.filter(db.func.date(WarehouseStockLog.created_at) == filter_date)
         for log in resolved_q.order_by(WarehouseStockLog.created_at.desc()).all():
+            direction = "Expired - Resolved" if log.item_type == "food_pack_expired" else "Damaged - Resolved"
             movements.append({
                 "office_id": log.office_id,
                 "office_name": log.office.office_name,
-                "direction": "Damaged - Resolved",
+                "direction": direction,
                 "qty": log.delta,
                 "context": log.reason or f"{log.item_name} stock update",
                 "when": log.created_at.date(),

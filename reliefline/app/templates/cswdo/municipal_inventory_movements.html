@@ -32,7 +32,7 @@
                     <option value="transferred_out" {{ 'selected' if type_filter == 'transferred_out' }}>Transferred Out</option>
                     <option value="received" {{ 'selected' if type_filter == 'received' }}>Received</option>
                     <option value="returned_damaged" {{ 'selected' if type_filter == 'returned_damaged' }}>Returned - Damaged</option>
-                    <option value="damaged_resolved" {{ 'selected' if type_filter == 'damaged_resolved' }}>Damaged - Resolved</option>
+                    <option value="damaged_resolved" {{ 'selected' if type_filter == 'damaged_resolved' }}>Damaged/Expired - Resolved</option>
                 </select>
                 <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
             </form>
@@ -53,7 +53,7 @@
                         <td>{{ m.when.strftime('%b') }} {{ m.when.day }}, {{ m.when.year }}</td>
                         <td>{{ m.sort_at.strftime('%I:%M %p') }}</td>
                         <td>
-                            <span class="badge-health badge-{{ 'moderate' if m.direction in ('Returned - Damaged', 'Damaged - Resolved') else ('low' if m.qty < 0 else 'healthy') }}">{{ m.direction }}</span>
+                            <span class="badge-health badge-{{ 'moderate' if m.direction in ('Returned - Damaged', 'Damaged - Resolved', 'Expired - Resolved') else ('low' if m.qty < 0 else 'healthy') }}">{{ m.direction }}</span>
                             <span class="wh-sub">{{ m.context }}</span>
                         </td>
                         <td><strong class="{{ 'text-red' if m.qty < 0 else 'text-green' }}">{{ '+' if m.qty > 0 }}{{ "{:,}".format(m.qty) }}</strong></td>

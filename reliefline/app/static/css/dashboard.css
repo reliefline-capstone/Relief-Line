@@ -513,37 +513,70 @@ html.sidebar-collapsed .dashboard-main {
    time, two visible scrollbars at once. .rd-modal-declare (relief_request_
    detail.css) now gives the modal a single scrolling body instead, so this
    just grows to fit its content and lets that one outer scrollbar handle it. */
+.declare-barangay-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.declare-barangay-actions { display: flex; align-items: center; gap: 6px; }
+.declare-barangay-toggle {
+    background: none; border: none; padding: 0; cursor: pointer;
+    font-size: 12px; font-weight: 600; color: #5347ce;
+}
+.declare-barangay-toggle:hover { text-decoration: underline; }
+
 .declare-barangay-checklist {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 2px 8px;
+    gap: 8px;
     align-items: stretch;
     border: 1px solid #e3e4ec;
-    border-radius: 8px;
-    padding: 6px 8px;
+    border-radius: 12px;
+    padding: 10px;
 }
+@media (max-width: 480px) { .declare-barangay-checklist { grid-template-columns: 1fr; } }
 
+/* A compact selectable chip per barangay - name left, custom check circle
+   right - instead of either a bare "checkbox + text" row (no visual weight,
+   easy to lose track of in a long municipality list) or a tall two-line
+   card (mostly empty space once the name is this short). The native
+   checkbox stays in the DOM for real click/keyboard/form behavior but is
+   visually hidden; .declare-barangay-check is the drawn stand-in, filled
+   solid with a check glyph once :has(input:checked) matches - the same
+   hide-the-real-control-draw-a-fake-one trick as .rr-priority-option
+   (cswdo_relief_requests.css) and .event-radio-option (barangay.css). */
 .declare-barangay-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 400;
-    color: #1a1a1a;
+    justify-content: space-between;
+    gap: 10px;
+    background: #f9f9fd;
+    border: 1px solid #e3e4ec;
+    border-radius: 10px;
+    padding: 10px 12px;
     cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 6px;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-/* Same "checked -> tinted chip" treatment as the other checklist widgets
-   in the app (.fam-checklist-row, .severity-card) - a plain checkbox
-   grid gave no visual weight to which barangays were actually covered
-   versus unticked, easy to lose track of in a longer municipality list. */
-.declare-barangay-item:has(input:checked) { background: #f4f2fd; }
-.declare-barangay-item:hover { background: #f8f8fc; }
+.declare-barangay-item:hover { border-color: #c7c9e8; }
+.declare-barangay-item:has(input:checked) { background: #f4f2fd; border-color: #5347ce; }
 .declare-barangay-item:has(input:checked):hover { background: #efedfd; }
 
-.declare-barangay-item input { accent-color: #5347ce; width: 15px; height: 15px; flex-shrink: 0; }
+.declare-barangay-item input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.declare-barangay-name { font-size: 13.5px; font-weight: 600; color: #1a1a1a; }
+
+.declare-barangay-check {
+    display: flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    border: 1.5px solid #d1d3e2;
+    background: white;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.declare-barangay-check svg { opacity: 0; transition: opacity 0.15s ease; }
+.declare-barangay-item:has(input:checked) .declare-barangay-check {
+    background: #5347ce; border-color: #5347ce;
+}
+.declare-barangay-item:has(input:checked) .declare-barangay-check svg { opacity: 1; }
 
 /* Small muted caption/hint text and a light callout box for remarks -
    moved here (from profile_settings.css / damage_assessment.css
@@ -1864,10 +1897,29 @@ html.sidebar-collapsed .dashboard-main {
     font-weight: 600;
     color: #8a94a6;
     border-bottom: 2px solid transparent;
+    position: relative;
+    transition: color 0.15s ease;
 }
 
+/* Hover gets its own thin underline (grown in from the center via
+   scaleX) instead of relying only on the instant color change - the
+   active tab keeps its solid border-bottom untouched, this pseudo-element
+   just overlays that same spot for every other tab so hovering previews
+   "this is where the underline would land" before you click. */
+.page-tab::after {
+    content: '';
+    position: absolute;
+    left: 4px; right: 4px; bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: #c7c9e8;
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+}
 .page-tab:hover { color: #1a1a1a; }
+.page-tab:hover::after { transform: scaleX(1); }
 .page-tab.active { color: #5347ce; border-bottom-color: #5347ce; }
+.page-tab.active::after { transform: scaleX(0); }
 
 .page-tab-badge {
     background: #f0f2f6;
@@ -1876,8 +1928,10 @@ html.sidebar-collapsed .dashboard-main {
     font-weight: 700;
     padding: 1px 8px;
     border-radius: 10px;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
+.page-tab:hover .page-tab-badge { transform: translateY(-1px); }
 .page-tab.active .page-tab-badge { background: #5347ce; color: white; }
 
 .stat-cards-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -143,13 +143,19 @@
                             <input type="text" name="weather_condition" id="declare-weather-condition" placeholder="e.g. Super Typhoon">
                         </div>
                         <div class="form-row">
-                            <label>Barangays Covered</label>
+                            <div class="declare-barangay-header">
+                                <label>Barangays Covered</label>
+                                <div class="declare-barangay-actions">
+                                    <button type="button" class="declare-barangay-toggle" id="declare-select-all-toggle">Unselect All</button>
+                                </div>
+                            </div>
                             <p class="form-hint">All checked by default - untick any barangay this event shouldn't cover.</p>
                             <div class="declare-barangay-checklist">
                                 {% for b in lgu_barangays %}
                                 <label class="declare-barangay-item">
                                     <input type="checkbox" name="barangay_ids" value="{{ b.barangay_id }}" checked>
-                                    {{ b.barangay_name }}
+                                    <span class="declare-barangay-name">{{ b.barangay_name }}</span>
+                                    <span class="declare-barangay-check">{{ icon('check', 13, 'white') }}</span>
                                 </label>
                                 {% endfor %}
                             </div>
@@ -365,6 +371,35 @@ window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
 
     tick();
     setInterval(tick, 1000);
+})();
+
+// Select All / Unselect All toggle for the Declare Local Disaster Event
+// modal's barangay checklist - one button whose label always names the
+// action it's about to take: "Unselect All" while every box is still
+// checked (the starting state), flipping to "Select All" the moment any
+// box gets unticked (by this button or by hand), and back again once every
+// box is checked again - so it also self-corrects if the barangay list
+// gets hand-picked back up to all-checked one by one.
+(function () {
+    var toggleBtn = document.getElementById('declare-select-all-toggle');
+    var checklist = document.querySelector('.declare-barangay-checklist');
+    if (!toggleBtn || !checklist) return;
+    var checkboxes = checklist.querySelectorAll('input[type="checkbox"]');
+
+    function allChecked() {
+        return Array.prototype.every.call(checkboxes, function (cb) { return cb.checked; });
+    }
+
+    function syncLabel() {
+        toggleBtn.textContent = allChecked() ? 'Unselect All' : 'Select All';
+    }
+
+    toggleBtn.addEventListener('click', function () {
+        var nextChecked = !allChecked();
+        checkboxes.forEach(function (cb) { cb.checked = nextChecked; });
+        syncLabel();
+    });
+    checklist.addEventListener('change', syncLabel);
 })();
 </script>
 {% endblock %}

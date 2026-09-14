@@ -18,39 +18,52 @@ DUMP_FILE="$PROJECT_DIR/reliefline/database/reliefline_db.sql"
 DB_NAME="reliefline_db"
 DB_HOST="127.0.0.1"
 
-# --- locate mysqldump ------------------------------------------------------
-DUMP_BIN=""
+# --- locate every mysqldump worth trying ------------------------------------
+# A PATH hit is not necessarily the right one: a Homebrew MySQL 8/9 client
+# (common on macOS once anything else installs mysql-client) can't load the
+# older mysql_native_password auth plugin that a real XAMPP/MariaDB server
+# uses, so it fails to authenticate against it while a same-vendor binary
+# succeeds. Rather than trust the first name found on PATH, collect every
+# candidate binary and let the credential probe below pick whichever one
+# actually authenticates.
+DUMP_BINS=()
 if command -v mysqldump >/dev/null 2>&1; then
-    DUMP_BIN="$(command -v mysqldump)"
-else
-    for base in \
-        "/c/xampp/mysql/bin" \
-        "/d/program files/xamp/mysql/bin" \
-        "/d/xampp/mysql/bin" \
-        "/c/Program Files/MySQL/MySQL Server 8.0/bin" \
-        "/c/Program Files/MariaDB 11.4/bin"
-    do
-        if [ -x "$base/mysqldump.exe" ]; then
-            DUMP_BIN="$base/mysqldump.exe"
-            break
-        fi
-    done
+    DUMP_BINS+=("$(command -v mysqldump)")
 fi
-[ -n "$DUMP_BIN" ] || exit 0
+for candidate in \
+    "/Applications/XAMPP/xamppfiles/bin/mysqldump" \
+    "/opt/lampp/bin/mysqldump" \
+    "/c/xampp/mysql/bin/mysqldump.exe" \
+    "/d/program files/xamp/mysql/bin/mysqldump.exe" \
+    "/d/xampp/mysql/bin/mysqldump.exe" \
+    "/c/Program Files/MySQL/MySQL Server 8.0/bin/mysqldump.exe" \
+    "/c/Program Files/MariaDB 11.4/bin/mysqldump.exe"
+do
+    [ -x "$candidate" ] || continue
+    already_listed=0
+    for existing in "${DUMP_BINS[@]:-}"; do
+        [ "$existing" = "$candidate" ] && already_listed=1 && break
+    done
+    [ "$already_listed" -eq 0 ] && DUMP_BINS+=("$candidate")
+done
+[ "${#DUMP_BINS[@]}" -gt 0 ] || exit 0
 
-# --- pick the first set of credentials that actually authenticates ----------
+# --- pick the first (binary, credential) pair that actually authenticates ---
 # (a real dump probe - mysqladmin ping reports "alive" even on auth failure)
 # format: "user|password"
 CANDIDATES=("reliefline|reliefline_dev_pw" "root|")
+DUMP_BIN=""
 DB_USER=""
 DB_PASS=""
-for cand in "${CANDIDATES[@]}"; do
-    u="${cand%%|*}"
-    p="${cand#*|}"
-    if "$DUMP_BIN" -u "$u" ${p:+-p"$p"} -h "$DB_HOST" --no-data --skip-dump-date \
-        "$DB_NAME" >/dev/null 2>&1; then
-        DB_USER="$u"; DB_PASS="$p"; break
-    fi
+for bin in "${DUMP_BINS[@]}"; do
+    for cand in "${CANDIDATES[@]}"; do
+        u="${cand%%|*}"
+        p="${cand#*|}"
+        if "$bin" -u "$u" ${p:+-p"$p"} -h "$DB_HOST" --no-data --skip-dump-date \
+            "$DB_NAME" >/dev/null 2>&1; then
+            DUMP_BIN="$bin"; DB_USER="$u"; DB_PASS="$p"; break 2
+        fi
+    done
 done
 [ -n "$DB_USER" ] || exit 0
 

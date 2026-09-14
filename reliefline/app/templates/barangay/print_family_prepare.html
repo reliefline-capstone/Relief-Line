@@ -18,17 +18,20 @@
     <main class="dashboard-main">
 
 
-        <section class="page-header">
-            <div>
-                <a href="{{ url_for('barangay.family_profiles') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Back</a>
-                <h2>Set Packs Per Family</h2>
-                <p>Brgy. {{ barangay.barangay_name }} · {{ families|length }} famil{{ 'y' if families|length == 1 else 'ies' }} selected - review the suggested pack count below, adjust if needed, then generate the printable list.</p>
-            </div>
-        </section>
-
         <form method="POST" action="{{ url_for('barangay.print_families_generate') }}">
-            <section class="panel wh-table-panel">
-                <table class="wh-table">
+            <section class="page-header">
+                <div style="max-width: 620px;">
+                    <a href="{{ url_for('barangay.family_profiles') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Back</a>
+                    <h2>Set Packs Per Family</h2>
+                    <p>Brgy. {{ barangay.barangay_name }} · {{ families|length }} famil{{ 'y' if families|length == 1 else 'ies' }} selected - review the suggested pack count below, adjust if needed, then generate the printable list.</p>
+                </div>
+                <div class="wh-header-actions" style="flex-shrink: 0;">
+                    <button type="submit" class="btn-add-warehouse">{{ icon('list', 14, 'white') }} Generate Printable List</button>
+                </div>
+            </section>
+
+            <section class="panel wh-table-panel fam-sticky-panel">
+                <table class="wh-table fam-sticky-table">
                     <thead>
                         <tr>
                             <th>FAMILY / HOUSEHOLD HEAD</th>
@@ -56,10 +59,6 @@
                     </tbody>
                 </table>
             </section>
-
-            <div class="wizard-save-draft-row" style="justify-content:flex-end;">
-                <button type="submit" class="btn-primary">{{ icon('list', 14, 'white') }} Generate Printable List</button>
-            </div>
         </form>
 
     </main>
