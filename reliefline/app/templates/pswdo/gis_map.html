@@ -58,27 +58,6 @@
                     <div id="gis-search-results" class="gis-search-results" hidden></div>
                     <button type="button" class="gis-fullscreen-btn" id="gis-fullscreen-btn" title="Toggle fullscreen">{{ icon('maximize', 16, '#555') }}</button>
                     <div id="gis-map"></div>
-                    <div class="map-legend-box">
-                        <span class="map-legend-title">Map Legend</span>
-                        <div class="map-legend-row map-legend-row-stacked">
-                            <i class="legend-mark legend-coverage-highlighted"></i>
-                            <span class="map-legend-text"><strong>Detailed Data Coverage</strong><small>{{ target_lgus|join(' • ') }}</small></span>
-                        </div>
-                        <div class="map-legend-row map-legend-row-stacked">
-                            <i class="legend-mark legend-coverage-neutral"></i>
-                            <span class="map-legend-text"><strong>Other Municipalities/Cities</strong><small>Geographic reference only</small></span>
-                        </div>
-                        <div class="map-legend-divider"></div>
-                        <span class="map-legend-subtitle">Stock Level &middot; Highlighted Areas</span>
-                        <div class="map-legend-row" data-tier="critical"><i class="legend-square high-priority"></i> Critical - need &ge; stock</div>
-                        <div class="map-legend-row" data-tier="high"><i class="legend-square needs-assistance"></i> High - 80&ndash;100%</div>
-                        <div class="map-legend-row" data-tier="medium"><i class="legend-square monitoring"></i> Medium - 50&ndash;80%</div>
-                        <div class="map-legend-row" data-tier="low"><i class="legend-square normal"></i> Low - &le; 50%</div>
-                        <div class="map-legend-row" data-tier="unrated"><i class="legend-square no-data"></i> Unrated - no stock on record</div>
-                        <div class="map-legend-divider" id="legend-extra-divider" hidden></div>
-                        <div class="map-legend-row" id="legend-row-warehouse" hidden><i class="legend-mark legend-warehouse"></i> Warehouse</div>
-                        <div class="map-legend-row" id="legend-row-route" hidden><i class="legend-mark legend-route"></i> In Transit (approximate)</div>
-                    </div>
                 </section>
 
                 <section class="panel wh-table-panel" style="margin-top:16px;">

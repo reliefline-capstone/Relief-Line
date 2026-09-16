@@ -6,9 +6,30 @@ document.addEventListener('DOMContentLoaded', function () {
         low: '#27ae60',
         unrated: '#d8dee8',
     };
+    // A darker shade of each TIER_COLORS hue, for the study-area polygon
+    // border (gis_map.js provinceStyle) - the fill shows the status color
+    // itself, the border is that same status "inked in" a shade darker, so
+    // a critical (red) study area reads as a distinct dark-red outline, not
+    // the same fixed purple every status used to get.
+    var TIER_BORDER_COLORS = {
+        critical: '#922b21',
+        high: '#9c5310',
+        medium: '#9a7d0a',
+        low: '#1e8449',
+        unrated: '#5d6d7e',
+    };
     var TIER_RANK = { critical: 4, high: 3, medium: 2, low: 1, unrated: 0 };
 
-    var map = L.map('gis-map', { zoomControl: false }).setView([15.98, 120.45], 11);
+    // zoomAnimation: false - .dashboard-layout applies a CSS `zoom` scale
+    // (base.css, --ui-scale) to this whole page. Leaflet's animated zoom
+    // transitions position markers/layers with a CSS transform computed in
+    // its own pixel space, and that math doesn't account for an ancestor's
+    // `zoom` scale - each zoom step compounds a small offset, which is
+    // exactly the "warehouse pin drifts off its real spot" symptom reported
+    // on this page. Disabling the animation makes every zoom step reproject
+    // markers from their actual lat/lng instead of transforming the old
+    // frame, so they stay pinned to the right spot at any zoom level.
+    var map = L.map('gis-map', { zoomControl: false, zoomAnimation: false }).setView([15.98, 120.45], 11);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
@@ -47,73 +68,96 @@ document.addEventListener('DOMContentLoaded', function () {
     var IS_MUNI_ONLY = GIS_CONFIG.role !== 'cswdo_admin';
 
     // is_target is already restricted server-side to this user's own scope
-    // (app.routes.pswdo._gis_scope_lgus) - a bold solid border marks exactly
-    // the municipality/ies this account is allowed to see data for.
-    // Neighboring municipalities' boundaries only carry a handful of
-    // vertices each (coarse province-wide context data, not surveyed to the
-    // same precision as the 3 target LGUs' barangay-derived shapes) - fine
-    // as a faint backdrop at the whole-province overview, but blocky enough
-    // up close that once the user drills into one LGU, a neighboring shape
-    // can read as a stray rectangle "box" over the view. So they're hidden
-    // past the overview level, leaving only the clicked LGU's own accurate
-    // boundary on screen - see setLevel(), which re-applies this style.
+    // (app.routes.pswdo._gis_scope_lgus) - a three-tier visual hierarchy:
+    //   1. Other municipalities - light grey, thin border, muted fill.
+    //      Real PSGC boundaries now (not placeholder shapes), shown at
+    //      every drill-down level, never hidden - see TARGET_LGUS in
+    //      app.routes.pswdo for why only 3 LGUs get further detail.
+    //   2. Study area (Urdaneta City / Santa Barbara / Calasiao), not the
+    //      one currently open - same purple border as every study area
+    //      (that border is what marks "this is one of the 3", consistently),
+    //      filled with that LGU's own real demand tier color (PSWDO/
+    //      system_admin only - same Critical/High/Medium/Low/Unrated scale
+    //      as the legend and every badge elsewhere) so the map itself
+    //      answers "which study area needs attention right now" at a
+    //      glance. Recomputed fresh from currentData every render.
+    //   3. The study area currently open (state.lgu) - strongest border/
+    //      fill of the three, plus the zoom-in and side-panel detail that
+    //      setLevel() already drives.
+    // CSWDO/MSWDO (single-LGU scope) keeps a flat purple fill instead -
+    // that account's own dashboard already covers its one town's status,
+    // so this map doesn't need to repeat it as a color.
     function provinceStyle(feature) {
         var isTarget = feature.properties.is_target;
-        if (state.level !== 'overview' && !isTarget) {
-            return { color: 'transparent', weight: 0, opacity: 0, fillOpacity: 0 };
+        if (!isTarget) {
+            return { color: '#6b7280', weight: 1.2, fillColor: '#c3c7d1', fillOpacity: 0.5 };
         }
-        if (isTarget && IS_MUNI_ONLY) {
-            // PSWDO's municipality-level view: fill each target LGU by its
-            // own real demand tier (same Critical/High/Medium/Low/Unrated
-            // scale as the legend and every badge elsewhere) instead of a
-            // flat color, so the map itself answers "which municipality
-            // needs attention" at a glance - updates automatically whenever
-            // the underlying barangay status/allocation data changes, since
-            // this is computed fresh from currentData on every render. The
-            // ReliefLine-purple border (instead of the demand tier's own
-            // color) plus className glow is what still marks these as "in
-            // detailed coverage" independently of whatever demand color
-            // they're currently showing.
+        // className is set once when the layer/path DOM element is first
+        // created (Leaflet doesn't re-apply it on a later setStyle() -
+        // setLevel() below only ever calls setStyle(), never recreates the
+        // layer) - so it has to stay the same string across selected/
+        // unselected, and "strongest" instead comes entirely from the
+        // color/weight/fillOpacity numbers below, which setStyle() DOES
+        // update live.
+        var isSelected = state.lgu === feature.properties.lgu;
+        var fillColor = '#5347ce';
+        var borderColor = isSelected ? '#3d2eb0' : '#5347ce';
+        if (IS_MUNI_ONLY) {
             var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === feature.properties.lgu; }) : null;
-            var demandColor = TIER_COLORS[muni ? muni.status_tier : 'unrated'];
-            var isSelected = state.lgu === feature.properties.lgu;
-            return {
-                color: '#5347ce',
-                weight: isSelected ? 3.5 : 2.5,
-                fillColor: demandColor,
-                fillOpacity: isSelected ? 0.65 : 0.5,
-                className: 'gis-target-muni',
-            };
+            var tier = muni ? muni.status_tier : 'unrated';
+            fillColor = TIER_COLORS[tier];
+            // Border is that same status color, darker - not the fixed
+            // purple every status used to get - so a critical (red) study
+            // area outlines in dark red, a low (green) one in dark green,
+            // etc. Distinguishes it at a glance from an unrelated purple
+            // shape, and from the blue dashed "in transit" schematic lines
+            // (renderRoutes below) that can cross through this same area.
+            borderColor = TIER_BORDER_COLORS[tier];
         }
-        if (isTarget) {
-            // CSWDO/MSWDO scope - same purple "in detailed coverage" border,
-            // no demand-tier fill (that's a PSWDO-only province-wide read;
-            // this account's own dashboards already cover it).
-            return { color: '#5347ce', weight: 3, fillColor: '#5347ce', fillOpacity: 0.18, className: 'gis-target-muni' };
-        }
-        // Every other municipality - a plain neutral grey, distinct from
-        // both the purple "in coverage" fill above and the map's own blue
-        // water/basemap tones, so it can't be mistaken for either "in
-        // scope" or "no geography here at all". A visible (if faint)
-        // border is what actually puts these on the map as real,
-        // clickable municipalities rather than an inert backdrop wash -
-        // dropping it entirely (as before) made every non-target
-        // municipality read as empty space, the exact "looks like only 3
-        // areas have coverage" impression this is meant to fix.
-        //
-        // Non-target municipalities have no real barangay-level source
-        // data (out of this project's scope - see Scope and Limitations),
-        // so pangasinan_municipalities.json carries only crude, low-point
-        // placeholder shapes for them - some render as an obvious
-        // near-rectangle. That's an accepted tradeoff for showing them at
-        // all, not a reason to hide them.
-        return { color: '#b7bcc8', weight: 1, fillColor: '#e7e9ee', fillOpacity: 0.55 };
+        return {
+            color: borderColor,
+            weight: isSelected ? 4 : 2.5,
+            fillColor: fillColor,
+            fillOpacity: isSelected ? 0.65 : 0.45,
+            className: 'gis-target-muni',
+        };
     }
+
+    // Always-on municipality/city name labels - separate from the hover
+    // tooltips below (which carry demand data for in-scope LGUs and a
+    // "no data" note for everyone else) so every one of the province's 48
+    // LGUs reads its name at a glance without hovering. Plain divIcon
+    // markers, not interactive, so clicks/hover still reach the polygon
+    // underneath rather than the label.
+    var muniLabelLayer = L.layerGroup().addTo(map);
 
     var provinceLayer = L.geoJSON(null, {
         style: provinceStyle,
         onEachFeature: function (feature, layer) {
             var p = feature.properties;
+            var labelBounds = layer.getBounds();
+            if (labelBounds.isValid()) {
+                // Study-area labels are also a click target for setLevel(),
+                // not just decoration - Calasiao/Santa Barbara's own
+                // polygons can be a tiny sliver at whole-province zoom (much
+                // smaller than Urdaneta City's), easy to miss with a click;
+                // the label sits at a fixed, always-legible spot regardless
+                // of how small the real shape renders, so it's a far more
+                // reliable place to click "this municipality" than the
+                // shape itself at that zoom level.
+                var labelMarker = L.marker(labelBounds.getCenter(), {
+                    icon: L.divIcon({
+                        className: p.is_target ? 'gis-muni-label gis-muni-label-target' : 'gis-muni-label',
+                        html: escapeHtml(p.is_target ? p.lgu : p.name),
+                        iconSize: null,
+                    }),
+                    interactive: !!p.is_target,
+                    keyboard: false,
+                }).addTo(muniLabelLayer);
+                if (p.is_target) {
+                    labelMarker.on('click', function () { setLevel('municipality', p.lgu); });
+                }
+            }
             if (p.is_target) {
                 // currentData is already assigned before addData() runs (see
                 // loadData()), so the per-LGU relief rollup - the closest
@@ -126,8 +170,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 ) : '';
                 layer.bindTooltip('<strong>' + escapeHtml(p.lgu) + '</strong>' + demandLine + '<br><em>Click to view</em>', { sticky: true });
                 layer.on('click', function () { setLevel('municipality', p.lgu); });
-                layer.on('mouseover', function () { layer.setStyle({ weight: 3.5 }); });
-                layer.on('mouseout', function () { layer.setStyle({ weight: state.lgu === p.lgu ? 3.5 : 2.5 }); });
+                // Hover deepens the fill (a real, visible color change - no
+                // shadow/glow filter involved anywhere on this layer any
+                // more) plus a slightly thicker border. mouseout resets via
+                // provinceStyle(feature) itself, not hardcoded numbers, so
+                // it's always exactly back to this LGU's real current
+                // tier/selection style - never stale if either changes
+                // while the cursor happens to be sitting on it.
+                layer.on('mouseover', function () {
+                    layer.setStyle({
+                        weight: state.lgu === p.lgu ? 4.5 : 3.2,
+                        fillOpacity: state.lgu === p.lgu ? 0.8 : 0.65,
+                    });
+                });
+                layer.on('mouseout', function () { layer.setStyle(provinceStyle(feature)); });
             } else {
                 // Outside current detailed coverage - hover or click both
                 // answer with just the name plus why nothing else shows, as
@@ -143,8 +199,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     { className: 'gis-neutral-tooltip', sticky: true }
                 );
                 layer.on('click', function (e) { layer.openTooltip(e.latlng); });
-                layer.on('mouseover', function () { layer.setStyle({ weight: 2, color: '#8a94a6' }); });
-                layer.on('mouseout', function () { layer.setStyle({ weight: 1, color: '#b7bcc8' }); });
+                // Fill darkens too on hover, not just the border - a weight/
+                // color-only change was easy to miss on a shape this small
+                // at province zoom; the fill covers the whole shape, so its
+                // change reads immediately as "this one, right here".
+                layer.on('mouseover', function () { layer.setStyle({ weight: 2, color: '#4b5563', fillColor: '#9aa0ac', fillOpacity: 0.65 }); });
+                layer.on('mouseout', function () { layer.setStyle({ weight: 1.2, color: '#6b7280', fillColor: '#c3c7d1', fillOpacity: 0.5 }); });
             }
         },
     }).addTo(map);
@@ -195,8 +255,56 @@ document.addEventListener('DOMContentLoaded', function () {
     // which stay exactly as they were.
     var osrmRouteLayer = L.layerGroup().addTo(map);
 
+    // Warehouse marker pixel size shrinks in steps as the map zooms out.
+    // Markers are always placed at their real, fixed [lat, lng] (see
+    // renderWarehouses below) - that never changes with zoom. What DOES
+    // change with zoom, for every map (this isn't Leaflet-specific), is how
+    // many screen pixels separate two markers that are a fixed real-world
+    // distance apart: Calasiao and Santa Barbara's warehouses are only
+    // ~8km apart, so at a zoomed-out view their fixed-size 30px icons can
+    // visually touch or overlap even though neither one has actually
+    // moved. Shrinking the icon at lower zoom keeps them visually distinct
+    // instead of reading as "the pin jumped".
+    var WH_ICON_ZOOM_BREAKPOINTS = [
+        { minZoom: 13, size: 30 },
+        { minZoom: 11, size: 24 },
+        { minZoom: 9, size: 18 },
+        { minZoom: 0, size: 14 },
+    ];
+    function warehouseIconSize() {
+        var zoom = map.getZoom();
+        for (var i = 0; i < WH_ICON_ZOOM_BREAKPOINTS.length; i++) {
+            if (zoom >= WH_ICON_ZOOM_BREAKPOINTS[i].minZoom) return WH_ICON_ZOOM_BREAKPOINTS[i].size;
+        }
+        return 14;
+    }
+    // iconAnchor is always exactly half of iconSize (recomputed here every
+    // time, never hardcoded) so the anchor point - the marker's actual
+    // [lat, lng] - stays under the icon's visual center at every size.
+    function buildWarehouseIcon(healthClass) {
+        var size = warehouseIconSize();
+        var half = size / 2;
+        return L.divIcon({
+            className: 'gis-wh-marker gis-wh-' + healthClass,
+            html: '<span class="gis-wh-marker-pin">' + ICON.warehouse + '</span>',
+            iconSize: [size, size],
+            iconAnchor: [half, half],
+        });
+    }
+    // (marker, healthClass) pairs currently on the map, so a zoomend can
+    // re-run buildWarehouseIcon() on each without re-fetching/re-placing
+    // any of them - only the icon's pixel size changes, never the marker's
+    // underlying latlng.
+    var warehouseMarkers = [];
+    map.on('zoomend', function () {
+        warehouseMarkers.forEach(function (entry) {
+            entry.marker.setIcon(buildWarehouseIcon(entry.healthClass));
+        });
+    });
+
     function renderWarehouses(warehouses) {
         warehouseLayer.clearLayers();
+        warehouseMarkers = [];
         warehouses.forEach(function (w) {
             var healthClass = (w.health || 'low').toLowerCase();
             // A plain building icon, colored by stock health, instead of a
@@ -204,13 +312,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // "UC" read as unexplained codes to anyone who hasn't memorized
             // which warehouse each stands for. The full name is still one
             // click away in the popup below.
-            var icon = L.divIcon({
-                className: 'gis-wh-marker gis-wh-' + healthClass,
-                html: '<span class="gis-wh-marker-pin">' + ICON.warehouse + '</span>',
-                iconSize: [30, 30],
-                iconAnchor: [15, 15],
-            });
-            var marker = L.marker([w.lat, w.lng], { icon: icon, title: w.name });
+            var marker = L.marker([w.lat, w.lng], { icon: buildWarehouseIcon(healthClass), title: w.name });
+            warehouseMarkers.push({ marker: marker, healthClass: healthClass });
             // Food packs are the one figure every warehouse popup leads
             // with, everywhere in the app - the badge next to it is the
             // same badge-health used on the Dashboard/Warehouse Inventory,
@@ -396,28 +499,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 showRouteDetail('<strong>D-' + r.distribution_id + '</strong>' +
                     '<span>Could not load the route right now. The rest of the map is unaffected - try again in a moment.</span>');
             });
-    }
-
-    // Keeps the legend honest: a row only shows when the map is actually
-    // displaying what it describes (a stock tier no current target LGU is
-    // in, or a layer with nothing in it right now, gets hidden rather than
-    // left as an item with no matching map element). No-ops safely on the
-    // CSWDO/MSWDO template, which doesn't render these ids/attributes.
-    function updateLegendVisibility() {
-        if (!currentData) return;
-        var tiersPresent = {};
-        currentData.municipalities.forEach(function (m) { tiersPresent[m.status_tier] = true; });
-        document.querySelectorAll('.map-legend-row[data-tier]').forEach(function (row) {
-            row.hidden = !tiersPresent[row.getAttribute('data-tier')];
-        });
-        var hasWarehouse = !!(currentData.warehouses && currentData.warehouses.length);
-        var hasRoute = !!(currentData.in_transit_lines && currentData.in_transit_lines.length);
-        var whRow = document.getElementById('legend-row-warehouse');
-        var routeRow = document.getElementById('legend-row-route');
-        var divider = document.getElementById('legend-extra-divider');
-        if (whRow) whRow.hidden = !hasWarehouse;
-        if (routeRow) routeRow.hidden = !hasRoute;
-        if (divider) divider.hidden = !(hasWarehouse || hasRoute);
     }
 
     function renderStats(stats) {
@@ -755,9 +836,20 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         var feats = currentData.target_barangays.features.filter(function (f) { return f.properties.lgu === state.lgu; });
-        if (!feats.length) return;
-        var bounds = L.geoJSON({ type: 'FeatureCollection', features: feats }).getBounds();
-        if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
+        var bounds;
+        if (feats.length) {
+            bounds = L.geoJSON({ type: 'FeatureCollection', features: feats }).getBounds();
+        } else {
+            // No barangay-level boundaries loaded for this LGU yet (barangay
+            // drill-down isn't wired up) - fall back to the municipality's
+            // own real PSGC boundary from province_context, which is always
+            // present, so "zoom to the selected study area" still works on
+            // its own instead of silently doing nothing.
+            var muniFeature = currentData.province_context.features.find(function (f) { return f.properties.lgu === state.lgu; });
+            if (!muniFeature) return;
+            bounds = L.geoJSON(muniFeature).getBounds();
+        }
+        if (bounds.isValid()) map.fitBounds(bounds.pad(0.15));
     }
 
     var routesById = {};
@@ -842,10 +934,10 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(url).then(function (r) { return r.json(); }).then(function (data) {
             currentData = data;
             provinceLayer.clearLayers();
+            muniLabelLayer.clearLayers();
             provinceLayer.addData(data.province_context);
             renderWarehouses(data.warehouses);
             renderRoutes(data.in_transit_lines);
-            updateLegendVisibility();
 
             if (pendingNav) {
                 var nav = pendingNav;

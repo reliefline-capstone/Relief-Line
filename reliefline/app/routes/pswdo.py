@@ -235,17 +235,27 @@ def _priority_info(status_key):
     return PRIORITY_BY_STATUS.get(status_key, DEFAULT_PRIORITY)
 
 
-# --- GIS map: real PSGC boundary data (faeldon/philippines-json-maps), scoped to
-# exactly what the manuscript covers - barangay-level for the 3 target LGUs, with
-# the rest of the province shown only as neutral geographic context (no disaster
-# data is tracked for those areas, so none is shown for them).
+# --- GIS map: real PSGC boundary data, scoped to exactly what the manuscript
+# covers - barangay-level for the 3 target LGUs, with the rest of the
+# province shown only as neutral geographic context (no disaster data is
+# tracked for those areas, so none is shown for them).
 GIS_LGU_FILES = {
-    "Urdaneta City": "urdaneta_barangays.json",
-    "Santa Barbara": "santabarbara_barangays.json",
-    "Calasiao": "calasiao_barangays.json",
+    "Urdaneta City": "Municipality/bgysubmuns-municity-105546000.0.1.json",
+    "Santa Barbara": "Municipality/bgysubmuns-municity-105538000.0.1.json",
+    "Calasiao": "Municipality/bgysubmuns-municity-105517000.0.1.json",
 }
 
+# Province-wide municipality/city boundaries - all 48 LGUs (44 municipalities
+# + 4 cities), PSGC TopoJSON (see app/static/geo/Province). Ships as TopoJSON
+# (shared arcs) rather than GeoJSON, so it's decoded once per mtime by
+# _load_topojson_file below instead of duplicating every shared border's
+# coordinates on disk.
+PROVINCE_TOPOJSON_FILE = "Province/municities-provdist-105500000.topo.0.1.json"
+
 _geojson_cache = {}
+
+
+_EMPTY_FEATURE_COLLECTION = {"type": "FeatureCollection", "features": []}
 
 
 def _load_geojson_file(filename):
@@ -255,13 +265,103 @@ def _load_geojson_file(filename):
     # rest of that server process's life until someone thought to restart
     # it. Re-reading on mtime change costs one cheap stat() per request and
     # means a saved edit is just live, no restart required.
+    #
+    # The map's geographic boundary files were deliberately removed from
+    # app/static/geo (map presentation was reset to a blank base map with
+    # no polygon overlays) - callers here still ask for them by name, so a
+    # missing file returns an empty FeatureCollection instead of a 500,
+    # keeping /gis-map/data and /gis-map/barangay/<id> responding.
+    # Centroid lookups (_municipality_centroid, _target_barangay_centroid)
+    # then simply resolve to None, which every caller already handles.
     path = os.path.join(current_app.root_path, "static", "geo", filename)
-    mtime = os.path.getmtime(path)
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return _EMPTY_FEATURE_COLLECTION
     cached = _geojson_cache.get(filename)
     if cached is None or cached[0] != mtime:
         with open(path) as f:
             _geojson_cache[filename] = (mtime, json.load(f))
     return _geojson_cache[filename][1]
+
+
+def _decode_topojson_arcs(transform, arcs):
+    """Delta-decode + dequantize a TopoJSON topology's arcs into absolute
+    [lon, lat] coordinate lists, per the TopoJSON spec's quantization."""
+    if not transform:
+        return arcs
+    scale_x, scale_y = transform["scale"]
+    translate_x, translate_y = transform["translate"]
+    decoded = []
+    for arc in arcs:
+        x = y = 0
+        coords = []
+        for dx, dy in arc:
+            x += dx
+            y += dy
+            coords.append([x * scale_x + translate_x, y * scale_y + translate_y])
+        decoded.append(coords)
+    return decoded
+
+
+def _topojson_arc_coords(decoded_arcs, index):
+    """One ring-member arc, per the TopoJSON spec's arc-index encoding:
+    non-negative = that arc as-is; negative = the bitwise complement of the
+    real arc index, reversed."""
+    if index >= 0:
+        return decoded_arcs[index]
+    return list(reversed(decoded_arcs[~index]))
+
+
+def _topojson_ring(decoded_arcs, arc_indices):
+    """Stitches a ring's arcs into one coordinate list. Consecutive arcs
+    share their join point, so every arc after the first drops its own
+    leading point to avoid duplicating it."""
+    ring = []
+    for i, idx in enumerate(arc_indices):
+        coords = _topojson_arc_coords(decoded_arcs, idx)
+        ring.extend(coords if i == 0 else coords[1:])
+    return ring
+
+
+def _topojson_geometry_to_geojson(decoded_arcs, geometry):
+    gtype = geometry["type"]
+    if gtype == "Polygon":
+        coords = [_topojson_ring(decoded_arcs, ring) for ring in geometry["arcs"]]
+    elif gtype == "MultiPolygon":
+        coords = [[_topojson_ring(decoded_arcs, ring) for ring in poly] for poly in geometry["arcs"]]
+    else:
+        return None
+    return {"type": gtype, "coordinates": coords}
+
+
+def _load_topojson_file(filename):
+    """TopoJSON -> GeoJSON FeatureCollection, decoded once per mtime and
+    cached alongside _load_geojson_file's cache (distinct key, since a
+    TopoJSON and a GeoJSON file could share a bare filename)."""
+    path = os.path.join(current_app.root_path, "static", "geo", filename)
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return _EMPTY_FEATURE_COLLECTION
+    cache_key = ("topo", filename)
+    cached = _geojson_cache.get(cache_key)
+    if cached is not None and cached[0] == mtime:
+        return cached[1]
+
+    with open(path, encoding="utf-8") as f:
+        topology = json.load(f)
+    decoded_arcs = _decode_topojson_arcs(topology.get("transform"), topology["arcs"])
+    object_name = next(iter(topology["objects"]))
+    features = []
+    for geom in topology["objects"][object_name]["geometries"]:
+        geometry = _topojson_geometry_to_geojson(decoded_arcs, geom)
+        if geometry is None:
+            continue
+        features.append({"type": "Feature", "properties": geom.get("properties", {}), "geometry": geometry})
+    result = {"type": "FeatureCollection", "features": features}
+    _geojson_cache[cache_key] = (mtime, result)
+    return result
 
 
 def _bbox_center(geometry):
@@ -352,10 +452,10 @@ def _haversine_km(point_a, point_b):
 def _municipality_centroid(area_covered):
     """Approximate lat/lng for an office's LGU, from the province boundary file.
     Used only to place warehouse markers - not a claim of a precise address."""
-    province = _load_geojson_file("pangasinan_municipalities.json")
+    province = _load_topojson_file(PROVINCE_TOPOJSON_FILE)
     target = _normalize_muni_name(area_covered).lower()
     for feature in province["features"]:
-        if _normalize_muni_name(feature["properties"]["name"]).lower() == target:
+        if _normalize_muni_name(feature["properties"]["adm3_en"]).lower() == target:
             return _polygon_centroid(feature["geometry"])
     return None
 
@@ -393,7 +493,7 @@ def _target_barangay_geojson(lgu, event_id):
 
     features = []
     for feature in raw["features"]:
-        name = feature["properties"]["name"]
+        name = feature["properties"]["adm4_en"]
         barangay = db_barangays.get(name)
         if barangay:
             status_row = statuses.get(barangay.barangay_id)
@@ -450,7 +550,7 @@ def _target_barangay_geojson(lgu, event_id):
 def _target_barangay_centroid(lgu, barangay_name):
     raw = _load_geojson_file(GIS_LGU_FILES[lgu])
     for feature in raw["features"]:
-        if feature["properties"]["name"] == barangay_name:
+        if feature["properties"]["adm4_en"] == barangay_name:
             return _polygon_centroid(feature["geometry"])
     return None
 
@@ -1973,11 +2073,11 @@ def gis_map_data():
     # detail) is restricted to scope_lgus - for a CSWDO admin, the OTHER two
     # target LGUs render exactly like any other non-target municipality:
     # plain background, no click-through, no data.
-    province_geojson = _load_geojson_file("pangasinan_municipalities.json")
+    province_geojson = _load_topojson_file(PROVINCE_TOPOJSON_FILE)
     target_by_normalized = {_normalize_muni_name(l).lower(): l for l in TARGET_LGUS}
     province_features = []
     for feature in province_geojson["features"]:
-        name = feature["properties"]["name"]
+        name = feature["properties"]["adm3_en"]
         matched_lgu = target_by_normalized.get(_normalize_muni_name(name).lower())
         in_scope = matched_lgu is not None and matched_lgu in scope_lgus
         province_features.append({

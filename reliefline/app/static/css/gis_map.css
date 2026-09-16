@@ -107,6 +107,18 @@
     background: #efedfd;
 }
 
+/* Clicking any municipality/barangay shape (province, target-LGU, or
+   barangay polygon) gives that SVG path browser keyboard focus, and
+   browsers draw their default focus outline as a rectangle around the
+   shape's bounding box - not around its actual (often irregular) boundary.
+   On an odd-shaped municipality that rectangle reads as a stray black box
+   floating on the map, unrelated to the real coordinates. The polygon's
+   own style (color/weight/fill from gis_map.js) already marks it as
+   selected/hovered, so this default outline is redundant on top of that. */
+.leaflet-interactive:focus {
+    outline: none;
+}
+
 /* Fullscreen: the browser's Fullscreen API makes .gis-map-panel fill the
    whole screen, so #gis-map's own fixed 560px needs to grow to use that
    space - 56px reserves just enough room for the search bar row above it. */
@@ -254,68 +266,45 @@
 .gis-route-detail-grid span { font-size: 11px; color: #8a94a6; }
 .gis-route-detail-grid strong { font-size: 14px; margin: 0; }
 
-.legend-square.no-data { background: #e3e4ec; }
-
-/* "Highlighted vs Neutral" coverage rows (PSWDO template only - CSWDO/
-   MSWDO's single-LGU scope has no "some municipalities have detailed
-   data, others don't" distinction to explain). Same swatch shape/size as
-   .legend-square above, just matching provinceStyle()'s own target/
-   neutral fill+border pair 1:1 so the legend and the map agree exactly. */
-.legend-mark.legend-coverage-highlighted {
-    width: 14px; height: 10px;
-    background: #5347ce;
-    border: 1.5px solid #3d31b0;
-    border-radius: 2px;
-}
-.legend-mark.legend-coverage-neutral {
-    width: 14px; height: 10px;
-    background: #e7e9ee;
-    border: 1px solid #b7bcc8;
-    border-radius: 2px;
-}
-
-@media (max-width: 480px) {
-    .legend-mark.legend-coverage-highlighted,
-    .legend-mark.legend-coverage-neutral {
-        width: 11px; height: 8px;
-    }
-}
-
-/* Coverage rows carry a name/description sub-line under their heading, so
-   the icon aligns to the top of that stack instead of its vertical center. */
-.map-legend-row.map-legend-row-stacked { align-items: flex-start; }
-.map-legend-text { display: flex; flex-direction: column; gap: 1px; }
-.map-legend-text strong { font-size: 12px; font-weight: 600; color: #333; }
-.map-legend-text small { font-size: 10.5px; color: #8a94a6; }
-
-/* A class-level `display: flex`/`border-top` (dashboard.css's
-   .map-legend-row/.map-legend-divider) beats the UA [hidden]{display:none}
-   rule at equal specificity - these rows are toggled via JS (see
-   updateLegendVisibility in gis_map.js), so without this override a
-   "hidden" tier/warehouse/route row would still render. */
-.map-legend-row[hidden],
-.map-legend-divider[hidden] { display: none; }
-
-.map-legend-subtitle {
-    display: block;
-    font-size: 10px;
-    font-weight: 700;
-    color: #8a94a6;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    margin: 2px 0 6px;
-}
-
 /* Leaflet popup tweaks to match app typography */
 .leaflet-popup-content { font-family: 'Inter', 'Segoe UI', sans-serif; font-size: 13px; }
 .leaflet-popup-content strong { display: block; margin-bottom: 4px; font-size: 13px; }
 .leaflet-popup-content span { display: block; color: #666; font-size: 12px; }
 
-/* Municipalities/cities with real detailed data (gis_map.js provinceStyle)
-   get a soft purple glow behind their crisp border, on top of the color
-   fill/border difference alone, so "this one has detailed coverage"
-   reads even at a glance before a viewer consciously compares colors. */
-.gis-target-muni { filter: drop-shadow(0 0 4px rgba(83, 71, 206, 0.55)); }
+/* Always-on municipality/city name labels (gis_map.js muniLabelLayer) - a
+   plain text divIcon, not a Leaflet tooltip, so it never fights the hover
+   tooltip bound to the polygon underneath. Centered on its own text via
+   negative margins instead of a fixed iconSize, since label width varies a
+   lot across a 48-LGU province ("Sual" vs. "City of San Carlos"). */
+.gis-muni-label {
+    color: #33394d;
+    font-size: 10.5px;
+    font-weight: 600;
+    font-family: inherit;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.9), 0 -1px 2px rgba(255,255,255,0.9),
+        1px 0 2px rgba(255,255,255,0.9), -1px 0 2px rgba(255,255,255,0.9);
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+/* Study-area labels only (gis_map.js) - re-enables pointer events the base
+   rule above turns off, since these are a real click target (setLevel),
+   with a pointer cursor as the usual "this is clickable" affordance. */
+.gis-muni-label-target {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+/* Study-area municipalities (gis_map.js provinceStyle) - no drop-shadow
+   glow (reads as dated/muddy against the basemap, especially where two
+   study areas' shapes sit right next to each other); the flat purple
+   border/fill from provinceStyle's own color/weight/fillOpacity values is
+   the only "this one has detailed coverage" signal now, kept crisp. This
+   class is still applied in gis_map.js as a hook for that styling and any
+   future study-area-specific rule, it just carries no visual effect of its
+   own any more.
+*/
 
 /* Tooltip shown when hovering/clicking a municipality outside current
    detailed coverage (gis_map.js) - a small, auto-dismissing label, not a
@@ -411,13 +400,27 @@
    "UC" etc.) that read as an unexplained code with no legend entry of its
    own. Health color now fills the whole marker instead of a small corner
    dot, so it's readable at a glance rather than a detail to notice. */
-.gis-wh-marker { position: relative; }
+.gis-wh-marker {
+    position: relative;
+    /* gis_map.js's buildWarehouseIcon sets width/height on THIS element
+       (inline, via Leaflet's iconSize) each time the zoom-driven size step
+       changes (setIcon reuses the same DIV rather than replacing it) - the
+       transition smooths that into a brief shrink/grow instead of a snap. */
+    transition: width 0.15s ease, height 0.15s ease, margin 0.15s ease;
+}
 .gis-wh-marker-pin {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
+    /* border-box, not the default content-box - the border sits INSIDE the
+       100%/100% box instead of adding to it, so the visible circle's edge
+       never extends past the iconSize Leaflet actually anchors around
+       (buildWarehouseIcon always sets iconAnchor to exactly half of
+       iconSize - this keeps that anchor point visually accurate, including
+       at the smallest zoomed-out size). */
+    box-sizing: border-box;
     border-radius: 50%;
     border: 2.5px solid white;
     box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
