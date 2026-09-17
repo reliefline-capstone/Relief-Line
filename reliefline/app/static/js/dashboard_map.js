@@ -9,6 +9,16 @@ document.addEventListener('DOMContentLoaded', function () {
         low: '#27ae60',
         unrated: '#d8dee8',
     };
+    // Darker shade of each TIER_COLORS hue, for the target-LGU border - same
+    // pairing as gis_map.js's TIER_BORDER_COLORS, so a critical (red) study
+    // area outlines in dark red here too, not a flat generic color.
+    var TIER_BORDER_COLORS = {
+        critical: '#922b21',
+        high: '#9c5310',
+        medium: '#9a7d0a',
+        low: '#1e8449',
+        unrated: '#5d6d7e',
+    };
     var MIN_ZOOM = 9, MAX_ZOOM = 14;
 
     // Same PSWDO-vs-CSWDO/MSWDO split as gis_map.js: PSWDO's dashboard
@@ -16,12 +26,19 @@ document.addEventListener('DOMContentLoaded', function () {
     var IS_MUNI_ONLY = window.RELIEFLINE_DASHBOARD_ROLE !== 'cswdo_admin';
     var currentMuniData = null;
 
+    // zoomAnimation: false - this page sits under .dashboard-layout's CSS
+    // `zoom` scale (base.css --ui-scale). Leaflet's animated zoom transition
+    // positions markers with a transform computed in its own pixel space
+    // that doesn't account for that ancestor scale, so a marker can visibly
+    // drift off its real spot for the duration of the zoom - same fix
+    // already applied to the full GIS Map's own Leaflet instance.
     var map = L.map(mapEl, {
         zoomControl: false,
         attributionControl: true,
         minZoom: MIN_ZOOM,
         maxZoom: MAX_ZOOM,
         scrollWheelZoom: false,
+        zoomAnimation: false,
     }).setView([15.98, 120.45], 11);
 
     L.control.attribution({ prefix: false }).addTo(map);
@@ -52,21 +69,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 // PSWDO preview: color each target LGU by its own real
                 // demand tier, same as the full GIS Map page, so this
                 // preview answers "which municipality needs attention"
-                // without waiting for the full page to load.
+                // without waiting for the full page to load. Border is that
+                // same status color, darker (TIER_BORDER_COLORS) - not a
+                // flat generic one - matching the full GIS Map page.
                 var muni = currentMuniData ? currentMuniData.find(function (m) { return m.lgu === feature.properties.lgu; }) : null;
+                var tier = muni ? muni.status_tier : 'unrated';
                 return {
-                    color: '#55606b',
-                    weight: 1.5,
-                    fillColor: TIER_COLORS[muni ? muni.status_tier : 'unrated'],
+                    color: TIER_BORDER_COLORS[tier],
+                    weight: 2,
+                    fillColor: TIER_COLORS[tier],
                     fillOpacity: 0.55,
                 };
             }
-            return {
-                color: isTarget ? '#0f2547' : '#5b86b8',
-                weight: isTarget ? 3 : 1,
-                fillColor: isTarget ? '#2c5aa0' : '#bcd4f0',
-                fillOpacity: isTarget ? 0.12 : 0.45,
-            };
+            if (isTarget) {
+                return { color: '#0f2547', weight: 3, fillColor: '#2c5aa0', fillOpacity: 0.12 };
+            }
+            // Every other municipality - checked against the real basemap
+            // tiles (not just in isolation): a pale, near-white fill/border
+            // read as "nothing here" rather than "muted", so this uses a
+            // visibly grey (not just faint) fill/border - same colors as
+            // the full GIS Map page's own muted style, for one consistent
+            // look across both.
+            return { color: '#6b7280', weight: 1.2, fillColor: '#c3c7d1', fillOpacity: 0.5 };
         },
         onEachFeature: function (feature, layer) {
             var p = feature.properties;
@@ -100,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }).addTo(map);
 
     var warehouseLayer = L.layerGroup().addTo(map);
-    var routeLayer = L.layerGroup().addTo(map);
 
     function renderWarehouses(warehouses) {
         warehouseLayer.clearLayers();
@@ -109,15 +132,6 @@ document.addEventListener('DOMContentLoaded', function () {
             L.circleMarker([w.lat, w.lng], {
                 radius: 6, color: '#0f2547', weight: 2, fillColor: color, fillOpacity: 0.9,
             }).bindTooltip(w.name).addTo(warehouseLayer);
-        });
-    }
-
-    function renderRoutes(lines) {
-        routeLayer.clearLayers();
-        lines.forEach(function (line) {
-            L.polyline([line.from, line.to], {
-                color: '#3867d6', weight: 2, dashArray: '6,6', opacity: 0.8,
-            }).addTo(routeLayer);
         });
     }
 
@@ -144,7 +158,6 @@ document.addEventListener('DOMContentLoaded', function () {
         provinceLayer.addData(data.province_context);
         if (!IS_MUNI_ONLY) barangayLayer.addData(data.target_barangays);
         renderWarehouses(data.warehouses);
-        renderRoutes(data.in_transit_lines);
 
         var bounds = L.geoJSON(data.target_barangays).getBounds();
         if (bounds.isValid()) map.fitBounds(bounds.pad(0.15));

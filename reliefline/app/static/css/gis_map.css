@@ -296,6 +296,18 @@
     cursor: pointer;
 }
 
+/* Route start/end dot (gis_map.js routeDotIcon) - a plain colored circle,
+   sized/anchored to sit exactly on its real [lat, lng] like every other
+   marker-pane icon on this map. */
+.gis-route-dot span {
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #0f2547;
+    box-sizing: border-box;
+}
+
 /* Study-area municipalities (gis_map.js provinceStyle) - no drop-shadow
    glow (reads as dated/muddy against the basemap, especially where two
    study areas' shapes sit right next to each other); the flat purple
@@ -401,12 +413,32 @@
    own. Health color now fills the whole marker instead of a small corner
    dot, so it's readable at a glance rather than a detail to notice. */
 .gis-wh-marker {
-    position: relative;
-    /* gis_map.js's buildWarehouseIcon sets width/height on THIS element
-       (inline, via Leaflet's iconSize) each time the zoom-driven size step
-       changes (setIcon reuses the same DIV rather than replacing it) - the
-       transition smooths that into a brief shrink/grow instead of a snap. */
-    transition: width 0.15s ease, height 0.15s ease, margin 0.15s ease;
+    /* No `position` override here - this class lands on Leaflet's own
+       .leaflet-marker-icon element, which Leaflet's base CSS already sets
+       to `position: absolute` so its `transform: translate3d(...)`
+       positions it exactly relative to the map pane's origin. An earlier
+       version of this rule set `position: relative`, which - same
+       specificity, but this stylesheet loads after leaflet.css, so it won -
+       switched the icon into NORMAL DOCUMENT FLOW: the transform then
+       moved it relative to wherever flow layout put it among its marker-
+       pane siblings (other labels/markers before it in DOM order) instead
+       of relative to the pane's true origin. That flow offset is exactly
+       what made the icon consistently land tens of pixels off its real
+       [lat, lng] - most visible once other markers (e.g. a clicked route's
+       start/end dots) shared the same pane. No child here needs
+       `position: relative` for its own absolute positioning (the pin inside
+       is centered with flexbox, not `position: absolute`), so it's safe to
+       just leave Leaflet's own `position: absolute` alone.
+    */
+    /* No transition here on purpose. gis_map.js's buildWarehouseIcon sets
+       width/height/margin on THIS element together, synced to Leaflet's own
+       instant repositioning (iconAnchor = exactly half of iconSize every
+       time) - animating width/height on their own used to grow/shrink the
+       box around its fixed top-left corner instead of its anchor point,
+       which visibly dragged the icon's center off its real [lat, lng] for
+       the duration of the transition. Instant resize keeps it pinned
+       exactly on its real coordinate at every zoom level, no drift.
+    */
 }
 .gis-wh-marker-pin {
     display: flex;

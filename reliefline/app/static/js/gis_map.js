@@ -108,10 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
             fillColor = TIER_COLORS[tier];
             // Border is that same status color, darker - not the fixed
             // purple every status used to get - so a critical (red) study
-            // area outlines in dark red, a low (green) one in dark green,
-            // etc. Distinguishes it at a glance from an unrelated purple
-            // shape, and from the blue dashed "in transit" schematic lines
-            // (renderRoutes below) that can cross through this same area.
+            // area outlines in dark red, a low (green) one in dark green, etc.
             borderColor = TIER_BORDER_COLORS[tier];
         }
         return {
@@ -245,14 +242,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }).addTo(map);
 
     var warehouseLayer = L.layerGroup().addTo(map);
-    var routeLayer = L.layerGroup().addTo(map);
     // Nominatim search result pin - separate from every other layer so a
     // search never disturbs municipality/warehouse/route rendering.
     var searchMarkerLayer = L.layerGroup().addTo(map);
-    // The actual road-routed polyline drawn from clicking a row in Active
-    // Distribution Routes (OSRM) - visually distinct (solid, teal) from the
-    // existing schematic dashed "in transit" lines in routeLayer above,
-    // which stay exactly as they were.
+    // The actual road-routed polyline (OSRM) for whichever Active
+    // Distribution Routes row a user clicks into - routes stay hidden
+    // otherwise, no in-transit line renders automatically for every
+    // delivery, only for the one the user actually asked to see.
     var osrmRouteLayer = L.layerGroup().addTo(map);
 
     // Warehouse marker pixel size shrinks in steps as the map zooms out.
@@ -350,20 +346,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function renderRoutes(lines) {
-        routeLayer.clearLayers();
-        // Thinner and lower-opacity than before - still a real straight-
-        // line indicator of "something is in transit here" (never claimed
-        // to be an actual road, see the tooltip), just no longer bold
-        // enough to compete with the province/target styling above it or
-        // read as a "confusing" extra layer on first look at the map.
-        lines.forEach(function (line) {
-            L.polyline([line.from, line.to], {
-                color: '#3867d6', weight: 1.5, dashArray: '4,5', opacity: 0.55,
-            }).bindTooltip('In transit to ' + escapeHtml(line.barangay)).addTo(routeLayer);
-        });
-    }
-
     // ---- Nominatim location search ----------------------------------
     // Free, no API key. Query is biased toward Pangasinan (appended, not
     // hard-bounded, so a warehouse/place name still resolves even if
@@ -450,6 +432,18 @@ document.addEventListener('DOMContentLoaded', function () {
         detailEl.innerHTML = html;
     }
 
+    // Small colored dot marker for a route's start/end point - see the
+    // comment at its call site in loadOsrmRoute for why this is a plain
+    // L.marker (marker pane) instead of L.circleMarker (SVG).
+    function routeDotIcon(fillColor) {
+        return L.divIcon({
+            className: 'gis-route-dot',
+            html: '<span style="background:' + fillColor + '"></span>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
+        });
+    }
+
     function loadOsrmRoute(r, rowEl) {
         osrmRouteLayer.clearLayers();
         document.querySelectorAll('#routes-table-body tr.gis-route-row-active').forEach(function (el) {
@@ -473,19 +467,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (activeRouteRowId !== r.distribution_id) return; // a newer click superseded this one
                 if (!data.routes || !data.routes.length) throw new Error('no route');
                 var route = data.routes[0];
-                var line = L.geoJSON(route.geometry, {
-                    style: { color: '#16a085', weight: 5, opacity: 0.85 },
+                // A white "casing" drawn first, wider than the route line
+                // itself, then the solid teal line on top - keeps the route
+                // clearly visible/highlighted against ANY background it
+                // crosses (a solid study-area fill, another municipality,
+                // busy basemap detail), not just readable against a plain
+                // map. Same technique real map products use for a route
+                // that has to stay legible over arbitrary terrain.
+                L.geoJSON(route.geometry, {
+                    style: { color: '#ffffff', weight: 9, opacity: 0.95 },
                 }).addTo(osrmRouteLayer);
-                L.circleMarker([r.from_lat, r.from_lng], { radius: 6, color: '#0f2547', weight: 2, fillColor: '#16a085', fillOpacity: 1 })
+                var line = L.geoJSON(route.geometry, {
+                    style: { color: '#16a085', weight: 5, opacity: 1 },
+                }).addTo(osrmRouteLayer);
+                // Plain L.marker dots, not L.circleMarker (SVG) - after this
+                // fitBounds() jump, Leaflet's SVG renderer's own internal
+                // positioning can end up visibly offset from marker-pane
+                // elements (like the warehouse icon just below) even though
+                // both come from the exact same [lat, lng] - a real,
+                // reproducible Leaflet quirk under this page's CSS zoom
+                // scale (base.css --ui-scale), not a coordinate error.
+                // Marker-pane dots sidestep it entirely and land exactly on
+                // the warehouse icon's own real position.
+                L.marker([r.from_lat, r.from_lng], { icon: routeDotIcon('#16a085'), keyboard: false })
                     .bindTooltip(escapeHtml(r.from_office)).addTo(osrmRouteLayer);
-                L.circleMarker([r.to_lat, r.to_lng], { radius: 6, color: '#0f2547', weight: 2, fillColor: '#e74c3c', fillOpacity: 1 })
-                    .bindTooltip(escapeHtml(r.to_barangay)).addTo(osrmRouteLayer);
+                L.marker([r.to_lat, r.to_lng], { icon: routeDotIcon('#e74c3c'), keyboard: false })
+                    .bindTooltip(escapeHtml(r.to_label)).addTo(osrmRouteLayer);
                 map.fitBounds(line.getBounds().pad(0.15));
 
                 var km = (route.distance / 1000).toFixed(1);
                 var mins = Math.round(route.duration / 60);
                 showRouteDetail(
-                    '<strong>D-' + r.distribution_id + ' &middot; ' + escapeHtml(r.from_office) + ' &rarr; ' + escapeHtml(r.to_barangay) + '</strong>' +
+                    '<strong>D-' + r.distribution_id + ' &middot; ' + escapeHtml(r.from_office) + ' &rarr; ' + escapeHtml(r.to_label) + '</strong>' +
                     '<div class="gis-route-detail-grid">' +
                     '<div><span>Distance</span><strong>' + km + ' km</strong></div>' +
                     '<div><span>Est. Travel Time</span><strong>' + mins + ' min</strong></div>' +
@@ -871,7 +884,7 @@ document.addEventListener('DOMContentLoaded', function () {
         body.innerHTML = routes.map(function (r) {
             return '<tr class="gis-route-row" data-distribution-id="' + r.distribution_id + '" title="Click to view route on map">' +
                 '<td>D-' + r.distribution_id + '</td>' +
-                '<td>' + escapeHtml(r.from_office) + ' &rarr; ' + escapeHtml(r.to_barangay) + ' / ' + escapeHtml(r.to_municipality) + '</td>' +
+                '<td>' + escapeHtml(r.from_office) + ' &rarr; ' + escapeHtml(r.to_label) + '</td>' +
                 '<td>' + fmt(r.packs) + '</td>' +
                 '<td><span class="badge-status badge-status-' + r.status + '">' + escapeHtml(r.status_label) + '</span></td>' +
                 '<td>' + escapeHtml(r.eta) + '</td>' +
@@ -937,7 +950,6 @@ document.addEventListener('DOMContentLoaded', function () {
             muniLabelLayer.clearLayers();
             provinceLayer.addData(data.province_context);
             renderWarehouses(data.warehouses);
-            renderRoutes(data.in_transit_lines);
 
             if (pendingNav) {
                 var nav = pendingNav;

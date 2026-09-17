@@ -451,13 +451,41 @@ def _haversine_km(point_a, point_b):
 
 def _municipality_centroid(area_covered):
     """Approximate lat/lng for an office's LGU, from the province boundary file.
-    Used only to place warehouse markers - not a claim of a precise address."""
+    A geometric polygon centroid, not a claim of a precise address - see
+    _warehouse_centroid below for the precise-address-first version actually
+    used to place warehouse markers."""
     province = _load_topojson_file(PROVINCE_TOPOJSON_FILE)
     target = _normalize_muni_name(area_covered).lower()
     for feature in province["features"]:
         if _normalize_muni_name(feature["properties"]["adm3_en"]).lower() == target:
             return _polygon_centroid(feature["geometry"])
     return None
+
+
+# Ground-truth GPS coordinates for each warehouse's actual building, not an
+# approximate town center - takes priority over weather.LGU_COORDS (a
+# coarser "somewhere in this town" point meant for weather lookups, never
+# a building address) and over _municipality_centroid's generic polygon
+# centroid.
+WAREHOUSE_COORDS = {
+    "Lingayen": (16.018148620092937, 120.22850482048867),
+    "Urdaneta City": (15.976373250682347, 120.56670137845737),
+    "Santa Barbara": (15.998539153802154, 120.42154479771158),
+    "Calasiao": (16.008967715946202, 120.35641917730929),
+}
+
+
+def _warehouse_centroid(area_covered):
+    """(lat, lng) to place a warehouse marker at - WAREHOUSE_COORDS (exact)
+    first, then weather.LGU_COORDS, then _municipality_centroid's generic
+    polygon-centroid approximation as a last resort."""
+    coords = WAREHOUSE_COORDS.get(area_covered)
+    if coords:
+        return coords
+    coords = weather_service.LGU_COORDS.get(area_covered)
+    if coords:
+        return coords
+    return _municipality_centroid(area_covered)
 
 
 def _target_barangay_geojson(lgu, event_id):
@@ -1383,12 +1411,12 @@ def warehouse_inventory():
 
     recent_movements = _recent_stock_movements(office_ids, limit=6)
 
-    # Warehouse map markers - same municipality-centroid approximation used by
-    # the GIS Map / dashboard mini-map (see _municipality_centroid), not a
-    # claim of the warehouse's precise street address.
+    # Warehouse map markers - same placement used by the GIS Map (see
+    # _warehouse_centroid: real address when known, else a polygon-centroid
+    # approximation).
     warehouse_map_points = []
     for w in warehouses:
-        centroid = _municipality_centroid(w["office"].area_covered)
+        centroid = _warehouse_centroid(w["office"].area_covered)
         if not centroid:
             continue
         warehouse_map_points.append({
@@ -2099,7 +2127,7 @@ def gis_map_data():
     for w in warehouses:
         if not full_scope and w["office"].area_covered not in scope_lgus:
             continue
-        centroid = _municipality_centroid(w["office"].area_covered)
+        centroid = _warehouse_centroid(w["office"].area_covered)
         if not centroid:
             continue
         marker = {
@@ -2130,8 +2158,10 @@ def gis_map_data():
     if not full_scope:
         total_food_packs = sum(w["food_pack_qty"] for w in warehouse_markers)
 
-    # Schematic in-transit indicators - a straight line between known warehouse
-    # and barangay centroids, NOT a real road route (excluded by manuscript scope).
+    # In-transit indicators - known warehouse and barangay centroids only
+    # (real coordinates, not a precise street address). gis_map.js's
+    # renderRoutes() turns each pair into a real OSRM road route client-side;
+    # this endpoint's own job stays just supplying the two real endpoints.
     in_transit_lines = []
     in_transit_records = DistributionRecord.query.join(Barangay).filter(
         Barangay.city_municipality.in_(scope_lgus),
@@ -2142,7 +2172,7 @@ def gis_map_data():
         office = allocation.fulfilling_office if allocation else None
         if not office:
             continue
-        from_point = _municipality_centroid(office.area_covered)
+        from_point = _warehouse_centroid(office.area_covered)
         to_point = _target_barangay_centroid(d.barangay.city_municipality, d.barangay.barangay_name)
         if from_point and to_point:
             in_transit_lines.append({
@@ -2166,22 +2196,53 @@ def gis_map_data():
     )[:5]
 
     # Active distribution routes table - real DistributionRecord + logistics data.
-    active_routes = DistributionRecord.query.join(Barangay).join(AllocationRecord).filter(
+    # PSWDO/system_admin only ever sees its OWN province -> municipality
+    # dispatches here (fulfilling_office.office_type == "pswdo") - a CSWDO/
+    # MSWDO office's own municipal -> barangay delivery is that office's own
+    # internal operation, out of PSWDO's oversight remit, and already shown
+    # on that office's own GIS map / Transfers page. CSWDO/MSWDO keeps
+    # seeing every route into its own barangays, fulfilling office type and
+    # all - that's the one view this distinction doesn't apply to.
+    # Explicit join condition on AllocationRecord - a plain .join(AllocationRecord)
+    # here (after already joining Barangay) lets SQLAlchemy match it to Barangay
+    # via AllocationRecord.barangay_id instead of to this DistributionRecord via
+    # its own allocation_id, silently pulling in an unrelated allocation that
+    # just happens to share the same barangay. Spelling out the real FK avoids that.
+    active_routes_query = DistributionRecord.query.join(Barangay).join(
+        AllocationRecord, DistributionRecord.allocation_id == AllocationRecord.allocation_id
+    ).filter(
         Barangay.city_municipality.in_(scope_lgus),
         DistributionRecord.dispatch_status.in_(["preparing", "loaded", "dispatched", "in_transit"])
-    ).order_by(DistributionRecord.distribution_date.desc()).limit(10).all()
+    )
+    is_pswdo_view = current_user.role in ("pswdo_admin", "system_admin")
+    if is_pswdo_view:
+        active_routes_query = active_routes_query.join(
+            Office, AllocationRecord.fulfilling_office_id == Office.office_id
+        ).filter(Office.office_type == "pswdo")
+    active_routes = active_routes_query.order_by(DistributionRecord.distribution_date.desc()).limit(10).all()
 
     routes_table = []
     for d in active_routes:
         allocation = d.allocation
         office = allocation.fulfilling_office if allocation else None
-        # Same municipality-centroid approximations used above for
-        # in_transit_lines - real coordinates (not a road route), just
-        # enough for the client to hand off to OSRM for the actual routing.
-        # None when a centroid can't be resolved; the frontend simply won't
-        # offer route visualization for that row rather than guessing.
-        from_point = _municipality_centroid(office.area_covered) if office else None
-        to_point = _target_barangay_centroid(d.barangay.city_municipality, d.barangay.barangay_name)
+        # Same _warehouse_centroid used above for in_transit_lines - real
+        # coordinates (not a road route), just enough for the client to hand
+        # off to OSRM for the actual routing. None when a centroid can't be
+        # resolved; the frontend simply won't offer route visualization for
+        # that row rather than guessing.
+        from_point = _warehouse_centroid(office.area_covered) if office else None
+        # PSWDO's own routes are province -> municipality dispatches (see the
+        # office_type filter above) - the road route/label stops at the
+        # municipality's own office, not the specific barangay the CSWDO
+        # office will eventually hand it off to internally. That barangay-
+        # level leg is CSWDO's own operation; CSWDO/MSWDO's view keeps the
+        # real barangay endpoint, since that IS their delivery.
+        if is_pswdo_view:
+            to_point = _warehouse_centroid(d.barangay.city_municipality)
+            to_label = d.barangay.city_municipality
+        else:
+            to_point = _target_barangay_centroid(d.barangay.city_municipality, d.barangay.barangay_name)
+            to_label = f"{d.barangay.barangay_name} / {d.barangay.city_municipality}"
         routes_table.append({
             "distribution_id": d.distribution_id,
             "from_office": office.office_name if office else "-",
@@ -2189,6 +2250,7 @@ def gis_map_data():
             "from_lng": from_point[1] if from_point else None,
             "to_barangay": d.barangay.barangay_name,
             "to_municipality": d.barangay.city_municipality,
+            "to_label": to_label,
             "to_lat": to_point[0] if to_point else None,
             "to_lng": to_point[1] if to_point else None,
             "packs": d.quantity_released,
@@ -2898,7 +2960,13 @@ def _filtered_distributions():
         DisasterEvent.start_date.desc()
     ).first()
 
-    base_query = DistributionRecord.query.join(Barangay).join(AllocationRecord).filter(
+    # Explicit join condition - see the same fix/comment on active_routes_query
+    # in gis_map_data(). Without it, AllocationRecord.source below was being
+    # checked against an unrelated allocation that just shares the same
+    # barangay, not the one this DistributionRecord actually came from.
+    base_query = DistributionRecord.query.join(Barangay).join(
+        AllocationRecord, DistributionRecord.allocation_id == AllocationRecord.allocation_id
+    ).filter(
         Barangay.city_municipality.in_(TARGET_LGUS),
         AllocationRecord.source.notin_(("barangay_request", "cswdo_direct")),
     )
