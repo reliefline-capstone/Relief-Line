@@ -71,3 +71,54 @@ class FoodPackBatchItem(db.Model):
         "items", order_by="FoodPackBatchItem.expiration_date"
     ))
     component = db.relationship("FoodPackComponent")
+
+
+class BarangayFoodPackBatch(db.Model):
+    """Barangay-tier twin of FoodPackBatch - one addition of Food Packs stock
+    at a barangay, so shelf life can be tracked per-batch there too instead
+    of BarangayInventory's flat running total.
+
+    A separate model rather than reusing FoodPackBatch with a nullable owner
+    column, matching this codebase's existing convention that office-scoped
+    and barangay-scoped stock are always two parallel model pairs
+    (WarehouseInventory/WarehouseStockLog vs BarangayInventory/
+    BarangayStockLog) rather than one shared, owner-polymorphic table.
+
+    Opened by app.routes.barangay._create_barangay_food_pack_batch, normally
+    from _record_barangay_receipt FIFO-consuming the fulfilling CSWDO
+    office's own FoodPackBatch rows (see app.routes.pswdo.
+    _consume_food_pack_batches_fifo) so the received_date - and therefore
+    the real remaining shelf life - carries forward instead of resetting to
+    a fresh clock just because the stock changed tiers.
+    """
+    __tablename__ = "barangay_food_pack_batches"
+
+    batch_id = db.Column(db.Integer, primary_key=True)
+    barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
+    quantity_remaining = db.Column(db.Integer, nullable=False)
+    received_date = db.Column(db.Date, nullable=False)
+    expiration_date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.Enum("active", "expired"), nullable=False,
+                        default="active", server_default="active")
+    expired_at = db.Column(db.DateTime, nullable=True)
+    updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+
+    barangay = db.relationship("Barangay", backref="food_pack_batches")
+
+
+class BarangayFoodPackBatchItem(db.Model):
+    """Barangay-tier twin of FoodPackBatchItem - one component's actual
+    expiration date within one BarangayFoodPackBatch. See
+    app.routes.barangay._create_barangay_food_pack_batch."""
+    __tablename__ = "barangay_food_pack_batch_items"
+
+    item_id = db.Column(db.Integer, primary_key=True)
+    batch_id = db.Column(db.Integer, db.ForeignKey("barangay_food_pack_batches.batch_id"), nullable=False)
+    component_id = db.Column(db.Integer, db.ForeignKey("food_pack_components.component_id"), nullable=False)
+    expiration_date = db.Column(db.Date, nullable=False)
+
+    batch = db.relationship("BarangayFoodPackBatch", backref=db.backref(
+        "items", order_by="BarangayFoodPackBatchItem.expiration_date"
+    ))
+    component = db.relationship("FoodPackComponent")

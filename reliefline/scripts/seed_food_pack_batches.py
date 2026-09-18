@@ -66,10 +66,13 @@ from app.utils.timezone import ph_today
 from app import create_app
 from app.extensions import db
 from app.models.office import Office
+from app.models.barangay import Barangay
 from app.models.warehouse import WarehouseInventory
-from app.models.food_pack_batch import FoodPackComponent, FoodPackBatch
+from app.models.barangay_inventory import BarangayInventory
+from app.models.food_pack_batch import FoodPackComponent, FoodPackBatch, BarangayFoodPackBatch
 from app.models.user import User
 from app.routes.pswdo import _create_food_pack_batch
+from app.routes.barangay import _create_barangay_food_pack_batch
 
 app = create_app()
 
@@ -152,5 +155,48 @@ def run():
               "into Food Packs (Expired).")
 
 
+def run_barangay_backfill():
+    """Barangay-tier twin of run() - backfills BarangayFoodPackBatch rows for
+    every barangay that already has "food_pack" BarangayInventory stock from
+    existing synthetic demo data, so the new Food Pack Batches panel on the
+    Barangay Inventory page isn't empty on first load. Independent synthetic
+    seeding from each barangay's already-on-hand quantity, same as the
+    office-tier pass above - it doesn't try to simulate a real transfer chain
+    back to a specific CSWDO office/batch."""
+    with app.app_context():
+        if BarangayFoodPackBatch.query.first():
+            print("BarangayFoodPackBatch rows already present - skipping barangay batch backfill.")
+            return
+
+        admin = User.query.filter_by(role="system_admin").first()
+        today = ph_today()
+        seeded = 0
+
+        for barangay in Barangay.query.all():
+            inv = BarangayInventory.query.filter_by(
+                barangay_id=barangay.barangay_id, item_type="food_pack"
+            ).first()
+            qty = inv.quantity_available if inv else 0
+            if not qty:
+                continue
+
+            shares = [round(qty * pct) for pct, _ in BATCH_PLAN]
+            shares[-1] += qty - sum(shares)
+
+            for (_, days_ago), amount in zip(BATCH_PLAN, shares):
+                if amount <= 0:
+                    continue
+                received_date = today - timedelta(days=days_ago)
+                _create_barangay_food_pack_batch(
+                    barangay.barangay_id, amount, received_date,
+                    updated_by=admin.user_id if admin else None,
+                )
+                seeded += 1
+
+        db.session.commit()
+        print(f"Seeded {seeded} BarangayFoodPackBatch rows.")
+
+
 if __name__ == "__main__":
     run()
+    run_barangay_backfill()

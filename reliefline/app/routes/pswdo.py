@@ -560,7 +560,7 @@ def _target_barangay_geojson(lgu, event_id):
             }
             # Current calculated food-pack figure - the map's hover detail.
             # Real submitted request if this barangay has one for the event,
-            # else the Linear Regression model's live estimate - see
+            # else the time-forecasting model's live estimate - see
             # _current_packs_needed for why (never a manual barangay guess).
             packs_needed, packs_source = _current_packs_needed(barangay, event_id)
             props["food_packs_current"] = packs_needed
@@ -628,8 +628,8 @@ def _current_packs_needed(barangay, event_id, relief=None):
     the real submitted request for the given event if one exists (an actual
     request always beats a model guess - same rule the manuscript's Chapter 2
     Predictive Model discussion frames as "decision support rather than an
-    automatic final allocation"), otherwise the Linear Regression model's live
-    estimate from the barangay's latest profile data. This is the same
+    automatic final allocation"), otherwise the time-forecasting model's live
+    estimate for the barangay's LGU this month. This is the same
     "packs needed" figure the Predictive Analytics dashboard shows (see
     app.routes.prediction._barangay_snapshot) - reused here so the GIS map's
     hover detail and that dashboard never disagree. relief can be passed in
@@ -645,8 +645,10 @@ def _current_packs_needed(barangay, event_id, relief=None):
 
 
 def _load_warehouses():
-    """ALL active warehouses (province-wide infrastructure, PSWDO-managed) with
-    current food-pack stock. Deactivated offices (admin.toggle_office_active)
+    """ALL active warehouses PSWDO has any visibility into - its own
+    province-level depots (fully managed) plus every town's CSWDO warehouse
+    (oversight view only, see _require_pswdo_managed_office) - with current
+    food-pack stock. Deactivated offices (admin.toggle_office_active)
     drop off every warehouse view."""
     all_offices = Office.query.filter(
         Office.is_active.is_(True),
@@ -674,6 +676,20 @@ def _load_warehouses():
         total_food_packs += qty
 
     return all_offices, warehouses, total_food_packs
+
+
+def _require_pswdo_managed_office(office):
+    """PSWDO fully manages its own province-level depot warehouses, but a
+    town's CSWDO/MSWDO warehouse is that office's own responsibility - PSWDO
+    only monitors it (Warehouse Detail / Inventory Management stay viewable
+    for oversight). Aborts 403 on every stock-mutating action (add/update/
+    delete an item, resolve an expired batch, edit warehouse info, or either
+    side of an inter-warehouse transfer) so a pswdo_admin can't reach into a
+    CSWDO office's inventory directly - stock only moves there through the
+    tracked Relief-Request/Direct-Allocation transfer flow, which requires
+    the CSWDO's own Confirm Receipt before it counts."""
+    if office.office_type != "pswdo":
+        abort(403)
 
 
 def _stock_recommendations(warehouses):
@@ -876,6 +892,79 @@ def _create_food_pack_batch(office_id, quantity, received_date, updated_by=None)
             expiration_date=received_date + timedelta(days=c.shelf_life_days),
         ))
     return batch
+
+
+def _consume_food_pack_batches_fifo(office_id, quantity):
+    """FIFO-consumes `quantity` food packs from office_id's active FoodPackBatch
+    rows, oldest received_date first, decrementing quantity_remaining as it
+    goes and returning the [(received_date, qty_taken), ...] breakdown of what
+    was actually consumed.
+
+    Used when stock is transferred out to another office (see
+    cswdo.receive_transfer): the transfer should carry the *original*
+    received_date(s) forward so the receiving office's shelf-life clock
+    reflects how much life the stock actually has left, rather than resetting
+    to a fresh shelf life on arrival. Calls _sync_food_pack_batches first so
+    this office's batches are reconciled against its real on-hand count
+    before FIFO picks from them.
+
+    If tracked batches don't cover the full quantity (e.g. stock that
+    predates batch tracking), the remainder is attributed to today - the same
+    fallback _create_food_pack_batch's callers used before this existed.
+    """
+    _sync_food_pack_batches(office_id)
+    batches = FoodPackBatch.query.filter_by(office_id=office_id, status="active").filter(
+        FoodPackBatch.quantity_remaining > 0
+    ).order_by(FoodPackBatch.received_date, FoodPackBatch.batch_id).all()
+
+    consumed = []
+    remaining = quantity
+    for b in batches:
+        if remaining <= 0:
+            break
+        take = min(b.quantity_remaining, remaining)
+        b.quantity_remaining -= take
+        remaining -= take
+        consumed.append((b.received_date, take))
+    if remaining > 0:
+        consumed.append((ph_today(), remaining))
+    return consumed
+
+
+def _refreshed_batch_items(batch, refresh_date):
+    """Builds the component plan for the batch a "Fixed" resolution splits
+    off (see *_resolve_expired_batch at every tier): only the component(s)
+    that actually caused the expiry (rice, in practice - whichever item(s)
+    have their own expiration_date in the past) get treated as replaced with
+    fresh stock, dated from `refresh_date` (normally today); every other
+    component in the batch is still perfectly good and keeps its original
+    expiration_date untouched - a sealed pack doesn't get its canned goods
+    swapped out just because the rice inside it went bad.
+
+    Works against any batch/item pair with the same shape (FoodPackBatch/
+    FoodPackBatchItem or BarangayFoodPackBatch/BarangayFoodPackBatchItem) -
+    it only reads batch.items, item.expiration_date and item.component, all
+    identical across tiers, so one shared implementation covers PSWDO,
+    CSWDO, and Barangay.
+
+    Returns (plan, replaced_components):
+      plan               - [(component_id, expiration_date), ...] for every
+                            component currently in the batch.
+      replaced_components - the FoodPackComponent rows that got a fresh
+                            date, for the stock-log/flash wording naming
+                            what was actually replaced.
+    """
+    from datetime import timedelta
+    plan = []
+    replaced_components = []
+    for item in batch.items:
+        component = item.component
+        if _shelf_status(item.expiration_date) == "expired":
+            plan.append((component.component_id, refresh_date + timedelta(days=component.shelf_life_days)))
+            replaced_components.append(component)
+        else:
+            plan.append((component.component_id, item.expiration_date))
+    return plan, replaced_components
 
 
 def _slugify(text):
@@ -1536,6 +1625,7 @@ def warehouse_detail(office_id):
 @role_required("pswdo_admin", "system_admin")
 def warehouse_edit(office_id):
     office = Office.query.get_or_404(office_id)
+    _require_pswdo_managed_office(office)
     office.full_address = request.form.get("full_address", "").strip() or None
     office.manager_name = request.form.get("manager_name", "").strip() or None
     office.contact_number = request.form.get("contact_number", "").strip() or None
@@ -1585,6 +1675,7 @@ def warehouse_inventory_items(office_id):
 @role_required("pswdo_admin", "system_admin")
 def warehouse_inventory_add(office_id):
     office = Office.query.get_or_404(office_id)
+    _require_pswdo_managed_office(office)
     item_name = request.form.get("item_name", "").strip()
     unit = request.form.get("unit", "").strip() or "units"
     quantity = request.form.get("quantity", type=int)
@@ -1628,6 +1719,7 @@ def warehouse_inventory_add(office_id):
 @role_required("pswdo_admin", "system_admin")
 def warehouse_inventory_update(inventory_id):
     item = WarehouseInventory.query.get_or_404(inventory_id)
+    _require_pswdo_managed_office(item.office)
     # The form takes the amount being added/removed (e.g. a donation's actual
     # quantity), not the resulting total - the server does that addition, so
     # nobody has to compute item.quantity_available + delta by hand.
@@ -1695,6 +1787,7 @@ def warehouse_inventory_resolve_expired_batch(batch_id):
     """Disposed/Fixed resolution for one expired FoodPackBatch at a PSWDO
     warehouse - mirrors cswdo.municipal_inventory_resolve_expired_batch."""
     batch = FoodPackBatch.query.get_or_404(batch_id)
+    _require_pswdo_managed_office(batch.office)
     if batch.status != "expired":
         abort(403)
     office_id = batch.office_id
@@ -1718,6 +1811,10 @@ def warehouse_inventory_resolve_expired_batch(batch_id):
         flash("Expired stock record is out of sync - reload and try again.", "error")
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
 
+    # Snapshot which component(s) actually drove this batch's expiry before
+    # mutating anything - see _refreshed_batch_items.
+    plan, replaced_components = _refreshed_batch_items(batch, ph_today())
+
     batch.quantity_remaining -= quantity
     expired_item.quantity_available -= quantity
     expired_item.updated_by = current_user.user_id
@@ -1731,10 +1828,11 @@ def warehouse_inventory_resolve_expired_batch(batch_id):
         ))
         flash(f"{quantity:,} expired packs marked disposed.", "success")
     else:
+        replaced_names = ", ".join(c.name for c in replaced_components)
         db.session.add(WarehouseStockLog(
             office_id=office_id, item_type="food_pack_expired", item_name=expired_item.item_name,
             delta=-quantity, source_type="expired",
-            reason=f"{quantity:,} expired packs repaired - moved back to usable Food Packs stock",
+            reason=f"{quantity:,} expired packs resolved - {replaced_names} replaced with fresh stock",
             updated_by=current_user.user_id,
         ))
         fp = WarehouseInventory.query.filter_by(office_id=office_id, item_type="food_pack").first()
@@ -1749,10 +1847,39 @@ def warehouse_inventory_resolve_expired_batch(batch_id):
         db.session.add(WarehouseStockLog(
             office_id=office_id, item_type="food_pack", item_name="Food Packs",
             delta=quantity, source_type="expired",
-            reason=f"{quantity:,} previously-expired packs repaired and returned to usable stock",
+            reason=f"{quantity:,} packs returned to usable stock after replacing {replaced_names}",
             updated_by=current_user.user_id,
         ))
-        flash(f"{quantity:,} expired packs marked fixed and returned to Food Packs stock.", "success")
+
+        # The resolved quantity re-enters usable stock as its own batch -
+        # replaced component(s) get a fresh clock (from today), everything
+        # else in the pack keeps its original expiration_date, since it was
+        # never actually spoiled. Keeps the Food Pack Batches panel and the
+        # office's on-hand total honest instead of the fixed quantity
+        # becoming untracked stock with no batch behind it at all.
+        # received_date is today, not the original batch's date: this batch
+        # row represents stock repaired/re-added to usable inventory right
+        # now (same "when did this stock event happen" meaning every other
+        # batch's received_date carries), not a backdated re-issue of the
+        # original delivery. Keeping the old date would make this brand-new
+        # stock look like the oldest active batch, so the very next sync's
+        # drift-reconciliation trim (_sync_food_pack_batches step 1) could
+        # silently eat into it ahead of batches that are genuinely older.
+        new_batch = FoodPackBatch(
+            office_id=office_id, quantity_remaining=quantity,
+            received_date=ph_today(),
+            expiration_date=min(exp for _, exp in plan),
+            status="active", updated_by=current_user.user_id,
+        )
+        db.session.add(new_batch)
+        db.session.flush()
+        for component_id, exp in plan:
+            db.session.add(FoodPackBatchItem(
+                batch_id=new_batch.batch_id, component_id=component_id, expiration_date=exp,
+            ))
+
+        flash(f"{quantity:,} expired packs marked fixed - {replaced_names} replaced, "
+              f"returned to Food Packs stock.", "success")
 
     db.session.commit()
     return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
@@ -1763,6 +1890,7 @@ def warehouse_inventory_resolve_expired_batch(batch_id):
 @role_required("pswdo_admin", "system_admin")
 def warehouse_inventory_delete(inventory_id):
     item = WarehouseInventory.query.get_or_404(inventory_id)
+    _require_pswdo_managed_office(item.office)
     office_id = item.office_id
 
     if item.item_type == "food_pack":
@@ -1806,7 +1934,16 @@ def warehouse_inventory_export(office_id):
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def warehouse_stock_transfer_page():
-    all_offices, warehouses, total_food_packs = _load_warehouses()
+    # PSWDO-depot-to-PSWDO-depot redistribution only - moving stock into a
+    # CSWDO office goes through the tracked Relief-Request/Direct-Allocation
+    # flow instead (approve_relief_request/direct_allocation ->
+    # cswdo.receive_transfer), which requires the CSWDO's own Confirm
+    # Receipt before it counts. Unlike _load_warehouses (used for province-
+    # wide oversight views), this page's warehouse list is PSWDO-only so a
+    # CSWDO office can never even be selected as either endpoint here.
+    _, all_warehouses, _ = _load_warehouses()
+    warehouses = [w for w in all_warehouses if w["office"].office_type == "pswdo"]
+    total_food_packs = sum(w["food_pack_qty"] for w in warehouses)
 
     if request.method == "POST":
         from_office_id = request.form.get("from_office_id", type=int)
@@ -1816,6 +1953,14 @@ def warehouse_stock_transfer_page():
 
         if not from_office_id or not to_office_id or from_office_id == to_office_id or not quantity or quantity <= 0:
             flash("Select two different warehouses and a valid quantity.", "error")
+            return redirect(url_for("pswdo.warehouse_stock_transfer_page"))
+
+        from_office = Office.query.get(from_office_id)
+        to_office = Office.query.get(to_office_id)
+        if not from_office or not to_office \
+                or from_office.office_type != "pswdo" or to_office.office_type != "pswdo":
+            flash("Warehouse-to-warehouse transfers are for PSWDO depots only - use Relief Requests "
+                  "or Direct Allocation to send stock to a CSWDO warehouse.", "error")
             return redirect(url_for("pswdo.warehouse_stock_transfer_page"))
 
         source_inventory = WarehouseInventory.query.filter_by(
@@ -1837,9 +1982,6 @@ def warehouse_stock_transfer_page():
 
         source_inventory.quantity_available -= quantity
         dest_inventory.quantity_available += quantity
-
-        from_office = Office.query.get(from_office_id)
-        to_office = Office.query.get(to_office_id)
 
         db.session.add(WarehouseTransfer(
             from_office_id=from_office_id, to_office_id=to_office_id,
@@ -2039,15 +2181,12 @@ def _gis_config():
     templates) - resolves the role-specific panel actions once, server-side,
     instead of hardcoding routes in gis_map.js. Each URL is None for the role
     that shouldn't see that action, and gis_map.js hides the button entirely:
-      - distributionUrl:   PSWDO only - dispatch/distribution stays a PSWDO
-        responsibility per the manuscript; CSWDO has no distribution page.
       - barangayReportsUrl: CSWDO only - reviewing barangay reports is entirely
         a CSWDO/MSWDO responsibility; PSWDO has no barangay-report page."""
     is_pswdo = current_user.role in ("pswdo_admin", "system_admin")
     scope = _gis_scope_lgus()
     return {
         "role": current_user.role,
-        "distributionUrl": url_for("pswdo.distribution") if is_pswdo else None,
         "barangayReportsUrl": None if is_pswdo else url_for("cswdo.damage_assessment"),
         "defaultLgu": scope[0] if len(scope) == 1 else None,
     }
@@ -2539,18 +2678,23 @@ def _stock_request_rows(status_filter="all", municipality_filter="all", search="
     return rows
 
 
-def _municipal_demand_for(office, event):
-    """Sum of the barangay-level model outputs for an office's LGU - the exact
-    figure PSWDO sees (aggregation traceability). Barangays no longer state a
-    figure of their own, so this is purely the aggregated model estimate."""
-    lgu = office.area_covered if office else None
-    if not lgu:
-        return [], 0
-    rows = []
-    for b in Barangay.query.filter_by(city_municipality=lgu).order_by(Barangay.barangay_name).all():
-        model = ml_predict.predict_quantity(b) or 0
-        rows.append({"barangay": b, "model": model, "requested": None, "demand": model})
-    return rows, sum(r["demand"] for r in rows)
+# SUPERSEDED by app.ml.predict.forecast_lgu, called directly in
+# recommendations_page() below - the model now forecasts at LGU level
+# natively, so summing per-barangay outputs back up to a municipal figure is
+# redundant indirection through the same number. Left here commented out,
+# not deleted, in case the per-barangay breakdown view is wanted back.
+# def _municipal_demand_for(office, event):
+#     """Sum of the barangay-level model outputs for an office's LGU - the exact
+#     figure PSWDO sees (aggregation traceability). Barangays no longer state a
+#     figure of their own, so this is purely the aggregated model estimate."""
+#     lgu = office.area_covered if office else None
+#     if not lgu:
+#         return [], 0
+#     rows = []
+#     for b in Barangay.query.filter_by(city_municipality=lgu).order_by(Barangay.barangay_name).all():
+#         model = ml_predict.predict_quantity(b) or 0
+#         rows.append({"barangay": b, "model": model, "requested": None, "demand": model})
+#     return rows, sum(r["demand"] for r in rows)
 
 
 @pswdo_bp.route("/relief-requests")
@@ -2882,24 +3026,38 @@ def transfer_issue(transfer_id):
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def recommendations_page():
-    # Province-wide page (all TARGET_LGUS) - shows PSWDO's own event only.
-    # _municipal_demand_for below is purely model-based per municipality and
-    # doesn't actually read this event; it's just the banner display.
+    # Province-wide page (all TARGET_LGUS) - shows PSWDO's own event only,
+    # for the banner display (the time-forecasting model doesn't read it -
+    # see app.ml.train on why it forecasts a representative seasonal cycle
+    # rather than reacting to any one active event).
     active_event = blocking_event_for_province()
     _, warehouses, total_food_packs = _load_warehouses()
     depots = [w for w in warehouses if w["office"].office_type == "pswdo"]
     healthiest = max(depots, key=lambda w: w["food_pack_qty"], default=None)
 
+    # Same 4/6/12-month horizon choice as the CSWDO Predictive Analytics
+    # page (app.routes.prediction) - "demand" below is this month's slice
+    # (for the shortage/coverage comparison against what's on hand right
+    # now); "stockpile_total" is the full horizon, PSWDO's actual
+    # pre-positioning target.
+    horizon_months = request.args.get("months", 6, type=int)
+    if horizon_months not in (4, 6, 12):
+        horizon_months = 6
+
     municipalities = []
-    total_demand = total_shortage = 0
+    total_demand = total_shortage = total_stockpile = 0
     for lgu in TARGET_LGUS:
         office = Office.query.filter_by(office_type="cswdo", area_covered=lgu).first()
-        breakdown, demand = _municipal_demand_for(office, active_event)
+        forecast = ml_predict.forecast_lgu(lgu, horizon_months)
+        demand = forecast["months"][0]["projected_packs"] if forecast else 0
+        stockpile_total = forecast["horizon_total"] if forecast else 0
+        barangay_count = Barangay.query.filter_by(city_municipality=lgu).count()
         fp = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first() if office else None
         on_hand = fp.quantity_available if fp else 0
         shortage = max(demand - on_hand, 0)
         total_demand += demand
         total_shortage += shortage
+        total_stockpile += stockpile_total
         # any open stock request for this municipality?
         open_req = ReliefRequestBatch.query.filter(
             ReliefRequestBatch.office_id == (office.office_id if office else 0),
@@ -2908,7 +3066,8 @@ def recommendations_page():
         municipalities.append({
             "lgu": lgu, "office": office, "demand": demand, "on_hand": on_hand,
             "shortage": shortage, "coverage_pct": round(min(on_hand / demand * 100, 100)) if demand else 100,
-            "barangay_count": len(breakdown), "open_request": open_req,
+            "barangay_count": barangay_count, "open_request": open_req,
+            "stockpile_total": stockpile_total, "forecast_months": forecast["months"] if forecast else [],
         })
 
     recs = []
@@ -2923,11 +3082,12 @@ def recommendations_page():
             action = f"Stock request {m['open_request'].ref} already approved - monitor the transfer."
             link = url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id)
         else:
-            action = f"No request on file yet. Consider pre-positioning ~{m['shortage']:,} packs from {src}."
+            action = (f"No request on file yet. Consider pre-positioning ~{m['shortage']:,} packs from {src} "
+                      f"now, toward a {horizon_months}-month stockpile target of {m['stockpile_total']:,} packs.")
             link = url_for("pswdo.relief_requests")
         recs.append({
             "type": "critical" if m["coverage_pct"] < 50 else "warning",
-            "title": f"{m['lgu']}: {m['demand']:,} predicted demand vs {m['on_hand']:,} on hand → short {m['shortage']:,}",
+            "title": f"{m['lgu']}: {m['demand']:,} projected this month vs {m['on_hand']:,} on hand → short {m['shortage']:,}",
             "detail": action, "link": link,
         })
     for w in depots:
@@ -2940,13 +3100,15 @@ def recommendations_page():
             })
     if not recs:
         recs.append({"type": "info", "title": "All municipal warehouses are covered",
-                     "detail": f"Predicted demand {total_demand:,} packs is met by current municipal stock.", "link": None})
+                     "detail": f"Projected demand {total_demand:,} packs this month is met by current municipal stock.", "link": None})
 
     return render_template(
         "pswdo/recommendations.html",
         active_event=active_event, municipalities=municipalities, recommendations=recs,
         total_demand=total_demand, total_shortage=total_shortage,
+        total_stockpile=total_stockpile, horizon_months=horizon_months,
         total_food_packs=total_food_packs,
+        model_available=ml_predict.is_model_available(),
     )
 
 

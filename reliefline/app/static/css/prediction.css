@@ -122,6 +122,41 @@
     font-family: inherit;
 }
 
+/* Forecast - bar chart (inline SVG, same no-library pattern as the line chart above) */
+.pa-bar-chart {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 6px 2px 0;
+}
+
+.pa-bar-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.pa-bar-grid { stroke: #eef0f5; stroke-width: 1; }
+
+.pa-bar-col {
+    fill: #4896fe;
+    rx: 4;
+}
+
+.pa-bar-value {
+    fill: #1a2233;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+}
+
+.pa-bar-label {
+    fill: #8a94a6;
+    font-size: 12.5px;
+    font-family: inherit;
+}
+
 /* Model performance + decision logic */
 .pa-model-panel, .pa-decision-logic {
     margin-top: 18px;

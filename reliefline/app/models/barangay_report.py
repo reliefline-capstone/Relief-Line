@@ -4,7 +4,7 @@ class BarangayReport(db.Model):
     """Barangay-submitted disaster *situation report*, reviewed by the
     CSWDO/MSWDO office. It is a pure impact/status report - the barangay no
     longer states a food-pack figure. Deciding an allocation is entirely a
-    CSWDO/MSWDO call, informed by the Linear Regression model's recommended
+    CSWDO/MSWDO call, informed by the time-forecasting model's recommended
     quantity and the barangay's own current stock (manuscript Ch.1/Scope:
     "allocation ... based on predictive model outputs and CSWDO/MSWDO
     operational decisions").

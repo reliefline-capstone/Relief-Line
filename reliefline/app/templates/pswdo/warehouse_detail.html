@@ -29,7 +29,9 @@
             <section class="panel">
                 <div class="panel-header">
                     <h3>General Information</h3>
+                    {% if office.office_type == 'pswdo' %}
                     <button type="button" class="btn-outline" data-open-modal="edit-warehouse-modal">{{ icon('external-link', 14) }} Edit</button>
+                    {% endif %}
                 </div>
 
                 <div class="wh-info-rows">
@@ -67,8 +69,12 @@
                         <div class="wh-info-row"><span>Available Space</span><strong class="text-green">{{ "{:,}".format(capacity - food_pack_qty if capacity > food_pack_qty else 0) }}</strong></div>
                         <div class="wh-info-row"><span>Days Remaining</span><strong class="text-green">{% if days_remaining is not none %}{{ days_remaining|int }} days{% else %}-{% endif %}</strong></div>
                     </div>
+                    {% if office.office_type == 'pswdo' %}
                     <a href="{{ url_for('pswdo.warehouse_inventory_items', office_id=office.office_id) }}" class="btn-add-warehouse wh-block-btn">{{ icon('package', 14, 'white') }} Manage Inventory</a>
                     <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="wh-text-link wh-block-link">{{ icon('rotate-ccw', 14) }} Stock Transfer</a>
+                    {% else %}
+                    <a href="{{ url_for('pswdo.warehouse_inventory_items', office_id=office.office_id) }}" class="btn-add-warehouse wh-block-btn">{{ icon('package', 14, 'white') }} View Inventory</a>
+                    {% endif %}
                 </section>
             </aside>
 
@@ -77,7 +83,7 @@
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Inventory Summary</h3>
-                <a href="{{ url_for('pswdo.warehouse_inventory_items', office_id=office.office_id) }}" class="link-manage">Manage →</a>
+                <a href="{{ url_for('pswdo.warehouse_inventory_items', office_id=office.office_id) }}" class="link-manage">{{ 'Manage →' if office.office_type == 'pswdo' else 'View →' }}</a>
             </div>
             <table class="wh-table">
                 <thead>
@@ -125,6 +131,7 @@
     </main>
 </div>
 
+{% if office.office_type == 'pswdo' %}
 <!-- Edit warehouse modal -->
 <div class="rd-modal-overlay" id="edit-warehouse-modal" hidden>
     <div class="rd-modal">
@@ -160,6 +167,7 @@
         </form>
     </div>
 </div>
+{% endif %}
 
 {% endblock %}
 

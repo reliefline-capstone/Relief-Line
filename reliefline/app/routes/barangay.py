@@ -27,6 +27,7 @@ from app.models.barangay_inventory import BarangayInventory, BarangayStockLog
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.warehouse import WarehouseInventory, WarehouseStockLog
+from app.models.food_pack_batch import FoodPackComponent, BarangayFoodPackBatch, BarangayFoodPackBatchItem
 from app.models.activity_log import ActivityLog
 from app.models.user import User
 from app.utils import weather as weather_service
@@ -34,8 +35,14 @@ from app.utils import weather as weather_service
 # Reused from the PSWDO route module so a status label, priority tier, or
 # notification icon never drifts between the PSWDO/CSWDO screens and this
 # barangay-facing one - see app/routes/pswdo.py for the source of truth.
+# _shelf_status/NEAR_EXPIRY_DAYS/_consume_food_pack_batches_fifo back the new
+# barangay-tier Food Pack Batches panel below - _shelf_status is pure (no DB
+# writes) so it's reused as-is rather than duplicated, and
+# _consume_food_pack_batches_fifo is already office_id-generic so it's reused
+# unmodified to FIFO-drain the fulfilling CSWDO office's own batches.
 from app.routes.pswdo import (
     DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
+    _shelf_status, NEAR_EXPIRY_DAYS, _consume_food_pack_batches_fifo, _refreshed_batch_items,
 )
 
 barangay_bp = Blueprint("barangay", __name__)
@@ -1286,7 +1293,20 @@ def _record_barangay_receipt(rec):
         distribution_id=rec.distribution_id, updated_by=current_user.user_id,
         reason=f"Received delivery {ref}{detail}",
     ))
+
     alloc = rec.allocation
+    # Carry the fulfilling CSWDO office's original received_date(s) forward
+    # (FIFO), same fix as cswdo.receive_transfer for PSWDO->CSWDO transfers -
+    # only `usable` packs get a batch, matching what actually enters stock
+    # above; damaged packs never enter BarangayInventory so they get no
+    # batch either. Skipped silently (barangay stock is still credited
+    # normally) when there's no fulfilling office on record - e.g. a
+    # legacy/malformed allocation.
+    fulfilling_office_id = alloc.fulfilling_office_id if alloc else None
+    if usable and fulfilling_office_id:
+        for received_date, qty in _consume_food_pack_batches_fifo(fulfilling_office_id, usable):
+            _create_barangay_food_pack_batch(rec.barangay_id, qty, received_date, current_user.user_id)
+
     if alloc and alloc.barangay_report_id:
         rep = BarangayReport.query.get(alloc.barangay_report_id)
         if rep and rep.status == "approved":
@@ -1343,6 +1363,100 @@ def _return_damaged_packs(rec):
     ))
 
 
+def _sync_barangay_food_pack_batches(barangay_id):
+    """Barangay-tier mirror of pswdo._sync_food_pack_batches: keeps
+    BarangayFoodPackBatch bookkeeping honest against the real "food_pack"
+    BarangayInventory total, then moves anything past its expiration_date
+    into a separate "food_pack_expired" bucket - same lazy-bucket pattern the
+    office tier uses.
+
+    Batches only get created on receipt (see _record_barangay_receipt) -
+    outgoing movements (_record_barangay_distribution) touch
+    BarangayInventory.quantity_available directly without picking a batch,
+    so the running batch total can drift ahead of the real on-hand count.
+    Step 1 below reconciles that drift, oldest batch first, on every call -
+    called at the top of every route that renders a barangay's current
+    stock.
+    """
+    fp = BarangayInventory.query.filter_by(barangay_id=barangay_id, item_type="food_pack").first()
+    on_hand = fp.quantity_available if fp else 0
+
+    active_batches = BarangayFoodPackBatch.query.filter_by(barangay_id=barangay_id, status="active").order_by(
+        BarangayFoodPackBatch.received_date, BarangayFoodPackBatch.batch_id
+    ).all()
+
+    batch_total = sum(b.quantity_remaining for b in active_batches)
+    excess = batch_total - on_hand
+    if excess > 0:
+        for b in active_batches:
+            if excess <= 0:
+                break
+            trim = min(b.quantity_remaining, excess)
+            b.quantity_remaining -= trim
+            excess -= trim
+        active_batches = [b for b in active_batches if b.quantity_remaining > 0]
+
+    today = ph_today()
+    expired_batches = [b for b in active_batches if b.expiration_date < today and b.quantity_remaining > 0]
+    if not expired_batches:
+        db.session.commit()
+        return
+
+    expired_qty = sum(b.quantity_remaining for b in expired_batches)
+    if fp:
+        fp.quantity_available = max((fp.quantity_available or 0) - expired_qty, 0)
+
+    expired_item = BarangayInventory.query.filter_by(barangay_id=barangay_id, item_type="food_pack_expired").first()
+    if expired_item is None:
+        expired_item = BarangayInventory(
+            barangay_id=barangay_id, item_type="food_pack_expired",
+            item_name="Food Packs (Expired)", unit="packs", quantity_available=0,
+        )
+        db.session.add(expired_item)
+    expired_item.quantity_available = (expired_item.quantity_available or 0) + expired_qty
+
+    db.session.add(BarangayStockLog(
+        barangay_id=barangay_id, item_type="food_pack", item_name="Food Packs",
+        delta=-expired_qty, source_type="expired",
+        reason=f"{expired_qty:,} food packs passed their expiration date",
+    ))
+    db.session.add(BarangayStockLog(
+        barangay_id=barangay_id, item_type="food_pack_expired", item_name="Food Packs (Expired)",
+        delta=expired_qty, source_type="expired",
+        reason=f"{expired_qty:,} food packs moved to Expired after passing their expiration date",
+    ))
+
+    for b in expired_batches:
+        b.status = "expired"
+        b.expired_at = ph_now()
+
+    db.session.commit()
+
+
+def _create_barangay_food_pack_batch(barangay_id, quantity, received_date, updated_by=None):
+    """Barangay-tier mirror of pswdo._create_food_pack_batch: opens one
+    BarangayFoodPackBatch for newly-received Food Packs stock, with a
+    BarangayFoodPackBatchItem per FoodPackComponent. Does not commit (caller
+    commits)."""
+    from datetime import timedelta
+    components = FoodPackComponent.query.all()
+    shortest_shelf_life = min((c.shelf_life_days for c in components), default=180)
+    batch = BarangayFoodPackBatch(
+        barangay_id=barangay_id, quantity_remaining=quantity,
+        received_date=received_date,
+        expiration_date=received_date + timedelta(days=shortest_shelf_life),
+        updated_by=updated_by,
+    )
+    db.session.add(batch)
+    db.session.flush()
+    for c in components:
+        db.session.add(BarangayFoodPackBatchItem(
+            batch_id=batch.batch_id, component_id=c.component_id,
+            expiration_date=received_date + timedelta(days=c.shelf_life_days),
+        ))
+    return batch
+
+
 # ---------------------------------------------------------------------------
 # Inventory - the barangay's own food-pack stock. A plain +/- ledger for
 # operational visibility (CSWDO/PSWDO can also see it). Goes UP automatically
@@ -1355,6 +1469,7 @@ def _return_damaged_packs(rec):
 @role_required("barangay_user")
 def inventory():
     barangay = _own_barangay_or_404()
+    _sync_barangay_food_pack_batches(barangay.barangay_id)
     inv = BarangayInventory.query.filter_by(
         barangay_id=barangay.barangay_id, item_type="food_pack"
     ).first()
@@ -1398,12 +1513,113 @@ def inventory():
         barangay_id=barangay.barangay_id, is_active=True
     ).order_by(Family.purok, Family.family_name).all()
 
+    batches = BarangayFoodPackBatch.query.filter(
+        BarangayFoodPackBatch.barangay_id == barangay.barangay_id,
+        BarangayFoodPackBatch.quantity_remaining > 0,
+    ).order_by(BarangayFoodPackBatch.expiration_date).all()
+    batch_rows = [{"batch": b, "shelf_status": _shelf_status(b.expiration_date)} for b in batches]
+
     return render_template(
         "barangay/inventory.html",
         barangay=barangay, on_hand=on_hand, logs=logs, families=families,
         received=received, given_out=given_out, delivery_recs=delivery_recs,
         type_filter=type_filter, date_filter=date_filter,
+        batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
     )
+
+
+@barangay_bp.route("/inventory/expired-batch/<int:batch_id>/resolve", methods=["POST"])
+@login_required
+@role_required("barangay_user")
+def inventory_resolve_expired_batch(batch_id):
+    """Disposed/Fixed resolution for one expired BarangayFoodPackBatch -
+    mirrors pswdo.warehouse_inventory_resolve_expired_batch /
+    cswdo.municipal_inventory_resolve_expired_batch."""
+    barangay = _own_barangay_or_404()
+    batch = BarangayFoodPackBatch.query.get_or_404(batch_id)
+    if batch.barangay_id != barangay.barangay_id or batch.status != "expired":
+        abort(403)
+
+    quantity = request.form.get("quantity", type=int)
+    resolution = request.form.get("resolution", "")
+    if not quantity or quantity <= 0:
+        flash("Enter how many expired packs this covers.", "error")
+        return redirect(url_for("barangay.inventory"))
+    if quantity > batch.quantity_remaining:
+        flash(f"Only {batch.quantity_remaining:,} expired packs are on record for that batch.", "error")
+        return redirect(url_for("barangay.inventory"))
+    if resolution not in ("disposed", "fixed"):
+        flash("Select Disposed or Fixed.", "error")
+        return redirect(url_for("barangay.inventory"))
+
+    expired_item = BarangayInventory.query.filter_by(
+        barangay_id=barangay.barangay_id, item_type="food_pack_expired"
+    ).first()
+    if expired_item is None or expired_item.quantity_available < quantity:
+        flash("Expired stock record is out of sync - reload and try again.", "error")
+        return redirect(url_for("barangay.inventory"))
+
+    plan, replaced_components = _refreshed_batch_items(batch, ph_today())
+
+    batch.quantity_remaining -= quantity
+    expired_item.quantity_available -= quantity
+    expired_item.updated_by = current_user.user_id
+
+    if resolution == "disposed":
+        db.session.add(BarangayStockLog(
+            barangay_id=barangay.barangay_id, item_type="food_pack_expired", item_name=expired_item.item_name,
+            delta=-quantity, source_type="expired",
+            reason=f"{quantity:,} expired packs disposed / written off",
+            updated_by=current_user.user_id,
+        ))
+        flash(f"{quantity:,} expired packs marked disposed.", "success")
+    else:
+        replaced_names = ", ".join(c.name for c in replaced_components)
+        db.session.add(BarangayStockLog(
+            barangay_id=barangay.barangay_id, item_type="food_pack_expired", item_name=expired_item.item_name,
+            delta=-quantity, source_type="expired",
+            reason=f"{quantity:,} expired packs resolved - {replaced_names} replaced with fresh stock",
+            updated_by=current_user.user_id,
+        ))
+        fp = BarangayInventory.query.filter_by(barangay_id=barangay.barangay_id, item_type="food_pack").first()
+        if fp is None:
+            fp = BarangayInventory(
+                barangay_id=barangay.barangay_id, item_type="food_pack",
+                item_name="Food Packs", unit="packs", quantity_available=0,
+            )
+            db.session.add(fp)
+        fp.quantity_available = (fp.quantity_available or 0) + quantity
+        fp.updated_by = current_user.user_id
+        db.session.add(BarangayStockLog(
+            barangay_id=barangay.barangay_id, item_type="food_pack", item_name="Food Packs",
+            delta=quantity, source_type="expired",
+            reason=f"{quantity:,} packs returned to usable stock after replacing {replaced_names}",
+            updated_by=current_user.user_id,
+        ))
+
+        # received_date is today, not the original batch's date - see the
+        # matching comment in pswdo.warehouse_inventory_resolve_expired_batch
+        # for why (keeping the old date would make this brand-new stock look
+        # like the oldest active batch and expose it to the next sync's
+        # drift-reconciliation trim ahead of batches that are genuinely older).
+        new_batch = BarangayFoodPackBatch(
+            barangay_id=barangay.barangay_id, quantity_remaining=quantity,
+            received_date=ph_today(),
+            expiration_date=min(exp for _, exp in plan),
+            status="active", updated_by=current_user.user_id,
+        )
+        db.session.add(new_batch)
+        db.session.flush()
+        for component_id, exp in plan:
+            db.session.add(BarangayFoodPackBatchItem(
+                batch_id=new_batch.batch_id, component_id=component_id, expiration_date=exp,
+            ))
+
+        flash(f"{quantity:,} expired packs marked fixed - {replaced_names} replaced, "
+              f"returned to Food Packs stock.", "success")
+
+    db.session.commit()
+    return redirect(url_for("barangay.inventory"))
 
 
 def _record_barangay_distribution(barangay_id, amount, reason, family_id=None):

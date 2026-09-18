@@ -48,7 +48,11 @@ class BarangayStockLog(db.Model):
     delta always 0 - damaged packs from a delivery never entered this
     barangay's usable stock in the first place, see app.routes.barangay.
     _return_damaged_packs; this row just records, for the barangay's own
-    history, that they were sent back to the fulfilling office's warehouse).
+    history, that they were sent back to the fulfilling office's warehouse),
+    'expired' (a BarangayFoodPackBatch passing its expiration_date, or a
+    later Disposed/Fixed resolution of one - see app.routes.barangay.
+    _sync_barangay_food_pack_batches / inventory_resolve_expired_batch;
+    mirrors WarehouseStockLog's own "expired" source_type at the office tier).
     """
     __tablename__ = "barangay_stock_logs"
 
@@ -59,7 +63,7 @@ class BarangayStockLog(db.Model):
     delta = db.Column(db.Integer, nullable=False)
     reason = db.Column(db.String(255), nullable=True)
     source_type = db.Column(
-        db.Enum("delivery", "distribution", "adjustment", "damaged_return"),
+        db.Enum("delivery", "distribution", "adjustment", "damaged_return", "expired"),
         nullable=False, default="adjustment", server_default="adjustment",
     )
     distribution_id = db.Column(

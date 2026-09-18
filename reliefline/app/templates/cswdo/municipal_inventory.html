@@ -374,9 +374,9 @@
             <select name="resolution" id="mi-br-{{ batch.batch_id }}" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="disposed">Disposed - written off</option>
-                <option value="fixed">Fixed - return to Food Packs stock</option>
+                <option value="fixed">Fixed - replace spoiled item and return to stock</option>
             </select>
-            <p class="form-hint">Disposed removes these expired packs from the record for good. Fixed moves them back into the office's usable Food Packs stock.</p>
+            <p class="form-hint">Disposed removes these expired packs from the record for good. Fixed replaces whichever component actually spoiled (usually the rice) with fresh stock and returns the pack(s) to the office's usable Food Packs stock - the still-good contents keep their original dates.</p>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">Resolve</button>
                 <button type="button" class="btn-cancel" data-close-modal>Cancel</button>

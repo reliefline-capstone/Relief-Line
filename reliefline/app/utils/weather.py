@@ -4,8 +4,8 @@ for the three target LGUs (Urdaneta City, Santa Barbara, Calasiao) named in
 the manuscript's Scope and Limitations section.
 
 This is a situational-awareness add-on layered on top of the manuscript's
-core deliverables (Linear Regression allocation prediction + geospatial
-mapping) - it does not feed the predictive model or change any of its six
+core deliverables (time-forecasting demand model + geospatial
+mapping) - it does not feed the predictive model or change any of its
 predictor variables. It exists so PSWDO/CSWDO/barangay users can see current
 conditions and an approaching tropical cyclone *before* someone manually logs
 a DisasterEvent, the same way DisasterEvent.weather_condition already lets

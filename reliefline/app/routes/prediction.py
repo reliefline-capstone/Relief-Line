@@ -33,7 +33,7 @@ prediction_bp = Blueprint("prediction", __name__)
 def _scope_lgus():
     """LGUs this user's analytics view may cover.
 
-    The Linear Regression model is a CSWDO/MSWDO decision-support tool (see the
+    The time-forecasting model is a CSWDO/MSWDO decision-support tool (see the
     manuscript's Ch.1 Purpose and Ch.3 Project Design), so a cswdo_admin is
     pinned to their own municipality - same per-office boundary as
     app.routes.pswdo._gis_scope_lgus. PSWDO/system_admin still see all three
@@ -201,24 +201,32 @@ def index():
     burn_rate = round(total_affected_families / 3, 0) if total_affected_families > 0 else 0
     days_remaining = round(total_food_packs / burn_rate, 1) if burn_rate > 0 else None
 
-    # ---- Demand forecast by municipality ----
-    forecast_by_lgu = []
-    for lgu in lgus:
-        lgu_snaps = [s for s in snapshots if s["lgu"] == lgu]
-        packs_needed = sum(s["packs_needed"] for s in lgu_snaps)
-        delivered = sum(s["released"] for s in lgu_snaps)
-        worst_rank = max((s["priority_rank"] for s in lgu_snaps), default=0)
-        worst = next((v for v in _STOCK_TIER.values() if v["rank"] == worst_rank), _STOCK_TIER["unrated"])
-        forecast_by_lgu.append({
-            "lgu": lgu,
-            "packs_needed": packs_needed,
-            "delivered": delivered,
-            "remaining": max(packs_needed - delivered, 0),
-            "pct_done": round((delivered / packs_needed) * 100) if packs_needed else 0,
-            "priority_label": worst["label"],
-            "priority_tier": worst["tier"],
-        })
-    forecast_by_lgu.sort(key=lambda f: f["packs_needed"], reverse=True)
+    # ---- Demand forecast by municipality --------------------------------
+    # SUPERSEDED by the time-forecasting model (app.ml.predict.forecast_lgu) -
+    # this was a current-moment snapshot (sum of submitted requests / model
+    # estimates vs delivered-so-far), not an actual multi-month forecast,
+    # and its "Demand Forecast by Municipality" panel is commented out in
+    # prediction/index.html in favor of the model-driven per-LGU summary
+    # built below (see "Time forecasting - projected demand per LGU").
+    # Left here commented out, not deleted, in case the snapshot view is
+    # wanted back later.
+    # forecast_by_lgu = []
+    # for lgu in lgus:
+    #     lgu_snaps = [s for s in snapshots if s["lgu"] == lgu]
+    #     packs_needed = sum(s["packs_needed"] for s in lgu_snaps)
+    #     delivered = sum(s["released"] for s in lgu_snaps)
+    #     worst_rank = max((s["priority_rank"] for s in lgu_snaps), default=0)
+    #     worst = next((v for v in _STOCK_TIER.values() if v["rank"] == worst_rank), _STOCK_TIER["unrated"])
+    #     forecast_by_lgu.append({
+    #         "lgu": lgu,
+    #         "packs_needed": packs_needed,
+    #         "delivered": delivered,
+    #         "remaining": max(packs_needed - delivered, 0),
+    #         "pct_done": round((delivered / packs_needed) * 100) if packs_needed else 0,
+    #         "priority_label": worst["label"],
+    #         "priority_tier": worst["tier"],
+    #     })
+    # forecast_by_lgu.sort(key=lambda f: f["packs_needed"], reverse=True)
 
     # ---- Priority ranking (barangay-level) - by STOCK SHORTFALL: the
     # barangays least able to cover their own reported caseload from their own
@@ -267,6 +275,34 @@ def index():
 
     # ---- Model performance (real, honest - see app/ml/train.py) ----
     latest_metrics = ModelMetrics.query.order_by(ModelMetrics.trained_at.desc()).first()
+
+    # ---- Time forecasting - projected demand per LGU over a future horizon
+    # (see app.ml.predict.forecast_lgu). Query-param driven, same pattern as
+    # municipality_filter/days_filter above - stays on this page rather than
+    # a separate route. ----
+    forecast_months = request.args.get("forecast_months", 6, type=int)
+    if forecast_months not in (4, 6, 12):
+        forecast_months = 6
+    forecast_lgu_choice = request.args.get("forecast_lgu", "")
+    if forecast_lgu_choice not in scope_lgus:
+        forecast_lgu_choice = scope_lgus[0] if scope_lgus else None
+    lgu_forecast = ml_predict.forecast_lgu(forecast_lgu_choice, forecast_months) if forecast_lgu_choice else None
+
+    # Compact per-LGU comparison strip shown above the detailed chart -
+    # replaces the old "Demand Forecast by Municipality" snapshot panel
+    # (commented out above) with the model's actual current-month + horizon
+    # projections for every LGU in scope, not just the one currently picked.
+    forecast_summary_by_lgu = []
+    for lgu in lgus:
+        lf = ml_predict.forecast_lgu(lgu, forecast_months)
+        if lf is None:
+            continue
+        forecast_summary_by_lgu.append({
+            "lgu": lgu,
+            "this_month": lf["months"][0]["projected_packs"] if lf["months"] else 0,
+            "horizon_total": lf["horizon_total"],
+        })
+    forecast_summary_by_lgu.sort(key=lambda f: f["horizon_total"], reverse=True)
 
     # ---- Recommendations: real stock-transfer rules + top-priority barangay ----
     # Link targets are role-aware - the PSWDO stock-transfer / relief-request
@@ -324,13 +360,17 @@ def index():
         estimated_three_day_need=estimated_three_day_need,
         total_affected_families=total_affected_families,
         recommendations=recommendations,
-        forecast_by_lgu=forecast_by_lgu,
+        # forecast_by_lgu=forecast_by_lgu,  # superseded - see comment above where it's built
         ranking=ranking,
         warehouse_cards=warehouse_cards,
         historical_trend=historical_trend,
         latest_metrics=latest_metrics,
         model_available=ml_predict.is_model_available(),
         fulfillable_warehouses=fulfillable_warehouses,
+        forecast_months=forecast_months,
+        forecast_lgu_choice=forecast_lgu_choice,
+        lgu_forecast=lgu_forecast,
+        forecast_summary_by_lgu=forecast_summary_by_lgu,
     )
 
 

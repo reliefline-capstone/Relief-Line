@@ -46,10 +46,10 @@ from app.routes.pswdo import (
     _gis_scope_lgus, _gis_config,
     _parse_stock_source, _slugify, _full_stock_movements,
     _shelf_status, _sync_food_pack_batches, NEAR_EXPIRY_DAYS,
-    _create_food_pack_batch,
+    _create_food_pack_batch, _consume_food_pack_batches_fifo, _refreshed_batch_items,
 )
 from app.models.warehouse import WarehouseStockLog
-from app.models.food_pack_batch import FoodPackBatch
+from app.models.food_pack_batch import FoodPackBatch, FoodPackBatchItem
 
 # CSWDO's own link targets for notification "View" buttons - deliberately NOT
 # the pswdo.* links NOTIFICATION_LINK_BUILDERS (app/routes/pswdo.py) resolves
@@ -1518,7 +1518,12 @@ def receive_transfer(transfer_id):
         transfer.batch.status = "fulfilled"
 
     if transfer.item_type == "food_pack":
-        _create_food_pack_batch(office.office_id, transfer.quantity, ph_today(), current_user.user_id)
+        # Carry the source depot's original received_date(s) forward (FIFO)
+        # instead of stamping today's date, so stock that already had e.g. 4
+        # months of shelf life left doesn't reset to a fresh clock just
+        # because it changed warehouses.
+        for received_date, qty in _consume_food_pack_batches_fifo(transfer.from_office_id, transfer.quantity):
+            _create_food_pack_batch(office.office_id, qty, received_date, current_user.user_id)
 
     db.session.add(WarehouseStockLog(
         office_id=office.office_id, item_type=transfer.item_type, item_name=inv.item_name,
@@ -2247,6 +2252,8 @@ def municipal_inventory_resolve_expired_batch(batch_id):
         flash("Expired stock record is out of sync - reload and try again.", "error")
         return redirect(url_for("cswdo.municipal_inventory"))
 
+    plan, replaced_components = _refreshed_batch_items(batch, ph_today())
+
     batch.quantity_remaining -= quantity
     expired_item.quantity_available -= quantity
     expired_item.updated_by = current_user.user_id
@@ -2260,10 +2267,11 @@ def municipal_inventory_resolve_expired_batch(batch_id):
         ))
         flash(f"{quantity:,} expired packs marked disposed.", "success")
     else:
+        replaced_names = ", ".join(c.name for c in replaced_components)
         db.session.add(WarehouseStockLog(
             office_id=office.office_id, item_type="food_pack_expired", item_name=expired_item.item_name,
             delta=-quantity, source_type="expired",
-            reason=f"{quantity:,} expired packs repaired - moved back to usable Food Packs stock",
+            reason=f"{quantity:,} expired packs resolved - {replaced_names} replaced with fresh stock",
             updated_by=current_user.user_id,
         ))
         fp = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first()
@@ -2278,10 +2286,30 @@ def municipal_inventory_resolve_expired_batch(batch_id):
         db.session.add(WarehouseStockLog(
             office_id=office.office_id, item_type="food_pack", item_name="Food Packs",
             delta=quantity, source_type="expired",
-            reason=f"{quantity:,} previously-expired packs repaired and returned to usable stock",
+            reason=f"{quantity:,} packs returned to usable stock after replacing {replaced_names}",
             updated_by=current_user.user_id,
         ))
-        flash(f"{quantity:,} expired packs marked fixed and returned to Food Packs stock.", "success")
+
+        # received_date is today, not the original batch's date - see the
+        # matching comment in pswdo.warehouse_inventory_resolve_expired_batch
+        # for why (keeping the old date would make this brand-new stock look
+        # like the oldest active batch and expose it to the next sync's
+        # drift-reconciliation trim ahead of batches that are genuinely older).
+        new_batch = FoodPackBatch(
+            office_id=office.office_id, quantity_remaining=quantity,
+            received_date=ph_today(),
+            expiration_date=min(exp for _, exp in plan),
+            status="active", updated_by=current_user.user_id,
+        )
+        db.session.add(new_batch)
+        db.session.flush()
+        for component_id, exp in plan:
+            db.session.add(FoodPackBatchItem(
+                batch_id=new_batch.batch_id, component_id=component_id, expiration_date=exp,
+            ))
+
+        flash(f"{quantity:,} expired packs marked fixed - {replaced_names} replaced, "
+              f"returned to Food Packs stock.", "success")
 
     db.session.commit()
     return redirect(url_for("cswdo.municipal_inventory"))

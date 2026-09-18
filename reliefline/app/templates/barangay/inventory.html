@@ -94,6 +94,7 @@
                         <option value="delivery" {{ 'selected' if type_filter == 'delivery' }}>Received</option>
                         <option value="distribution" {{ 'selected' if type_filter == 'distribution' }}>Given Out</option>
                         <option value="damaged_return" {{ 'selected' if type_filter == 'damaged_return' }}>Returned - Damaged</option>
+                        <option value="expired" {{ 'selected' if type_filter == 'expired' }}>Expired</option>
                     </select>
                     <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
                 </form>
@@ -117,6 +118,66 @@
                 {% endfor %}
             </details>
             {% endif %}
+        </section>
+
+        <section class="panel wh-table-panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>Food Pack Batches</h3>
+                <span class="rd-sub">Shelf-life tracking per delivery - {{ near_expiry_days }} days or less to expiry is flagged Near Expiry.</span>
+            </div>
+            <table class="wh-table wh-batches-table">
+                <thead>
+                    <tr>
+                        <th>RECEIVED</th><th>EARLIEST EXPIRY</th><th>DAYS LEFT / OVERDUE</th><th>QUANTITY</th><th>CONTENTS</th><th>STATUS</th><th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in batch_rows %}
+                    {% set batch = row.batch %}
+                    {% set days_left = (batch.expiration_date - ph_today()).days %}
+                    <tr>
+                        <td>{{ batch.received_date.strftime('%b %d, %Y') }}</td>
+                        <td>{{ batch.expiration_date.strftime('%b %d, %Y') }}</td>
+                        <td>{% if days_left < 0 %}{{ -days_left }} days overdue{% else %}{{ days_left }} days{% endif %}</td>
+                        <td><strong>{{ "{:,}".format(batch.quantity_remaining) }}</strong></td>
+                        <td>
+                            <div class="wh-batch-contents">
+                                <button type="button" class="wh-batch-toggle" data-batch-toggle aria-expanded="false" data-count="{{ batch.items|length }}">
+                                    <span class="wh-batch-toggle-arrow">{{ icon('chevron-right', 10) }}</span>
+                                    <span class="wh-batch-toggle-label">View contents ({{ batch.items|length }})</span>
+                                </button>
+                                <ul class="wh-batch-list">
+                                    {% for bi in batch.items %}
+                                    {% set item_status = shelf_status_fn(bi.expiration_date) %}
+                                    <li>
+                                        <span class="wh-batch-item-name">{{ bi.component.name }}</span>
+                                        <span class="wh-batch-item-qty">{{ bi.component.quantity_label }}</span>
+                                        <span class="wh-batch-item-expiry">Expires {{ bi.expiration_date.strftime('%b %d, %Y') }}</span>
+                                        {% if item_status == 'expired' %}<span class="badge-health badge-low wh-batch-item-status">Expired</span>
+                                        {% elif item_status == 'near_expiry' %}<span class="badge-health badge-moderate wh-batch-item-status">Near Expiry</span>
+                                        {% else %}<span class="badge-health badge-healthy wh-batch-item-status">Fresh</span>{% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </td>
+                        <td>
+                            {% if row.shelf_status == 'expired' %}<span class="badge-health badge-low">Expired</span>
+                            {% elif row.shelf_status == 'near_expiry' %}<span class="badge-health badge-moderate">Near Expiry</span>
+                            {% else %}<span class="badge-health badge-healthy">Fresh</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if row.shelf_status == 'expired' %}
+                            <button type="button" class="wh-icon-btn" title="Resolve expired batch" data-open-modal="batch-modal-{{ batch.batch_id }}">{{ icon('external-link', 15, '#2c5aa0') }}</button>
+                            {% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="empty-note" style="text-align:center; padding:28px;">No Food Pack batches recorded yet - batches open automatically whenever Food Packs stock is received.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry reflects whichever component (usually the rice) spoils first - the whole batch is pulled together once it does, since a sealed pack isn't unbundled to save the canned goods.</p>
         </section>
 
     </main>
@@ -154,6 +215,36 @@
         </form>
     </div>
 </div>
+
+<!-- Resolve expired batch modals -->
+{% for row in batch_rows if row.shelf_status == 'expired' %}
+{% set batch = row.batch %}
+<div class="rd-modal-overlay" id="batch-modal-{{ batch.batch_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Resolve Expired Batch</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('barangay.inventory_resolve_expired_batch', batch_id=batch.batch_id) }}" class="rd-form-roomy">
+            <p class="rd-sub">Expired {{ batch.expiration_date.strftime('%b %d, %Y') }} · received {{ batch.received_date.strftime('%b %d, %Y') }}</p>
+            <label for="bq-{{ batch.batch_id }}">Quantity (packs) *</label>
+            <input type="number" name="quantity" id="bq-{{ batch.batch_id }}" min="1" max="{{ batch.quantity_remaining }}" required>
+            <p class="rd-sub">Currently on record: <strong>{{ "{:,}".format(batch.quantity_remaining) }}</strong> packs</p>
+            <label for="br-{{ batch.batch_id }}">Resolution *</label>
+            <select name="resolution" id="br-{{ batch.batch_id }}" required>
+                <option value="" selected disabled>Select...</option>
+                <option value="disposed">Disposed - written off</option>
+                <option value="fixed">Fixed - replace spoiled item and return to stock</option>
+            </select>
+            <p class="form-hint">Disposed removes these expired packs from the record for good. Fixed replaces whichever component actually spoiled (usually the rice) with fresh stock and returns the pack(s) to the barangay's usable Food Packs stock - the still-good contents keep their original dates.</p>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Resolve</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
 
 {% endblock %}
 

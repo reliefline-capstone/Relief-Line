@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // both the PSWDO and CSWDO page templates) - role-specific destinations
     // and, for a single-LGU scope (CSWDO/MSWDO), the municipality to land on
     // by default instead of an overview that only ever has one entry.
-    var GIS_CONFIG = window.RELIEFLINE_GIS_CONFIG || { role: null, barangayReportsUrl: null, distributionUrl: null, defaultLgu: null };
+    var GIS_CONFIG = window.RELIEFLINE_GIS_CONFIG || { role: null, barangayReportsUrl: null, defaultLgu: null };
 
     // PSWDO (province-wide oversight) sees municipality-level aggregates
     // only - no barangay boundaries, no barangay drill-down. That level of
@@ -552,17 +552,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<span class="badge-priority badge-priority-' + tier + '"><i class="priority-dot"></i> ' + escapeHtml(label) + '</span>';
     }
 
-    // Shared by renderMunicipalityPanel and renderBarangayDetail. Each action is
-    // scoped to the role it belongs to (see app.routes.pswdo._gis_config) - the
-    // button is simply omitted for the other role rather than linking somewhere
-    // it would 403 or make no sense:
-    //   - Distribution / dispatch stays a PSWDO responsibility.
-    //   - Reviewing barangay reports is entirely a CSWDO/MSWDO responsibility;
-    //     PSWDO has no barangay-report page.
-    function distributionButtonHtml(lgu) {
-        if (!GIS_CONFIG.distributionUrl) return '';
-        return '<button type="button" class="btn-decision btn-partial dd-full-width" data-external="distribution" data-lgu="' + escapeHtml(lgu) + '">' + ICON.arrow + ' View Distribution</button>';
-    }
+    // Used by renderMunicipalityPanel and renderBarangayDetail. Scoped to the
+    // role it belongs to (see app.routes.pswdo._gis_config) - the button is
+    // simply omitted for the other role rather than linking somewhere it
+    // would 403 or make no sense: reviewing barangay reports is entirely a
+    // CSWDO/MSWDO responsibility, PSWDO has no barangay-report page.
     function barangayReportsButtonHtml(lgu, barangayName) {
         if (!GIS_CONFIG.barangayReportsUrl) return '';
         return '<button type="button" class="btn-outline dd-full-width" data-external="barangay-reports" data-lgu="' + escapeHtml(lgu) + '"' +
@@ -684,14 +678,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         html += '</section>';
 
-        html += '<section class="panel">';
-        html += distributionButtonHtml(m.lgu);
-        html += barangayReportsButtonHtml(m.lgu);
         if (!IS_MUNI_ONLY) {
+            html += '<section class="panel">';
+            html += barangayReportsButtonHtml(m.lgu);
             html += '<button type="button" class="btn-decision dd-full-width gis-btn-dark" data-nav="barangay-list" data-lgu="' + escapeHtml(m.lgu) + '" style="margin-top:10px;">' + ICON.mapPin + ' View Barangays</button>';
+            html += '<button type="button" class="btn-outline dd-full-width" data-external="report" data-lgu="' + escapeHtml(m.lgu) + '" style="justify-content:center; margin-top:10px;">' + ICON.download + ' Generate Report</button>';
+            html += '</section>';
         }
-        html += '<button type="button" class="btn-outline dd-full-width" data-external="report" data-lgu="' + escapeHtml(m.lgu) + '" style="justify-content:center; margin-top:10px;">' + ICON.download + ' Generate Report</button>';
-        html += '</section>';
 
         return html;
     }
@@ -774,7 +767,6 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '</section>';
 
         html += '<section class="panel">';
-        html += distributionButtonHtml(b.lgu);
         html += barangayReportsButtonHtml(b.lgu, b.name);
         html += '</section>';
         return html;
@@ -995,9 +987,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var lguVal = extEl.getAttribute('data-lgu');
             var kind = extEl.getAttribute('data-external');
             var eventId = document.getElementById('filter-event').value;
-            if (kind === 'distribution' && GIS_CONFIG.distributionUrl) {
-                window.location.href = GIS_CONFIG.distributionUrl + '?q=' + encodeURIComponent(lguVal);
-            } else if (kind === 'barangay-reports' && GIS_CONFIG.barangayReportsUrl) {
+            if (kind === 'barangay-reports' && GIS_CONFIG.barangayReportsUrl) {
                 var brgy = extEl.getAttribute('data-barangay');
                 window.location.href = GIS_CONFIG.barangayReportsUrl + (brgy ? '?tab=all&q=' + encodeURIComponent(brgy) : '');
             } else if (kind === 'report') {

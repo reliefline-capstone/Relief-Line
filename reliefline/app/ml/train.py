@@ -1,47 +1,89 @@
 """
-Trains the food-pack demand model: a Linear Regression that estimates how many
-food packs a barangay needs from its profile.
+Trains the food-pack TIME-FORECASTING model: projects total food-pack demand
+per LGU (Urdaneta City, Santa Barbara, Calasiao) over future calendar
+months, so PSWDO/CSWDO can answer "how many food packs should we have in
+stock for the next 4 / 6 / 12 months" - not just "how many does this one
+barangay need for this one event," which is what the model answered before.
 
-Linear Regression is used per the ReliefLine capstone manuscript (Chapter 2 -
-Predictive Model for Relief Goods): it produces interpretable, numerical
-allocation outputs that LGU personnel can directly use for decision-making,
-and it is practical for government settings where historical datasets may be
-limited in size.
-
-Trained on real AllocationRecord history - every allocation request logged
-doubles as a labeled training example (features = the barangay's profile at
-request time, label = predicted_quantity that was requested).
-
-FEATURES is exactly the six predictor variables named in the manuscript's
-Objective 1 and Model-phase description: population, poverty incidence,
-disaster risk index, past calamity frequency, historical allocation, and
-number of households. This list is the ONLY place the feature set is defined -
-do not add a seventh predictor without a manuscript change.
+This REPLACES the earlier per-barangay/per-event point model (manuscript
+Objective 1 revision - time forecasting, per the panel). Linear Regression
+is kept as the estimator (per the ReliefLine capstone manuscript's original
+justification: interpretable, numerical outputs LGU personnel can directly
+use, practical for small government datasets) - what changed is the
+predictor set and the unit of prediction, not the model family.
 
 --------------------------------------------------------------------------
-Built to adapt when real data replaces the synthetic seed data
+Why the predictors changed
 --------------------------------------------------------------------------
-* `FEATURE_SOURCES` maps each predictor to the barangay attribute it reads.
-  When a real per-barangay survey column replaces a synthetic one, point the
-  mapping at the new attribute - the training loop, predict.py and the model
-  version scheme are untouched.
-* Missing values are expected on real government records. `_feature_value`
-  returns `None` (not 0) for an absent field, and the pipeline's median
-  `SimpleImputer` fills it at fit time - so a barangay with an incomplete
-  profile still gets a prediction instead of a silently wrong 0.
-  (`historical_allocation` is the one exception: a genuine 0 - "no prior
-  allocation on record" - is real information, not a missing value.)
-* `data_quality_report()` surfaces row count, per-feature missingness,
-  each feature's correlation with the target, and a multicollinearity
-  warning, so a data problem is visible before it quietly degrades accuracy.
-* Leave-one-out cross-validation (per the manuscript) is kept for any dataset
-  size - it is exact and cheap at the scale this system operates at.
+The old six predictors (population, poverty_incidence, disaster_risk_index,
+past_calamity_freq, historical_allocation, num_households) are almost all
+STATIC per barangay - they explain "how big/vulnerable is this place," not
+"why is demand higher in August than March." A forecasting model needs
+predictors that carry a TIME dimension. FEATURES below is the new,
+deliberate set:
+
+  - month_sin / month_cos   - cyclical calendar position (Jun-Nov typhoon
+                               season should surface as a smooth bump, not
+                               a hard flag)
+  - lag_1 / lag_3 / rolling_mean_3 - the LGU's own recent-history signal,
+                               the standard autoregressive forecasting
+                               feature, computed over the representative
+                               annual cycle below
+  - active_disaster_events  - how many trusted calibration events
+                               historically landed in this LGU-month
+  - population               - LGU scale (sum across its barangays)
+  - disaster_risk_index      - LGU vulnerability (mean across its barangays)
+  - historical_allocation    - THIS LGU's overall typical monthly scale
+                               (mean of its 12 monthly totals) - a single
+                               constant per LGU, distinct from the
+                               month-specific lag features above
+
+Dropped: poverty_incidence, num_households, past_calamity_freq as individual
+predictors - weak temporal relevance at LGU-month granularity, and largely
+redundant with disaster_risk_index/population once pooled to LGU level. This
+is a deliberate, documented pruning, not a silent drop - re-run
+data_quality_report() once real data lands to confirm empirically.
+
+--------------------------------------------------------------------------
+Why LGU-level, not per-barangay
+--------------------------------------------------------------------------
+Most individual barangays have only a handful of historical allocation
+events each - nowhere near enough to fit a reliable time series per
+barangay (87 independent, mostly-empty series). Pooling to the 3 LGUs gives
+each series far more combined monthly data. app.ml.predict.forecast_barangay
+still answers a per-barangay question, via a top-down proportional split of
+the LGU forecast - see that module.
+
+--------------------------------------------------------------------------
+Why a "representative annual cycle," not a literal multi-year trend
+--------------------------------------------------------------------------
+The underlying history spans only a handful of distinct dates across
+2023-2025 (one date per calibration event), not a dense, continuous monthly
+series - there is no reliable way to separate "real year-over-year growth"
+from "which barangays a given synthetic event happened to hit." So training
+rows are built as one point per (LGU, calendar month 1-12), pooling
+whichever years each event landed in - the model learns a typical seasonal
+shape per LGU, not a trend across years. This is a stated limitation, not a
+hidden one: revisit once several full years of dense real monthly records
+exist (see CALIBRATION_EVENT_NAMES below on keeping the training set honest
+as real data arrives).
+
+--------------------------------------------------------------------------
+Keeping the training set honest
+--------------------------------------------------------------------------
+CALIBRATION_EVENT_NAMES is a deliberate allow-list, not "every
+AllocationRecord with status approved/released" - ad hoc events created
+while exercising the app during development/testing (e.g. "Test Typhoon")
+must never leak into training. Add a real historical event's name here once
+real PSWDO/CSWDO records replace a synthetic one; nothing else in this
+module needs to change.
 
 Run scripts/train_model.py to (re)fit this against the current database.
+Run scripts/seed_training_data.py + scripts/seed_seasonal_events.py first
+if the database doesn't yet have calibration events covering every month.
 """
+import math
 import os
-import statistics
-from datetime import datetime
 
 from app.utils.timezone import ph_now
 
@@ -54,86 +96,38 @@ from sklearn.impute import SimpleImputer
 from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# The six manuscript predictors, in model-input order.
-FEATURES = [
-    "population",
-    "poverty_incidence",
-    "disaster_risk_index",
-    "past_calamity_freq",
-    "historical_allocation",
-    "num_households",
-]
-
-# Which barangay attribute each predictor is read from. Swap a value here when
-# a real data source replaces a synthetic one - nothing else needs to change.
-# "historical_allocation" is derived (see historical_allocation_for), not a
-# column, so it has no entry.
-FEATURE_SOURCES = {
-    "population": "population",
-    "poverty_incidence": "poverty_incidence",
-    "disaster_risk_index": "disaster_risk_index",
-    "past_calamity_freq": "past_calamity_freq",
-    "num_households": "num_households",
+# Trusted historical events used to calibrate the model - see module
+# docstring ("Keeping the training set honest"). The 6 typhoon-season events
+# and 3 legacy events are scripts/seed_training_data.py's SYNTHETIC_EVENTS /
+# LEGACY_EVENT_SEVERITY; the 6 off-season events are
+# scripts/seed_seasonal_events.py's OFF_SEASON_EVENTS, added specifically so
+# every calendar month has real training evidence.
+CALIBRATION_EVENT_NAMES = {
+    "Typhoon Egay (2023)", "Typhoon Kabayan (2023)", "Typhoon Carina (2024)",
+    "Super Typhoon Julian (2024)", "Tropical Storm Dante (2025)", "Typhoon Ramil (2025)",
+    "Typhoon Inday", "Tropical Storm Basyang", "Tropical Storm Ada",
+    "Localized Flooding (Jan)", "Localized Flooding (Feb)", "Summer Heat Advisory (Mar)",
+    "Localized Flashflood (Apr)", "Pre-Monsoon Squall (May)", "Amihan Tail-end Flooding (Dec)",
 }
 
-MODEL_VERSION = "v6.1-linreg-6f"
+# The new time-forecasting predictors, in model-input order.
+FEATURES = [
+    "month_sin",
+    "month_cos",
+    "lag_1",
+    "lag_3",
+    "rolling_mean_3",
+    "active_disaster_events",
+    "population",
+    "disaster_risk_index",
+    "historical_allocation",
+]
+
+MODEL_VERSION = "v7.0-timefc-lgu"
 ARTIFACT_PATH = os.path.join(os.path.dirname(__file__), "artifacts", "food_pack_demand.joblib")
 MIN_TRAINING_SAMPLES = 5
 
-
-def _realized_quantity(alloc):
-    """Food packs actually granted to a barangay on one AllocationRecord -
-    the approved/allocated amount, falling back to the requested amount only
-    for older records saved before allocated_quantity was populated. A
-    genuine 0 is meaningful and kept."""
-    if alloc.allocated_quantity:
-        return alloc.allocated_quantity
-    return alloc.predicted_quantity or 0
-
-
-def historical_allocation_for(barangay_id, before_date=None):
-    """Manuscript's 'Historical Allocation' predictor (Glossary): the pattern
-    of how many food packs were *assigned or distributed* to this barangay
-    across *past disaster events* - "patterns from previous relief
-    operations", not a single prior request.
-
-    Computed as the median of the barangay's realized per-event allocations:
-    the records are first collapsed to one figure per event (the largest
-    quantity granted for it, so a barangay with several rows for one typhoon
-    is not over-weighted), then the median is taken across events. The median
-    keeps one unusually large or small operation from dominating the feature.
-
-    Only 'approved'/'released' records count - the same filter
-    _load_training_rows applies to the labels - so "historical allocation"
-    means the same thing when the model is fit and when it predicts. Returns
-    0 for a barangay with no realized allocation on record ("no prior
-    allocation" is real information, not a missing value).
-
-    before_date excludes records on/after that date so a training row can
-    never "see" its own label (or a same-day duplicate) as its own history.
-    Left as None at prediction time, where there's no later record to worry
-    about excluding.
-    """
-    from app.models.allocation import AllocationRecord
-
-    q = AllocationRecord.query.filter(
-        AllocationRecord.barangay_id == barangay_id,
-        AllocationRecord.status.in_(("approved", "released")),
-    )
-    if before_date is not None:
-        q = q.filter(AllocationRecord.allocation_date < before_date)
-    records = q.all()
-    if not records:
-        return 0
-
-    # One figure per event (largest granted quantity). Records with no
-    # event_id are each treated as their own standalone operation.
-    per_event = {}
-    for rec in records:
-        key = rec.event_id if rec.event_id is not None else ("solo", rec.allocation_id)
-        per_event[key] = max(per_event.get(key, 0), _realized_quantity(rec))
-
-    return float(statistics.median(per_event.values()))
+MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
 def _to_number(value):
@@ -151,101 +145,182 @@ def _to_number(value):
         return None
 
 
-def _feature_value(barangay, feature, as_of_date=None):
-    """Single dispatch point for turning a barangay profile into one model
-    input. Returns None for an absent field so the pipeline imputer can fill
-    it (see module docstring). `historical_allocation` returns a real 0 when
-    there is no prior record - that is information, not a gap."""
-    if feature == "historical_allocation":
-        return float(historical_allocation_for(barangay.barangay_id, before_date=as_of_date))
-    source_attr = FEATURE_SOURCES.get(feature)
-    if source_attr is None:
-        raise ValueError(f"Unknown feature: {feature}")
-    return _to_number(getattr(barangay, source_attr, None))
+def _realized_quantity(alloc):
+    """Food packs actually granted on one AllocationRecord - the
+    approved/allocated amount, falling back to the requested amount only for
+    older records saved before allocated_quantity was populated. A genuine 0
+    is meaningful and kept."""
+    if alloc.allocated_quantity:
+        return alloc.allocated_quantity
+    return alloc.predicted_quantity or 0
 
 
-def feature_row(barangay, as_of_date=None):
-    """One model input row, in FEATURES order. as_of_date, when given, caps
-    historical_allocation to records strictly before that date - used only
-    while building training rows (see _load_training_rows) so a barangay's
-    own label never leaks into its own history feature."""
-    return [[_feature_value(barangay, f, as_of_date) for f in FEATURES]]
+def historical_allocation_for(barangay_id, before_date=None):
+    """One barangay's own historical allocation pattern - the median of its
+    realized per-event allocations (records collapsed to one figure per
+    event first, so a barangay with several rows for one typhoon isn't
+    over-weighted). Kept from the earlier per-barangay model: still used by
+    app.ml.predict for the per-barangay proportional split of the new
+    LGU-level forecast (see forecast_barangay), since it's the right
+    signal for "how much of this LGU's forecast should this specific
+    barangay's share be."
 
-
-def _label_for(allocation):
-    """The supervised target (food packs) for one allocation.
-
-    For the curated synthetic rows (`source="pswdo_batch"`, from
-    scripts/seed_training_data.py) `predicted_quantity` IS the intended demand
-    figure. For operational rows (`barangay_request` / `cswdo_direct`)
-    `predicted_quantity` historically carried the barangay's own raw request -
-    often an unrealistic test value - so the CSWDO/MSWDO decision that was
-    actually acted on (`allocated_quantity`) is the real target there.
+    Only 'approved'/'released' records count - same filter the LGU-month
+    aggregation applies. Returns 0 for a barangay with no realized
+    allocation on record ("no prior allocation" is real information, not a
+    missing value). before_date excludes records on/after that date so a
+    row can never "see" its own label as its own history.
     """
-    if allocation.source == "pswdo_batch":
-        return allocation.predicted_quantity or allocation.allocated_quantity or 0
-    return allocation.allocated_quantity or allocation.predicted_quantity or 0
+    import statistics
+    from app.models.allocation import AllocationRecord
+
+    q = AllocationRecord.query.filter(
+        AllocationRecord.barangay_id == barangay_id,
+        AllocationRecord.status.in_(("approved", "released")),
+    )
+    if before_date is not None:
+        q = q.filter(AllocationRecord.allocation_date < before_date)
+    records = q.all()
+    if not records:
+        return 0
+
+    per_event = {}
+    for rec in records:
+        key = rec.event_id if rec.event_id is not None else ("solo", rec.allocation_id)
+        per_event[key] = max(per_event.get(key, 0), _realized_quantity(rec))
+
+    return float(statistics.median(per_event.values()))
 
 
-def _plausible_label(barangay, label):
-    """True when `label` food packs could be a genuine allocation for a
-    barangay this size - a sanity gate that keeps UI/test-console noise out of
-    the training set without any manual clean-up.
+def _load_monthly_lgu_rows():
+    """Pulls every trusted-calibration AllocationRecord (approved/released,
+    event name in CALIBRATION_EVENT_NAMES), aggregates to one entry per
+    (LGU, calendar month 1-12), pooling across whichever years each
+    calibration event happened to land in.
 
-    Rejected: a token handful of packs for a large barangay, and more packs
-    than there are families (1 pack ≈ 1 family is the manuscript's planning
-    basis). The floor (5% of households) sits a third below the curated
-    synthetic set's own minimum (~7.5% of households), so a real field
-    allocation is never dropped.
+    Returns {(lgu, month): {"total": int, "event_names": {str, ...}}}.
     """
-    if label <= 0:
-        return False
-    households = _to_number(getattr(barangay, "num_households", None))
-    if households and households > 0:
-        return 0.05 * households <= label <= households
-    population = _to_number(getattr(barangay, "population", None))
-    if population and population > 0:
-        return 0.011 * population <= label <= 0.30 * population
-    return label >= 25  # no size on record - only reject obvious tokens
+    from app.models.allocation import AllocationRecord
+    from app.models.disaster_event import DisasterEvent
+
+    rows = AllocationRecord.query.join(
+        DisasterEvent, AllocationRecord.event_id == DisasterEvent.event_id
+    ).filter(
+        AllocationRecord.status.in_(("approved", "released")),
+        DisasterEvent.event_name.in_(CALIBRATION_EVENT_NAMES),
+    ).all()
+
+    table = {}
+    for a in rows:
+        b = a.barangay
+        if b is None:
+            continue
+        key = (b.city_municipality, a.allocation_date.month)
+        entry = table.setdefault(key, {"total": 0, "event_names": set()})
+        entry["total"] += _realized_quantity(a)
+        entry["event_names"].add(a.event.event_name)
+    return table
+
+
+def _lgu_scale_features(lgus, monthly_table):
+    """LGU-level features that don't vary by month: population (summed
+    across the LGU's barangays), disaster_risk_index (averaged), and
+    historical_allocation (mean of the LGU's 12 monthly totals - this LGU's
+    overall typical relief-operation scale, distinct from the month-specific
+    lag features)."""
+    from app.models.barangay import Barangay
+
+    out = {}
+    for lgu in lgus:
+        barangays = Barangay.query.filter_by(city_municipality=lgu).all()
+        population = sum(_to_number(b.population) or 0 for b in barangays)
+        risk_vals = [
+            _to_number(b.disaster_risk_index) for b in barangays
+            if _to_number(b.disaster_risk_index) is not None
+        ]
+        disaster_risk_index = sum(risk_vals) / len(risk_vals) if risk_vals else None
+        monthly_totals = [monthly_table.get((lgu, m), {}).get("total", 0) for m in range(1, 13)]
+        out[lgu] = {
+            "population": population,
+            "disaster_risk_index": disaster_risk_index,
+            "historical_allocation": sum(monthly_totals) / 12.0,
+        }
+    return out
+
+
+def build_lgu_month_features(lgus=None):
+    """The full feature table the model is trained on and later forecasts
+    from: one row per (LGU, month 1-12), in FEATURES order, plus the raw
+    calibration total for that exact month when one exists (the label).
+
+    lag_1/lag_3/rolling_mean_3 are computed CIRCULARLY over the 12-month
+    cycle (December wraps to January) - see the module docstring on why
+    this models a representative seasonal cycle rather than a multi-year
+    trend.
+
+    Returns {(lgu, month): {"features": [...], "total": int_or_None}}.
+    """
+    from app.models.office import Office
+
+    if lgus is None:
+        lgus = sorted({o.area_covered for o in Office.query.filter_by(office_type="cswdo").all()})
+
+    monthly_table = _load_monthly_lgu_rows()
+    scale = _lgu_scale_features(lgus, monthly_table)
+
+    cycles = {
+        lgu: [monthly_table.get((lgu, m), {}).get("total", 0) for m in range(1, 13)]
+        for lgu in lgus
+    }
+
+    result = {}
+    for lgu in lgus:
+        vals = cycles[lgu]
+        for month in range(1, 13):
+            idx = month - 1
+            entry = monthly_table.get((lgu, month))
+            angle = 2 * math.pi * month / 12.0
+            feat = {
+                "month_sin": math.sin(angle),
+                "month_cos": math.cos(angle),
+                "lag_1": vals[(idx - 1) % 12],
+                "lag_3": vals[(idx - 3) % 12],
+                "rolling_mean_3": sum(vals[(idx - k) % 12] for k in (1, 2, 3)) / 3.0,
+                "active_disaster_events": len(entry["event_names"]) if entry else 0,
+                "population": scale[lgu]["population"],
+                "disaster_risk_index": scale[lgu]["disaster_risk_index"],
+                "historical_allocation": scale[lgu]["historical_allocation"],
+            }
+            result[(lgu, month)] = {
+                "features": [feat[f] for f in FEATURES],
+                "total": entry["total"] if entry else None,
+            }
+    return result
 
 
 def _load_training_rows():
-    """Labeled examples = *realized* allocations (approved or released) whose
-    quantity is plausible for the barangay's size (see _plausible_label). A
-    pending/rejected request never became an allocation, so it isn't history
-    yet. Collapsed to one row per (barangay, event) - the same barangay can
-    accumulate several draft/duplicate request rows for one event, and those
-    would over-weight it - keeping the largest approved quantity."""
-    from app.models.allocation import AllocationRecord
-
-    rows = AllocationRecord.query.filter(
-        AllocationRecord.status.in_(("approved", "released"))
-    ).all()
-
-    best = {}
-    for a in rows:
-        if a.barangay is None:
-            continue
-        label = _label_for(a)
-        if not _plausible_label(a.barangay, label):
-            continue
-        key = (a.barangay_id, a.event_id) if a.event_id else ("solo", a.allocation_id)
-        if key not in best or label > best[key][1]:
-            best[key] = (a, label)
-
+    """Labeled examples = one row per (LGU, month) with at least one trusted
+    calibration AllocationRecord - see build_lgu_month_features. A month
+    with no calibration evidence for an LGU is excluded from training (its
+    feature row still exists for forecasting, driven by neighboring months'
+    lag/rolling values, but there's no real total to learn from for that
+    exact month)."""
+    table = build_lgu_month_features()
     X, y = [], []
-    for a, label in best.values():
-        X.append(feature_row(a.barangay, as_of_date=a.allocation_date)[0])
-        y.append(label)
-    return np.array(X, dtype=float), np.array(y, dtype=float)
+    for row in table.values():
+        if row["total"] is None:
+            continue
+        X.append(row["features"])
+        y.append(row["total"])
+    return np.array(X, dtype=float), np.array(y, dtype=float), table
 
 
 def build_pipeline():
     """Median-impute -> standardize -> Linear Regression.
 
-    The imputer is what lets an incomplete real-world barangay profile still
-    produce a prediction; keep_empty_features handles the edge case where a
-    whole predictor column is missing from a freshly-loaded dataset."""
+    The imputer is what lets an incomplete real-world profile still produce
+    a forecast; keep_empty_features handles the edge case where a whole
+    predictor column is missing from a freshly-loaded dataset."""
     return Pipeline([
         ("impute", SimpleImputer(strategy="median", keep_empty_features=True)),
         ("scale", StandardScaler()),
@@ -263,8 +338,8 @@ def _safe_mape(y, preds):
 
 
 def evaluate_loocv(X, y):
-    """Leave-one-out CV - each fold refits build_pipeline() from scratch so the
-    held-out point never influences its own prediction. Returns pooled
+    """Leave-one-out CV - each fold refits build_pipeline() from scratch so
+    the held-out point never influences its own prediction. Returns pooled
     out-of-fold predictions plus MAE/RMSE/MAPE/R² over that pooled set
     (per-fold R² is undefined with a single test point)."""
     loo = LeaveOneOut()
@@ -274,7 +349,7 @@ def evaluate_loocv(X, y):
         pipe.fit(X[train_idx], y[train_idx])
         preds[test_idx] = pipe.predict(X[test_idx])
 
-    # A relief allocation is never negative - clamp, same as app.ml.predict.
+    # An LGU's monthly demand is never negative - clamp, same as app.ml.predict.
     preds = np.clip(preds, 0, None)
 
     return {
@@ -300,7 +375,6 @@ def data_quality_report(X, y):
         missing = int(np.isnan(col).sum())
         present = col[~np.isnan(col)]
         if len(present) > 1 and np.std(present) > 0 and np.std(y) > 0:
-            # Correlation on the rows where this feature is present.
             paired_y = y[~np.isnan(col)]
             corr = float(np.corrcoef(present, paired_y)[0, 1])
         else:
@@ -311,7 +385,6 @@ def data_quality_report(X, y):
             "corr_with_target": round(corr, 3) if corr == corr else None,
         }
 
-    # Pairwise near-collinearity (|r| >= 0.95) on complete rows.
     complete = ~np.isnan(X).any(axis=1)
     if complete.sum() > 2:
         Xc = X[complete]
@@ -329,17 +402,19 @@ def data_quality_report(X, y):
 
 
 def train_and_persist():
-    """Fits the final model on ALL allocation history, records honest
-    leave-one-out metrics to ModelMetrics, and saves the fitted pipeline to
-    disk for app.ml.predict to load. Returns metrics + the data-quality report."""
+    """Fits the final model on all trusted LGU-month history, records honest
+    leave-one-out metrics to ModelMetrics, and saves the fitted pipeline
+    (plus the full 12-month-per-LGU feature table, needed to forecast any
+    future month) to disk for app.ml.predict to load."""
     from app.extensions import db
     from app.models.prediction import ModelMetrics
 
-    X, y = _load_training_rows()
+    X, y, table = _load_training_rows()
     if len(y) < MIN_TRAINING_SAMPLES:
         raise RuntimeError(
-            f"Only {len(y)} labeled allocation records found - need at least "
-            f"{MIN_TRAINING_SAMPLES} to train a model that isn't pure noise."
+            f"Only {len(y)} labeled LGU-month records found - need at least "
+            f"{MIN_TRAINING_SAMPLES} to train a model that isn't pure noise. "
+            f"Run scripts/seed_training_data.py and scripts/seed_seasonal_events.py first."
         )
 
     quality = data_quality_report(X, y)
@@ -352,10 +427,14 @@ def train_and_persist():
     joblib.dump({
         "pipeline": final_pipeline,
         "features": FEATURES,
-        "feature_sources": FEATURE_SOURCES,
         "version": MODEL_VERSION,
         "trained_at": ph_now().isoformat(),
         "training_rows": len(y),
+        # Full (lgu, month) -> feature-row table, including months with no
+        # calibration total - forecast_lgu/forecast_barangay in
+        # app.ml.predict look up any future month here rather than
+        # recomputing features (and re-hitting the DB) on every call.
+        "lgu_month_table": table,
     }, ARTIFACT_PATH)
 
     db.session.add(ModelMetrics(

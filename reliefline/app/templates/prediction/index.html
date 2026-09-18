@@ -90,6 +90,13 @@
 
         <div class="main-grid {{ 'pa-grid-stack' if is_cswdo else 'dash-grid-even' }}">
 
+            {# Superseded by the time-forecasting model - was a current-moment
+               snapshot (submitted requests / model estimate vs delivered so
+               far), not an actual forecast. Replaced in-place below with the
+               model's real per-LGU projections. Commented out (Jinja comment,
+               so the {% %} tags inside stay inert) rather than deleted, in
+               case the snapshot view is wanted back later.
+
             <section class="panel">
                 <div class="panel-header">
                     <h3>Demand Forecast by Municipality</h3>
@@ -115,6 +122,30 @@
                 </div>
                 {% else %}
                 <p class="empty-note">No municipalities in scope for this filter.</p>
+                {% endfor %}
+            </section>
+            #}
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>{{ icon('trending-up', 18, '#0f2547') }} Projected Demand by Municipality</h3>
+                    <span class="rd-sub">next {{ forecast_months }} months</span>
+                </div>
+                {% for f in forecast_summary_by_lgu %}
+                <div class="warehouse-status-row">
+                    <div class="warehouse-status-top">
+                        <div class="warehouse-status-name">
+                            <div><strong>{{ f.lgu }}</strong></div>
+                        </div>
+                        <div class="warehouse-status-right">
+                            <strong>{{ "{:,}".format(f.horizon_total) }}</strong><span class="rd-sub">packs</span>
+                        </div>
+                    </div>
+                    <span class="warehouse-status-sub">This month: {{ "{:,}".format(f.this_month) }} packs</span>
+                    <a href="?{% if municipality_filter != 'all' %}municipality={{ municipality_filter }}&amp;{% endif %}{% if event_id %}event_id={{ event_id }}&amp;{% endif %}forecast_lgu={{ f.lgu|urlencode }}&amp;forecast_months={{ forecast_months }}#pa-forecast-detail" class="link-manage" style="display:block; margin-top:4px;">View monthly breakdown →</a>
+                </div>
+                {% else %}
+                <p class="empty-note">No model has been trained yet, or no municipalities are in scope for this filter.</p>
                 {% endfor %}
             </section>
 
@@ -259,10 +290,65 @@
 
         </div>
 
+        <section class="panel" id="pa-forecast-detail" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('trending-up', 18, '#0f2547') }} Projected Demand</h3>
+                <form method="GET" class="wh-movement-filters">
+                    {% if municipality_filter != 'all' %}<input type="hidden" name="municipality" value="{{ municipality_filter }}">{% endif %}
+                    {% if event_id %}<input type="hidden" name="event_id" value="{{ event_id }}">{% endif %}
+                    {% if target_lgus|length > 1 %}
+                    <select name="forecast_lgu" onchange="this.form.submit()">
+                        {% for lgu in target_lgus %}
+                        <option value="{{ lgu }}" {{ 'selected' if lgu == forecast_lgu_choice }}>{{ lgu }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    <select name="forecast_months" onchange="this.form.submit()">
+                        <option value="4" {{ 'selected' if forecast_months == 4 }}>Next 4 months</option>
+                        <option value="6" {{ 'selected' if forecast_months == 6 }}>Next 6 months</option>
+                        <option value="12" {{ 'selected' if forecast_months == 12 }}>Next 12 months</option>
+                    </select>
+                </form>
+            </div>
+            {% if lgu_forecast %}
+            {% set months = lgu_forecast.months %}
+            {% set n = months|length %}
+            {% set max_packs = months|map(attribute='projected_packs')|max %}
+            {% set ns = namespace(bars=[]) %}
+            <div class="pa-bar-chart">
+                <svg class="pa-bar-svg" viewBox="0 0 1000 262" role="img"
+                     aria-label="Projected food packs needed per month, {{ lgu_forecast.lgu }}">
+                    {% for gy in [30, 77.5, 125, 172.5, 220] %}
+                    <line class="pa-bar-grid" x1="40" y1="{{ gy }}" x2="960" y2="{{ gy }}"></line>
+                    {% endfor %}
+                    {% set col_width = (900 / n) * 0.55 %}
+                    {%- for m in months -%}
+                    {% set cx = 40 + (loop.index0 + 0.5) * (920 / n) %}
+                    {% set bar_h = (m.projected_packs / max_packs * 190) if max_packs else 0 %}
+                    {% set y = 220 - bar_h %}
+                    <rect class="pa-bar-col" x="{{ '%.1f'|format(cx - col_width / 2) }}" y="{{ '%.1f'|format(y) }}"
+                          width="{{ '%.1f'|format(col_width) }}" height="{{ '%.1f'|format(bar_h) }}"></rect>
+                    <text class="pa-bar-value" x="{{ '%.1f'|format(cx) }}" y="{{ '%.1f'|format(y - 8) }}" text-anchor="middle">{{ "{:,}".format(m.projected_packs) }}</text>
+                    <text class="pa-bar-label" x="{{ '%.1f'|format(cx) }}" y="248" text-anchor="middle">{{ m.label }}</text>
+                    {%- endfor -%}
+                </svg>
+            </div>
+            <div class="pa-decision-tile" style="max-width:320px; margin:12px auto 4px;">
+                <span class="rd-sub">Recommended stockpile - {{ lgu_forecast.lgu }}, next {{ forecast_months }} months</span>
+                <strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong>
+                <span class="rd-sub">packs</span>
+            </div>
+            <p class="rd-sub" style="text-align:center;">Seasonal shape and recent-history trend learned from this LGU's past allocations - see Model Performance below.</p>
+            {% else %}
+            <p class="empty-note">No model has been trained yet. Run <code>scripts/train_model.py</code> against the current database.</p>
+            {% endif %}
+            {{ prediction_disclaimer() }}
+        </section>
+
         <section class="panel pa-model-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>{{ icon('activity', 18, '#0f2547') }} Model Performance</h3>
-                <span class="rd-sub">Linear Regression · leave-one-out cross-validation</span>
+                <span class="rd-sub">Time Forecasting Model · leave-one-out cross-validation</span>
             </div>
             {% if latest_metrics %}
             <div class="pa-model-rows">
