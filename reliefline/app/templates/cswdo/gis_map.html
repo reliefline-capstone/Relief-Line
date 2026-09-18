@@ -65,6 +65,26 @@
                 <div id="gis-search-results" class="gis-search-results" hidden></div>
                 <button type="button" class="gis-fullscreen-btn" id="gis-fullscreen-btn" title="Toggle fullscreen">{{ icon('maximize', 16, '#555') }}</button>
                 <div id="gis-map"></div>
+                <div class="map-legend-box">
+                    <span class="map-legend-title">Stock Adequacy</span>
+                    <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
+                    <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
+                    <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
+                    <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
+                    <div class="map-legend-row"><i class="legend-square unrated"></i> Unrated</div>
+                    <div class="map-legend-divider"></div>
+                    <div class="map-legend-row">
+                        <span class="legend-warehouse-icon">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg>
+                        </span>
+                        Warehouse
+                    </div>
+                    <div class="map-legend-divider"></div>
+                    <span class="map-legend-title">Map Layers</span>
+                    <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-municipality" checked> Municipality Boundary</label>
+                    <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-barangay" checked> Barangay Boundary</label>
+                    <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-warehouse" checked> Warehouse</label>
+                </div>
             </section>
 
             <section class="panel wh-table-panel" style="margin-top:16px;">

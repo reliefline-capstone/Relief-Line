@@ -41,7 +41,35 @@ document.addEventListener('DOMContentLoaded', function () {
     // match the app's own button/panel language instead of Leaflet's stock
     // look. Leaflet stacks same-corner controls itself, so this shares the
     // corner with the attribution control with no manual offset needed.
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+    // "Locate me" - stacks in the same bottom-right corner as the zoom
+    // control (Leaflet groups same-corner controls itself). Browser
+    // geolocation, no server round-trip; a real "where am I" marker, not a
+    // guess - errors (denied permission, no GPS) surface as an alert rather
+    // than silently doing nothing.
+    var LocateControl = L.Control.extend({
+        options: { position: 'bottomright' },
+        onAdd: function () {
+            var btn = L.DomUtil.create('button', 'gis-locate-btn');
+            btn.type = 'button';
+            btn.title = 'Show my location';
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+            L.DomEvent.disableClickPropagation(btn);
+            L.DomEvent.on(btn, 'click', function () {
+                map.locate({ setView: true, maxZoom: 15 });
+            });
+            return btn;
+        },
+    });
+    map.addControl(new LocateControl());
+    map.on('locationfound', function (e) {
+        searchMarkerLayer.clearLayers();
+        L.marker(e.latlng).addTo(searchMarkerLayer).bindPopup('You are here').openPopup();
+    });
+    map.on('locationerror', function (e) {
+        alert('Could not get your location: ' + e.message);
+    });
 
     // Drill-down state: overview -> municipality -> barangay-list -> barangay-detail
     var state = { level: 'overview', lgu: null, barangayId: null, barangayName: null, showBreakdown: false };
@@ -515,23 +543,33 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderStats(stats) {
+        var barangaysDesc = stats.affected_barangays > 0
+            ? fmt(stats.affected_barangays) + ' of ' + fmt(stats.total_barangays) + ' tracked barangays currently need assistance.'
+            : 'No barangays are currently affected in this province.';
+        var familiesDesc = stats.total_affected_families > 0
+            ? fmt(stats.total_affected_families) + ' families are currently displaced or in need across the province.'
+            : 'No families are currently affected in this province.';
+        var packsDesc = 'Total relief packs available in this province.';
         return '' +
             '<section class="stat-cards gis-stat-cards">' +
             '<div class="stat-card">' +
             '<div class="stat-icon orange">' + ICON.mapPin + '</div>' +
             '<span class="stat-value">' + fmt(stats.affected_barangays) + '</span>' +
             '<span class="stat-label">Affected Barangays</span>' +
+            '<span class="stat-desc">' + barangaysDesc + '</span>' +
             '<span class="stat-sub">of ' + fmt(stats.total_barangays) + ' tracked</span>' +
             '</div>' +
             '<div class="stat-card">' +
             '<div class="stat-icon purple">' + ICON.users + '</div>' +
             '<span class="stat-value">' + fmt(stats.total_affected_families) + '</span>' +
             '<span class="stat-label">Affected Families</span>' +
+            '<span class="stat-desc">' + familiesDesc + '</span>' +
             '</div>' +
             '<div class="stat-card">' +
             '<div class="stat-icon green">' + ICON.package + '</div>' +
             '<span class="stat-value">' + fmt(stats.total_food_packs) + '</span>' +
             '<span class="stat-label">Packs Available</span>' +
+            '<span class="stat-desc">' + packsDesc + '</span>' +
             '</div>' +
             '</section>';
     }
@@ -546,6 +584,9 @@ document.addEventListener('DOMContentLoaded', function () {
         clipboard: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>',
         download: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
         warehouse: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg>',
+        building: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="7" x2="9" y2="7.01"/><line x1="15" y1="7" x2="15" y2="7.01"/><line x1="9" y1="11" x2="9" y2="11.01"/><line x1="15" y1="11" x2="15" y2="11.01"/><line x1="9" y1="15" x2="9" y2="15.01"/><line x1="15" y1="15" x2="15" y2="15.01"/><path d="M9 21v-3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>',
+        search: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+        chevronRight: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
     };
 
     function tierBadge(tier, label) {
@@ -567,11 +608,29 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderOverviewPanel() {
         var html = renderStats(currentData.stats);
 
-        html += '<section class="panel"><div class="panel-header"><h3>Municipalities</h3></div><div class="gis-muni-list">';
-        currentData.municipalities.forEach(function (m) {
-            html += '<div class="gis-priority-row gis-clickable" data-nav="municipality" data-lgu="' + escapeHtml(m.lgu) + '">' +
-                '<div><strong>' + escapeHtml(m.lgu) + '</strong><span>' + fmt(m.affected_barangays) + ' of ' + fmt(m.total_barangays) + ' barangays affected</span></div>' +
+        // Top filter bar's Status select doubles as this list's own filter
+        // for PSWDO/system_admin (which has no barangay layer of its own to
+        // filter - see applyClientFilters) - same tier values either way.
+        var statusFilterEl = document.getElementById('filter-status');
+        var statusFilter = statusFilterEl ? statusFilterEl.value : '';
+        var visibleMunicipalities = statusFilter
+            ? currentData.municipalities.filter(function (m) { return m.status_tier === statusFilter; })
+            : currentData.municipalities;
+
+        var muniColors = ['blue', 'purple', 'green', 'orange'];
+        html += '<section class="panel"><div class="panel-header gis-muni-header">' +
+            '<h3>' + ICON.building + ' Municipalities</h3>' +
+            '<div class="gis-muni-search"><input type="text" id="gis-muni-search" placeholder="Search municipality…" autocomplete="off">' + ICON.search + '</div>' +
+            '</div><div class="gis-muni-list">';
+        if (!visibleMunicipalities.length) {
+            html += '<p class="empty-note">No municipalities match the current filter.</p>';
+        }
+        visibleMunicipalities.forEach(function (m, idx) {
+            html += '<div class="gis-priority-row gis-clickable" data-nav="municipality" data-lgu="' + escapeHtml(m.lgu) + '" data-muni-name="' + escapeHtml(m.lgu.toLowerCase()) + '">' +
+                '<div class="gis-muni-row-icon ' + muniColors[idx % muniColors.length] + '">' + ICON.building + '</div>' +
+                '<div><strong>' + escapeHtml(m.lgu) + '</strong><span>' + fmt(m.affected_barangays) + '/' + fmt(m.total_barangays) + ' barangays affected</span></div>' +
                 '<div class="gis-priority-row-right">' + tierBadge(m.status_tier, m.status_label) + '</div>' +
+                '<span class="gis-row-chevron">' + ICON.chevronRight + '</span>' +
                 '</div>';
         });
         html += '</div></section>';
@@ -918,6 +977,16 @@ document.addEventListener('DOMContentLoaded', function () {
         renderBreadcrumb();
         renderPanel();
         renderRoutesTable();
+        // #gis-info-panel's content just got fully replaced, but its
+        // scrollable ancestor (.gis-floating-card, now that the info panel
+        // floats on the map instead of a plain sidebar) keeps whatever
+        // scrollTop it had from the PREVIOUS level's content - a browser
+        // never resets a container's scroll position just because its
+        // children changed. Left alone, drilling into a municipality right
+        // after scrolling the overview list would render the new panel
+        // already scrolled past its own header.
+        var floatingCard = document.querySelector('.gis-floating-card');
+        if (floatingCard) floatingCard.scrollTop = 0;
     }
 
     // Deep-link support so links from other pages (e.g. the Dashboard's mini
@@ -998,6 +1067,17 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('gis-breadcrumb').addEventListener('click', handleActionClick);
     document.getElementById('gis-info-panel').addEventListener('click', handleActionClick);
 
+    // #gis-muni-search is re-created on every renderOverviewPanel() call, so
+    // this listens on the panel itself (delegation, same pattern as
+    // handleActionClick above) instead of being re-wired per render.
+    document.getElementById('gis-info-panel').addEventListener('input', function (e) {
+        if (e.target.id !== 'gis-muni-search') return;
+        var q = e.target.value.trim().toLowerCase();
+        document.querySelectorAll('.gis-muni-list [data-muni-name]').forEach(function (row) {
+            row.hidden = q.length > 0 && row.getAttribute('data-muni-name').indexOf(q) === -1;
+        });
+    });
+
     document.getElementById('filter-event').addEventListener('change', loadData);
     document.getElementById('filter-lgu').addEventListener('change', function () {
         var lgu = this.value;
@@ -1005,10 +1085,27 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     document.getElementById('filter-status').addEventListener('change', function () {
         applyClientFilters();
-        if (state.level === 'barangay-list') renderPanel();
+        if (state.level === 'barangay-list' || state.level === 'overview') renderPanel();
     });
     var refreshBtn = document.getElementById('btn-refresh');
     if (refreshBtn) refreshBtn.addEventListener('click', loadData);
+
+    // Map Layers checkboxes (legend box) - each just shows/hides a real
+    // Leaflet layer group already on the map, nothing re-fetched. Municipality
+    // Boundary also toggles the name-label layer with it, since a label with
+    // no boundary underneath it reads as a stray floating word.
+    function wireLayerToggle(checkboxId, layers) {
+        var cb = document.getElementById(checkboxId);
+        if (!cb) return;
+        cb.addEventListener('change', function () {
+            layers.forEach(function (layer) {
+                if (cb.checked) { map.addLayer(layer); } else { map.removeLayer(layer); }
+            });
+        });
+    }
+    wireLayerToggle('layer-toggle-municipality', [provinceLayer, muniLabelLayer]);
+    wireLayerToggle('layer-toggle-barangay', [barangayLayer]);
+    wireLayerToggle('layer-toggle-warehouse', [warehouseLayer]);
 
     // Only present on the PSWDO template - CSWDO/MSWDO's single-LGU scope
     // has no real "province overview" to reset back to.

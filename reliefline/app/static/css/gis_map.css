@@ -1,10 +1,16 @@
-/* Leaflet's zoom control, moved to bottom-left (see gis_map.js) and
-   restyled to match the app's own button language instead of Leaflet's
-   stock square-cornered, thin-bordered look. margin-bottom clears
-   .map-legend-box, which already occupies that same corner (~222px tall) -
-   stacked above it rather than overlapping. */
+/* Leaflet's zoom control, moved to bottom-left, stacked directly above
+   .map-legend-box (dashboard.css, added to this page's own markup) in that
+   same corner (see gis_map.js), and restyled to match the app's own button
+   language instead of Leaflet's stock square-cornered, thin-bordered look.
+   The legend box isn't a Leaflet control (it's a plain page element, not
+   added through L.control), so Leaflet's automatic same-corner stacking
+   doesn't clear it on its own - margin-bottom here is sized to the taller
+   of the two roles sharing this file (CSWDO's legend has an extra
+   "Barangay Boundary" layer row PSWDO's doesn't, ~305px vs ~281px measured)
+   plus its own 12px bottom offset and a gap, so it's fixed clearance rather
+   than something that adapts if either legend's content ever grows. */
 .leaflet-control-zoom {
-    margin: 0 12px 12px 0 !important;
+    margin: 0 0 335px 12px !important;
     border: none !important;
     border-radius: 8px !important;
     box-shadow: 0 1px 6px rgba(0,0,0,0.15) !important;
@@ -101,11 +107,402 @@
 .gis-map-col { min-width: 0; }
 
 #gis-map {
-    height: 560px;
+    height: 78vh;
+    min-height: 620px;
+    max-height: 860px;
     width: 100%;
     border-radius: 12px;
     background: #efedfd;
 }
+
+/* Command-center layout: the map is the page's one big element, everything
+   that used to live in a separate right-hand sidebar column now floats
+   directly on top of it instead. .main-grid (used elsewhere for a real
+   two-column layout) is no longer used on this page at all - the map panel
+   and the routes table below it just stack in normal page flow. */
+.gis-map-panel + .wh-table-panel { margin-top: 16px; }
+
+/* Floating info panel - what used to be a separate .wh-side-col sidebar
+   column is now an overlay stacked directly on the map itself (top-right),
+   scrolling on its own once its stacked .panel sections (rendered by
+   gis_map.js's renderPanel into #gis-info-panel) exceed the map's height,
+   rather than pushing the whole page taller. Deliberately has no background
+   of its own - each .panel section inside it (and the breadcrumb pill) is
+   its own distinct floating card with its own shadow, matching a
+   command-center "cards on the map" look instead of one big sidebar box
+   dropped on top of the map. */
+.gis-floating-info {
+    position: absolute;
+    /* 12px (the buttons' own offset) + 36px (their height) + 8px clearance. */
+    top: 56px;
+    right: 12px;
+    bottom: 12px;
+    width: 340px;
+    max-width: calc(100% - 24px);
+    z-index: 1000;
+    /* This container itself is otherwise fully transparent - it's just a
+       positioning wrapper now, .gis-floating-card below is the actual
+       visible (and, below, scrollable) card - but it still sits in the
+       same top-right corner as the fullscreen button at the same z-index -
+       without this, its empty space would still intercept clicks meant for
+       that button underneath. Re-enabled on the actual visible card so it
+       stays fully interactive. */
+    pointer-events: none;
+}
+
+.gis-floating-info > * { pointer-events: auto; }
+
+/* The one floating card - breadcrumb ("Province" / "Province / <LGU>") and
+   every section gis_map.js's renderOverviewPanel/renderMunicipalityPanel/
+   etc. build (stat cards, Municipalities list, Relief Statistics, Demand &
+   Allocation, warehouse/distribution info, action buttons) all render into
+   this SAME card now - that markup itself is unchanged, what's different is
+   purely visual: no gaps between any of them, only the outer edges keep the
+   rounded corners/shadow, and a thin divider marks each internal section
+   instead of a gap. This card (not .gis-floating-info above it) is the
+   scroll container: scrolling and the rounded corners now live on the same
+   box, so the corners stay visibly rounded (and the scrollbar itself stays
+   inset within them, not cutting straight across a corner) at every scroll
+   position, and a custom thin scrollbar replaces the browser's bulky
+   default one. */
+.gis-floating-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.18);
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #c7cad6 transparent;
+}
+.gis-floating-card::-webkit-scrollbar { width: 7px; }
+.gis-floating-card::-webkit-scrollbar-track { background: transparent; }
+.gis-floating-card::-webkit-scrollbar-thumb {
+    background: #c7cad6;
+    border-radius: 4px;
+}
+.gis-floating-card::-webkit-scrollbar-thumb:hover { background: #a9adba; }
+
+/* Sections merged into one seamless card shouldn't individually "pop" a
+   shadow back on hover - .panel's own base rule (theme.css) does exactly
+   that globally (used elsewhere for genuinely separate floating panels),
+   which read as a stray highlight/bug here since these sections no longer
+   have their own edges to lift away from. */
+.gis-floating-card .panel:hover { box-shadow: none; }
+
+.gis-floating-card .gis-breadcrumb {
+    margin: 0;
+    /* Right padding matches #gis-info-panel's own scrollbar clearance
+       below it (18px base + 20px for the card's scrollbar + a little
+       breathing room) so this stays visually aligned with every section
+       under it. */
+    padding: 9px 38px 9px 18px;
+    border-bottom: 1px solid #f0f2f6;
+}
+
+/* padding-right reserves clearance for this scrolling card's own vertical
+   scrollbar (~17px) plus a little breathing room - every section here (the
+   breadcrumb too) otherwise measures out to the card's full outer width,
+   right underneath where the scrollbar itself renders, so rounded
+   stat-card edges and right-aligned badges/numbers end up crowded flush
+   against it instead of clear of it. */
+.gis-floating-card #gis-info-panel {
+    display: flex;
+    flex-direction: column;
+    padding-right: 20px;
+}
+
+/* Deliberately tighter than this same .panel class elsewhere in the app
+   (18px) - this card has to fit everything (Province summary, up to 3
+   municipalities, and once one is selected: relief stats, demand &
+   allocation, warehouse/distribution info) inside the map's own height with
+   no scrolling of its own, so every section here trims its padding a bit
+   rather than the map growing without bound or the card spilling past it. */
+.gis-floating-card .panel {
+    box-shadow: none;
+    border-radius: 0;
+    flex-shrink: 0;
+    padding: 10px 18px;
+}
+
+.gis-floating-card .panel + .panel,
+.gis-floating-card .stat-cards + .panel {
+    border-top: 1px solid #f0f2f6;
+}
+
+.gis-floating-card .dd-summary-row,
+.gis-floating-card .gis-priority-row {
+    padding: 7px 0;
+}
+.gis-floating-card .panel-header {
+    margin-bottom: 8px;
+}
+.gis-floating-card .panel-header h3 {
+    font-size: 15.5px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.gis-floating-card .gis-priority-row strong { font-size: 13.5px; }
+.gis-floating-card .gis-priority-row span { font-size: 11.5px; }
+.gis-floating-card .gis-priority-row-right strong { font-size: 13.5px; }
+.gis-floating-card .badge-priority {
+    font-size: 10.5px;
+    padding: 3.5px 10px;
+}
+
+/* Municipalities header row - title (with its own icon, above) + a
+   compact inline search field, wired in gis_map.js via delegated 'input'
+   listener on #gis-info-panel since this markup is replaced on every
+   renderOverviewPanel() call. */
+.gis-floating-card .gis-muni-header {
+    flex-wrap: nowrap;
+    gap: 10px;
+}
+.gis-floating-card .gis-muni-search {
+    position: relative;
+    flex-shrink: 1;
+    min-width: 0;
+}
+.gis-floating-card .gis-muni-search input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 5px 9px 5px 26px;
+    border: 1px solid var(--rl-border);
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-family: inherit;
+    background: #f7f8fb;
+    color: #1a1a1a;
+}
+.gis-floating-card .gis-muni-search input:focus {
+    outline: none;
+    border-color: #5347ce;
+    background: white;
+}
+.gis-floating-card .gis-muni-search svg {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8a94a6;
+    pointer-events: none;
+}
+
+/* Per-row municipality icon, colours rotating the same way the stat-icon
+   ones do (dashboard.css .stat-icon.<colour> gradients). */
+.gis-floating-card .gis-priority-row { gap: 10px; }
+.gis-floating-card .gis-muni-row-icon {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.gis-floating-card .gis-muni-row-icon svg { width: 14px; height: 14px; }
+.gis-floating-card .gis-muni-row-icon.blue { background: linear-gradient(135deg, #eaf2ff, #cfe2ff); color: #2f6fd6; }
+.gis-floating-card .gis-muni-row-icon.purple { background: linear-gradient(135deg, #f1edfe, #ded2fb); color: #6c5ce7; }
+.gis-floating-card .gis-muni-row-icon.green { background: linear-gradient(135deg, #e8faf0, #c3f0d8); color: #1e8449; }
+.gis-floating-card .gis-muni-row-icon.orange { background: linear-gradient(135deg, #fdf0e4, #fadfc0); color: #d35400; }
+
+.gis-floating-card .gis-row-chevron {
+    flex-shrink: 0;
+    display: flex;
+    color: #c3c7d1;
+    margin-left: 2px;
+}
+
+/* Hover/keyboard-focus highlight - a soft tinted background instead of
+   .gis-clickable's generic one, since these rows now carry their own
+   colour-coded icon. */
+.gis-floating-card .gis-priority-row.gis-clickable:hover {
+    background: #f7f7fd;
+}
+/* .gis-clickable's own margin:0 -8px / padding:10px 8px (base rule,
+   elsewhere in this file) is a hit-area trick that pulls the row 8px
+   past this panel's padding edge then pads it back in - it's supposed to
+   net zero, but combined with this row's own icon+gap it left the icon
+   sitting visibly closer to the card's edge than every other section's
+   content (stat cards, panel text). Zeroing it out here instead aligns
+   this row's content exactly to the panel's own 18px padding, matching
+   everything else. */
+.gis-floating-card .gis-priority-row.gis-clickable {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* The 3 overview stat cards (Affected Barangays/Families, Packs Available)
+   keep the real Dashboard's own stat-card look (theme.css: its own rounded
+   border, colour-tinted gradient wash, top-right status pill) instead of a
+   flat hairline-divided list, just scaled down - icon beside the number
+   instead of above it, smaller type, tighter padding - so 3 of them still
+   fit this card's own width/height without needing the full-size version's
+   extra vertical space. Scoped to .gis-floating-card specifically so the
+   real Dashboard's own stat cards (and every other page using this same
+   class) are completely untouched. */
+/* Unlike the .panel sections below it, .stat-cards has no left/right
+   padding of its own (it's dashboard.css's plain stat grid, not a
+   .gis-floating-card .panel) - it otherwise sits flush against this
+   card's bare left edge instead of matching the 18px every panel section
+   indents by. */
+.gis-floating-card .stat-cards {
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-left: 18px;
+}
+/* .gis-stat-cards .stat-card (below, used generically elsewhere for a
+   side-column stat list) sets its own padding at equal (0,2,0) selector
+   specificity - the extra .stat-cards here (0,3,0) is what makes this
+   compact padding reliably win over it regardless of which rule the
+   cascade happens to place later in the file. */
+/* Grid rows: 1 = icon+value side by side, 2 = label (full width, under
+   the icon too - not indented to align with the value), 3 = the
+   description line added below it, same full width. */
+.gis-floating-card .stat-cards .stat-card {
+    background: white;
+    border: 1px solid var(--rl-border);
+    border-radius: 11px;
+    box-shadow: none;
+    transform: none !important;
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    grid-template-rows: auto auto auto;
+    column-gap: 10px;
+    row-gap: 1px;
+    align-items: start;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+}
+.gis-floating-card .stat-icon {
+    grid-row: 1;
+    grid-column: 1;
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0;
+}
+.gis-floating-card .stat-value {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: center;
+    font-size: 21px;
+}
+.gis-floating-card .stat-label {
+    grid-row: 2;
+    grid-column: 1 / 3;
+    font-size: 12.5px;
+    margin-top: 0;
+}
+.gis-floating-card .stat-desc {
+    grid-row: 3;
+    grid-column: 1 / 3;
+    font-size: 10.5px;
+    line-height: 1.3;
+    color: #8a94a6;
+}
+.gis-floating-card .stat-sub {
+    top: 8px;
+    right: 10px;
+    max-width: calc(100% - 46px);
+    padding: 2px 7px 2px 13px;
+    font-size: 8.5px;
+}
+/* Grid/flex items default to min-width: auto (their own content's natural
+   width), not 0 - at a narrow enough map panel, that stopped the value/
+   label column from shrinking at all once "57,451"-style numbers or the
+   longer municipality names got involved, so the card overflowed sideways
+   and .gis-floating-info's overflow-x: hidden (needed to keep the card's
+   own rounded corners crisp while it scrolls vertically) clipped the
+   overflow instead of it wrapping - explicit min-width: 0 lets these
+   actually shrink/wrap like normal text instead of forcing the row wider
+   than the card. */
+.gis-floating-card .stat-value,
+.gis-floating-card .stat-label,
+.gis-floating-card .stat-desc,
+.gis-floating-card .stat-icon { min-width: 0; }
+.gis-floating-card .gis-priority-row > div,
+.gis-floating-card .dd-summary-row > span,
+.gis-floating-card .dd-summary-row > strong { min-width: 0; }
+/* The name/subtitle div claims all the leftover width in the row (icon and
+   chevron are flex-shrink:0, the badge column stays content-sized) instead
+   of shrink-wrapping to its own content, which left it too narrow and
+   wrapped "X of Y barangays affected" onto two lines. */
+.gis-floating-card .gis-priority-row > div:first-child { flex: 1; }
+.gis-floating-card .gis-priority-row-right { flex-shrink: 0; }
+.gis-floating-card .gis-priority-row strong,
+.gis-floating-card .gis-priority-row span,
+.gis-floating-card .dd-summary-row span,
+.gis-floating-card .dd-summary-row strong {
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
+/* Stock-adequacy "Unrated" swatch for this page's own .map-legend-box - the
+   dashboard's own legend (dashboard.css) never needed this shade since its
+   own badges always resolve to one of the other four, but a barangay/
+   municipality with no inventory row on record renders as this real, common
+   color on this map (gis_map.js TIER_COLORS.unrated) and needs decoding too. */
+.legend-square.unrated { background: #d8dee8; }
+
+/* Warehouse legend swatch - a small version of the actual marker plotted on
+   the map (gis_map.js buildWarehouseIcon: a colored circle, white border,
+   building glyph), not a flat square like the stock-adequacy swatches above
+   it, so it visually matches what "Warehouse" is pointing at. Uses the
+   app's own purple accent (not the muted grey a real marker never actually
+   shows) and is sized a notch bigger than the stock-adequacy squares - real
+   warehouse markers vary from green to red depending on health, so this
+   swatch deliberately reads as "the marker shape", not one specific status
+   color, and needed the extra size/contrast to not get lost next to the
+   bold status squares above it. */
+.legend-warehouse-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #5347ce;
+    border: 2.5px solid white;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.45);
+    flex-shrink: 0;
+}
+
+/* Map Layers checkboxes, appended to the same .map-legend-box (gis_map.js
+   wires each one to show/hide its real Leaflet layer group). Reuses
+   .map-legend-row's own layout, just makes the whole row clickable (it's a
+   <label>) and adds the checkbox itself before the swatch/text. */
+.map-layer-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+.map-layer-toggle input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* "Locate me" button - same corner/stacking as the zoom control
+   (gis_map.js), same visual language as .leaflet-control-zoom a. */
+.gis-locate-btn {
+    width: 32px !important;
+    height: 32px !important;
+    background: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.15) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    cursor: pointer;
+    margin: 0 12px 8px 0 !important;
+}
+.gis-locate-btn:hover { background: #eceef4 !important; }
 
 /* Clicking any municipality/barangay shape (province, target-LGU, or
    barangay polygon) gives that SVG path browser keyboard focus, and
@@ -166,6 +563,136 @@
     box-shadow: 0 1px 6px rgba(0,0,0,0.15);
     padding: 0 4px;
 }
+
+/* Command layout (gis_map.js/pswdo template): search bar + filter toolbar
+   float together as one row, top-left of the map, instead of the search bar
+   alone claiming that corner. .gis-map-toolbar-search overrides the plain
+   .gis-search-bar's own absolute position/width since it's now a flex child
+   inside .gis-map-toolbar (which handles the actual top/left placement). */
+.gis-map-toolbar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    /* Clears .gis-floating-info's full width (340px + its own 12px right
+       offset + a gap) - not just the much narrower Reset/fullscreen
+       buttons above it - so a wrapped second row of filters can never
+       extend into the breadcrumb/detail card's own column, at any
+       viewport width. Narrowed (and the filters made to stretch and fill
+       that space) in the media query below, once the viewport is verified
+       wide enough that this row never needs to wrap. */
+    right: 372px;
+    /* Higher than .gis-floating-info's own 1000 (both are position:absolute
+       siblings under .gis-map-panel's isolated stacking context, so ties
+       are broken by DOM order - the card comes later in the markup and
+       would otherwise render on top). Only matters once the widened media
+       query below lets the last filter pill sit close enough to the card
+       that its opened .csel-list dropdown - internally z-index:3000, but
+       that's scoped to this toolbar's own stacking context and can't
+       out-rank a sibling on its own - would otherwise render underneath
+       the card instead of over it. */
+    z-index: 1010;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.gis-map-toolbar-search.gis-search-bar {
+    position: static;
+    width: 340px;
+    max-width: 100%;
+    flex-shrink: 0;
+}
+
+/* Filter bar - one shared pill, not five separate cards: each <select> is
+   its own pill, divided by a real gap, no shared background box. Every
+   <select> on the page is replaced by static/js/custom_select.js with a
+   `.csel-wrap > .csel-native(hidden) + .csel-trigger(visible button)`
+   structure (see custom_select.css) - the raw <select> ends up clipped to
+   1x1px, so it's `.csel-wrap`/`.csel-trigger` that actually need styling
+   here, not `select` itself (an earlier version of this file targeted
+   `select` directly, which silently did nothing since that element is
+   never the one rendered). */
+.gis-inline-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    max-width: 100%;
+}
+.gis-inline-filters .csel-wrap { max-width: 150px; }
+/* Matches .gis-search-bar's own shadow (border:none instead of
+   custom_select.css's global 1px border, so the shadow reads the same way
+   here as it does on the search pill beside it). */
+.gis-inline-filters .csel-trigger {
+    border: none;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+}
+
+/* Above this width the search bar + all 4 filter pills are verified
+   (screenshot-checked, not just measured with getBoundingClientRect - the
+   custom-select trigger button's real layout box turned out to need
+   different handling than a plain <select> would have) to always fit on
+   one line even at their tightest floor width, so this row can safely stop
+   shrink-wrapping and instead stretch to fill the toolbar's box all the
+   way to near the Reset button, closing the dead gap a shrink-wrapped row
+   left behind. Below this it falls back to the proven-safe default above
+   (shrink-wrapped, wide card-safe clearance, free to wrap, each trigger at
+   its normal global 160px min-width) since forcing the same stretch there
+   was measured to overflow into the Reset button. */
+@media (min-width: 1160px) {
+    .gis-map-toolbar {
+        right: 148px;
+        flex-wrap: nowrap;
+    }
+    .gis-map-toolbar-search.gis-search-bar {
+        flex: 2 1 160px;
+        min-width: 140px;
+    }
+    .gis-inline-filters {
+        flex: 3 1 auto;
+        min-width: 0;
+        flex-wrap: nowrap;
+    }
+    .gis-inline-filters .csel-wrap {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: 220px;
+    }
+    /* Overrides custom_select.css's global 160px floor (sized for
+       full-width form fields, not a 4-up toolbar row) just within this
+       toolbar. */
+    .gis-inline-filters .csel-trigger { min-width: 64px; }
+}
+
+/* Reset - shares the map's top-right corner with the fullscreen button
+   (which stays exactly where it was), positioned just to its left instead
+   of a separate row above the map entirely. */
+.gis-map-reset-btn {
+    position: absolute;
+    top: 12px;
+    right: 56px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #333;
+    border: none;
+    white-space: nowrap;
+}
+.gis-map-reset-btn:hover { background: #eceef4; }
+
+/* This page no longer has a separate filter row above the map (see
+   .gis-map-toolbar) - just the plain title/subtitle now, so it doesn't need
+   the same bottom margin a page-header sharing its row with real controls
+   would. */
+.gis-command-page-header { margin-bottom: 12px; }
 .gis-search-bar input {
     flex: 1;
     min-width: 0;
