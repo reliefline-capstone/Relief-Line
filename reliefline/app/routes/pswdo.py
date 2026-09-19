@@ -2192,6 +2192,24 @@ def _gis_config():
     }
 
 
+def _other_municipality_names():
+    """Every other municipality/city on the province map (all of Pangasinan's
+    LGUs beyond the 3 with barangay-level data), alphabetically, named
+    exactly as the map's own province layer names them - so picking one in
+    the Municipality filter selects the very same shape/panel that clicking
+    it on the map does. Empty for a CSWDO/MSWDO account, whose map only ever
+    opens its own municipality."""
+    if current_user.role == "cswdo_admin":
+        return []
+    targets = {_normalize_muni_name(l).lower() for l in TARGET_LGUS}
+    names = {
+        f["properties"]["adm3_en"]
+        for f in _load_topojson_file(PROVINCE_TOPOJSON_FILE)["features"]
+        if _normalize_muni_name(f["properties"]["adm3_en"]).lower() not in targets
+    }
+    return sorted(names)
+
+
 @pswdo_bp.route("/gis-map")
 @login_required
 @role_required("pswdo_admin", "cswdo_admin", "system_admin")
@@ -2205,6 +2223,7 @@ def gis_map():
         "pswdo/gis_map.html",
         active_events=active_events,
         target_lgus=scope_lgus,
+        other_municipalities=_other_municipality_names(),
         gis_config=_gis_config(),
     )
 

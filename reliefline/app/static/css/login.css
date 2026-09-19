@@ -143,13 +143,16 @@
 .lock-badge {
     width: clamp(40px, calc(7.27vh - 14.5px), 64px);
     height: clamp(40px, calc(7.27vh - 14.5px), 64px);
-    background: #eef2f9;
+    background: #eaeefd;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto clamp(8px, calc(2.42vh - 10px), 16px);
 }
+/* The icon takes the page's accent blue (same as the Sign In button) instead
+   of the navy hard-coded in each template's icon() call. */
+.lock-badge svg { stroke: var(--accent-blue); }
 
 .login-card h2 {
     text-align: center;

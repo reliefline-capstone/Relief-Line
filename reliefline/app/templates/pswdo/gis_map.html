@@ -30,11 +30,11 @@
             </div>
         </section>
 
-        <section class="panel gis-map-panel">
+        <section class="panel gis-map-panel gis-map-panel-fill">
             <div class="gis-map-toolbar">
                 <div class="gis-search-bar gis-map-toolbar-search">
                     <button type="button" class="gis-search-icon-btn" id="gis-search-btn" title="Search">{{ icon('search', 16) }}</button>
-                    <input type="text" id="gis-search-input" placeholder="Search location…" title="Search municipality, barangay, warehouse, or location" autocomplete="off">
+                    <input type="text" id="gis-search-input" placeholder="Search municipality…" title="Search any municipality or city in Pangasinan" autocomplete="off">
                     <button type="button" class="gis-search-clear" id="gis-search-clear" title="Clear search" hidden>{{ icon('x', 14) }}</button>
                 </div>
                 <div class="gis-inline-filters">
@@ -43,15 +43,10 @@
                         {% for lgu in target_lgus %}
                         <option value="{{ lgu }}">{{ lgu }}</option>
                         {% endfor %}
+                        {% for name in other_municipalities %}
+                        <option value="{{ name }}">{{ name }}</option>
+                        {% endfor %}
                     </select>
-                    <!-- Food Packs is the only item this map's stock-adequacy
-                         coloring is actually computed from (see
-                         app.routes.pswdo._stock_adequacy) - Hygiene/Kitchen
-                         Kits exist in warehouse inventory but have no demand
-                         model behind them yet, so this stays a single real
-                         option rather than a filter that would silently do
-                         nothing for the others. -->
-                    <select id="filter-relief-item" title="Relief Item"><option value="food_pack" selected>Food Packs</option></select>
                     <select id="filter-status" title="Status">
                         <option value="">All Status</option>
                         <option value="critical">Critical</option>
@@ -71,8 +66,9 @@
             <button type="button" class="btn-outline gis-map-reset-btn" id="btn-reset-map" title="Reset Map">{{ icon('rotate-ccw', 14) }} Reset</button>
             <div id="gis-search-results" class="gis-search-results" hidden></div>
             <button type="button" class="gis-fullscreen-btn" id="gis-fullscreen-btn" title="Toggle fullscreen">{{ icon('maximize', 16, '#555') }}</button>
+            <button type="button" class="gis-legend-toggle" id="gis-legend-toggle" title="Legend" aria-label="Show legend">{{ icon('list', 16, '#555') }}</button>
             <div id="gis-map"></div>
-            <div class="map-legend-box">
+            <div class="map-legend-box" id="gis-legend-box">
                 <span class="map-legend-title">Stock Adequacy</span>
                 <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
                 <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
@@ -93,34 +89,44 @@
             </div>
 
             <aside class="gis-floating-info" id="gis-floating-info">
+                <button type="button" class="gis-panel-btn gis-panel-close" id="gis-panel-close" title="Close panel" aria-label="Close panel">{{ icon('x', 14) }}</button>
+                <button type="button" class="gis-panel-btn gis-panel-open" id="gis-panel-open" title="Open panel" aria-label="Open panel" hidden>{{ icon('menu', 16) }}</button>
                 <div class="gis-floating-card">
                     <nav class="gis-breadcrumb" id="gis-breadcrumb"></nav>
                     <div id="gis-info-panel"></div>
                 </div>
             </aside>
-        </section>
 
-        <section class="panel wh-table-panel">
-            <div class="panel-header">
-                <h3>Active Distribution Routes</h3>
-                <span class="badge-count" id="routes-count">0</span>
+            <div class="gis-routes-dock" id="gis-routes-dock">
+                <button type="button" class="gis-routes-toggle" id="gis-routes-toggle" title="Show Active Distribution" aria-label="Show Active Distribution" hidden>
+                    {{ icon('truck', 16) }}<span>Active Distribution</span><span class="badge-count" id="routes-count-pill">0</span>
+                </button>
+                <section class="gis-routes-panel" id="gis-routes-panel">
+                    <div class="gis-routes-head">
+                        <h3>Active Distribution Routes</h3>
+                        <span class="badge-count" id="routes-count">0</span>
+                        <button type="button" class="gis-routes-min" id="gis-routes-min" title="Hide" aria-label="Hide Active Distribution Routes">{{ icon('x', 14) }}</button>
+                    </div>
+                    <p class="gis-routes-hint">Click a route to draw its road path on the map.</p>
+                    <div id="gis-route-detail" class="gis-route-detail" hidden></div>
+                    <div class="gis-routes-body">
+                        <table class="wh-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ROUTE</th>
+                                    <th>PACKS</th>
+                                    <th>STATUS</th>
+                                    <th>ETA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="routes-table-body">
+                                <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
-            <p class="empty-note" style="padding:0 20px 10px;">Click a route to draw its actual road path on the map, with distance and estimated travel time.</p>
-            <div id="gis-route-detail" class="gis-route-detail" hidden></div>
-            <table class="wh-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>ROUTE</th>
-                        <th>PACKS</th>
-                        <th>STATUS</th>
-                        <th>ETA</th>
-                    </tr>
-                </thead>
-                <tbody id="routes-table-body">
-                    <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Loading…</td></tr>
-                </tbody>
-            </table>
         </section>
 
     </main>

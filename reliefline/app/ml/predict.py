@@ -19,7 +19,8 @@ from app.utils.timezone import ph_today
 import joblib
 
 from app.ml.train import (
-    ARTIFACT_PATH, FEATURES, MONTH_LABELS, historical_allocation_for, _to_number,
+    ARTIFACT_PATH, FEATURES, MONTH_LABELS, historical_allocation_for,
+    historical_allocations_for_many, _to_number,
 )
 
 _cached_artifact = None
@@ -90,10 +91,28 @@ def _barangay_share(barangay):
     do have history (0.05 - a rough mid-range estimate from the synthetic
     generative model - only when literally no barangay in the LGU has any
     history at all to derive a real ratio from)."""
+    return _lgu_shares(barangay.city_municipality).get(barangay.barangay_id, 0.0)
+
+
+def _lgu_shares(lgu):
+    """Every barangay's share of its LGU's forecast, for the whole LGU at
+    once (2 queries total). Cached on flask.g for the length of the current
+    request only, so the map endpoint - which forecasts every barangay,
+    each of which needs the same LGU-wide split - computes it once per LGU
+    instead of once per barangay, and it can never go stale across requests
+    (allocations approved a moment ago are always reflected on the next
+    load). Outside a request it just computes fresh each time."""
+    from flask import g, has_app_context
     from app.models.barangay import Barangay
 
-    lgu_barangays = Barangay.query.filter_by(city_municipality=barangay.city_municipality).all()
-    hist = {b.barangay_id: historical_allocation_for(b.barangay_id) for b in lgu_barangays}
+    cache = None
+    if has_app_context():
+        cache = g.__dict__.setdefault("_lgu_share_cache", {})
+        if lgu in cache:
+            return cache[lgu]
+
+    lgu_barangays = Barangay.query.filter_by(city_municipality=lgu).all()
+    hist = historical_allocations_for_many([b.barangay_id for b in lgu_barangays])
     pops = {b.barangay_id: (_to_number(b.population) or 0) for b in lgu_barangays}
 
     known = [(hist[bid], pops[bid]) for bid in hist if hist[bid] > 0 and pops[bid] > 0]
@@ -102,8 +121,14 @@ def _barangay_share(barangay):
     weights = {bid: (hist[bid] if hist[bid] > 0 else pops[bid] * avg_ratio) for bid in hist}
     total = sum(weights.values())
     if total <= 0:
-        return 1.0 / len(lgu_barangays) if lgu_barangays else 0.0
-    return weights.get(barangay.barangay_id, 0) / total
+        even = 1.0 / len(lgu_barangays) if lgu_barangays else 0.0
+        shares = {bid: even for bid in hist}
+    else:
+        shares = {bid: weights[bid] / total for bid in hist}
+
+    if cache is not None:
+        cache[lgu] = shares
+    return shares
 
 
 def forecast_barangay(barangay, months_ahead, start_month=None):

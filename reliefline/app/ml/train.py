@@ -180,7 +180,14 @@ def historical_allocation_for(barangay_id, before_date=None):
     )
     if before_date is not None:
         q = q.filter(AllocationRecord.allocation_date < before_date)
-    records = q.all()
+    return _median_event_allocation(q.all())
+
+
+def _median_event_allocation(records):
+    """The per-barangay figure historical_allocation_for describes, from
+    that barangay's already-loaded qualifying records."""
+    import statistics
+
     if not records:
         return 0
 
@@ -190,6 +197,29 @@ def historical_allocation_for(barangay_id, before_date=None):
         per_event[key] = max(per_event.get(key, 0), _realized_quantity(rec))
 
     return float(statistics.median(per_event.values()))
+
+
+def historical_allocations_for_many(barangay_ids, before_date=None):
+    """historical_allocation_for for a whole set of barangays in ONE query
+    (same filter, same per-event collapsing, same result per id) - looking
+    them up one by one cost a query each, which the per-barangay demand split
+    (app.ml.predict._barangay_share) multiplied by every barangay in the LGU,
+    for every barangay on the map."""
+    from app.models.allocation import AllocationRecord
+
+    ids = list(barangay_ids)
+    by_barangay = {bid: [] for bid in ids}
+    if not ids:
+        return {}
+    q = AllocationRecord.query.filter(
+        AllocationRecord.barangay_id.in_(ids),
+        AllocationRecord.status.in_(("approved", "released")),
+    )
+    if before_date is not None:
+        q = q.filter(AllocationRecord.allocation_date < before_date)
+    for rec in q.all():
+        by_barangay[rec.barangay_id].append(rec)
+    return {bid: _median_event_allocation(recs) for bid, recs in by_barangay.items()}
 
 
 def _load_monthly_lgu_rows():

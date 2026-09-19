@@ -23,101 +23,119 @@
     <main class="dashboard-main">
 
 
-        <section class="page-header">
+        <section class="page-header gis-command-page-header">
             <div>
                 <h2>GIS Map</h2>
-                <p>Barangay stock adequacy</p>
-            </div>
-            <div class="gis-filters">
-                <select id="filter-event">
-                    <option value="">No active event</option>
-                    {% for e in active_events %}
-                    <option value="{{ e.event_id }}">{{ e.event_name }}</option>
-                    {% endfor %}
-                </select>
-                <select id="filter-lgu">
-                    <option value="">All Municipalities</option>
-                    {% for lgu in target_lgus %}
-                    <option value="{{ lgu }}">{{ lgu }}</option>
-                    {% endfor %}
-                </select>
-                <select id="filter-status">
-                    <option value="">All Stock Levels</option>
-                    <option value="critical">Critical</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                    <option value="unrated">Unrated</option>
-                </select>
+                <p>Real-time view of your municipality's barangay stock levels and distribution routes.</p>
             </div>
         </section>
 
-        <div class="main-grid">
-
-            <div class="gis-map-col">
-
-            <section class="panel gis-map-panel">
-                <div class="gis-search-bar">
+        <section class="panel gis-map-panel gis-map-panel-fill">
+            <div class="gis-map-toolbar">
+                <div class="gis-search-bar gis-map-toolbar-search">
                     <button type="button" class="gis-search-icon-btn" id="gis-search-btn" title="Search">{{ icon('search', 16) }}</button>
-                    <input type="text" id="gis-search-input" placeholder="Search location…" title="Search municipality, barangay, warehouse, or location" autocomplete="off">
+                    <input type="text" id="gis-search-input" placeholder="Search barangay…" title="Search a barangay in your municipality" autocomplete="off">
                     <button type="button" class="gis-search-clear" id="gis-search-clear" title="Clear search" hidden>{{ icon('x', 14) }}</button>
                 </div>
-                <div id="gis-search-results" class="gis-search-results" hidden></div>
-                <button type="button" class="gis-fullscreen-btn" id="gis-fullscreen-btn" title="Toggle fullscreen">{{ icon('maximize', 16, '#555') }}</button>
-                <div id="gis-map"></div>
-                <div class="map-legend-box">
-                    <span class="map-legend-title">Stock Adequacy</span>
-                    <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
-                    <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
-                    <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
-                    <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
-                    <div class="map-legend-row"><i class="legend-square unrated"></i> Unrated</div>
-                    <div class="map-legend-divider"></div>
-                    <div class="map-legend-row">
-                        <span class="legend-warehouse-icon">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg>
-                        </span>
-                        Warehouse
-                    </div>
-                    <div class="map-legend-divider"></div>
-                    <span class="map-legend-title">Map Layers</span>
-                    <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-municipality" checked> Municipality Boundary</label>
-                    <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-barangay" checked> Barangay Boundary</label>
-                    <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-warehouse" checked> Warehouse</label>
+                <div class="gis-inline-filters">
+                    {# The map's own logic still keys off this municipality select, but a
+                       single-municipality account has nothing to choose here - it stays
+                       in the page hidden (custom_select.js skips hidden selects) and the
+                       visible first filter is the barangay one below. #}
+                    <select id="filter-lgu" title="Municipality" hidden>
+                        <option value="">All Municipalities</option>
+                        {% for lgu in target_lgus %}
+                        <option value="{{ lgu }}">{{ lgu }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="filter-barangay" title="Barangay">
+                        <option value="">All Barangays</option>
+                        {% for b in barangay_options %}
+                        <option value="{{ b.barangay_id }}">{{ b.barangay_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="filter-status" title="Status">
+                        <option value="">All Status</option>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                        <option value="unrated">Unrated</option>
+                    </select>
+                    <select id="filter-event" title="Event">
+                        <option value="">No active event</option>
+                        {% for e in active_events %}
+                        <option value="{{ e.event_id }}">{{ e.event_name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </section>
-
-            <section class="panel wh-table-panel" style="margin-top:16px;">
-                <div class="panel-header">
-                    <h3>Active Distribution Routes</h3>
-                    <span class="badge-count" id="routes-count">0</span>
+            </div>
+            <button type="button" class="btn-outline gis-map-reset-btn" id="btn-reset-map" title="Reset Map">{{ icon('rotate-ccw', 14) }} Reset</button>
+            <div id="gis-search-results" class="gis-search-results" hidden></div>
+            <button type="button" class="gis-fullscreen-btn" id="gis-fullscreen-btn" title="Toggle fullscreen">{{ icon('maximize', 16, '#555') }}</button>
+            <button type="button" class="gis-legend-toggle" id="gis-legend-toggle" title="Legend" aria-label="Show legend">{{ icon('list', 16, '#555') }}</button>
+            <div id="gis-map"></div>
+            <div class="map-legend-box" id="gis-legend-box">
+                <span class="map-legend-title">Stock Adequacy</span>
+                <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
+                <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
+                <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
+                <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
+                <div class="map-legend-row"><i class="legend-square unrated"></i> Unrated</div>
+                <div class="map-legend-divider"></div>
+                <div class="map-legend-row">
+                    <span class="legend-warehouse-icon">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg>
+                    </span>
+                    Warehouse
                 </div>
-                <p class="empty-note" style="padding:0 20px 10px;">Click a route to draw its actual road path on the map, with distance and estimated travel time.</p>
-                <div id="gis-route-detail" class="gis-route-detail" hidden></div>
-                <table class="wh-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>ROUTE</th>
-                            <th>PACKS</th>
-                            <th>STATUS</th>
-                            <th>ETA</th>
-                        </tr>
-                    </thead>
-                    <tbody id="routes-table-body">
-                        <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Loading…</td></tr>
-                    </tbody>
-                </table>
-            </section>
-
+                <div class="map-legend-divider"></div>
+                <span class="map-legend-title">Map Layers</span>
+                <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-municipality" checked> Municipality Boundary</label>
+                <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-barangay" checked> Barangay Boundary</label>
+                <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-warehouse" checked> Warehouse</label>
             </div>
 
-            <aside class="wh-side-col">
-                <nav class="gis-breadcrumb" id="gis-breadcrumb"></nav>
-                <div id="gis-info-panel"></div>
+            <aside class="gis-floating-info" id="gis-floating-info">
+                <button type="button" class="gis-panel-btn gis-panel-close" id="gis-panel-close" title="Close panel" aria-label="Close panel">{{ icon('x', 14) }}</button>
+                <button type="button" class="gis-panel-btn gis-panel-open" id="gis-panel-open" title="Open panel" aria-label="Open panel" hidden>{{ icon('menu', 16) }}</button>
+                <div class="gis-floating-card">
+                    <nav class="gis-breadcrumb" id="gis-breadcrumb"></nav>
+                    <div id="gis-info-panel"></div>
+                </div>
             </aside>
 
-        </div>
+            <div class="gis-routes-dock" id="gis-routes-dock">
+                <button type="button" class="gis-routes-toggle" id="gis-routes-toggle" title="Show Active Distribution" aria-label="Show Active Distribution" hidden>
+                    {{ icon('truck', 16) }}<span>Active Distribution</span><span class="badge-count" id="routes-count-pill">0</span>
+                </button>
+                <section class="gis-routes-panel" id="gis-routes-panel">
+                    <div class="gis-routes-head">
+                        <h3>Active Distribution Routes</h3>
+                        <span class="badge-count" id="routes-count">0</span>
+                        <button type="button" class="gis-routes-min" id="gis-routes-min" title="Hide" aria-label="Hide Active Distribution Routes">{{ icon('x', 14) }}</button>
+                    </div>
+                    <p class="gis-routes-hint">Click a route to draw its road path on the map.</p>
+                    <div id="gis-route-detail" class="gis-route-detail" hidden></div>
+                    <div class="gis-routes-body">
+                        <table class="wh-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ROUTE</th>
+                                    <th>PACKS</th>
+                                    <th>STATUS</th>
+                                    <th>ETA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="routes-table-body">
+                                <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </section>
 
     </main>
 </div>

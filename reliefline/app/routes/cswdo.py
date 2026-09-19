@@ -536,10 +536,18 @@ def gis_map():
     # Event picker: the province-wide event plus this viewer's own town's
     # municipality-scoped event, if any (mirrors pswdo.gis_map's picker).
     active_events = relevant_active_events_query(scope_lgus).all()
+    # Barangay filter options - this account's own municipality's barangays
+    # only (scope_lgus), ids matching the map's barangay features.
+    barangay_options = (
+        Barangay.query.filter(Barangay.city_municipality.in_(scope_lgus))
+        .order_by(Barangay.barangay_name).all()
+        if scope_lgus else []
+    )
     return render_template(
         "cswdo/gis_map.html",
         active_events=active_events,
         target_lgus=scope_lgus,
+        barangay_options=barangay_options,
         gis_config=_gis_config(),
     )
 
