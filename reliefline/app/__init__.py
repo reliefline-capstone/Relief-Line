@@ -42,6 +42,8 @@ def create_app():
     from app.models.allocation import AllocationRecord
     from app.models.validation import DistributionRecord
     from app.models.prediction import PredictionLog, ModelMetrics
+    from app.models.barangay_monthly_history import BarangayMonthlyHistory
+    from app.models.climate_monthly import ClimateMonthly
     from app.models.disaster_event import DisasterEvent
     from app.models.barangay_status import BarangayDisasterStatus
     from app.models.barangay_report import BarangayReport

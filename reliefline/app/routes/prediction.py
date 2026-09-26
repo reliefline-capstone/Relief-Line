@@ -14,6 +14,7 @@ from app.models.prediction import ModelMetrics
 from app.models.barangay_inventory import food_pack_on_hand
 from app.models.barangay_report import BarangayReport
 from app.ml import predict as ml_predict
+from app.ml import charts as forecast_charts
 from app.utils.disaster_events import (
     resolve_effective_event, blocking_event_for_province, relevant_active_events_query,
 )
@@ -77,6 +78,51 @@ def _resolve_event_map(explicit_event_id, lgus):
     return lgu_event_ids, page_event
 
 
+def _stock_cover(stock, lgu_names, horizon_months):
+    """How well `stock` food packs covers what the SARIMAX forecaster says
+    `lgu_names` will need. Returns None when there is no trained model.
+
+    stockpile   - recommended stockpile for the horizon (the P90 total; for
+                  several LGUs the SUM of their stockpiles, an upper bound
+                  since storms rarely peak everywhere at once)
+    expected    - expected demand over the same horizon
+    coverage_pct- stock / stockpile
+    months_cover- how many months of EXPECTED demand the stock lasts, walking
+                  the next 12 monthly forecasts (capped at 12)"""
+    if not lgu_names:
+        return None
+    fh = [ml_predict.forecast_lgu(l, horizon_months) for l in lgu_names]
+    f12 = [ml_predict.forecast_lgu(l, 12) for l in lgu_names]
+    if any(f is None for f in fh + f12):
+        return None
+    stockpile = sum(f["horizon_p90"] for f in fh)
+    expected = sum(f["horizon_total"] for f in fh)
+
+    remaining, months = float(stock), 0.0
+    exhausted = False
+    for i in range(12):
+        demand = sum(f["months"][i]["projected_packs"] for f in f12)
+        if remaining >= demand:
+            remaining -= demand
+            months += 1
+        else:
+            months += remaining / demand
+            exhausted = True
+            break
+    coverage = round(stock / stockpile * 100) if stockpile else None
+    if coverage is None or coverage >= 100:
+        tier = "healthy"
+    elif coverage >= 50:
+        tier = "warning"
+    else:
+        tier = "critical"
+    return {
+        "stockpile": stockpile, "expected": expected, "coverage_pct": coverage, "tier": tier,
+        "shortfall": max(stockpile - stock, 0),
+        "months_cover": round(months, 1), "covers_12_plus": not exhausted,
+    }
+
+
 def _barangay_snapshot(barangay, status_row, event_id):
     """One barangay's real profile + need figures. The priority tier here is
     STOCK ADEQUACY (see app.routes.pswdo._stock_adequacy) - reported caseload
@@ -89,6 +135,8 @@ def _barangay_snapshot(barangay, status_row, event_id):
     relief = _relief_summary([barangay.barangay_id], event_id)
     has_request = relief["requested"] > 0
     predicted = ml_predict.predict_quantity(barangay)
+    # P90 safety-stock level for this month (None without a trained model).
+    safety_stock = ml_predict.predict_safety_stock(barangay)
     on_hand = food_pack_on_hand(barangay.barangay_id)
 
     report_row = None
@@ -129,6 +177,7 @@ def _barangay_snapshot(barangay, status_row, event_id):
         "undelivered": max(packs_needed - released, 0),
         "need_source": source,
         "predicted_quantity": predicted,
+        "safety_stock": safety_stock,
         # The barangay's own current food-pack stock - int, or None when the
         # barangay has never reported any. Shown read-only in the ranking and
         # used to prefill a proactive allocation (model estimate − on hand).
@@ -239,39 +288,32 @@ def index():
         reverse=True,
     )[:8]
 
-    # ---- Warehouse stock forecast - the province-wide PSWDO warehouses only
-    # (municipal CSWDO offices are covered on the GIS Map's per-municipality
-    # "assigned warehouse" card instead) ----
+    # ---- Warehouse stock vs forecast - each warehouse's stock against the
+    # SARIMAX recommended stockpile (see _stock_cover). A CSWDO admin sees their
+    # own municipal warehouse vs their LGU's forecast; PSWDO/admin see the
+    # province-wide depots vs the whole province's (sum of municipal
+    # stockpiles), plus all warehouses combined. The health badge stays the
+    # capacity-fill rating (_food_pack_health) - a separate, deliberate lens. ----
+    cover_horizon = request.args.get("forecast_months", 6, type=int)
+    if cover_horizon not in (4, 6, 12):
+        cover_horizon = 6
     warehouse_cards = []
     for w in warehouses:
         # PSWDO sees the province-wide depots; a CSWDO admin sees their own
         # municipal warehouse (already the only entry in `warehouses` for them).
         if not is_cswdo and w["office"].office_type != "pswdo":
             continue
-        days_left = round(w["food_pack_qty"] / burn_rate, 1) if burn_rate > 0 else None
+        scope = [w["office"].area_covered] if is_cswdo else list(scope_lgus)
         warehouse_cards.append({
             "name": w["office"].office_name,
             "food_pack_qty": w["food_pack_qty"],
             "capacity": w["capacity"],
             "pct": w["pct"],
             "health": w["health"],
-            "days_left": days_left,
-            "burn_rate": burn_rate,
+            "scope_label": scope[0] if is_cswdo else "the whole province",
+            "cover": _stock_cover(w["food_pack_qty"], scope, cover_horizon),
         })
-
-    # ---- Historical trend - real DistributionRecord history, whatever there
-    # is of it (this deployment currently has activity on a single date) ----
-    since = ph_today() - timedelta(days=days_filter)
-    history_rows = DistributionRecord.query.join(Barangay).filter(
-        Barangay.city_municipality.in_(lgus),
-        DistributionRecord.distribution_date >= since,
-        DistributionRecord.dispatch_status == "delivered",
-    ).all()
-    by_date = {}
-    for r in history_rows:
-        by_date.setdefault(r.distribution_date, 0)
-        by_date[r.distribution_date] += r.quantity_released
-    historical_trend = [{"date": d.strftime("%b %d"), "packs": qty} for d, qty in sorted(by_date.items())]
+    combined_cover = None if is_cswdo else _stock_cover(total_food_packs, list(scope_lgus), cover_horizon)
 
     # ---- Model performance (real, honest - see app/ml/train.py) ----
     latest_metrics = ModelMetrics.query.order_by(ModelMetrics.trained_at.desc()).first()
@@ -288,6 +330,22 @@ def index():
         forecast_lgu_choice = scope_lgus[0] if scope_lgus else None
     lgu_forecast = ml_predict.forecast_lgu(forecast_lgu_choice, forecast_months) if forecast_lgu_choice else None
 
+    # Two line charts built from the forecast (geometry in app.ml.charts):
+    #  - "Will the stock last?": cumulative expected / P90 demand vs the
+    #    municipal warehouse's stock on hand for the LGU being viewed.
+    #  - "How did the model do?": actual vs forecast for the latest backtest
+    #    year, for the same LGU.
+    cover_chart = backtest_chart = None
+    if lgu_forecast:
+        stock = next((w["food_pack_qty"] for w in all_warehouses
+                      if w["office"].office_type == "cswdo"
+                      and w["office"].area_covered == forecast_lgu_choice), None)
+        if stock is not None:
+            cover_chart = forecast_charts.cover_chart(lgu_forecast["months"], stock)
+        bt = ml_predict.backtest_series(forecast_lgu_choice)
+        if bt:
+            backtest_chart = forecast_charts.backtest_chart(bt)
+
     # Compact per-LGU comparison strip shown above the detailed chart -
     # replaces the old "Demand Forecast by Municipality" snapshot panel
     # (commented out above) with the model's actual current-month + horizon
@@ -301,8 +359,26 @@ def index():
             "lgu": lgu,
             "this_month": lf["months"][0]["projected_packs"] if lf["months"] else 0,
             "horizon_total": lf["horizon_total"],
+            "horizon_p90": lf["horizon_p90"],
         })
     forecast_summary_by_lgu.sort(key=lambda f: f["horizon_total"], reverse=True)
+
+    # Barangay breakdown of the chosen LGU's forecast - each barangay's share
+    # and the pieces it is built from (app.ml.predict.share_breakdown), with
+    # the packs taken from forecast_barangay so they match the CSV and map.
+    # Only built (and shown) when the user clicks "View barangay breakdown"
+    # on the Projected Demand by Municipality panel (?show_breakdown=1).
+    show_breakdown = request.args.get("show_breakdown") == "1"
+    barangay_breakdown = []
+    if lgu_forecast and show_breakdown:
+        by_id = {b.barangay_id: b for b in Barangay.query.filter_by(city_municipality=forecast_lgu_choice).all()}
+        for row in sorted(ml_predict.share_breakdown(forecast_lgu_choice), key=lambda r: r["share"], reverse=True):
+            fb = ml_predict.forecast_barangay(by_id[row["barangay_id"]], forecast_months)
+            barangay_breakdown.append({
+                **row,
+                "expected": fb["horizon_total"] if fb else 0,
+                "stockpile": fb["horizon_p90"] if fb else 0,
+            })
 
     # ---- Recommendations: real stock-transfer rules + top-priority barangay ----
     # Link targets are role-aware - the PSWDO stock-transfer / relief-request
@@ -356,6 +432,8 @@ def index():
         estimated_need=estimated_need,
         total_food_packs=total_food_packs,
         days_remaining=days_remaining,
+        combined_cover=combined_cover,
+        cover_horizon=cover_horizon,
         burn_rate=burn_rate,
         estimated_three_day_need=estimated_three_day_need,
         total_affected_families=total_affected_families,
@@ -363,7 +441,6 @@ def index():
         # forecast_by_lgu=forecast_by_lgu,  # superseded - see comment above where it's built
         ranking=ranking,
         warehouse_cards=warehouse_cards,
-        historical_trend=historical_trend,
         latest_metrics=latest_metrics,
         model_available=ml_predict.is_model_available(),
         fulfillable_warehouses=fulfillable_warehouses,
@@ -371,6 +448,11 @@ def index():
         forecast_lgu_choice=forecast_lgu_choice,
         lgu_forecast=lgu_forecast,
         forecast_summary_by_lgu=forecast_summary_by_lgu,
+        barangay_breakdown=barangay_breakdown,
+        cover_chart=cover_chart,
+        backtest_chart=backtest_chart,
+        show_breakdown=show_breakdown,
+        history_weight=ml_predict.HISTORY_WEIGHT,
     )
 
 
@@ -406,6 +488,7 @@ def export_forecast():
         "Municipality", "Barangay", "Stock Adequacy", "Need (families)",
         "Barangay Stock", "Need/Stock %", "Affected Families",
         "Packs Needed", "Need Source", "Delivered", "Undelivered",
+        "Forecast This Month (expected)", "Safety Stock This Month (P90)",
     ])
     for b in barangays:
         b_event_id = lgu_event_ids.get(b.city_municipality)
@@ -416,6 +499,8 @@ def export_forecast():
             "" if s["stock_ratio_pct"] is None else s["stock_ratio_pct"],
             s["affected_families"],
             s["packs_needed"], s["need_source"], s["released"], s["undelivered"],
+            "" if s["predicted_quantity"] is None else s["predicted_quantity"],
+            "" if s["safety_stock"] is None else s["safety_stock"],
         ])
 
     return Response(

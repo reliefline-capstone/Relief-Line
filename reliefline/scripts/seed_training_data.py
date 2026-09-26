@@ -63,10 +63,12 @@ from app.ml.train import historical_allocation_for
 app = create_app()
 
 GEO_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app", "static", "geo")
+# PSGC barangay boundary files - the same ones app/routes/pswdo.py serves to
+# the map (barangay name is the adm4_en property).
 GEO_FILES = {
-    "Urdaneta City": "urdaneta_barangays.json",
-    "Santa Barbara": "santabarbara_barangays.json",
-    "Calasiao": "calasiao_barangays.json",
+    "Urdaneta City": "Municipality/bgysubmuns-municity-105546000.0.1.json",
+    "Santa Barbara": "Municipality/bgysubmuns-municity-105538000.0.1.json",
+    "Calasiao": "Municipality/bgysubmuns-municity-105517000.0.1.json",
 }
 
 # Placeholder Santa Barbara names currently in the DB (barangay_id 11-20),
@@ -87,7 +89,7 @@ SANTA_BARBARA_RENAMES = {
 
 # Six past typhoon events with a severity multiplier each. Severity is the
 # only per-event driver the model can't see (it has no event feature), so it
-# is kept in a modest band - the six static predictors stay dominant.
+# is kept in a modest band - (legacy per-event allocation seed; the SARIMAX forecaster now trains on scripts/seed_monthly_history.py).
 SYNTHETIC_EVENTS = [
     ("Typhoon Egay (2023)",        date(2023, 8, 19),  date(2023, 8, 26),  "Typhoon",            0.88),
     ("Typhoon Kabayan (2023)",     date(2023, 11, 4),  date(2023, 11, 10), "Severe Tropical Storm", 0.97),
@@ -111,9 +113,9 @@ MIN_EVENTS_PER_BARANGAY = 3  # so every barangay carries a real historical_alloc
 
 
 def geo_names(lgu):
-    with open(os.path.join(GEO_DIR, GEO_FILES[lgu])) as f:
+    with open(os.path.join(GEO_DIR, GEO_FILES[lgu]), encoding="utf-8") as f:
         data = json.load(f)
-    return sorted(ft["properties"]["name"] for ft in data["features"])
+    return sorted(ft["properties"].get("adm4_en") or ft["properties"]["name"] for ft in data["features"])
 
 
 def profile_for(name, lgu):

@@ -144,6 +144,30 @@
     rx: 4;
 }
 
+/* Safety-stock (P90) outline behind the expected-demand bar, and the
+   shaded wet-season / peak-typhoon month bands. */
+.pa-stock-line {
+    fill: none;
+    stroke: #0f2547;
+    stroke-width: 2;
+    stroke-dasharray: 6 4;
+    stroke-linejoin: round;
+}
+.pa-stock-dot { fill: #0f2547; }
+.pa-bar-band { fill: #eef5ff; }
+.pa-bar-band-peak { fill: #dcebff; }
+.pa-legend {
+    display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center;
+    font-size: 12.5px; color: #6b7588; margin: 6px 0 2px;
+}
+.pa-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.pa-legend .lg-exp { background: #4896fe; }
+.pa-legend .lg-p90 { width: 18px; height: 0; border-radius: 0; border-top: 2px dashed #0f2547; vertical-align: 3px; }
+.pa-legend .lg-wet { background: #eef5ff; border: 1px solid #cfe2ff; }
+.pa-legend .lg-peak { background: #dcebff; border: 1px solid #b9d6ff; }
+.pa-stock-tiles { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 12px auto 4px; }
+.pa-stock-tiles .pa-decision-tile { max-width: 300px; flex: 1 1 220px; }
+
 .pa-bar-value {
     fill: #1a2233;
     font-size: 13px;
@@ -186,3 +210,28 @@
     font-size: 11px;
     color: #8a94a6;
 }
+
+
+/* Line charts: will the stock last / actual vs forecast */
+.pa-axis { fill: #8a94a6; font-size: 12px; font-family: inherit; }
+.pa-line-exp { fill: none; stroke: #4896fe; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.pa-line-p90 { fill: none; stroke: #0f2547; stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; }
+.pa-line-actual { fill: none; stroke: #1a2233; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.pa-line-stock { stroke-width: 2.5; }
+.pa-stock-healthy { stroke: #27ae60; background: #27ae60; }
+.pa-stock-warning { stroke: #e67e22; background: #e67e22; }
+.pa-stock-critical { stroke: #e74c3c; background: #e74c3c; }
+.pa-stock-label { font-size: 13px; font-weight: 700; font-family: inherit; }
+.pa-stock-healthy-text { fill: #1e8449; }
+.pa-stock-warning-text { fill: #b9651a; }
+.pa-stock-critical-text { fill: #c0392b; }
+.pa-cross-dot { fill: #fff; stroke: #1a2233; stroke-width: 2.5; }
+.pa-dot { fill: #1a2233; }
+.pa-dot-over { fill: #e74c3c; stroke: #fff; stroke-width: 1.5; }
+.pa-legend .lg-line-exp, .pa-legend .lg-line-actual, .pa-legend .lg-line-stock {
+    width: 18px; height: 3px; border-radius: 2px; vertical-align: 3px;
+}
+.pa-legend .lg-line-exp { background: #4896fe; }
+.pa-legend .lg-line-actual { background: #1a2233; }
+.pa-legend .lg-cross { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #1a2233; background: #fff; }
+.pa-legend .lg-over { width: 11px; height: 11px; border-radius: 50%; background: #e74c3c; }

@@ -6,7 +6,9 @@ class BarangayInventory(db.Model):
     operational visibility only (CSWDO/PSWDO can view it). It goes UP when a
     barangay confirms receipt of a CSWDO delivery and DOWN when barangay
     personnel record having handed goods out. It is deliberately NOT a model
-    predictor - the manuscript fixes the six predictors (Objectives 1 & 2).
+    predictor - the SARIMAX forecaster (app.ml.train) reads only the monthly
+    demand history and season/typhoon-climatology predictors; on-hand stock is
+    subtracted AFTER the forecast to get a suggested allocation.
     """
     __tablename__ = "barangay_inventory"
 

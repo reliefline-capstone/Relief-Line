@@ -43,7 +43,7 @@
             <div class="stat-card"><div class="stat-icon {{ 'red' if total_shortage else 'green' }}">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_shortage) }}</span><span class="stat-label">This Month's Shortage</span></div>
             <div class="stat-card"><div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
-                <span class="stat-value">{{ "{:,}".format(total_stockpile) }}</span><span class="stat-label">Recommended {{ horizon_months }}-Month Stockpile</span></div>
+                <span class="stat-value">{{ "{:,}".format(total_stockpile) }}</span><span class="stat-label">Recommended {{ horizon_months }}-Month Stockpile (safety stock, sum of municipalities)</span></div>
             <div class="stat-card"><div class="stat-icon green">{{ icon('building', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span><span class="stat-label">Provincial Stock (all warehouses)</span></div>
         </section>
@@ -84,7 +84,7 @@
                         <td><strong>{{ m.lgu }}</strong></td>
                         <td>{{ m.barangay_count }}</td>
                         <td>{{ "{:,}".format(m.demand) }}</td>
-                        <td>{{ "{:,}".format(m.stockpile_total) }}</td>
+                        <td>{{ "{:,}".format(m.stockpile_total) }}<br><span class="rd-sub">expected {{ "{:,}".format(m.expected_total) }}</span></td>
                         <td>{{ "{:,}".format(m.on_hand) }}</td>
                         <td>
                             <div class="warehouse-bar" style="width:110px;"><div class="warehouse-bar-fill {{ 'fill-low' if m.coverage_pct < 50 else ('fill-moderate' if m.coverage_pct < 100 else 'fill-healthy') }}" style="width: {{ m.coverage_pct }}%;"></div></div>

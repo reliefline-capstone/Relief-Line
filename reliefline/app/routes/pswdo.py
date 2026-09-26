@@ -3046,9 +3046,8 @@ def transfer_issue(transfer_id):
 @role_required("pswdo_admin", "system_admin")
 def recommendations_page():
     # Province-wide page (all TARGET_LGUS) - shows PSWDO's own event only,
-    # for the banner display (the time-forecasting model doesn't read it -
-    # see app.ml.train on why it forecasts a representative seasonal cycle
-    # rather than reacting to any one active event).
+    # for the banner display (the SARIMAX forecaster doesn't read it - it
+    # projects the seasonal pattern from monthly history, see app.ml.train).
     active_event = blocking_event_for_province()
     _, warehouses, total_food_packs = _load_warehouses()
     depots = [w for w in warehouses if w["office"].office_type == "pswdo"]
@@ -3069,7 +3068,10 @@ def recommendations_page():
         office = Office.query.filter_by(office_type="cswdo", area_covered=lgu).first()
         forecast = ml_predict.forecast_lgu(lgu, horizon_months)
         demand = forecast["months"][0]["projected_packs"] if forecast else 0
-        stockpile_total = forecast["horizon_total"] if forecast else 0
+        # Recommended stockpile = the P90 safety-stock level for the horizon
+        # (enough 9 scenarios in 10); expected_total is the average scenario.
+        stockpile_total = forecast["horizon_p90"] if forecast else 0
+        expected_total = forecast["horizon_total"] if forecast else 0
         barangay_count = Barangay.query.filter_by(city_municipality=lgu).count()
         fp = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first() if office else None
         on_hand = fp.quantity_available if fp else 0
@@ -3086,7 +3088,8 @@ def recommendations_page():
             "lgu": lgu, "office": office, "demand": demand, "on_hand": on_hand,
             "shortage": shortage, "coverage_pct": round(min(on_hand / demand * 100, 100)) if demand else 100,
             "barangay_count": barangay_count, "open_request": open_req,
-            "stockpile_total": stockpile_total, "forecast_months": forecast["months"] if forecast else [],
+            "stockpile_total": stockpile_total, "expected_total": expected_total,
+            "forecast_months": forecast["months"] if forecast else [],
         })
 
     recs = []

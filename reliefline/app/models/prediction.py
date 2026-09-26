@@ -21,4 +21,14 @@ class ModelMetrics(db.Model):
     mape = db.Column(db.Numeric(10, 4), nullable=True)
     r_squared = db.Column(db.Numeric(10, 4), nullable=True)
     training_samples = db.Column(db.Integer, nullable=True)
+    # Rolling-origin backtest extras (SARIMAX forecaster): WAPE, the share of
+    # backtest months where actual demand stayed at/below the P90 safety stock
+    # (should be ~0.90), and the same WAPE for the seasonal-naive benchmark.
+    wape = db.Column(db.Numeric(10, 4), nullable=True)
+    p90_coverage = db.Column(db.Numeric(6, 4), nullable=True)
+    naive_wape = db.Column(db.Numeric(10, 4), nullable=True)
+    # Error of the 12-month total (what a stockpile decision uses), model vs
+    # the seasonal-naive benchmark. 0.23 = the 12-month total is off by ~23%.
+    total12_err = db.Column(db.Numeric(10, 4), nullable=True)
+    naive_total12_err = db.Column(db.Numeric(10, 4), nullable=True)
     trained_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
