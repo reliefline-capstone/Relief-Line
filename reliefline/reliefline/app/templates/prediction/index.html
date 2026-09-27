@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, prediction_disclaimer with context %}
+
+{% block title %}Predictive Analytics - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gis_map.css') }}?v={{ asset_version('css/gis_map.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/prediction.css') }}?v={{ asset_version('css/prediction.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'predictive_analytics' %}
+    {% if is_cswdo %}
+        {% include "cswdo/_sidebar.html" %}
+    {% else %}
+        {% include "pswdo/_sidebar.html" %}
+    {% endif %}
+
+    <main class="dashboard-main">
+
+
+        <section class="page-header">
+            <div>
+                <h2>Analytics &amp; Recommendations</h2>
+                <p>Data-driven decision support for {{ scope_label }}</p>
+            </div>
+            <form method="GET" class="gis-filters">
+                <select name="event_id" onchange="this.form.submit()">
+                    <option value="">No active event</option>
+                    {% for e in active_events %}
+                    <option value="{{ e.event_id }}" {{ 'selected' if event_id == e.event_id }}>{{ e.event_name }}</option>
+                    {% endfor %}
+                </select>
+                {% if target_lgus|length > 1 %}
+                <select name="municipality" onchange="this.form.submit()">
+                    <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All Municipalities</option>
+                    {% for lgu in target_lgus %}
+                    <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                <select name="days" onchange="this.form.submit()">
+                    <option value="7" {{ 'selected' if days_filter == 7 }}>Last 7 Days</option>
+                    <option value="30" {{ 'selected' if days_filter == 30 }}>Last 30 Days</option>
+                    <option value="90" {{ 'selected' if days_filter == 90 }}>Last 90 Days</option>
+                </select>
+                <a href="{{ url_for('prediction.export_forecast', event_id=event_id, municipality=municipality_filter) }}" class="btn-outline">{{ icon('download', 14) }} Export Report</a>
+            </form>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="stat-cards stat-cards-4">
+            <div class="stat-card">
+                <div class="stat-icon orange">{{ icon('package', 18, '#e67e22') }}</div>
+                <span class="stat-value">{{ "{:,}".format(estimated_need) }} Packs</span>
+                <span class="stat-label">Estimated Need</span>
+                <span class="stat-sub">
+                    {%- if burn_rate %}Undelivered + model forecast · 3-day need ≈ {{ "{:,}".format(estimated_three_day_need) }}
+                    {%- else %}Undelivered requests + model forecast{% endif -%}
+                </span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('building', 18, '#2c5aa0') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_food_packs) }} Packs</span>
+                <span class="stat-label">{{ 'Municipal Stock' if is_cswdo else 'Provincial Stock' }}</span>
+                <span class="stat-sub">{{ 'Your warehouse on hand' if is_cswdo else 'All warehouses combined' }}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('clock', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ days_remaining|int if days_remaining is not none else '-' }} Days</span>
+                <span class="stat-label">Days of Supply</span>
+                <span class="stat-sub">
+                    {%- if burn_rate %}Burn rate ~{{ burn_rate|int }} packs/day ({{ "{:,}".format(total_affected_families) }} families ÷ 3)
+                    {%- elif event %}No affected-families data yet - burn rate not computed
+                    {%- else %}No active event - burn rate not computed{% endif -%}
+                </span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('trending-up', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ recommendations|length }}</span>
+                <span class="stat-label">Active Recommendations</span>
+                <span class="stat-sub">Rule-based + model-driven</span>
+            </div>
+        </section>
+
+        <section class="panel" id="pa-forecast-detail" style="margin-top:16px; margin-bottom:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('trending-up', 18, '#0f2547') }} Projected Demand</h3>
+                <form method="GET" class="wh-movement-filters">
+                    {% if show_breakdown %}<input type="hidden" name="show_breakdown" value="1">{% endif %}
+                    {% if municipality_filter != 'all' %}<input type="hidden" name="municipality" value="{{ municipality_filter }}">{% endif %}
+                    {% if event_id %}<input type="hidden" name="event_id" value="{{ event_id }}">{% endif %}
+                    {% if target_lgus|length > 1 %}
+                    <select name="forecast_lgu" onchange="this.form.submit()">
+                        {% for lgu in target_lgus %}
+                        <option value="{{ lgu }}" {{ 'selected' if lgu == forecast_lgu_choice }}>{{ lgu }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    <select name="forecast_months" onchange="this.form.submit()">
+                        <option value="4" {{ 'selected' if forecast_months == 4 }}>Next 4 months</option>
+                        <option value="6" {{ 'selected' if forecast_months == 6 }}>Next 6 months</option>
+                        <option value="12" {{ 'selected' if forecast_months == 12 }}>Next 12 months</option>
+                    </select>
+                </form>
+            </div>
+            {% if lgu_forecast %}
+            {% set months = lgu_forecast.months %}
+            {% set n = months|length %}
+            {% set max_packs = months|map(attribute='p90_packs')|max %}
+            {% set ns = namespace(bars=[]) %}
+            <div class="pa-bar-chart">
+                <svg class="pa-bar-svg" viewBox="0 0 1000 262" role="img"
+                     aria-label="Projected food packs needed per month, {{ lgu_forecast.lgu }}">
+                    {% for gy in [30, 77.5, 125, 172.5, 220] %}
+                    <line class="pa-bar-grid" x1="40" y1="{{ gy }}" x2="960" y2="{{ gy }}"></line>
+                    {% endfor %}
+                    {% set col_width = (900 / n) * 0.55 %}
+                    {% set pl = namespace(pts='') %}
+                    {%- for m in months -%}
+                    {% set cx = 40 + (loop.index0 + 0.5) * (920 / n) %}
+                    {% if m.is_wet_season or m.is_peak_season %}
+                    <rect class="pa-bar-band{{ ' pa-bar-band-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(40 + loop.index0 * (920 / n)) }}" y="14" width="{{ '%.1f'|format(920 / n) }}" height="208"></rect>
+                    {% endif %}
+                    {% set bar_h = (m.projected_packs / max_packs * 190) if max_packs else 0 %}
+                    {% set p90_h = (m.p90_packs / max_packs * 190) if max_packs else 0 %}
+                    {% set y = 220 - bar_h %}
+                    {% set pl.pts = pl.pts ~ ('%.1f,%.1f '|format(cx, 220 - p90_h)) %}
+                    <rect class="pa-bar-col" x="{{ '%.1f'|format(cx - col_width / 2) }}" y="{{ '%.1f'|format(y) }}"
+                          width="{{ '%.1f'|format(col_width) }}" height="{{ '%.1f'|format(bar_h) }}"></rect>
+                    <text class="pa-bar-value" x="{{ '%.1f'|format(cx) }}" y="{{ '%.1f'|format(y - 8) }}" text-anchor="middle">{{ "{:,}".format(m.projected_packs) }}</text>
+                    <text class="pa-bar-label" x="{{ '%.1f'|format(cx) }}" y="248" text-anchor="middle">{{ m.label }}{% if m.year != months[0].year %} '{{ '%02d'|format(m.year % 100) }}{% endif %}</text>
+                    {%- endfor -%}
+                    <polyline class="pa-stock-line" points="{{ pl.pts }}"></polyline>
+                    {%- for m in months -%}
+                    {% set cx = 40 + (loop.index0 + 0.5) * (920 / n) %}
+                    <circle class="pa-stock-dot" cx="{{ '%.1f'|format(cx) }}" cy="{{ '%.1f'|format(220 - (m.p90_packs / max_packs * 190 if max_packs else 0)) }}" r="3.5">
+                        <title>{{ m.label }}: recommended stockpile {{ "{:,}".format(m.p90_packs) }} packs (expected {{ "{:,}".format(m.projected_packs) }})</title>
+                    </circle>
+                    {%- endfor -%}
+                </svg>
+            </div>
+            <div class="pa-legend">
+                <span><i class="lg-exp"></i>Expected demand</span>
+                <span><i class="lg-p90"></i>Recommended stockpile (covers 9 scenarios in 10)</span>
+                <span><i class="lg-wet"></i>Rainy season (Jun-Oct)</span>
+                <span><i class="lg-peak"></i>Peak typhoon months (Jul-Oct)</span>
+            </div>
+            <div class="pa-stock-tiles">
+                <div class="pa-decision-tile">
+                    <span class="rd-sub">Expected demand - {{ lgu_forecast.lgu }}, next {{ forecast_months }} months</span>
+                    <strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong>
+                    <span class="rd-sub">packs</span>
+                </div>
+                <div class="pa-decision-tile">
+                    <span class="rd-sub">Recommended stockpile (dashed line)</span>
+                    <strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong>
+                    <span class="rd-sub">packs (covers 9 scenarios in 10)</span>
+                </div>
+            </div>
+            <p class="rd-sub" style="text-align:center;">SARIMAX time-series forecast with rainy-season and typhoon-climatology predictors, fitted on monthly history through {{ lgu_forecast.data_through }}. The dashed recommended-stockpile line is the level that covers 9 scenarios in 10; the stockpile total is computed for the whole period, not by adding the monthly points. See Model Performance below.</p>
+            {% else %}
+            <p class="empty-note">No model has been trained yet. Run <code>scripts/train_model.py</code> against the current database.</p>
+            {% endif %}
+            {{ prediction_disclaimer() }}
+        </section>
+
+        {% if cover_chart %}
+        <section class="panel" id="pa-cover-chart" style="margin-bottom:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('building', 18, '#0f2547') }} Will the stock last? - {{ lgu_forecast.lgu }}</h3>
+                <span class="rd-sub">running total of demand vs the warehouse stock on hand</span>
+            </div>
+            <div class="pa-bar-chart">
+                <svg class="pa-bar-svg" viewBox="0 0 {{ cover_chart.w }} {{ cover_chart.h }}" role="img"
+                     aria-label="Cumulative expected and P90 food pack demand against stock on hand, {{ lgu_forecast.lgu }}">
+                    {% for t in cover_chart.y_ticks %}
+                    <line class="pa-bar-grid" x1="{{ cover_chart.left }}" x2="{{ cover_chart.right }}" y1="{{ t.y }}" y2="{{ t.y }}"></line>
+                    <text class="pa-axis" x="{{ cover_chart.left - 8 }}" y="{{ t.y + 4 }}" text-anchor="end">{{ t.label }}</text>
+                    {% endfor %}
+                    {% for l in cover_chart.x_labels %}
+                    <text class="pa-bar-label" x="{{ l.x }}" y="{{ cover_chart.bottom + 22 }}" text-anchor="middle">{{ l.label }}</text>
+                    {% endfor %}
+                    <polyline class="pa-line-p90" points="{{ cover_chart.p90_pts }}"></polyline>
+                    <polyline class="pa-line-exp" points="{{ cover_chart.expected_pts }}"></polyline>
+                    <line class="pa-line-stock pa-stock-{{ cover_chart.status }}" x1="{{ cover_chart.left }}" x2="{{ cover_chart.right }}" y1="{{ cover_chart.stock_y }}" y2="{{ cover_chart.stock_y }}"></line>
+                    <text class="pa-stock-label pa-stock-{{ cover_chart.status }}-text" x="{{ cover_chart.right }}" y="{{ cover_chart.stock_y - 8 }}" text-anchor="end">Stock on hand: {{ "{:,}".format(cover_chart.stock) }}</text>
+                    {% for mk in [cover_chart.cross_expected, cover_chart.cross_p90] if mk %}
+                    <circle class="pa-cross-dot" cx="{{ mk.x }}" cy="{{ mk.y }}" r="6"><title>Runs out in {{ mk.label }}</title></circle>
+                    {% endfor %}
+                </svg>
+            </div>
+            <div class="pa-legend">
+                <span><i class="lg-line-exp"></i>Expected demand (running total)</span>
+                <span><i class="lg-p90"></i>Bad-season (P90) scenario</span>
+                <span><i class="lg-line-stock pa-stock-{{ cover_chart.status }}"></i>Stock on hand</span>
+                <span><i class="lg-cross"></i>Where the stock runs out</span>
+            </div>
+            <p class="rd-sub" style="text-align:center; margin:6px 0 0;">
+                {{ cover_chart.sentences[0] }} {{ cover_chart.sentences[1] }}
+                {% if cover_chart.status == 'healthy' %}<strong>The stock covers even the bad-season scenario.</strong>
+                {% elif cover_chart.status == 'warning' %}<strong>Not enough for the whole period in a bad season - plan a top-up before it runs out.</strong>
+                {% else %}<strong>The stock runs out within 3 months at expected demand - request or transfer more now.</strong>{% endif %}
+            </p>
+        </section>
+        {% endif %}
+
+        <div class="main-grid {{ 'pa-grid-stack' if is_cswdo else 'dash-grid-even' }}">
+
+            {# Superseded by the time-forecasting model - was a current-moment
+               snapshot (submitted requests / model estimate vs delivered so
+               far), not an actual forecast. Replaced in-place below with the
+               model's real per-LGU projections. Commented out (Jinja comment,
+               so the {% %} tags inside stay inert) rather than deleted, in
+               case the snapshot view is wanted back later.
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Demand Forecast by Municipality</h3>
+                    {% if event %}<span class="tag-outline">{{ icon('cloud-lightning', 12) }} {{ event.event_name }}</span>{% endif %}
+                </div>
+                {% for f in forecast_by_lgu %}
+                <div class="warehouse-status-row">
+                    <div class="warehouse-status-top">
+                        <div class="warehouse-status-name">
+                            <div>
+                                <strong>{{ f.lgu }}</strong>
+                            </div>
+                        </div>
+                        <div class="warehouse-status-right">
+                            <span class="badge-priority badge-priority-{{ f.priority_tier }}"><i class="priority-dot"></i> {{ f.priority_label }}</span>
+                            <strong>{{ "{:,}".format(f.packs_needed) }}</strong>
+                        </div>
+                    </div>
+                    <div class="warehouse-bar">
+                        <div class="warehouse-bar-fill pa-fill-{{ f.priority_tier }}" style="width: {{ f.pct_done if f.pct_done <= 100 else 100 }}%;"></div>
+                    </div>
+                    <span class="warehouse-status-sub">Delivered: {{ "{:,}".format(f.delivered) }}   Remaining: {{ "{:,}".format(f.remaining) }}   {{ f.pct_done }}% done</span>
+                </div>
+                {% else %}
+                <p class="empty-note">No municipalities in scope for this filter.</p>
+                {% endfor %}
+            </section>
+            #}
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>{{ icon('trending-up', 18, '#0f2547') }} Projected Demand by Municipality</h3>
+                    <span class="rd-sub">expected demand, next {{ forecast_months }} months</span>
+                </div>
+                {% for f in forecast_summary_by_lgu %}
+                <div class="warehouse-status-row">
+                    <div class="warehouse-status-top">
+                        <div class="warehouse-status-name">
+                            <div><strong>{{ f.lgu }}</strong></div>
+                        </div>
+                        <div class="warehouse-status-right">
+                            <strong>{{ "{:,}".format(f.horizon_total) }}</strong><span class="rd-sub">packs</span>
+                        </div>
+                    </div>
+                    <span class="warehouse-status-sub">This month: {{ "{:,}".format(f.this_month) }} packs expected &middot; recommended stockpile for the period: {{ "{:,}".format(f.horizon_p90) }}</span>
+                    <a href="?{% if municipality_filter != 'all' %}municipality={{ municipality_filter }}&amp;{% endif %}{% if event_id %}event_id={{ event_id }}&amp;{% endif %}forecast_lgu={{ f.lgu|urlencode }}&amp;forecast_months={{ forecast_months }}&amp;show_breakdown=1#pa-barangay-breakdown" class="link-manage" style="display:block; margin-top:4px;">View barangay breakdown →</a>
+                </div>
+                {% else %}
+                <p class="empty-note">No model has been trained yet, or no municipalities are in scope for this filter.</p>
+                {% endfor %}
+            </section>
+
+
+
+        </div>
+
+        {% if show_breakdown and lgu_forecast and barangay_breakdown %}
+        {% set flood_label = {1: 'Low', 2: 'Moderate', 3: 'High', 4: 'Very high'} %}
+        {% set top = barangay_breakdown[0] %}
+        <section class="panel" id="pa-barangay-breakdown" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('map-pin', 18, '#0f2547') }} Barangay Breakdown - {{ lgu_forecast.lgu }}</h3>
+                <span class="rd-sub">how the {{ forecast_months }}-month forecast is shared among barangays &middot;
+                    <a href="?{% if municipality_filter != 'all' %}municipality={{ municipality_filter }}&amp;{% endif %}{% if event_id %}event_id={{ event_id }}&amp;{% endif %}forecast_lgu={{ lgu_forecast.lgu|urlencode }}&amp;forecast_months={{ forecast_months }}#pa-forecast-detail" class="link-manage">Hide</a></span>
+            </div>
+            <ol class="rd-sub" style="margin:0 0 12px 18px; line-height:1.6;">
+                <li><strong>The model forecasts the whole municipality</strong> ({{ "{:,}".format(lgu_forecast.horizon_total) }} packs expected, {{ "{:,}".format(lgu_forecast.horizon_p90) }} recommended stockpile) - a single barangay has too little history for its own time-series model.</li>
+                <li><strong>Each barangay gets a share</strong> of that total: <em>{{ (history_weight * 100)|round|int }}% its own history share</em> (packs it received in the recorded history &divide; the municipality's packs) + <em>{{ ((1 - history_weight) * 100)|round|int }}% its vulnerability share</em> (households &times; flood weight &divide; the municipality's total). Flood weight: Low 0.5 &middot; Moderate 0.85 &middot; High 1.2 &middot; Very high 1.6.</li>
+                <li><strong>Barangay figure = share &times; municipal figure.</strong> Shares add up to 100%, so barangay numbers always add up to the municipality.</li>
+            </ol>
+            <p class="rd-sub" style="background:#f4f7fc; border-radius:8px; padding:10px 12px; margin:0 0 12px;">
+                <strong>Example - {{ top.name }}:</strong>
+                {{ (history_weight * 100)|round|int }}% &times; {{ '%.1f'|format((top.history_share or 0) * 100) }}% history
+                + {{ ((1 - history_weight) * 100)|round|int }}% &times; {{ '%.1f'|format(top.vulnerability_share * 100) }}% vulnerability
+                = <strong>{{ '%.1f'|format(top.share * 100) }}% share</strong>.
+                {{ '%.1f'|format(top.share * 100) }}% &times; {{ "{:,}".format(lgu_forecast.horizon_total) }} expected
+                &asymp; <strong>{{ "{:,}".format(top.expected) }} packs</strong>;
+                {{ '%.1f'|format(top.share * 100) }}% &times; {{ "{:,}".format(lgu_forecast.horizon_p90) }} stockpile
+                &asymp; <strong>{{ "{:,}".format(top.stockpile) }} packs</strong>.
+            </p>
+            <div class="rr-table-wrap" style="max-height:460px; overflow:auto;">
+                <table class="rr-table">
+                    <thead><tr>
+                        <th>Barangay</th><th>Households</th><th>Flood susceptibility</th><th>Packs on record</th>
+                        <th>History share</th><th>Vulnerability share</th><th>Final share</th>
+                        <th>Expected ({{ forecast_months }} mo)</th><th>Recommended stockpile</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for r in barangay_breakdown %}
+                        <tr>
+                            <td><strong>{{ r.name }}</strong></td>
+                            <td>{{ "{:,}".format(r.households) }}</td>
+                            <td>{{ flood_label[r.flood_susceptibility] }} <span class="rd-sub">(&times;{{ r.flood_weight }})</span></td>
+                            <td>{{ "{:,}".format(r.history_packs) }}</td>
+                            <td>{{ '%.1f'|format((r.history_share or 0) * 100) }}%</td>
+                            <td>{{ '%.1f'|format(r.vulnerability_share * 100) }}%</td>
+                            <td><strong>{{ '%.1f'|format(r.share * 100) }}%</strong></td>
+                            <td>{{ "{:,}".format(r.expected) }}</td>
+                            <td>{{ "{:,}".format(r.stockpile) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot><tr>
+                        <td><strong>{{ lgu_forecast.lgu }}</strong></td>
+                        <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='households')) }}</td><td></td>
+                        <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='history_packs')) }}</td>
+                        <td>100%</td><td>100%</td><td><strong>100%</strong></td>
+                        <td><strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong></td>
+                        <td><strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong></td>
+                    </tr></tfoot>
+                </table>
+            </div>
+            <p class="rd-sub" style="margin-top:8px;">Barangay totals can differ from the municipal total by a few packs because each month is rounded. Flood susceptibility is synthetic except for Sta. Barbara, where it is derived from the Aug 2026 relief-distribution sheet; replace with MGB/NOAH data when available.</p>
+        </section>
+        {% endif %}
+
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('building', 18, '#0f2547') }} Warehouse Stock vs Forecast</h3>
+                <span class="rd-sub">stock compared with the recommended {{ cover_horizon }}-month stockpile</span>
+            </div>
+            {% if combined_cover %}
+            <p class="rd-sub" style="margin:0 0 12px;">All warehouses combined: <strong>{{ "{:,}".format(total_food_packs) }} packs</strong> = <strong>{{ combined_cover.coverage_pct }}%</strong> of the province's {{ "{:,}".format(combined_cover.stockpile) }}-pack recommended stockpile, about <strong>{{ combined_cover.months_cover }}{{ '+' if combined_cover.covers_12_plus }} months</strong> of expected demand.</p>
+            {% endif %}
+            <div class="pa-wh-cards">
+                {% for w in warehouse_cards %}
+                <div class="pa-wh-card pa-wh-{{ w.health|lower }}">
+                    <div class="pa-wh-card-top">
+                        <strong>{{ w.name }}</strong>
+                        <span class="badge-health badge-{{ w.health|lower }}">{{ w.health }}</span>
+                    </div>
+                    <strong class="pa-wh-qty">{{ "{:,}".format(w.food_pack_qty) }}</strong>
+                    <span class="rd-sub">current packs &middot; {{ w.pct|int }}% of capacity</span>
+                    {% if w.cover %}
+                    <div class="warehouse-bar" style="margin-top:10px;">
+                        <div class="warehouse-bar-fill fill-{{ {'healthy': 'healthy', 'warning': 'moderate', 'critical': 'low'}[w.cover.tier] }}" style="width: {{ [w.cover.coverage_pct or 0, 100]|min }}%;"></div>
+                    </div>
+                    <div class="pa-wh-card-bottom">
+                        <span>{{ w.cover.coverage_pct }}% of stockpile</span>
+                        <span>{{ w.cover.months_cover }}{{ '+' if w.cover.covers_12_plus }} months of cover</span>
+                    </div>
+                    <span class="rd-sub">Recommended {{ cover_horizon }}-month stockpile for {{ w.scope_label }}: {{ "{:,}".format(w.cover.stockpile) }} (expected demand {{ "{:,}".format(w.cover.expected) }}){% if w.cover.shortfall %} &middot; <strong>short {{ "{:,}".format(w.cover.shortfall) }}</strong>{% else %} &middot; fully covered{% endif %}</span>
+                    {% else %}
+                    <span class="rd-sub" style="display:block; margin-top:10px;">No trained model - run <code>scripts/train_model.py</code> to compare stock with the forecast.</span>
+                    {% endif %}
+                    {% if w.cover and w.cover.tier != 'healthy' %}
+                    {% if is_cswdo %}
+                    <a href="{{ url_for('cswdo.municipal_inventory') }}" class="link-manage" style="display:block; margin-top:8px;">Manage Warehouse →</a>
+                    {% else %}
+                    <a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="link-manage" style="display:block; margin-top:8px;">View Stock Transfer →</a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="empty-note">No warehouse stock on record.</p>
+                {% endfor %}
+            </div>
+            <p class="rd-sub" style="margin-top:10px;">Months of cover = how long the stock lasts against the next 12 monthly expected-demand forecasts. Bar colour: green &ge; 100% of the stockpile, amber 50-99%, red below 50%. The Healthy/Low badge is the warehouse's capacity fill, a separate measure.</p>
+        </section>
+
+        <div class="main-grid {{ 'pa-grid-stack' if is_cswdo else 'dash-grid-even' }}" style="margin-top:16px;">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>{{ icon('trending-up', 18, '#0f2547') }} System Recommendations</h3>
+                    <span class="tag-outline">{{ recommendations|length }} active</span>
+                </div>
+                {% for rec in recommendations %}
+                <div class="recommendation-row rec-{{ rec.type }}">
+                    {% if rec.type == 'info' %}{{ icon('arrow-right', 14) }}{% else %}{{ icon('alert-triangle', 14) }}{% endif %}
+                    <div>
+                        <strong>{{ rec.title }}{% if rec.tag %} <span class="badge-priority badge-priority-{{ 'critical' if rec.type == 'critical' else 'high' }}">{{ rec.tag }}</span>{% endif %}</strong>
+                        <span>{{ rec.detail }}</span>
+                        {% if rec.link %}<a href="{{ rec.link }}" class="link-manage" style="display:block; margin-top:4px;">{{ rec.link_label }} →</a>{% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">No recommendations right now - stock levels are healthy.</p>
+                {% endfor %}
+
+                {{ prediction_disclaimer() }}
+            </section>
+
+        </div>
+
+        <section class="panel pa-model-panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('activity', 18, '#0f2547') }} Model Performance</h3>
+                <span class="rd-sub">Time Forecasting Model (SARIMAX) · rolling-origin backtest</span>
+            </div>
+            {% if latest_metrics %}
+            <div class="pa-model-rows">
+                <div class="pa-decision-tile"><span class="rd-sub">MAE</span><strong>{{ "%.1f"|format(latest_metrics.mae) if latest_metrics.mae is not none else '-' }}</strong><span class="rd-sub">packs</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">RMSE</span><strong>{{ "%.1f"|format(latest_metrics.rmse) if latest_metrics.rmse is not none else '-' }}</strong><span class="rd-sub">packs</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">12-month total error</span><strong>{{ "%.0f"|format(latest_metrics.total12_err * 100) if latest_metrics.total12_err is not none else '-' }}%</strong><span class="rd-sub">vs {{ "%.0f"|format(latest_metrics.naive_total12_err * 100) if latest_metrics.naive_total12_err is not none else '-' }}% same-month-last-year</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">R²</span><strong>{{ "%.3f"|format(latest_metrics.r_squared) if latest_metrics.r_squared is not none else '-' }}</strong><span class="rd-sub">fit</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">WAPE</span><strong>{{ "%.2f"|format(latest_metrics.wape) if latest_metrics.wape is not none else '-' }}</strong><span class="rd-sub">vs {{ "%.2f"|format(latest_metrics.naive_wape) if latest_metrics.naive_wape is not none else '-' }} same-month-last-year</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">Stockpile line coverage</span><strong>{{ "%.0f"|format(latest_metrics.p90_coverage * 100) if latest_metrics.p90_coverage is not none else '-' }}%</strong><span class="rd-sub">target 90%</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">Training rows</span><strong>{{ latest_metrics.training_samples or '-' }}</strong><span class="rd-sub">{{ latest_metrics.model_version }}</span></div>
+            </div>
+            <p class="rd-sub" style="margin-top:10px;">Trained {{ latest_metrics.trained_at.strftime('%b %d, %Y') if latest_metrics.trained_at else '-' }}. The history is mostly synthetic; it includes real Urdaneta CSWDO reports for the four 2025 events (Jul, Sep, Oct, Nov), real Calasiao reports for Crising/Emong (Jul 2025, packs estimated from affected families) and Nando/Opong (Sep 2025), and the real Sta. Barbara relief sheet for Aug 2026 (supply, not measured need). Figures will change as more real PSWDO/CSWDO records are loaded.</p>
+            {% if backtest_chart %}
+            <h4 style="margin:18px 0 4px;">How did the model do? - {{ lgu_forecast.lgu }}, {{ backtest_chart.year }}</h4>
+            <p class="rd-sub" style="margin:0 0 6px;">The model was trained only on data through {{ backtest_chart.trained_through }}, then forecast the whole of {{ backtest_chart.year }}. This is what it predicted against what actually happened.</p>
+            <div class="pa-bar-chart">
+                <svg class="pa-bar-svg" viewBox="0 0 {{ backtest_chart.w }} {{ backtest_chart.h }}" role="img"
+                     aria-label="Actual versus forecast food packs per month, {{ lgu_forecast.lgu }}, {{ backtest_chart.year }}">
+                    {% for t in backtest_chart.y_ticks %}
+                    <line class="pa-bar-grid" x1="{{ backtest_chart.left }}" x2="{{ backtest_chart.right }}" y1="{{ t.y }}" y2="{{ t.y }}"></line>
+                    <text class="pa-axis" x="{{ backtest_chart.left - 8 }}" y="{{ t.y + 4 }}" text-anchor="end">{{ t.label }}</text>
+                    {% endfor %}
+                    {% for l in backtest_chart.x_labels %}
+                    <text class="pa-bar-label" x="{{ l.x }}" y="{{ backtest_chart.bottom + 22 }}" text-anchor="middle">{{ l.label }}</text>
+                    {% endfor %}
+                    <polyline class="pa-line-p90" points="{{ backtest_chart.p90_pts }}"></polyline>
+                    <polyline class="pa-line-exp" points="{{ backtest_chart.expected_pts }}"></polyline>
+                    <polyline class="pa-line-actual" points="{{ backtest_chart.actual_pts }}"></polyline>
+                    {% for d in backtest_chart.dots %}
+                    <circle class="pa-dot{{ ' pa-dot-over' if d.over }}" cx="{{ d.x }}" cy="{{ d.y }}" r="{{ 6 if d.over else 4 }}"><title>{{ d.tip }}</title></circle>
+                    {% endfor %}
+                </svg>
+            </div>
+            <div class="pa-legend">
+                <span><i class="lg-line-actual"></i>Actual</span>
+                <span><i class="lg-line-exp"></i>Forecast (expected)</span>
+                <span><i class="lg-p90"></i>Recommended stockpile line (P90)</span>
+                <span><i class="lg-over"></i>Month that went above the P90 line</span>
+            </div>
+            <p class="rd-sub" style="text-align:center; margin:6px 0 0;">Over {{ backtest_chart.year }}: actual {{ "{:,}".format(backtest_chart.total_actual) }} packs vs {{ "{:,}".format(backtest_chart.total_expected) }} forecast &middot; {{ backtest_chart.months_over }} of {{ backtest_chart.n }} months went above the P90 line. A model cannot know which week a storm arrives, so single months miss; the year's total and the P90 buffer are what it is built for.</p>
+            {% endif %}
+            <details class="rd-sub" style="margin-top:8px;">
+                <summary>How to read these numbers</summary>
+                <p style="margin:6px 0 0;">Each figure compares forecasts with what actually happened in months the model had not seen (rolling-origin backtest). <strong>12-month total error</strong> is how far the full-year figure is off. <strong>Stockpile-line coverage</strong> is how often real demand stayed at or below the recommended-stockpile line (target 90%). <strong>MAE / RMSE / WAPE / R&sup2;</strong> judge each individual month, which is harsh: no model can know months ahead which week a typhoon will arrive.</p>
+                <p style="margin:6px 0 0;"><strong>Honest reading:</strong> on this history the model is about as accurate as the simple guess "same as last year" - it does not beat it. Each season in the history was bigger than the one before, and none of these methods can foresee a growing trend, so all of them under-forecast the newest seasons. What the model adds is the seasonal shape (which months to prepare for), a stockpile line that comes from the data's own spread rather than a guess, and figures that stay consistent with past seasons. Re-check once more real records are loaded.</p>
+            </details>
+            {% elif model_available %}
+            <p class="empty-note">A model is trained but no evaluation metrics were recorded. Re-run <code>scripts/train_model.py</code>.</p>
+            {% else %}
+            <p class="empty-note">No model has been trained yet. Run <code>scripts/train_model.py</code> against the current database.</p>
+            {% endif %}
+        </section>
+
+
+    </main>
+</div>
+{% endblock %}

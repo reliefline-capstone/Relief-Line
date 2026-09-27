@@ -87,18 +87,23 @@ def _export(report_type, fmt):
     filters = resolve_filters(request.args)
     report = build_report(report_type, filters, current_user)
     content, pages = generate_file(report, fmt)
+    # ?inline=1 is the Print button: the PDF opens in the browser to print
+    # (a PDF prints without the browser's URL/title header), and isn't
+    # logged in Recent Reports since nothing was exported.
+    inline = fmt == "pdf" and request.args.get("inline") == "1"
 
-    db.session.add(ReportLog(
-        report_type=report_type, format=fmt, pages=pages,
-        filters_json=json.dumps(_filters_snapshot(filters)),
-        generated_by=current_user.user_id,
-    ))
-    db.session.commit()
+    if not inline:
+        db.session.add(ReportLog(
+            report_type=report_type, format=fmt, pages=pages,
+            filters_json=json.dumps(_filters_snapshot(filters)),
+            generated_by=current_user.user_id,
+        ))
+        db.session.commit()
 
     filename = f"{report_type}_{ph_now().strftime('%Y%m%d')}.{EXTENSIONS[fmt]}"
     return Response(
         content, mimetype=MIME_TYPES[fmt],
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": f"{'inline' if inline else 'attachment'}; filename={filename}"},
     )
 
 

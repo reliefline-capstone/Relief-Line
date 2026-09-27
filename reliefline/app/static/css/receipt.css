@@ -1,6 +1,5 @@
 /* Delivery receipt (templates/receipts/receipt.html) */
 .rc-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.rc-back { color: #4a3fb8; font-weight: 600; text-decoration: none; font-size: 14px; }
 .rc-doc { background: #fff; border-radius: 14px; padding: 28px 32px; box-shadow: 0 2px 12px rgba(20, 30, 60, .06); max-width: 860px; }
 .rc-header { display: flex; justify-content: space-between; gap: 16px; border-bottom: 2px solid #eceef5; padding-bottom: 16px; }
 .rc-eyebrow { font-size: 11px; letter-spacing: .08em; color: #8a94a6; font-weight: 600; }
@@ -42,6 +41,5 @@
 @media (max-width: 640px) { .rc-doc { padding: 18px; } .rc-parties { grid-template-columns: 1fr; } .rc-header { flex-direction: column; } .rc-refbox { align-items: flex-start; text-align: left; } }
 @media print {
     .sidebar, .topbar, .rc-topbar, .rc-noprint, .flash-messages { display: none !important; }
-    .dashboard-main { margin: 0 !important; padding: 0 !important; }
     .rc-doc { box-shadow: none !important; max-width: none; padding: 0; }
 }

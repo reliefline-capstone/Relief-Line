@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}{{ report.ref }} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}?v={{ asset_version('css/reports.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'damage_report' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <section class="page-header">
+            <div>
+                <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Back</a>
+                <h2>{{ report.ref }} <span class="badge-status status-{{ report.status }}" style="vertical-align:middle;">{{ status_labels.get(report.status, report.status) }}</span></h2>
+            </div>
+            <div style="display:flex; gap:10px;">
+                {% if report.affected_families_list %}
+                <a href="{{ url_for('barangay.print_report_families', report_id=report.report_id) }}" class="btn-outline" style="text-decoration:none;">{{ icon('list', 14) }} Print Family List</a>
+                {% endif %}
+                {% if report.status in ('draft', 'pending', 'returned') %}
+                <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-outline" style="text-decoration:none;">{{ icon('file-text', 14) }} Edit Report</a>
+                {% endif %}
+                {% if report.status == 'pending' %}
+                <form method="POST" action="{{ url_for('barangay.unsubmit_damage_report', report_id=report.report_id) }}" id="unsubmit-form">
+                    <button type="submit" class="btn-outline btn-outline-accent">{{ icon('rotate-ccw', 14, '#5347ce') }} Unsubmit</button>
+                </form>
+                {% endif %}
+            </div>
+        </section>
+
+        {% set reviewer = report.reviewed_by_user.name ~ ' (MSWDO/CSWDO)' if report.reviewed_by_user else 'MSWDO/CSWDO' %}
+        {% if report.status == 'returned' %}
+        <section class="panel" style="border:1px solid #f6cfc9; background:#fdecea; margin-bottom:16px;">
+            <div class="panel-header"><h3 style="color:#c0392b;">{{ icon('rotate-ccw', 16, '#c0392b') }} Returned for Revision by {{ reviewer }}</h3></div>
+            <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks or 'No reason was provided.' }}</p>
+            <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-submit-final" style="background:#c0392b; text-decoration:none; margin-top:8px; display:inline-flex;">Correct &amp; Resubmit {{ icon('arrow-right', 14, 'white') }}</a>
+        </section>
+        {% elif report.status == 'declined' %}
+        <section class="panel" style="border:1px solid #f6cfc9; background:#fdecea; margin-bottom:16px;">
+            <div class="panel-header"><h3 style="color:#c0392b;">{{ icon('x-circle', 16, '#c0392b') }} Declined by {{ reviewer }}</h3></div>
+            <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks or 'No reason was provided.' }}</p>
+        </section>
+        {% elif report.status in ('approved', 'fulfilled') %}
+        <section class="panel" style="border:1px solid #cdebd7; background:#f0faf4; margin-bottom:16px;">
+            <div class="panel-header"><h3 style="color:#1e8449;">{{ icon('check-circle', 16, '#1e8449') }}
+                {{ 'Approved' if report.status == 'approved' else 'Fulfilled - delivery confirmed received' }} by {{ reviewer }}</h3></div>
+            <p style="font-size:13px; color:#1e5631;">
+                {% if report.allocation and report.allocation.allocated_quantity %}{{ "{:,}".format(report.allocation.allocated_quantity) }} food packs allocated to your barangay.{% endif %}
+                {% if report.review_remarks %} {{ report.review_remarks }}{% endif %}
+                Track the delivery on <a href="{{ url_for('barangay.relief_monitoring') }}">Relief Monitoring</a>.
+            </p>
+        </section>
+        {% elif report.status == 'verified' %}
+        <section class="panel" style="border:1px solid #cfe0f0; background:#f0f6fc; margin-bottom:16px;">
+            <div class="panel-header"><h3 style="color:#2c5aa0;">{{ icon('check-circle', 16, '#2c5aa0') }} Verified by {{ reviewer }}</h3></div>
+            <p style="font-size:13px; color:#244b86;">
+                Your report has been reviewed and acknowledged. No relief delivery was scheduled - your barangay's current stock is considered sufficient for this situation.
+                {% if report.review_remarks %} {{ report.review_remarks }}{% endif %}
+            </p>
+        </section>
+        {% endif %}
+
+        <section class="panel">
+            <div class="panel-header"><h3>{{ icon('map-pin', 18, '#0f2547') }} Report Status Timeline</h3></div>
+            <div class="status-timeline">
+                <div class="timeline-node done">
+                    <div class="timeline-dot">{{ icon('check', 16) }}</div>
+                    <span class="timeline-label">Draft</span>
+                </div>
+                <div class="timeline-line {{ 'done' if report.status != 'draft' }}"></div>
+                <div class="timeline-node {{ 'done' if report.status != 'draft' else '' }} {{ 'current-pending' if report.status == 'draft' }}">
+                    <div class="timeline-dot">{% if report.status != 'draft' %}{{ icon('check', 16) }}{% else %}2{% endif %}</div>
+                    <span class="timeline-label">Submitted</span>
+                    <span class="timeline-sub">
+                        {%- if report.submitted_at %}{{ report.submitted_at.strftime('%b %d, %Y · %I:%M %p') }}{% endif -%}
+                    </span>
+                </div>
+                <div class="timeline-line {{ 'done' if report.status not in ('draft', 'pending') }}"></div>
+                {% set decided = report.status in ('verified', 'approved', 'fulfilled', 'declined', 'returned') %}
+                <div class="timeline-node
+                    {%- if report.status in ('verified', 'approved', 'fulfilled') %} current-verified
+                    {%- elif report.status == 'declined' %} current-declined
+                    {%- elif report.status == 'returned' %} current-returned
+                    {%- else %} current-pending{% endif %}">
+                    <div class="timeline-dot">
+                        {% if report.status in ('verified', 'approved', 'fulfilled') %}{{ icon('check', 16) }}
+                        {% elif report.status == 'declined' %}{{ icon('x', 16) }}
+                        {% elif report.status == 'returned' %}!
+                        {% else %}3{% endif %}
+                    </div>
+                    <span class="timeline-label">
+                        {% if report.status == 'verified' %}Verified
+                        {% elif report.status == 'approved' %}Approved
+                        {% elif report.status == 'fulfilled' %}Fulfilled
+                        {% elif report.status == 'declined' %}Declined
+                        {% elif report.status == 'returned' %}Returned for Revision
+                        {% else %}Under Review{% endif %}
+                    </span>
+                    <span class="timeline-sub">
+                        {% if report.status == 'pending' %}Current
+                        {% elif report.status == 'draft' %}Not yet submitted
+                        {% elif decided and report.reviewed_at %}{{ report.reviewed_at.strftime('%b %d, %Y · %I:%M %p') }}{% endif %}
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <div class="main-grid drv-grid" style="margin-top:16px;">
+            <section class="panel">
+                <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Report Information</h3></div>
+                <div class="review-row-list">
+                    <div class="review-row"><span>Report ID</span><strong>{{ report.ref }}</strong></div>
+                    <div class="review-row"><span>Barangay</span><strong>{{ report.barangay.barangay_name }}</strong></div>
+                    <div class="review-row"><span>Submitted By</span><strong>{{ report.submitted_by_name }}{% if report.submitted_by_designation %} ({{ report.submitted_by_designation }}){% endif %}</strong></div>
+                    <div class="review-row"><span>Date Submitted</span><strong>{{ report.submitted_at.strftime('%B %d, %Y · %I:%M %p') if report.submitted_at else 'Not yet submitted' }}</strong></div>
+                    <div class="review-row"><span>Typhoon Event</span><strong>{{ report.event.event_name if report.event else '-' }}</strong></div>
+                    <div class="review-row"><span>Incident Date</span><strong>{{ report.incident_date.strftime('%B %d, %Y') if report.incident_date else '-' }}</strong></div>
+                    <div class="review-row"><span>Incident Time</span><strong>{{ report.incident_time.strftime('%I:%M %p') if report.incident_time else '-' }}</strong></div>
+                </div>
+            </section>
+
+            <div class="drv-side">
+                <section class="panel">
+                    <div class="panel-header"><h3>{{ icon('users', 18, '#0f2547') }} Barangay Assessment</h3></div>
+                    <div class="assess-pills assess-pills-2">
+                        <div class="fam-pill fam-pill-purple"><span>Affected Families</span><strong>{{ "{:,}".format(report.affected_families) }}</strong></div>
+                        <div class="fam-pill fam-pill-blue"><span>Affected Individuals</span><strong>{{ "{:,}".format(report.affected_individuals) }}</strong></div>
+                    </div>
+                    <div class="assess-pills assess-pills-3">
+                        <div class="fam-pill fam-pill-green"><span>PWD</span><strong>{{ "{:,}".format(report.affected_pwd) }}</strong></div>
+                        <div class="fam-pill fam-pill-amber"><span>Senior Citizens</span><strong>{{ "{:,}".format(report.affected_seniors) }}</strong></div>
+                        <div class="fam-pill fam-pill-red"><span>Children</span><strong>{{ "{:,}".format(report.affected_children) }}</strong></div>
+                    </div>
+                    <div class="info-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="info-box"><span>Totally Damaged</span><strong>{{ report.totally_damaged_houses }}</strong></div>
+                        <div class="info-box"><span>Partially Damaged</span><strong>{{ report.partially_damaged_houses }}</strong></div>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Allocation</h3></div>
+                    <div class="info-grid">
+                        <div class="info-box"><span>Food Packs Requested</span><strong>{% if report.requested_food_packs %}{{ "{:,}".format(report.requested_food_packs) }}{% else %}Not specified{% endif %}</strong>
+                            {% if report.affected_families_list %}<span class="rd-sub">suggested: {{ "{:,}".format(report.suggested_food_packs) }}</span>{% endif %}</div>
+                        <div class="info-box"><span>Food Packs Allocated</span><strong>{% if report.allocation %}{{ "{:,}".format(report.allocation.allocated_quantity) }}{% else %}-{% endif %}</strong></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        {% if report.affected_families_list %}
+        {% set received_count = report.affected_families_list|selectattr('received')|list|length %}
+        {% set packs_given_total = report.affected_families_list|sum(attribute='packs_given') %}
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('users', 18, '#0f2547') }} Distribution Tracking</h3>
+                {% if report.status == 'fulfilled' %}
+                <span class="rd-sub">{{ received_count }} of {{ report.affected_families_list|length }} families given · {{ "{:,}".format(packs_given_total) }} packs distributed</span>
+                {% endif %}
+            </div>
+            {% if report.status != 'fulfilled' %}
+            <p class="form-hint" style="margin-bottom:10px;">
+                {% if report.status == 'approved' %}Recording who received a pack will be available once the delivery is confirmed received on <a href="{{ url_for('barangay.relief_monitoring') }}">Relief Monitoring</a>.
+                {% else %}This report's affected-families list, for reference.{% endif %}
+            </p>
+            {% endif %}
+            <div class="fam-distribute-list">
+                {% for rf in report.affected_families_list %}
+                <div class="fam-distribute-row {{ 'fam-distribute-done' if rf.received }}">
+                    <div class="fam-distribute-info">
+                        <strong>{{ rf.family_name }}</strong>{% if rf.head_name %}<span class="fam-distribute-sub">{{ rf.head_name }}</span>{% endif %}
+                        <span class="fam-checklist-badges" style="justify-content:flex-start;">
+                            <span class="fam-badge">{{ rf.member_count }} member{{ 's' if rf.member_count != 1 }}</span>
+                            {% if rf.pwd_count %}<span class="fam-badge fam-badge-pwd">{{ rf.pwd_count }} PWD</span>{% endif %}
+                            {% if rf.senior_count %}<span class="fam-badge fam-badge-senior">{{ rf.senior_count }} senior</span>{% endif %}
+                            {% if rf.children_count %}<span class="fam-badge fam-badge-child">{{ rf.children_count }} children</span>{% endif %}
+                        </span>
+                    </div>
+                    {% if rf.received %}
+                    <div class="fam-distribute-action">
+                        <span class="fam-received-tag">{{ icon('check-circle', 13, '#1e8449') }} {{ rf.packs_given }} pack{{ 's' if rf.packs_given != 1 }} · {{ rf.received_at.strftime('%b %d, %I:%M %p') if rf.received_at else '' }}</span>
+                        <form method="POST" action="{{ url_for('barangay.undo_family_received', report_id=report.report_id, raf_id=rf.id) }}">
+                            <button type="submit" class="fam-undo-btn">Undo</button>
+                        </form>
+                    </div>
+                    {% elif report.status == 'fulfilled' %}
+                    <form method="POST" action="{{ url_for('barangay.mark_family_received', report_id=report.report_id, raf_id=rf.id) }}" class="fam-distribute-action">
+                        <input type="number" name="packs_given" min="1" value="{{ rf.suggested_packs }}" class="fam-distribute-packs" title="Food packs given">
+                        <button type="submit" class="fam-mark-received-btn">Mark Received</button>
+                    </form>
+                    {% else %}
+                    <span class="fam-distribute-action fam-distribute-waiting">Not yet delivered</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Remarks</h3></div>
+            <p style="font-size:13px;">{{ report.remarks or 'No remarks provided.' }}</p>
+        </section>
+
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Supporting Photos ({{ report.photo_paths.split(',')|length if report.photo_paths else 0 }})</h3></div>
+            {% if report.photo_paths %}
+            <div class="qa-grid">
+                {% for fname in report.photo_paths.split(',') %}
+                <a href="{{ url_for('static', filename='uploads/barangay_reports/' ~ report.report_id ~ '/' ~ fname) }}" target="_blank" class="qa-card qa-blue">
+                    <div class="qa-icon">{{ icon('file-text', 20, '#2c5aa0') }}</div>
+                    <span style="font-size:12px; word-break:break-all;">{{ fname }}</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty-note">No photos attached.</p>
+            {% endif %}
+        </section>
+
+    </main>
+</div>
+
+{% if report.status == 'pending' %}
+<!-- Unsubmit confirmation - replaces the native confirm() dialog, same
+     pattern as damage_report.html's delete-draft modal. -->
+<div class="rd-modal-overlay" id="unsubmit-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('rotate-ccw', 18, '#5347ce') }} Unsubmit Report</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <p class="form-hint">Pull <strong>{{ report.ref }}</strong> back to draft? It will be removed from the MSWDO/CSWDO review queue until you submit it again.</p>
+        <div class="rd-modal-actions">
+            <button type="button" class="btn-decision btn-verify-only" id="unsubmit-confirm-btn">{{ icon('rotate-ccw', 16, 'white') }} Unsubmit</button>
+            <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var form = document.getElementById('unsubmit-form');
+    var modal = document.getElementById('unsubmit-modal');
+    if (!form || !modal) return;
+
+    // Reparent to <body> so position:fixed pins to the viewport, not the
+    // animated .dashboard-main (same reasoning as relief_request_detail.js).
+    if (modal.parentNode !== document.body) document.body.appendChild(modal);
+
+    function openModal() {
+        modal.hidden = false;
+        document.documentElement.classList.add('rd-modal-open');
+    }
+    function closeModal() {
+        modal.hidden = true;
+        document.documentElement.classList.remove('rd-modal-open');
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        openModal();
+    });
+    document.getElementById('unsubmit-confirm-btn').addEventListener('click', function () {
+        form.submit();
+    });
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    modal.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+        btn.addEventListener('click', closeModal);
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.hidden) closeModal();
+    });
+})();
+</script>
+{% endblock %}

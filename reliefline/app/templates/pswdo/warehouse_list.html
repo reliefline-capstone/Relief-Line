@@ -17,12 +17,12 @@
     <main class="dashboard-main">
 
 
-        {% set crumbs = [{"label": "Dashboard", "url": url_for('pswdo.warehouse_inventory')}, {"label": "Warehouses", "url": none}] %}
-        {% include "pswdo/_warehouse_subnav.html" %}
-
         <section class="page-header">
             <div>
-                <h2>Warehouses</h2>
+                <div class="wh-title-row">
+                    <a href="{{ url_for('pswdo.warehouse_inventory') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+                    <h2>Warehouses</h2>
+                </div>
                 <p>{{ warehouses|length }} warehouse{{ 's' if warehouses|length != 1 }} · {{ "{:,}".format(total_food_packs) }} food packs total</p>
             </div>
         </section>

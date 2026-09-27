@@ -18,16 +18,17 @@
     <main class="dashboard-main">
 
 
-        <div class="rd-breadcrumb"><a href="{{ url_for('pswdo.transfers') }}">{{ icon('arrow-left', 14) }} Stock Transfers</a></div>
-
         <div class="page-header">
             <div>
-                <h2>{{ t.ref }}</h2>
+                <div class="wh-title-row">
+                    <a href="{{ url_for('pswdo.transfers') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+                    <h2>{{ t.ref }}</h2>
+                </div>
                 <p>{{ 'Replenishment for ' + t.batch.ref if t.batch else 'Pre-positioning' }}
                    · {{ "{:,}".format(t.quantity) }} food packs
                    · {{ t.from_office.office_name }} → {{ t.to_office.office_name }}</p>
             </div>
-            <a href="{{ url_for('receipts.transfer_receipt', transfer_id=t.transfer_id) }}" class="btn-decision btn-partial" style="text-decoration:none;">{{ icon('file-text', 14, 'white') }} View Receipt</a>
+            <a href="{{ url_for('receipts.transfer_receipt', transfer_id=t.transfer_id) }}" class="btn-outline btn-outline-accent">{{ icon('file-text', 14) }} View Receipt</a>
         </div>
 
         <section class="panel dd-stepper-panel">

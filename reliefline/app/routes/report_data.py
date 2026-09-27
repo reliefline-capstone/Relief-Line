@@ -25,6 +25,78 @@ from app.routes.pswdo import (
 from app.routes.prediction import _barangay_snapshot
 from app.utils.roles import ROLE_LABELS
 
+
+# ---------------------------------------------------------------------------
+# Letterhead + signatories, following the standard Philippine LGU document
+# format: a centered "Republic of the Philippines / Province / City or
+# Municipality / Barangay" block, the issuing office, and signatories whose
+# approving authority matches the level that issued the report
+# (Province -> Governor, City/Municipality -> Mayor, Barangay -> Punong
+# Barangay). Shared by report_view.html, the PDF/Excel files and the family
+# list print sheet.
+# ---------------------------------------------------------------------------
+
+def lgu_names(lgu):
+    """("CITY OF URDANETA", "City") for "Urdaneta City"; ("MUNICIPALITY OF
+    CALASIAO", "Municipal") for "Calasiao"."""
+    name = (lgu or "").strip()
+    lowered = name.lower()
+    if lowered.endswith(" city"):
+        return f"City of {name[:-5]}", "City"
+    if lowered.startswith("city of "):
+        return name, "City"
+    return f"Municipality of {name}", "Municipal"
+
+
+def _preparer(user, fallback_position):
+    if not user:
+        return {"label": "Prepared By", "name": "", "position": fallback_position}
+    position = getattr(user, "designation", None) or ROLE_LABELS.get(user.role, user.role)
+    return {"label": "Prepared By", "name": user.name, "position": position}
+
+
+def build_letterhead(user=None, barangay=None):
+    """Letterhead for a report issued by `user` - the barangay's own when
+    `barangay` is given, else the CSWDO/MSWDO's LGU, else the province."""
+    lines = ["Republic of the Philippines", "Province of Pangasinan"]
+    if barangay is not None:
+        lgu_line, _ = lgu_names(barangay.city_municipality)
+        lines += [lgu_line, f"Barangay {barangay.barangay_name}"]
+        return {
+            "lines": lines,
+            "office": "Office of the Punong Barangay",
+            "place": f"Brgy. {barangay.barangay_name}, {barangay.city_municipality}",
+            "signatories": [
+                _preparer(user, "Barangay Secretary"),
+                {"label": "Approved By", "name": "", "position": "Punong Barangay"},
+            ],
+        }
+    office = getattr(user, "office", None) if user else None
+    if user and user.role == "cswdo_admin" and office and office.area_covered:
+        lgu_line, kind = lgu_names(office.area_covered)
+        lines.append(lgu_line)
+        return {
+            "lines": lines,
+            "office": f"{kind} Social Welfare and Development Office",
+            "place": office.area_covered,
+            "signatories": [
+                _preparer(user, f"{kind} Social Welfare Staff"),
+                {"label": "Noted By", "name": "", "position": f"{kind} Social Welfare and Development Officer"},
+                {"label": "Approved By", "name": "", "position": f"{kind} Mayor"},
+            ],
+        }
+    return {
+        "lines": lines,
+        "office": "Provincial Social Welfare and Development Office",
+        "place": "Province of Pangasinan",
+        "signatories": [
+            _preparer(user, "PSWDO Staff"),
+            {"label": "Noted By", "name": "", "position": "Provincial Social Welfare and Development Officer"},
+            {"label": "Approved By", "name": "", "position": "Provincial Governor"},
+        ],
+    }
+
+
 REPORT_TYPES = {
     "relief_requests": {
         "title": "Barangay Reports",
@@ -396,6 +468,7 @@ def build_report(report_type, filters, user=None):
         "date_generated": ph_now(),
         "prepared_by": user.name if user else "PSWDO Officer",
         "prepared_by_role": ROLE_LABELS.get(user.role, user.role) if user else "PSWDO Officer",
+        "letterhead": build_letterhead(user),
     }
 
 
@@ -533,4 +606,5 @@ def build_barangay_report(report_type, barangay, filters, user=None):
         "date_generated": ph_now(),
         "prepared_by": user.name if user else "Barangay User",
         "prepared_by_role": ROLE_LABELS.get(user.role, user.role) if user else "Barangay User",
+        "letterhead": build_letterhead(user, barangay=barangay),
     }

@@ -1,0 +1,12 @@
+{# Signatory block in the standard LGU format: "Prepared By:" label, the
+   signer's name above the line, position below. Expects `lh`. #}
+<div class="rpt-signatures" style="grid-template-columns: repeat({{ lh.signatories|length }}, 1fr);">
+    {% for s in lh.signatories %}
+    <div class="rpt-sig">
+        <span class="rpt-sig-label">{{ s.label }}:</span>
+        <span class="rpt-sig-name">{{ s.name|upper if s.name else '&nbsp;'|safe }}</span>
+        <span class="rpt-sig-line"></span>
+        <span class="rpt-sig-position">{{ s.position }}</span>
+    </div>
+    {% endfor %}
+</div>

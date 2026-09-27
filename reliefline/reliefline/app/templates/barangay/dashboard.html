@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Dashboard - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}?v={{ asset_version('css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}?v={{ asset_version('css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'dashboard' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <!-- Greeting banner -->
+        <section class="greeting-banner">
+            <div class="greeting-main">
+                <h2>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }}, {{ current_user.name }}</h2>
+                <div class="banner-forecast-box" data-weather-forecast data-endpoint="{{ url_for('barangay.dashboard_weather') }}">
+                    <span class="banner-forecast-label skeleton-shimmer-dark">Loading forecast…</span>
+                </div>
+            </div>
+            <div class="banner-aside">
+                <div class="banner-time">
+                    <strong id="live-clock">{{ now.strftime('%I:%M:%S %p') }}</strong>
+                    <span id="live-date">{{ now.strftime('%a, %B') }} {{ now.day }}</span>
+                </div>
+                <div class="banner-weather-live" data-weather-header data-endpoint="{{ url_for('barangay.dashboard_weather') }}">
+                    <span class="weather-header-loading">Checking conditions…</span>
+                </div>
+                {% if primary_event %}
+                <div class="banner-event-badge" title="Currently active disaster event">
+                    <span class="banner-event-badge-dot"></span>
+                    <span class="banner-event-badge-label">Active Event: {{ primary_event.event_name }}{% if primary_event.weather_condition %} · {{ primary_event.weather_condition }}{% endif %}</span>
+                </div>
+                {% endif %}
+                {% if province_event %}
+                <div class="banner-event-badge banner-event-badge-secondary" title="Province-wide event declared by PSWDO">
+                    <span class="banner-event-badge-dot"></span>
+                    <span class="banner-event-badge-label">PSWDO also declared: {{ province_event.event_name }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="stat-cards stat-cards-4">
+            <a class="stat-card" href="{{ url_for('barangay.damage_report') }}">
+                <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ "{:,}".format(affected_families) }}</span>
+                <span class="stat-label">Affected Families</span>
+                <span class="stat-sub">this typhoon event</span>
+            </a>
+            <a class="stat-card" href="{{ url_for('barangay.damage_report') }}">
+                <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ pending_reports_count }}</span>
+                <span class="stat-label">Pending Reports</span>
+                <span class="stat-sub">{% if returned_reports_count %}{{ returned_reports_count }} returned - needs correction{% else %}Awaiting MSWDO/CSWDO review{% endif %}</span>
+            </a>
+            <a class="stat-card" href="{{ url_for('barangay.relief_monitoring') }}">
+                <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
+                <span class="stat-value">{{ "{:,}".format(food_packs_allocated) }}</span>
+                <span class="stat-label">Food Packs Allocated</span>
+                <span class="stat-sub">This typhoon event</span>
+            </a>
+            <a class="stat-card" href="{{ url_for('barangay.relief_monitoring') }}">
+                <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ in_transit_count }}</span>
+                <span class="stat-label">Relief In Transit</span>
+                <span class="stat-sub">{{ in_transit_count }} delivery{{ 's' if in_transit_count != 1 }} on the way</span>
+            </a>
+        </section>
+
+        <!-- Current Situation -->
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('users', 18, '#0f2547') }} Current Situation</h3>
+            </div>
+            {% if not primary_event %}
+            <p class="empty-note">There is no active typhoon event right now.</p>
+            {% else %}
+            <div class="info-grid">
+                <div class="info-box">
+                    <span>Affected Families</span>
+                    <strong>{{ "{:,}".format(affected_families) }}</strong>
+                </div>
+                <div class="info-box">
+                    <span>Affected Individuals</span>
+                    <strong>{{ "{:,}".format(latest_report.affected_individuals if latest_report else 0) }}</strong>
+                </div>
+                <div class="info-box">
+                    <span>Totally Damaged Houses</span>
+                    <strong>{{ "{:,}".format(latest_report.totally_damaged_houses if latest_report else 0) }}</strong>
+                </div>
+                <div class="info-box">
+                    <span>Partially Damaged Houses</span>
+                    <strong>{{ "{:,}".format(latest_report.partially_damaged_houses if latest_report else 0) }}</strong>
+                </div>
+            </div>
+            <p class="form-hint" style="margin-top:12px;">
+                {% if standing_verified %}
+                These figures are from your latest Barangay Report for this event, as reviewed by MSWDO/CSWDO.
+                {% else %}
+                These figures are from your latest submitted Barangay Report and are still awaiting MSWDO/CSWDO review.
+                {% endif %}
+                To update them, submit a new <a href="{{ url_for('barangay.new_damage_report') }}">Barangay Report</a>.
+            </p>
+            {% endif %}
+        </section>
+
+        <!-- Barangay Profile -->
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('map-pin', 18, '#0f2547') }} Barangay Profile</h3>
+            </div>
+            <div class="info-grid">
+                <div class="info-box">
+                    <span>Population</span>
+                    <strong>{{ "{:,}".format(barangay.population) }}</strong>
+                </div>
+                <div class="info-box">
+                    <span>Households</span>
+                    <strong>{{ "{:,}".format(barangay.num_households) }}</strong>
+                </div>
+                <div class="info-box">
+                    <span>Poverty Incidence</span>
+                    <strong>{{ barangay.poverty_incidence }}%</strong>
+                </div>
+                <div class="info-box">
+                    <span>Disaster Risk Index</span>
+                    <strong>{{ barangay.disaster_risk_index }}</strong>
+                </div>
+                <div class="info-box">
+                    <span>Past Calamity Frequency</span>
+                    <strong>{{ barangay.past_calamity_freq }}</strong>
+                </div>
+            </div>
+            <p class="form-hint" style="margin-top:12px;">
+                Sourced from PSA / CPDO / CDRRMO records and used to estimate each barangay's share of the municipal food pack forecast (households and flood susceptibility) - not editable here.
+            </p>
+        </section>
+
+        <!-- Recent Barangay Reports + Relief Deliveries -->
+        <div class="main-grid dash-grid-even" style="margin-top: 16px;">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Recent Barangay Reports</h3>
+                    <a href="{{ url_for('barangay.damage_report') }}" class="link-manage">View All →</a>
+                </div>
+                <div class="dash-panel-list">
+                {% for r in recent_reports %}
+                <div class="barangay-report-row">
+                    <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}">
+                        <strong>{{ r.ref }}</strong>
+                        <span>{{ r.event.event_name if r.event else '-' }} · {{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at }}</span>
+                    </a>
+                    <span class="badge-status status-{{ r.status }}">{{ report_status_labels.get(r.status, r.status) }}</span>
+                </div>
+                {% else %}
+                <p class="empty-note">No barangay reports submitted yet.</p>
+                {% endfor %}
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Relief Deliveries</h3>
+                    <a href="{{ url_for('barangay.relief_monitoring') }}" class="link-manage">View All →</a>
+                </div>
+                <div class="dash-panel-list">
+                {% for d in my_distributions %}
+                <div class="request-card">
+                    <div class="request-top">
+                        <strong>{{ "{:,}".format(d.quantity_released) }} Food Packs</strong>
+                        <span class="badge-status badge-status-{{ d.dispatch_status }}">{{ dispatch_status_labels.get(d.dispatch_status, d.dispatch_status) }}</span>
+                    </div>
+                    <div class="request-detail-grid">
+                        <span>From</span><strong>{{ d.allocation.fulfilling_office.office_name if d.allocation and d.allocation.fulfilling_office else '-' }}</strong>
+                        {% if d.dispatch_status == 'delivered' %}
+                        <span>Received</span><strong>{{ d.distribution_date.strftime('%B %d, %Y') }}</strong>
+                        {% elif d.expected_arrival_time %}
+                        <span>ETA</span><strong>{{ d.expected_arrival_time.strftime('%I:%M %p') }}</strong>
+                        {% endif %}
+                    </div>
+                    {% if d.dispatch_status == 'in_transit' and d.status == 'pending' %}
+                    <a href="{{ url_for('barangay.relief_monitoring') }}" class="btn-approve" style="text-decoration:none; margin-top:10px; display:inline-flex;">{{ icon('check-circle', 14, 'white') }} Confirm Relief Receipt</a>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="empty-note">No relief deliveries recorded yet.</p>
+                {% endfor %}
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Active Alerts -->
+        <section class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>{{ icon('bell', 18, '#0f2547') }} Active Alerts for Brgy. {{ barangay.barangay_name }}</h3>
+                <a href="{{ url_for('barangay.notifications') }}" class="link-manage">View All →</a>
+            </div>
+            {% for item in recent_alerts %}
+            <div class="alert-row alert-row-{{ item.category }}">
+                {{ icon(item.icon, 16, item.color) }}
+                <div>
+                    <strong>{{ item.log.description }}</strong>
+                    <span>{{ item.log.created_at|ph_time }}</span>
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-note">No active alerts for your barangay right now.</p>
+            {% endfor %}
+        </section>
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/weather_widget.js') }}?v={{ asset_version('js/weather_widget.js') }}"></script>
+<script>
+(function () {
+    var clockEl = document.getElementById('live-clock');
+    var dateEl = document.getElementById('live-date');
+    if (!clockEl || !dateEl) return;
+
+    var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'];
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function tick() {
+        var now = new Date();
+        var hours24 = now.getHours();
+        var period = hours24 >= 12 ? 'PM' : 'AM';
+        var hours12 = hours24 % 12 || 12;
+        clockEl.textContent = pad(hours12) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()) + ' ' + period;
+        dateEl.textContent = weekdays[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+    }
+
+    tick();
+    setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}

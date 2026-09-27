@@ -19,13 +19,14 @@
     <main class="dashboard-main">
 
 
-        <div class="rd-breadcrumb"><a href="{{ url_for('pswdo.relief_requests') }}">{{ icon('arrow-left', 14) }} Stock Requests</a></div>
-
         <div class="page-header">
             <div>
-                <h2>{{ batch.ref }}
-                    <span class="badge-status status-{{ batch.display_status }}">{{ status_labels.get(batch.display_status, batch.display_status) }}</span>
-                </h2>
+                <div class="wh-title-row">
+                    <a href="{{ url_for('pswdo.relief_requests') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+                    <h2>{{ batch.ref }}
+                        <span class="badge-status status-{{ batch.display_status }}">{{ status_labels.get(batch.display_status, batch.display_status) }}</span>
+                    </h2>
+                </div>
                 <p>{{ batch.office.office_name }} · {{ batch.office.area_covered }}
                     {%- if batch.event %} · {{ batch.event.event_name }}{% endif %}
                     · submitted {{ batch.submitted_at.strftime('%b %d, %Y %I:%M %p') if batch.submitted_at }}</p>

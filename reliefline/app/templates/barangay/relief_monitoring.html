@@ -126,10 +126,6 @@
                 {% endif %}
             </div>
 
-            <div style="margin-top:10px;">
-                <a href="{{ url_for('receipts.distribution_receipt', distribution_id=d.distribution_id) }}" style="font-weight:600;">{{ icon('file-text', 14) }} View Delivery Receipt</a>
-            </div>
-
             {% if confirmed and d.validation_file %}
             <div style="margin-top:10px;">
                 <span class="form-hint">Photo proof you submitted:</span>
@@ -137,11 +133,14 @@
             </div>
             {% endif %}
 
-            {% if row.can_confirm %}
-            <button type="button" class="dm-confirm-btn" data-open-modal="confirm-modal-{{ d.distribution_id }}">
-                {{ icon('check-circle', 18, 'white') }} Confirm Relief Receipt - {{ "{:,}".format(d.quantity_released) }} Food Packs
-            </button>
-            {% endif %}
+            <div class="dm-card-actions">
+                <a href="{{ url_for('receipts.distribution_receipt', distribution_id=d.distribution_id) }}" class="btn-outline dm-receipt-btn">{{ icon('file-text', 15) }} View Delivery Receipt</a>
+                {% if row.can_confirm %}
+                <button type="button" class="dm-confirm-btn" data-open-modal="confirm-modal-{{ d.distribution_id }}">
+                    {{ icon('check-circle', 18, 'white') }} Confirm Relief Receipt - {{ "{:,}".format(d.quantity_released) }} Food Packs
+                </button>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
         {% elif search_query %}
@@ -170,6 +169,20 @@
             Confirm that Brgy. {{ barangay.barangay_name }} received {{ "{:,}".format(d.quantity_released) }} food packs
             from {{ row.fulfilling_office.office_name if row.fulfilling_office else 'the dispatching office' }}.
         </p>
+        {# Delivery receipt summary, collapsed by default so the form stays short -
+           open it to check what was dispatched before confirming. #}
+        <details class="confirm-receipt-summary">
+            <summary>{{ icon('file-text', 14) }} View delivery receipt <span class="confirm-receipt-chevron">{{ icon('chevron-down', 14) }}</span></summary>
+            <div class="confirm-receipt-rows">
+                <div><span>Reference</span><strong>{{ row.ref|upper }}</strong></div>
+                <div><span>From</span><strong>{{ row.fulfilling_office.office_name if row.fulfilling_office else '-' }}</strong></div>
+                <div><span>Food Packs Released</span><strong>{{ "{:,}".format(d.quantity_released) }}</strong></div>
+                <div><span>Dispatched</span><strong>{{ d.issued_at.strftime('%b %d, %Y · %I:%M %p') if d.issued_at else '-' }}</strong></div>
+                {% if d.issued_by_user %}<div><span>Released By</span><strong>{{ d.issued_by_user.name }}</strong></div>{% endif %}
+                {% if d.issuance_note %}<div><span>Remarks</span><strong>{{ d.issuance_note }}</strong></div>{% endif %}
+            </div>
+            <a href="{{ url_for('receipts.distribution_receipt', distribution_id=d.distribution_id) }}" target="_blank" rel="noopener" class="confirm-receipt-full">Open full receipt {{ icon('external-link', 12) }}</a>
+        </details>
         <form method="POST" action="{{ url_for('barangay.confirm_receipt', distribution_id=d.distribution_id) }}" enctype="multipart/form-data" class="confirm-receipt-form" data-dist="{{ d.distribution_id }}">
             <label for="received_by-{{ d.distribution_id }}">Received By</label>
             <input type="text" id="received_by-{{ d.distribution_id }}" name="received_by" value="{{ current_user.name }}" required>

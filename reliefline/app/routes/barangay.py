@@ -42,7 +42,7 @@ from app.utils import weather as weather_service
 # CSWDO office deducted at dispatch, and _take_from_batches (model-agnostic)
 # deducts nearest-expiry-first when the barangay hands packs out.
 from app.routes.pswdo import (
-    DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
+    DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META, _notification_category_counts,
     _shelf_status, NEAR_EXPIRY_DAYS, _lots_from_json, _take_from_batches, _batch_take_order, _refreshed_batch_items,
     _resolve_batch_item_specs, _plan_expiration,
 )
@@ -944,6 +944,12 @@ def family_profile_delete(family_id):
     return redirect(url_for("barangay.family_profiles"))
 
 
+
+def _letterhead(user, barangay):
+    # Lazy import - report_data is only ever imported inside functions here.
+    from app.routes.report_data import build_letterhead
+    return build_letterhead(user, barangay=barangay)
+
 def _family_print_rows(families):
     """Normalizes either Family (manual selection) or ReportAffectedFamily
     (a report's checklist) rows into plain dicts for print_family_list.html
@@ -1019,6 +1025,7 @@ def print_families_generate():
         barangay=barangay, title="Distribution Announcement",
         subtitle=f"Manually selected - {len(families)} famil{'y' if len(families) == 1 else 'ies'}",
         rows=rows, generated_at=ph_now(),
+        letterhead=_letterhead(current_user, barangay=barangay),
     )
 
 
@@ -1039,6 +1046,7 @@ def print_report_families(report_id):
         barangay=report.barangay, title="Distribution Announcement",
         subtitle=f"{report.ref}{' - ' + report.event.event_name if report.event else ''}",
         rows=_family_print_rows(report.affected_families_list), generated_at=ph_now(),
+        letterhead=_letterhead(current_user, barangay=report.barangay),
     )
 
 
@@ -1950,18 +1958,23 @@ def _barangay_export_report(report_type, fmt):
     filters = resolve_barangay_filters(request.args)
     report = build_barangay_report(report_type, barangay, filters, current_user)
     content, pages = generate_file(report, fmt)
+    # ?inline=1 is the Print button: the PDF opens in the browser to print
+    # (a PDF prints without the browser's URL/title header), and isn't
+    # logged in Recent Reports since nothing was exported.
+    inline = fmt == "pdf" and request.args.get("inline") == "1"
 
-    db.session.add(ReportLog(
-        report_type=report_type, format=fmt, pages=pages,
-        filters_json=json.dumps(_reports_filters_snapshot(filters)),
-        generated_by=current_user.user_id,
-    ))
-    db.session.commit()
+    if not inline:
+        db.session.add(ReportLog(
+            report_type=report_type, format=fmt, pages=pages,
+            filters_json=json.dumps(_reports_filters_snapshot(filters)),
+            generated_by=current_user.user_id,
+        ))
+        db.session.commit()
 
     filename = f"{report_type}_{ph_now().strftime('%Y%m%d')}.{REPORTS_EXTENSIONS[fmt]}"
     return Response(
         content, mimetype=REPORTS_MIME_TYPES[fmt],
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": f"{'inline' if inline else 'attachment'}; filename={filename}"},
     )
 
 
@@ -2087,6 +2100,7 @@ def notifications():
 
     unread_count = ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(scope).count()
+    category_counts = _notification_category_counts(scope)
 
     per_page = 10
     all_matching = query.order_by(ActivityLog.created_at.desc()).all()
@@ -2124,7 +2138,8 @@ def notifications():
         "barangay/notifications.html",
         items=page_items, unread_count=unread_count, total_count=total_count,
         total_filtered=total_filtered, category_filter=category_filter,
-        categories=categories, page=page, total_pages=total_pages, per_page=per_page, barangay=barangay,
+        categories=categories, category_counts=category_counts,
+        page=page, total_pages=total_pages, per_page=per_page, barangay=barangay,
     )
 
 

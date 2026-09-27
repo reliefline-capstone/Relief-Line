@@ -376,25 +376,5 @@ a.stat-card:hover::after { transform: none; }
    the one-shot element rise-in stays. */
 .lpg::after { animation: none; }
 
-/* ---- Kept, on purpose: the stat-card row -------------------------
-   One short, staggered entrance when a KPI row first paints - the one
-   spot where a little motion helps the eye land. Nothing loops, nothing
-   moves on hover. `backwards` fill = no first-frame flash, no retained
-   transform afterwards. */
-@keyframes rl-stat-in {
-    from { opacity: 0; transform: translateY(9px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-.stat-cards .stat-card {
-    animation: rl-stat-in 0.34s ease-out backwards;
-}
-.stat-cards .stat-card:nth-child(1) { animation-delay: 0.03s; }
-.stat-cards .stat-card:nth-child(2) { animation-delay: 0.07s; }
-.stat-cards .stat-card:nth-child(3) { animation-delay: 0.11s; }
-.stat-cards .stat-card:nth-child(4) { animation-delay: 0.15s; }
-.stat-cards .stat-card:nth-child(5) { animation-delay: 0.19s; }
-.stat-cards .stat-card:nth-child(6) { animation-delay: 0.23s; }
-
-@media (prefers-reduced-motion: reduce) {
-    .stat-cards .stat-card { animation: none; }
-}
+/* stat-card row: no entrance animation - cards paint in place on every load. */
+.stat-cards .stat-card { animation: none; }

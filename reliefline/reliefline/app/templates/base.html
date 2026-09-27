@@ -1,0 +1,147 @@
+{% from "_macros.html" import icon with context %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ReliefLine{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v={{ asset_version('img/favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}?v={{ asset_version('img/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16.png') }}?v={{ asset_version('img/favicon-16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/favicon-180.png') }}?v={{ asset_version('img/favicon-180.png') }}">
+    <!-- Runs before any CSS/layout so a saved sidebar-collapsed preference
+         (see the toggle handler at the bottom of this file) applies before
+         first paint - without this, every page would flash briefly in the
+         wrong (default-expanded) state before JS could fix it up. -->
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('reliefline_sidebar_collapsed') === '1') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- One typeface, everywhere: Inter is drawn specifically for on-screen
+         UI legibility at small sizes and has unambiguous numerals (0/O, 1/l/I
+         stay distinct) - which matters more here than a decorative heading
+         face, since PSWDO/CSWDO/MSWDO/barangay users read a lot of counts and
+         figures under time pressure, not marketing copy. The wider weight
+         range (400-800) is what gives headings their own presence without a
+         second font family to load or keep visually consistent. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}?v={{ asset_version('css/base.css') }}">
+    <!-- Custom dropdown for every <select> in the app - see
+         custom_select.css for why this needs to be global. Loaded before
+         extra_css so a page can still add its own overrides after it if
+         ever needed. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom_select.css') }}?v={{ asset_version('css/custom_select.css') }}">
+    <!-- Custom calendar / time pickers for every <input type="date|time"> -
+         same reason as custom_select: the native popup is unstyleable. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom_datetime.css') }}?v={{ asset_version('css/custom_datetime.css') }}">
+    {% block extra_css %}{% endblock %}
+    <!-- Theme refresh - loaded last so its cosmetic overrides (palette,
+         card surfaces, sidebar, type stack) win over the per-page sheets
+         above. Visual only; see theme.css header. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_version('css/theme.css') }}">
+</head>
+<body>
+    {% block content %}{% endblock %}
+
+    <!-- Mobile dashboard nav: a fixed top bar with a hamburger that slides the
+         sidebar in as a drawer. Styled/shown only on narrow screens by
+         dashboard.css; inert (display:none) on the public and login pages. -->
+    <header class="rl-mnav">
+        <button type="button" class="rl-mnav-btn" id="rl-mnav-open" aria-label="Open menu" aria-expanded="false">{{ icon('menu', 22) }}</button>
+        <div class="rl-mnav-brand">
+            <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="" class="rl-mnav-logo">
+            <span class="rl-mnav-title">ReliefLine<span class="rl-mnav-sub">Pangasinan</span></span>
+        </div>
+    </header>
+    <div class="rl-mnav-backdrop" id="rl-mnav-backdrop"></div>
+
+    <!-- Flash toast stack - rendered once here, as a sibling of the page's
+         own content (every role used to include an identical _flash.html
+         partial inside their own <main class="dashboard-main">, which
+         has an entrance `animation` using `transform` + fill-mode: both -
+         that quietly makes .dashboard-main a *permanent* containing block
+         for any position:fixed descendant, per spec. Practically: the
+         floating toast wasn't fixed to the viewport at all, it was pinned
+         to .dashboard-main and scrolled away with it. Rendering the toast
+         outside .dashboard-main entirely, right here, sidesteps that.
+
+         landing.html renders its own inline .flash-message next to the
+         login form instead (that context wants the error right by the
+         field, not in a corner toast), so it overrides this block empty
+         to avoid showing the same message twice. -->
+    {% block global_flash %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-stack">
+            {% for category, message in messages %}
+            <div class="flash-banner flash-{{ category }}" role="alert" data-flash-auto-dismiss>
+                {% if category == 'success' %}{{ icon('check-circle', 16) }}{% elif category == 'error' %}{{ icon('alert-triangle', 16) }}{% else %}{{ icon('info', 16) }}{% endif %}
+                <span>{{ message }}</span>
+                <button type="button" class="flash-dismiss" aria-label="Dismiss">{{ icon('x', 14) }}</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+    {% endblock %}
+
+    {% block extra_js %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/custom_select.js') }}?v={{ asset_version('js/custom_select.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/custom_datetime.js') }}?v={{ asset_version('js/custom_datetime.js') }}"></script>
+    <!-- Delegated (not bound to #sidebar-toggle-btn directly) so it works
+         no matter which role's _sidebar.html rendered the button, without
+         needing per-page wiring. -->
+    <script>
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('#sidebar-toggle-btn')) return;
+            var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+            try { localStorage.setItem('reliefline_sidebar_collapsed', collapsed ? '1' : '0'); } catch (err) {}
+        });
+    </script>
+    <!-- Mobile sidebar drawer open/close -->
+    <script>
+        (function () {
+            var btn = document.getElementById('rl-mnav-open');
+            var backdrop = document.getElementById('rl-mnav-backdrop');
+            var sidebar = document.querySelector('.dashboard-layout .sidebar');
+            if (!btn || !sidebar || !backdrop) return;
+            function setOpen(on) {
+                document.body.classList.toggle('rl-mnav-open', on);
+                btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+            }
+            btn.addEventListener('click', function () {
+                setOpen(!document.body.classList.contains('rl-mnav-open'));
+            });
+            backdrop.addEventListener('click', function () { setOpen(false); });
+            sidebar.addEventListener('click', function (e) { if (e.target.closest('a')) setOpen(false); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+            window.addEventListener('resize', function () { if (window.innerWidth > 860) setOpen(false); });
+        })();
+    </script>
+    <!-- Flash message auto-dismiss + manual close for the .flash-banner
+         markup rendered above. -->
+    <script>
+        document.querySelectorAll('[data-flash-auto-dismiss]').forEach(function (banner) {
+            var dismissed = false;
+            function dismiss() {
+                if (dismissed) return;
+                dismissed = true;
+                banner.classList.add('is-leaving');
+                banner.addEventListener('transitionend', function () { banner.remove(); }, { once: true });
+                // Fallback in case the transition never fires (e.g. reduced-motion setups).
+                setTimeout(function () { banner.remove(); }, 400);
+            }
+            var closeBtn = banner.querySelector('.flash-dismiss');
+            if (closeBtn) closeBtn.addEventListener('click', dismiss);
+            setTimeout(dismiss, 5000);
+        });
+    </script>
+</body>
+</html>

@@ -66,6 +66,14 @@ class ReliefRequestBatch(db.Model):
         return "draft" if self.is_draft else self.status
 
     @property
+    def is_new(self):
+        """PSWDO's "New" tag: still awaiting review, and its disaster event
+        (if any) hasn't ended - an ended event's leftover request is stale."""
+        if self.display_status != "pending":
+            return False
+        return not (self.event and self.event.status == "ended")
+
+    @property
     def ref(self):
         # "SR" = Stock Request (CSWDO -> PSWDO). Distinct from a barangay's
         # "RR" Relief Request (BarangayReport.ref).

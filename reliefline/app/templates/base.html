@@ -105,6 +105,45 @@
             try { localStorage.setItem('reliefline_sidebar_collapsed', collapsed ? '1' : '0'); } catch (err) {}
         });
     </script>
+    <!-- Blank the page title while printing: browsers print it in the page
+         header ("Barangay Reports - ReliefLine"). The @page margins in
+         dashboard.css already leave no room for that header; this is the
+         fallback for when the browser prints it anyway. -->
+    <script>
+        (function () {
+            var saved = null;
+            window.addEventListener('beforeprint', function () { saved = document.title; document.title = ' '; });
+            window.addEventListener('afterprint', function () { if (saved !== null) document.title = saved; });
+        })();
+    </script>
+    <!-- Report Print buttons ([data-print-pdf]): print the server-generated
+         PDF instead of the web page. A browser prints its own URL/title
+         header on a web page whenever its print dialog's Margins setting
+         isn't "Default" - a PDF never gets that header. The PDF loads in a
+         hidden iframe and its print dialog opens directly; if the browser
+         won't allow that, the PDF opens in a new tab to print from there. -->
+    <script>
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-print-pdf]');
+            if (!btn) return;
+            var url = btn.getAttribute('data-print-pdf');
+            var old = document.getElementById('rl-print-frame');
+            if (old) old.remove();
+            var frame = document.createElement('iframe');
+            frame.id = 'rl-print-frame';
+            frame.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
+            frame.onload = function () {
+                try {
+                    frame.contentWindow.focus();
+                    frame.contentWindow.print();
+                } catch (err) {
+                    window.open(url, '_blank');
+                }
+            };
+            frame.src = url;
+            document.body.appendChild(frame);
+        });
+    </script>
     <!-- Mobile sidebar drawer open/close -->
     <script>
         (function () {

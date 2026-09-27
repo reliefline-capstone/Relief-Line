@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     keyboard: false,
                 }).addTo(muniLabelLayer);
                 if (p.is_target) {
-                    labelMarker.on('click', function () { setLevel('municipality', p.lgu); });
+                    labelMarker.on('click', function () { toggleMunicipality(p.lgu); });
                 }
             }
             if (p.is_target) {
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     '<br>Demand Level: ' + escapeHtml(muni.status_label)
                 ) : '';
                 layer.bindTooltip('<strong>' + escapeHtml(p.lgu) + '</strong>' + demandLine + '<br><em>Click to view</em>', { sticky: true });
-                layer.on('click', function () { setLevel('municipality', p.lgu); });
+                layer.on('click', function () { toggleMunicipality(p.lgu); });
                 // Hover deepens the fill (a real, visible color change - no
                 // shadow/glow filter involved anywhere on this layer any
                 // more) plus a slightly thicker border. mouseout resets via
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // renderMunicipalityPanel. A CSWDO/MSWDO account's other
                 // LGUs stay inert, as before.
                 layer.on('click', function (e) {
-                    if (IS_MUNI_ONLY) setLevel('municipality', p.name);
+                    if (IS_MUNI_ONLY) toggleMunicipality(p.name);
                     else layer.openTooltip(e.latlng);
                 });
                 // Fill darkens too on hover, not just the border - a weight/
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     '<br>' + fmt(p.food_packs_current) + ' food packs ' + sourceLabel,
                     { sticky: true }
                 );
-                layer.on('click', function () { setLevel('barangay-detail', p.lgu, p.barangay_id, p.name); });
+                layer.on('click', function () { toggleBarangay(p.lgu, p.barangay_id, p.name); });
             } else {
                 layer.bindTooltip(escapeHtml(p.name) + ' - no data on record', { sticky: true });
             }
@@ -1182,6 +1182,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (state.lgu) {
             routes = routes.filter(function (r) { return r.to_municipality === state.lgu; });
         }
+        // A selected barangay narrows it further to deliveries bound for
+        // that barangay only.
+        var brgyName = state.level === 'barangay-detail' ? state.barangayName : null;
+        if (brgyName) {
+            routes = routes.filter(function (r) { return r.to_barangay_id === state.barangayId; });
+        }
         routesById = {};
         routes.forEach(function (r) { routesById[r.distribution_id] = r; });
         document.getElementById('routes-count').textContent = routes.length;
@@ -1189,7 +1195,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (routesPill) routesPill.textContent = routes.length;
         var body = document.getElementById('routes-table-body');
         if (!routes.length) {
-            body.innerHTML = '<tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">No active distribution routes right now.</td></tr>';
+            var emptyMsg = brgyName
+                ? 'No active distribution routes to ' + escapeHtml(brgyName) + ' right now.'
+                : 'No active distribution routes right now.';
+            body.innerHTML = '<tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">' + emptyMsg + '</td></tr>';
             return;
         }
         body.innerHTML = routes.map(function (r) {
@@ -1298,6 +1307,25 @@ document.addEventListener('DOMContentLoaded', function () {
         // already scrolled past its own header.
         var floatingCard = document.querySelector('.gis-floating-card');
         if (floatingCard) floatingCard.scrollTop = 0;
+    }
+
+    // Map clicks toggle: clicking the municipality/barangay that's already
+    // selected deselects it - a municipality goes back to the province
+    // overview, a barangay back to its municipality. A CSWDO/MSWDO account
+    // has no province overview (see Reset), so its own municipality stays.
+    function toggleMunicipality(lgu) {
+        if (state.level === 'municipality' && state.lgu === lgu) {
+            if (!GIS_CONFIG.defaultLgu) setLevel('overview');
+            return;
+        }
+        setLevel('municipality', lgu);
+    }
+    function toggleBarangay(lgu, barangayId, barangayName) {
+        if (state.level === 'barangay-detail' && state.barangayId === barangayId) {
+            setLevel('municipality', lgu);
+            return;
+        }
+        setLevel('barangay-detail', lgu, barangayId, barangayName);
     }
 
     // Deep-link support so links from other pages (e.g. the Dashboard's mini

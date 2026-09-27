@@ -1,0 +1,910 @@
+/* Warehouse map. isolation: isolate scopes Leaflet's own internal z-index
+   values (its panes and .leaflet-control layer both go well above 500) to
+   just this panel, so they can never out-rank the mobile nav drawer/topbar
+   - which live in a separate part of the DOM and, without this, get
+   compared against them in the page's shared stacking context. Same fix as
+   .map-placeholder-box / .gis-map-panel. */
+.wh-map-panel { margin-bottom: 16px; position: relative; isolation: isolate; }
+
+.wh-map-legend { gap: 14px; }
+
+.wh-dot-healthy { background: #27ae60; }
+.wh-dot-moderate { background: #f1c40f; }
+.wh-dot-low { background: #e74c3c; }
+
+.wh-map {
+    height: 320px;
+    width: 100%;
+    border-radius: 12px;
+    background: #efedfd;
+}
+
+/* Breadcrumb */
+.wh-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.wh-breadcrumb a {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    color: #5347ce;
+    font-weight: 600;
+}
+
+.wh-breadcrumb-back { display: inline-flex; transform: rotate(90deg); }
+.wh-breadcrumb-sep { color: #cdcfe0; }
+.wh-breadcrumb-current { color: #1a1a1a; font-weight: 600; }
+
+.wh-breadcrumb-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e8449;
+}
+
+.wh-status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+}
+
+.wh-status-dot-healthy { color: #27ae60; }
+.wh-status-dot-moderate { color: #f1c40f; }
+.wh-status-dot-low { color: #e74c3c; }
+
+/* Sub-navigation tabs */
+.wh-subnav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: white;
+    border-radius: 10px;
+    padding: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.wh-subnav a {
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8a94a6;
+}
+
+.wh-subnav a:hover { color: #5347ce; }
+.wh-subnav a.active { background: #f0f2f6; color: #5347ce; }
+
+/* Header actions */
+.wh-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    /* No effect while all three buttons fit on one line (desktop); once the
+       row is narrower than their combined natural width, this lets "Add
+       Item" drop to its own line instead of the whole group overflowing
+       .dashboard-main's right padding (clipped there by overflow-x: hidden,
+       so it read as the button jammed flush against the screen edge). */
+    flex-wrap: wrap;
+    row-gap: 10px;
+}
+
+.wh-text-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    background: none;
+}
+
+.wh-text-link:hover { color: #5347ce; }
+
+/* .btn-add-warehouse now lives in dashboard.css - every page using this
+   button loads that stylesheet, which wasn't true of this one. */
+
+/* Stat cards - 4 across instead of the dashboard's 6 */
+.wh-stat-cards { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 1200px) {
+    .wh-stat-cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* System Recommendations panel */
+.wh-reco-panel {
+    background: #fef9f0;
+    border: 1px solid #f5d999;
+    border-left: 4px solid #f39c12;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+}
+
+.wh-reco-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.wh-reco-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    color: #1a1a1a;
+}
+
+.wh-reco-meta { font-size: 11px; color: #8a94a6; }
+
+.wh-reco-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: white;
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+
+.wh-reco-item + .wh-reco-item { margin-top: 10px; }
+
+.wh-reco-extra { display: none; }
+
+.wh-reco-view-all {
+    display: block;
+    margin: 12px auto 0;
+    padding: 8px 18px;
+    background: white;
+    border: 1px solid #f5d999;
+    border-radius: 8px;
+    color: #d68910;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.wh-reco-view-all:hover { background: #fef5e3; }
+
+.wh-reco-num {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: #fef5e3;
+    color: #d68910;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wh-reco-text { flex: 1; }
+.wh-reco-text strong { display: block; font-size: 13px; }
+.wh-reco-text span { font-size: 12px; color: #8a94a6; }
+
+.wh-reco-action {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #5347ce;
+    flex-shrink: 0;
+}
+
+/* Warehouse Overview table */
+/* overflow-x (not overflow: hidden) so a table wider than its panel - e.g. long
+   office names alongside DATE/TIME/ACTIVITY/QUANTITY columns - scrolls into
+   view instead of being silently clipped with no way to reach it. Still clips
+   the table's square corners to the panel's border-radius either way. */
+/* .main-grid is a CSS grid with the default align-items: stretch, so
+   without this the panel stretches to match its taller sibling
+   (.wh-side-col - Recent Stock Movements), leaving a large empty gap below
+   the table's last row instead of the panel just sizing to its own content. */
+.wh-table-panel { padding: 0; overflow-x: auto; align-self: start; }
+
+.wh-table tbody tr { transition: background-color 0.15s ease; }
+.wh-table tbody tr:hover { background: #f4f4fb; }
+
+.wh-table-panel .panel-header {
+    padding: 16px 20px;
+    margin-bottom: 0;
+}
+
+.wh-table-panel .panel-header .wh-header-actions { gap: 12px; }
+
+.wh-showing-count { font-size: 12px; color: #8a94a6; }
+
+@media (max-width: 600px) {
+    .wh-table-panel .panel-header { padding: 14px 16px; }
+}
+
+.wh-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.wh-table thead { background: #f4f4fb; }
+
+.wh-table th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 10.5px;
+    color: #8a94a6;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    border-bottom: 1px solid #e7e8ef;
+}
+
+.wh-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f1f6;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #3a4252;
+    vertical-align: middle;
+}
+
+.wh-table tr:last-child td { border-bottom: none; }
+
+/* Font hierarchy: the first column is the row's identifier - it leads;
+   the "type"/category column recedes; .wh-sub is the tertiary line. */
+.wh-table tbody td:first-child {
+    font-weight: 600;
+    color: #2b3242;
+    font-variant-numeric: tabular-nums;
+}
+.wh-table tbody td strong { font-weight: 700; color: #1f2a44; }
+
+/* Stock Transfers list: Type is a quiet category label, the route is
+   the row's readable body text, Packs is the figure that stands out. */
+.wh-table-transfers tbody td:first-child { white-space: nowrap; }
+.wh-table-transfers tbody td:nth-child(2) {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+}
+.wh-table-transfers tbody td:nth-child(3) { color: #3a4252; min-width: 280px; }
+.wh-table-transfers tbody td:nth-child(4) { font-variant-numeric: tabular-nums; }
+
+.wh-table th.wh-status-col,
+.wh-table td.wh-status-col {
+    text-align: center;
+    vertical-align: middle;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+.wh-table td.wh-status-col .badge-health {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    word-spacing: 3px;
+}
+
+.wh-sub {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #9aa1ae;
+    margin-top: 2px;
+    letter-spacing: 0.1px;
+}
+/* In a table row .wh-sub is the tertiary line under the identifier -
+   don't let the parent cell's bold/dark leak into it. */
+.wh-table tbody td:first-child .wh-sub {
+    font-weight: 500;
+    color: #9aa1ae;
+}
+
+.wh-fill-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wh-fill-bar { flex: 1; min-width: 70px; margin-bottom: 0; }
+.wh-fill-cell span { font-size: 12px; font-weight: 600; color: #444; }
+
+.btn-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #5347ce;
+    color: #5347ce;
+    background: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.btn-view:hover { background: #efedfd; }
+
+/* Standalone page forms (outside modals) */
+.wh-form label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    margin: 14px 0 6px;
+}
+
+.wh-form select,
+.wh-form input,
+.wh-form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e3e4ec;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+}
+
+.wh-form textarea { resize: vertical; }
+
+/* Stock Transfer page - roomier padding than the site's default .panel (18px)
+   so the wider, more spacious form (below) doesn't feel cramped against the
+   panel's edges. */
+.wh-transfer-panel { padding: 22px 26px; }
+.wh-transfer-panel .panel-header h3 { font-size: 18px; }
+
+/* No max-width here on purpose - unlike a centered/capped form, this one is
+   meant to fill the panel's full width, matching the roomier field sizing
+   below instead of looking boxed-in and narrow. */
+.wh-transfer-form { margin-top: 8px; }
+
+/* align-items: center (not flex-end, which put the arrow level with the
+   bottom of each field's hint text below the dropdown) - the arrow's own
+   margin-top then nudges it down past the From/To label so it lands level
+   with the dropdowns themselves instead of the field as a whole (label +
+   dropdown + hint). */
+.wh-transfer-row {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+
+/* Stock Transfer page */
+.wh-transfer-field { flex: 1; min-width: 0; }
+.wh-transfer-field label,
+.wh-transfer-form .rd-form-row label { font-size: 13px; }
+/* .csel-wrap defaults to display: inline-block (custom_select.css), sized
+   to its own content (the "Select source"/"Select destination" text) -
+   width: 100% is what actually makes it fill its flex: 1 field the same
+   way a plain <input> already does by default, instead of shrink-wrapping
+   to whatever's shorter and leaving the From/To boxes visibly different
+   widths that don't line up with Quantity/Reason below them. */
+.wh-transfer-field .csel-wrap { width: 100%; }
+/* .csel-trigger's own default padding (custom_select.css, 9px top/bottom)
+   is shorter than .wh-form input's - keeping both at the same larger,
+   roomier padding here (rather than the site-wide default) is what gives
+   the dropdowns and the Quantity/Reason inputs below them matching heights. */
+.wh-transfer-field .csel-trigger,
+.wh-transfer-form input {
+    padding: 12px 14px;
+    font-size: 14px;
+}
+
+/* Reason is a free-text input (backend stores it as an optional note), but
+   visually it should read as part of the same matched field set as the
+   From/To/Quantity boxes - this chevron is a purely decorative echo of the
+   dropdown trigger's own arrow, not a functional control. */
+#reason {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%238a94a6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 34px;
+}
+
+.wh-transfer-arrow {
+    flex-shrink: 0;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: #5347ce;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+@media (max-width: 600px) {
+    .wh-transfer-panel { padding: 20px; }
+    .wh-transfer-row { flex-direction: column; align-items: stretch; }
+    /* Points down instead of right once From/To stack vertically. */
+    .wh-transfer-arrow { align-self: center; margin: 4px 0; transform: rotate(90deg); }
+}
+
+.wh-transfer-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #f4f2fd;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+/* warehouse_transfer.js only un-hides this once source/destination/quantity
+   are all filled in - the class-level `display: grid` above otherwise beats
+   the browser's default [hidden]{display:none} rule at equal specificity
+   (same pattern as distribution.css's .nd-request-option[hidden]), so the
+   box showed up with its empty "-" placeholder state from the very start. */
+.wh-transfer-preview[hidden] { display: none; }
+
+.wh-transfer-preview-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 22px;
+    text-align: left;
+}
+/* Vertical divider between the two columns - a plain border would run the
+   full row height including the padding; the gradient fades it out before
+   it touches the box's own top/bottom edge instead. */
+.wh-transfer-preview-col:first-child {
+    border-right: 1px solid transparent;
+    border-image: linear-gradient(to bottom, transparent, rgba(83, 71, 206, 0.18) 15%, rgba(83, 71, 206, 0.18) 85%, transparent) 1;
+}
+
+.wh-transfer-preview-head { display: flex; align-items: center; gap: 10px; }
+
+.wh-transfer-preview-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: #5347ce;
+}
+
+.wh-transfer-preview strong { display: block; font-size: 26px; margin-top: 4px; }
+.wh-transfer-preview-unit { font-size: 12px; color: #8a94a6; }
+
+.wh-transfer-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.wh-transfer-panel .wh-transfer-actions .btn-decision {
+    padding: 12px;
+    font-size: 14px;
+}
+
+.wh-transfer-actions .btn-decision { flex: 2; }
+.wh-transfer-actions .btn-outline { flex: 1; justify-content: center; opacity: 0.6; }
+
+/* Transfer success state */
+.wh-success-panel {
+    grid-column: 1 / -1;
+    background: #e8faf0;
+    border: 1px solid #b7e4c7;
+    text-align: center;
+    padding: 40px;
+}
+
+.wh-success-icon { margin-bottom: 10px; }
+.wh-success-panel h3 { font-size: 18px; color: #1a1a1a; margin-bottom: 6px; }
+.wh-success-panel p { font-size: 13px; color: #555; margin-bottom: 20px; }
+
+.wh-success-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.wh-success-actions a { padding: 12px 24px; }
+
+/* Inventory Management page */
+.wh-search-form { flex: 1; max-width: 320px; }
+
+.wh-search-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    background: white;
+    border: 1px solid #e3e4ec;
+    border-radius: 8px;
+}
+
+.wh-search-wrapper input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 13px;
+}
+
+.wh-item-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wh-item-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: #efedfd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.wh-row-actions { display: flex; align-items: center; gap: 6px; }
+
+.wh-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    background: #f4f4fb;
+}
+
+.wh-icon-btn:hover { background: #efedfd; }
+.wh-icon-btn-danger:hover { background: #fdecea; }
+
+/* Side column */
+.wh-side-col { display: flex; flex-direction: column; }
+
+/* Municipal Warehouse detail - General Information (left) and the Capacity
+   card (right) sit as a matched pair, so the Capacity panel stretches to the
+   same height instead of floating short beside the longer info list. */
+.mi-detail-grid { align-items: stretch; }
+.mi-detail-grid .wh-side-col > .panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+/* Center the ring + figures block in the taller panel instead of leaving
+   all the slack at the bottom. */
+.mi-detail-grid .wh-capacity-ring-wrapper { margin-top: auto; }
+.mi-detail-grid .wh-side-col .wh-info-rows { margin-bottom: auto; }
+
+/* Recent Stock Movements */
+.wh-movement-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f2f6;
+}
+
+.wh-movement-row:last-child { border-bottom: none; }
+
+.wh-receive-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wh-receive-form input[type="date"] { padding: 6px 8px; border: 1px solid #dfe3ec; border-radius: 6px; font-size: 13px; }
+
+/* Replaces a native <details>/<summary> (couldn't animate its instant
+   block/none toggle, and its default marker/spacing fought the compact
+   layout below) with a plain button - same data-open-modal-style pattern
+   used elsewhere in the app (relief_request_detail.js) rather than a one-
+   off widget. */
+.wh-batch-toggle {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; padding: 0; margin: 0;
+    cursor: pointer; color: #2c5aa0; font-size: 13px; font-family: inherit;
+}
+.wh-batch-toggle-arrow {
+    display: inline-block;
+    transition: transform 0.2s ease;
+    font-size: 10px;
+}
+.wh-batch-toggle[aria-expanded="true"] .wh-batch-toggle-arrow { transform: rotate(90deg); }
+
+/* max-height (not height) is what lets this animate at all without
+   knowing the content's height up front - relief_request_detail.js sets
+   the actual px value (scrollHeight) on open/close so the transition has
+   real start/end points to interpolate between instead of jumping
+   instantly the way animating to/from "auto" would. display:contents on
+   each <li> (below) lifts its own spans up to be direct children of this
+   grid, so NAME/QTY/EXPIRY/STATUS line up in columns across every row
+   without a nested table. */
+.wh-batch-list {
+    display: grid;
+    grid-template-columns: minmax(110px, max-content) max-content minmax(150px, max-content) max-content;
+    column-gap: 16px;
+    row-gap: 0;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+}
+/* A light card of its own (instead of floating loose on the row's
+   background) is what actually reads as "a compact inventory list", not
+   just a few lines of stray text - background/border/radius live on the
+   grid itself so they animate open/closed along with max-height. */
+.wh-batch-contents:has(.wh-batch-toggle[aria-expanded="true"]) .wh-batch-list {
+    margin: 10px 0 2px;
+    background: #fbfbfd;
+    border: 1px solid #eef0f5;
+    border-radius: 8px;
+    padding: 4px 14px;
+}
+.wh-batch-list li { display: contents; }
+
+/* Every cell in a row gets the same bottom border/padding - four separate
+   borders that happen to line up edge-to-edge read as one continuous
+   divider under the row, since display:contents on <li> (above) means
+   there's no single row box left to put a real per-row border on.
+   padding-block (not the padding shorthand) only sets top/bottom - the
+   status cell is also a .badge-health pill with its own left/right
+   padding from dashboard.css, and warehouse_inventory.css loads after
+   it, so a plain `padding: 9px 0` here would win the cascade on ALL four
+   sides and flatten that pill's horizontal padding to 0. */
+.wh-batch-item-name, .wh-batch-item-qty, .wh-batch-item-expiry, .wh-batch-item-status {
+    padding-block: 9px;
+    border-bottom: 1px solid #eef0f5;
+}
+.wh-batch-list li:last-child .wh-batch-item-name,
+.wh-batch-list li:last-child .wh-batch-item-qty,
+.wh-batch-list li:last-child .wh-batch-item-expiry,
+.wh-batch-list li:last-child .wh-batch-item-status {
+    border-bottom: none;
+}
+
+.wh-batch-item-name { font-size: 12.5px; font-weight: 600; color: #2b3242; word-break: break-word; }
+.wh-batch-item-qty, .wh-batch-item-expiry { font-size: 12px; color: #6b7280; white-space: nowrap; }
+/* The "· " separator lives here instead of as its own grid column/DOM
+   node - one less column to keep in sync with the template, and it
+   disappears along with its column automatically if that value is ever
+   empty. */
+.wh-batch-item-qty::before, .wh-batch-item-expiry::before { content: '\00b7\0020'; color: #c7cad6; }
+.wh-batch-item-status { justify-self: start; }
+
+/* Food Pack Batches table - QUANTITY/STATUS/ACTIONS all hold short,
+   fixed-width content (a number, a one-word badge, one icon button), but
+   plain table auto-layout stretches every column to fill the panel's full
+   width, giving each of those three a wide dead zone of trailing empty
+   space. width:1% is the standard auto-layout trick for "shrink this
+   column to its content" - white-space:nowrap stops it from wrapping
+   instead - which frees that space for RECEIVED/EARLIEST EXPIRY/DAYS LEFT/
+   CONTENTS to share, since those actually have longer content. */
+.wh-batches-table th:nth-child(4), .wh-batches-table td:nth-child(4),
+.wh-batches-table th:nth-child(6), .wh-batches-table td:nth-child(6),
+.wh-batches-table th:nth-child(7), .wh-batches-table td:nth-child(7) {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.wh-movement-row-clickable { cursor: pointer; border-radius: 8px; }
+.wh-movement-row-clickable:hover { background: #f7f8fc; }
+
+.wh-movement-more { border-top: 1px solid #f0f2f6; }
+.wh-movement-more > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 0 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #5347ce;
+    user-select: none;
+}
+.wh-movement-more > summary::-webkit-details-marker { display: none; }
+.wh-movement-more > summary:hover { color: #4436b4; }
+.wh-movement-more .wh-movement-row:first-of-type { border-top: none; }
+
+/* When expanded, drop the toggle to the bottom of the revealed rows so it
+   reads as one continuous list instead of a link stranded mid-list. */
+.wh-movement-more[open] { display: flex; flex-direction: column; }
+.wh-movement-more[open] > summary { order: 99; margin-bottom: 0; padding: 12px 0 0; }
+.wh-movement-more > summary .wh-more-close { display: none; }
+.wh-movement-more[open] > summary .wh-more-open { display: none; }
+.wh-movement-more[open] > summary .wh-more-close { display: inline; }
+
+.wh-movement-icon {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wh-move-out { background: #fdecea; }
+.wh-move-in { background: #e8faf0; }
+
+.wh-arrow-up { display: inline-flex; transform: rotate(-90deg); color: #c0392b; }
+.wh-arrow-down { display: inline-flex; transform: rotate(90deg); color: #1e8449; }
+
+.wh-movement-text { flex: 1; min-width: 0; }
+.wh-movement-text strong { display: block; font-size: 12px; }
+.wh-movement-text span { display: block; font-size: 11px; color: #8a94a6; }
+
+.wh-movement-amount { text-align: right; flex-shrink: 0; }
+.wh-movement-amount strong { display: block; font-size: 13px; }
+.wh-movement-amount span { font-size: 10px; color: #8a94a6; white-space: nowrap; }
+
+/* Pending transfers */
+.wh-pending-transfer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f2f6;
+}
+
+.wh-pending-transfer:last-child { border-bottom: none; }
+.wh-pending-transfer strong { display: block; font-size: 13px; }
+
+/* Warehouse Detail - General Information / Capacity */
+.wh-info-rows { display: flex; flex-direction: column; }
+
+.wh-info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f2f6;
+    font-size: 13px;
+}
+
+.wh-info-row:last-child { border-bottom: none; }
+.wh-info-row span { color: #8a94a6; }
+.wh-info-row strong { color: #1a1a1a; text-align: right; }
+
+.wh-capacity-ring-wrapper {
+    position: relative;
+    width: 140px;
+    margin: 4px auto 18px;
+}
+
+.wh-capacity-ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.wh-capacity-ring-text strong { font-size: 20px; color: #5347ce; }
+.wh-capacity-ring-text span { font-size: 11px; color: #8a94a6; }
+
+.wh-block-btn { width: 100%; justify-content: center; margin-top: 16px; }
+.wh-block-link { width: 100%; justify-content: center; margin-top: 10px; padding: 8px; }
+
+/* Reports placeholder */
+.wh-empty-state {
+    text-align: center;
+    padding: 60px 30px;
+}
+
+.wh-empty-state h3 { font-size: 16px; margin: 14px 0 6px; }
+.wh-empty-state .empty-note { max-width: 420px; margin: 0 auto 20px; }
+.wh-empty-actions { display: flex; justify-content: center; }
+
+/* Stock Movement History */
+.wh-movement-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.wh-movement-filters select {
+    padding: 8px 12px;
+    border: 1px solid #e3e4ec;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #333;
+    background: white;
+}
+
+.date-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #e3e4ec;
+    border-radius: 6px;
+}
+
+.date-input-wrapper input {
+    border: none;
+    outline: none;
+    font-size: 13px;
+}
+
+/* Warehouses list - card grid */
+.wh-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.wh-warehouse-card {
+    background: white;
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.wh-warehouse-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.wh-warehouse-card-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: #efedfd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wh-warehouse-card-name { font-size: 15px; margin-bottom: 4px; }
+
+.wh-warehouse-card-loc {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #8a94a6;
+    margin-bottom: 14px;
+}
+
+.wh-warehouse-card-stock {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+.wh-warehouse-card-stock strong { font-size: 20px; }
+.wh-warehouse-card-stock span { font-size: 12px; color: #8a94a6; }
+
+.wh-warehouse-card .wh-sub { display: block; margin-top: 4px; margin-bottom: 16px; }
+
+.wh-warehouse-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.wh-warehouse-card-actions a { flex: 1; justify-content: center; }
+
+/* Per-warehouse detail modal */
+.wh-modal-location {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #8a94a6;
+    margin-bottom: 16px;
+}
+
+.wh-modal-item { margin-bottom: 14px; }
+
+.wh-modal-item-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.wh-modal-item-top span { color: #555; }
+.wh-modal-item-top strong { color: #1a1a1a; }

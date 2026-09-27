@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}{{ batch.ref }} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}?v={{ asset_version('css/distribution_detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'relief_requests' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <div class="rd-breadcrumb"><a href="{{ url_for('pswdo.relief_requests') }}">{{ icon('arrow-left', 14) }} Stock Requests</a></div>
+
+        <div class="page-header">
+            <div>
+                <h2>{{ batch.ref }}
+                    <span class="badge-status status-{{ batch.display_status }}">{{ status_labels.get(batch.display_status, batch.display_status) }}</span>
+                </h2>
+                <p>{{ batch.office.office_name }} · {{ batch.office.area_covered }}
+                    {%- if batch.event %} · {{ batch.event.event_name }}{% endif %}
+                    · submitted {{ batch.submitted_at.strftime('%b %d, %Y %I:%M %p') if batch.submitted_at }}</p>
+            </div>
+        </div>
+
+        <div class="rd-left-col">
+                <section class="panel">
+                    <div class="panel-header"><h3>Request</h3></div>
+                    <div class="rd-info-grid">
+                        <div><span>Requested</span><strong>{{ "{:,}".format(batch.requested_food_packs) }} packs</strong></div>
+                        <div><span>Priority</span><strong>{{ priority_labels.get(batch.priority, batch.priority) }}</strong></div>
+                        <div><span>CSWDO warehouse on hand</span><strong>{{ "{:,}".format(cswdo_on_hand) }}</strong></div>
+                        {% if batch.approved_food_packs %}<div><span>Approved</span><strong>{{ "{:,}".format(batch.approved_food_packs) }} from {{ batch.fulfilling_office.office_name if batch.fulfilling_office }}</strong></div>{% endif %}
+                    </div>
+                    {% if batch.reason %}<p class="da-remarks-box" style="margin-top:10px;">{{ batch.reason }}</p>{% endif %}
+                    {% if batch.decision_remarks %}<p class="da-remarks-box" style="margin-top:8px;"><strong>Decision:</strong> {{ batch.decision_remarks }}</p>{% endif %}
+                </section>
+
+                {% if transfer %}
+                <section class="panel dd-stepper-panel">
+                    <div class="panel-header"><h3>Replenishment Transfer {{ transfer.ref }}</h3></div>
+                    <div class="dd-stepper">
+                        {% set order = {'preparing':0,'in_transit':1,'delivered':2} %}
+                        {% for s in ['preparing','in_transit','delivered'] %}
+                        {% set done = order[transfer.dispatch_status or 'preparing'] >= loop.index0 %}
+                        <div class="dd-step {{ 'dd-step-done' if done }}">
+                            <div class="dd-step-circle">{% if done %}{{ icon('check-circle', 16, 'white') }}{% else %}{{ loop.index }}{% endif %}</div>
+                            <span>{{ dispatch_labels[s] }}</span>
+                        </div>
+                        {% if not loop.last %}<div class="dd-step-line {{ 'dd-step-line-done' if done }}"></div>{% endif %}
+                        {% endfor %}
+                    </div>
+                    <p class="form-hint" style="margin-top:10px;">
+                        {{ "{:,}".format(transfer.quantity) }} packs from {{ transfer.from_office.office_name }} → {{ transfer.to_office.office_name }}.
+                        <a href="{{ url_for('receipts.transfer_receipt', transfer_id=transfer.transfer_id) }}">View Receipt</a> &middot; {% if transfer.status == 'completed' %}Received {{ transfer.received_at.strftime('%b %d, %I:%M %p') if transfer.received_at }} by {{ transfer.received_by }}.{% if transfer.has_receipt_issue %} <strong>{{ transfer.receipt_condition|capitalize }}</strong>: {{ '{:,}'.format(transfer.good_count) }} usable of {{ '{:,}'.format(transfer.quantity) }} dispatched{% if transfer.shortage_count %}, {{ '{:,}'.format(transfer.shortage_count) }} short{% endif %}{% if transfer.damaged_count %}, {{ '{:,}'.format(transfer.damaged_count) }} damaged{% endif %}{% if transfer.receipt_note %} - {{ transfer.receipt_note }}{% endif %}.{% endif %}
+                        {% elif transfer.dispatch_status == 'in_transit' %}In transit - awaiting CSWDO receipt confirmation.
+                        {% else %}Awaiting dispatch.{% endif %}
+                    </p>
+                    {% if transfer.dispatch_status == 'preparing' %}
+                    <form method="POST" action="{{ url_for('pswdo.transfer_issue', transfer_id=transfer.transfer_id) }}" class="settings-form" style="margin-top:8px;">
+                        <div class="form-row"><label for="ti-arrival">Expected Arrival</label><input type="date" name="expected_arrival" id="ti-arrival"></div>
+                        <button type="submit" class="btn-decision btn-approve-full" style="margin-top:16px;">{{ icon('truck', 16, 'white') }} Confirm Issuance &amp; Dispatch</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('pswdo.transfer_detail', transfer_id=transfer.transfer_id) }}" class="link-manage">Open transfer →</a>
+                    {% endif %}
+                </section>
+                {% endif %}
+
+                {% if batch.display_status == 'pending' %}
+                <section class="panel">
+                    <div class="panel-header"><h3>Decision</h3></div>
+                    <div class="rd-action-row">
+                        <button type="button" class="btn-decision btn-approve-full" data-open-modal="approve-modal">{{ icon('check-circle', 16, 'white') }} Approve</button>
+                        <button type="button" class="btn-decision btn-reject" data-open-modal="reject-modal">{{ icon('x-circle', 16, 'white') }} Decline</button>
+                    </div>
+                </section>
+                {% endif %}
+        </div>
+
+        {% if batch.display_status == 'pending' %}
+        <div class="rd-modal-overlay" id="approve-modal" hidden>
+            <div class="rd-modal">
+                <div class="rd-modal-header"><h3>Approve {{ batch.ref }}</h3><button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
+                <form method="POST" action="{{ url_for('pswdo.approve_relief_request', batch_id=batch.batch_id) }}" class="settings-form"
+                      data-transfer-calc
+                      data-dest-name="{{ batch.office.office_name }}"
+                      data-dest-current="{{ cswdo_on_hand }}"
+                      data-dest-capacity="{{ batch.office.capacity_food_pack or 20000 }}">
+                    <div class="form-row">
+                        <label for="ap-qty">Food packs to transfer *</label>
+                        <input type="number" name="quantity" id="ap-qty" min="1" max="{{ batch.requested_food_packs }}" value="{{ batch.requested_food_packs }}" required data-transfer-qty>
+                        <span class="form-hint">Up to {{ "{:,}".format(batch.requested_food_packs) }} requested.</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="ap-depot">From Provincial Depot *</label>
+                        <select name="fulfilling_office_id" id="ap-depot" required data-transfer-source>
+                            <option value="">Select…</option>
+                            {% for w in depots %}<option value="{{ w.office.office_id }}" data-available="{{ w.food_pack_qty }}">{{ w.office.office_name }} - {{ "{:,}".format(w.food_pack_qty) }} packs</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="transfer-calc-preview" data-transfer-preview hidden></div>
+                    <div class="form-row"><label for="ap-remarks">Remarks</label><textarea name="remarks" id="ap-remarks" rows="2"></textarea></div>
+                    <div class="rd-modal-actions">
+                        <button type="submit" class="btn-decision btn-approve-full">Approve &amp; Create Transfer</button>
+                        <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="rd-modal-overlay" id="reject-modal" hidden>
+            <div class="rd-modal">
+                <div class="rd-modal-header"><h3>Decline {{ batch.ref }}</h3><button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
+                <form method="POST" action="{{ url_for('pswdo.reject_relief_request', batch_id=batch.batch_id) }}" class="settings-form">
+                    <div class="form-row"><label for="rj-reason">Reason *</label><textarea name="reason" id="rj-reason" rows="3" required></textarea></div>
+                    <div class="rd-modal-actions">
+                        <button type="submit" class="btn-decision btn-reject">Decline</button>
+                        <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
+{% endblock %}

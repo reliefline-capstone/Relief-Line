@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Barangay Inventory - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+{% endblock %}
+
+{% macro movement_row(l, delivery_recs) %}
+{% set rec = delivery_recs.get(l.distribution_id) if l.distribution_id else none %}
+{% set has_breakdown = rec and (rec.shortage_count or rec.damaged_count) %}
+<div class="wh-movement-row{{ ' wh-movement-row-clickable' if has_breakdown }}"
+     {%- if has_breakdown %} data-open-modal="bi-dd-{{ l.log_id }}" role="button" tabindex="0"{% endif %}>
+    <div class="wh-movement-icon {{ 'wh-move-out' if l.delta < 0 else 'wh-move-in' }}">
+        <span>{{ icon('arrow-right', 14) }}</span>
+    </div>
+    <div class="wh-movement-text">
+        <strong>{{ 'Returned - Damaged' if l.source_type == 'damaged_return' else l.source_type|capitalize }}</strong>
+        <span>{{ l.reason or '-' }}</span>
+        {% if has_breakdown %}<span class="link-manage">View breakdown →</span>{% endif %}
+    </div>
+    <div class="wh-movement-amount">
+        <strong class="{{ 'text-red' if l.delta < 0 else 'text-green' }}">{{ '+' if l.delta > 0 }}{{ "{:,}".format(l.delta) }}</strong>
+        <span>{{ l.created_at|ph_time('%b %d, %Y · %I:%M %p') if l.created_at }}</span>
+    </div>
+</div>
+{% if has_breakdown %}
+<div class="rd-modal-overlay" id="bi-dd-{{ l.log_id }}" hidden>
+    <div class="rd-modal" style="max-width:480px;">
+        <div class="rd-modal-header">
+            <h3>{{ icon('package', 18, '#0f2547') }} Delivery Breakdown</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <p class="form-hint">D-{{ rec.distribution_date.year }}-{{ '%03d' % rec.distribution_id }}{% if rec.received_by %} · received by {{ rec.received_by }}{% endif %}</p>
+        <div class="wh-info-rows">
+            <div class="wh-info-row"><span>Total released by CSWDO</span><strong>{{ "{:,}".format(rec.quantity_released or 0) }}</strong></div>
+            <div class="wh-info-row"><span>Received in good condition</span><strong class="text-green">{{ "{:,}".format(rec.good_count) }}</strong></div>
+            <div class="wh-info-row"><span>Short / missing</span><strong class="{{ 'text-red' if rec.shortage_count }}">{{ "{:,}".format(rec.shortage_count) }}</strong></div>
+            <div class="wh-info-row"><span>Damaged (returned to CSWDO)</span><strong class="{{ 'text-red' if rec.damaged_count }}">{{ "{:,}".format(rec.damaged_count) }}</strong></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'inventory' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <div class="page-header">
+            <div>
+                <h2>Barangay Inventory</h2>
+                <p>Brgy. {{ barangay.barangay_name }} · food packs currently on hand</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn-add-warehouse" data-open-modal="bi-distribute">Record Distribution</button>
+            </div>
+        </div>
+
+        <section class="stat-cards stat-cards-3">
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('package', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ "{:,}".format(on_hand) }}</span>
+                <span class="stat-label">Food Packs On Hand</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('download', 18, '#3867d6') }}</div>
+                <span class="stat-value">+{{ "{:,}".format(received) }}</span>
+                <span class="stat-label">Total Received</span>
+                <span class="stat-sub">from validated deliveries</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
+                <span class="stat-value">-{{ "{:,}".format(given_out) }}</span>
+                <span class="stat-label">Given Out</span>
+                <span class="stat-sub">distributed to residents</span>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h3>Movement History</h3>
+                <form method="GET" class="wh-movement-filters">
+                    <select name="type" onchange="this.form.submit()">
+                        <option value="all" {{ 'selected' if type_filter == 'all' }}>All Types</option>
+                        <option value="delivery" {{ 'selected' if type_filter == 'delivery' }}>Received</option>
+                        <option value="distribution" {{ 'selected' if type_filter == 'distribution' }}>Given Out</option>
+                        <option value="damaged_return" {{ 'selected' if type_filter == 'damaged_return' }}>Returned - Damaged</option>
+                        <option value="expired" {{ 'selected' if type_filter == 'expired' }}>Expired</option>
+                    </select>
+                    <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
+                </form>
+            </div>
+            {% for l in logs[:3] %}
+            {{ movement_row(l, delivery_recs) }}
+            {% else %}
+            <p class="empty-note">
+                {% if type_filter != 'all' or date_filter %}No movement matches the selected filters.
+                {% else %}No movement yet. Your inventory grows when you validate a delivery on Relief Monitoring.{% endif %}
+            </p>
+            {% endfor %}
+            {% if logs|length > 3 %}
+            <details class="wh-movement-more">
+                <summary>{{ icon('list', 13) }}
+                    <span class="wh-more-open">View all {{ logs|length }} movements</span>
+                    <span class="wh-more-close">Show fewer</span>
+                </summary>
+                {% for l in logs[3:] %}
+                {{ movement_row(l, delivery_recs) }}
+                {% endfor %}
+            </details>
+            {% endif %}
+        </section>
+
+        <section class="panel wh-table-panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <h3>Food Pack Batches</h3>
+                <span class="rd-sub">Shelf-life tracking per delivery - {{ near_expiry_days }} days or less to expiry is flagged Near Expiry.</span>
+            </div>
+            <table class="wh-table wh-batches-table">
+                <thead>
+                    <tr>
+                        <th>RECEIVED</th><th>EARLIEST EXPIRY</th><th>DAYS LEFT / OVERDUE</th><th>QUANTITY</th><th>CONTENTS</th><th>STATUS</th><th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in batch_rows %}
+                    {% set batch = row.batch %}
+                    {% set days_left = (batch.expiration_date - ph_today()).days %}
+                    <tr>
+                        <td>{{ batch.received_date.strftime('%b %d, %Y') }}</td>
+                        <td>{{ batch.expiration_date.strftime('%b %d, %Y') }}</td>
+                        <td>{% if days_left < 0 %}{{ -days_left }} days overdue{% else %}{{ days_left }} days{% endif %}</td>
+                        <td><strong>{{ "{:,}".format(batch.quantity_remaining) }}</strong></td>
+                        <td>
+                            <div class="wh-batch-contents">
+                                <button type="button" class="wh-batch-toggle" data-batch-toggle aria-expanded="false" data-count="{{ batch.items|length }}">
+                                    <span class="wh-batch-toggle-arrow">{{ icon('chevron-right', 10) }}</span>
+                                    <span class="wh-batch-toggle-label">View contents ({{ batch.items|length }})</span>
+                                </button>
+                                <ul class="wh-batch-list">
+                                    {% for bi in batch.items %}
+                                    {% set item_status = shelf_status_fn(bi.expiration_date) %}
+                                    <li>
+                                        <span class="wh-batch-item-name">{{ bi.label }}</span>
+                                        <span class="wh-batch-item-qty">{{ bi.qty_label }}</span>
+                                        <span class="wh-batch-item-expiry">Expires {{ bi.expiration_date.strftime('%b %d, %Y') }}</span>
+                                        {% if item_status == 'expired' %}<span class="badge-health badge-low wh-batch-item-status">Expired</span>
+                                        {% elif item_status == 'near_expiry' %}<span class="badge-health badge-moderate wh-batch-item-status">Near Expiry</span>
+                                        {% else %}<span class="badge-health badge-healthy wh-batch-item-status">Fresh</span>{% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </td>
+                        <td>
+                            {% if row.shelf_status == 'expired' %}<span class="badge-health badge-low">Expired</span>
+                            {% elif row.shelf_status == 'near_expiry' %}<span class="badge-health badge-moderate">Near Expiry</span>
+                            {% else %}<span class="badge-health badge-healthy">Fresh</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if row.shelf_status == 'expired' %}
+                            <button type="button" class="wh-icon-btn" title="Resolve expired batch" data-open-modal="batch-modal-{{ batch.batch_id }}">{{ icon('external-link', 15, '#2c5aa0') }}</button>
+                            {% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="empty-note" style="text-align:center; padding:28px;">No Food Pack batches recorded yet - batches open automatically whenever Food Packs stock is received.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry reflects whichever component (usually the rice) spoils first - the whole batch is pulled together once it does, since a sealed pack isn't unbundled to save the canned goods.</p>
+        </section>
+
+    </main>
+</div>
+
+<div class="rd-modal-overlay" id="bi-distribute" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header"><h3>Record Distribution</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
+        <form method="POST" action="{{ url_for('barangay.inventory_record') }}" class="settings-form">
+            <div class="form-row">
+                <label for="bi-d-family">Family (optional)</label>
+                <select name="family_id" id="bi-d-family">
+                    <option value="">No specific family / bulk distribution</option>
+                    {% for f in families %}
+                    <option value="{{ f.family_id }}" data-suggested="{{ f.suggested_packs }}">
+                        {{ f.family_name }}{% if f.purok %} · {{ f.purok }}{% endif %}{% if f.head_name %} ({{ f.head_name }}){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="bi-d-amount">Food packs handed out *</label>
+                <input type="number" name="amount" id="bi-d-amount" min="1" max="{{ on_hand }}" required>
+                <span class="form-hint">You have {{ "{:,}".format(on_hand) }} on hand.</span>
+            </div>
+            <div class="form-row">
+                <label for="bi-d-reason">Note (optional)</label>
+                <input type="text" name="reason" id="bi-d-reason" placeholder="e.g. Distributed at evacuation center, Purok 3">
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Record</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resolve expired batch modals -->
+{% for row in batch_rows if row.shelf_status == 'expired' %}
+{% set batch = row.batch %}
+<div class="rd-modal-overlay" id="batch-modal-{{ batch.batch_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Resolve Expired Batch</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('barangay.inventory_resolve_expired_batch', batch_id=batch.batch_id) }}" class="rd-form-roomy">
+            <p class="rd-sub">Expired {{ batch.expiration_date.strftime('%b %d, %Y') }} · received {{ batch.received_date.strftime('%b %d, %Y') }}</p>
+            <label for="bq-{{ batch.batch_id }}">Quantity (packs) *</label>
+            <input type="number" name="quantity" id="bq-{{ batch.batch_id }}" min="1" max="{{ batch.quantity_remaining }}" required>
+            <p class="rd-sub">Currently on record: <strong>{{ "{:,}".format(batch.quantity_remaining) }}</strong> packs</p>
+            <label for="br-{{ batch.batch_id }}">Resolution *</label>
+            <select name="resolution" id="br-{{ batch.batch_id }}" required>
+                <option value="" selected disabled>Select...</option>
+                <option value="disposed">Disposed - written off</option>
+                <option value="fixed">Fixed - replace spoiled item and return to stock</option>
+            </select>
+            <p class="form-hint">Disposed removes these expired packs from the record for good. Fixed replaces whichever component actually spoiled (usually the rice) with fresh stock and returns the pack(s) to the barangay's usable Food Packs stock - the still-good contents keep their original dates.</p>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Resolve</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
+<script>
+(function () {
+    var familySelect = document.getElementById('bi-d-family');
+    var amountInput = document.getElementById('bi-d-amount');
+    if (familySelect && amountInput) {
+        familySelect.addEventListener('change', function () {
+            var opt = familySelect.options[familySelect.selectedIndex];
+            var suggested = opt ? opt.dataset.suggested : '';
+            if (suggested) amountInput.value = suggested;
+        });
+    }
+})();
+</script>
+{% endblock %}

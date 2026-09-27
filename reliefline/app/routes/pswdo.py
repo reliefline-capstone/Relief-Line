@@ -186,6 +186,18 @@ PSWDO_EXCLUDED_NOTIFICATION_TYPES = {
 }
 PSWDO_NOTIFICATION_TYPES = [k for k in NOTIFICATION_META if k not in PSWDO_EXCLUDED_NOTIFICATION_TYPES]
 
+
+def _notification_category_counts(scope):
+    """{category: row count} (plus "all") for a notifications feed's scope -
+    the count badge on each filter tab."""
+    counts = {"all": 0}
+    rows = db.session.query(ActivityLog.action_type, db.func.count()).filter(scope).group_by(ActivityLog.action_type)
+    for action_type, n in rows:
+        counts["all"] += n
+        category = NOTIFICATION_META.get(action_type, DEFAULT_NOTIFICATION_META)["category"]
+        counts[category] = counts.get(category, 0) + n
+    return counts
+
 def _batch_link(log):
     """Stock Request notifications resolve to that batch's detail page."""
     if log.batch_id:
@@ -2581,6 +2593,7 @@ def gis_map_data():
             "from_lat": from_point[0] if from_point else None,
             "from_lng": from_point[1] if from_point else None,
             "to_barangay": d.barangay.barangay_name,
+            "to_barangay_id": d.barangay.barangay_id,
             "to_municipality": d.barangay.city_municipality,
             "to_label": to_label,
             "to_lat": to_point[0] if to_point else None,
@@ -3752,6 +3765,7 @@ def notifications():
 
     unread_count = ActivityLog.query.filter(base_scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(base_scope).count()
+    category_counts = _notification_category_counts(base_scope)
 
     per_page = 10
     all_matching = query.order_by(ActivityLog.created_at.desc()).all()
@@ -3789,6 +3803,7 @@ def notifications():
         total_filtered=total_filtered,
         category_filter=category_filter,
         categories=categories,
+        category_counts=category_counts,
         page=page,
         total_pages=total_pages,
         per_page=per_page,

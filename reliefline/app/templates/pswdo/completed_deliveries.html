@@ -19,13 +19,12 @@
     <main class="dashboard-main">
 
 
-        <div class="rd-breadcrumb">
-            <a href="{{ url_for('pswdo.distribution') }}">{{ icon('arrow-left', 14) }} Distribution Operations</a>
-        </div>
-
         <section class="page-header">
             <div>
-                <h2>Completed Deliveries</h2>
+                <div class="wh-title-row">
+                    <a href="{{ url_for('pswdo.distribution') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+                    <h2>Completed Deliveries</h2>
+                </div>
                 <p>{{ total_delivered }} completed{% if primary_event %} · {{ primary_event.event_name }}{% endif %}</p>
             </div>
             <div class="rr-actions">

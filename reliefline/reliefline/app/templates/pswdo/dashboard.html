@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, prediction_disclaimer with context %}
+
+{% block title %}Dashboard - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'dashboard' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <!-- Main content -->
+    <main class="dashboard-main">
+
+
+        <!-- Greeting banner -->
+        <section class="greeting-banner">
+            <div class="greeting-main">
+                <h2>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }}, {{ current_user.name }}</h2>
+                <div class="banner-forecast-box" data-weather-forecast data-endpoint="{{ url_for('pswdo.dashboard_weather', cities='Lingayen') }}">
+                    <span class="banner-forecast-label skeleton-shimmer-dark">Loading forecast…</span>
+                </div>
+            </div>
+            <div class="banner-aside">
+                <div class="banner-time">
+                    <strong id="live-clock">{{ now.strftime('%I:%M:%S %p') }}</strong>
+                    <span id="live-date">{{ now.strftime('%a, %B') }} {{ now.day }}</span>
+                </div>
+                <div class="banner-weather-live" data-weather-header data-endpoint="{{ url_for('pswdo.dashboard_weather', cities='Lingayen') }}">
+                    <span class="weather-header-loading">Checking conditions…</span>
+                </div>
+                {% if primary_event %}
+                <div class="banner-event-badge" title="Currently active disaster event">
+                    <span class="banner-event-badge-dot"></span>
+                    <span class="banner-event-badge-label">Active Event: {{ primary_event.event_name }}{% if primary_event.weather_condition %} · {{ primary_event.weather_condition }}{% endif %}</span>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Period filter -->
+        <form method="GET" class="dash-period-bar">
+            <div class="dash-period-row">
+                <span class="dash-period-title">{{ icon('sliders', 14) }} FILTER BY PERIOD</span>
+
+                <div class="dash-period-toggle">
+                    <a href="{{ url_for('pswdo.dashboard', period='monthly', month=selected_month or now.month, year=selected_year or now.year) }}" class="dash-period-tab {{ 'is-active' if period == 'monthly' }}">Monthly</a>
+                    <a href="{{ url_for('pswdo.dashboard', period='yearly', year=selected_year or now.year) }}" class="dash-period-tab {{ 'is-active' if period == 'yearly' }}">Yearly</a>
+                </div>
+
+                {% if is_filtered %}
+                <div class="dash-period-date">
+                    {{ icon('calendar', 14) }}
+                    <input type="hidden" name="period" value="{{ period }}">
+                    {% if period == 'monthly' %}
+                    <select name="month" onchange="this.form.submit()">
+                        {% for m in range(1, 13) %}
+                        <option value="{{ m }}" {{ 'selected' if selected_month == m }}>{{ month_names[m - 1] }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    <select name="year" onchange="this.form.submit()">
+                        {% for y in available_years %}
+                        <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <a href="{{ url_for('pswdo.dashboard') }}" class="dash-period-live">Live</a>
+                {% endif %}
+            </div>
+
+            {% if is_filtered %}
+            <p class="dash-period-caption">All data below is based on {% if period == 'monthly' %}{{ selected_month_name }} {% endif %}{{ selected_year }}. Stock figures always stay live.</p>
+            {% endif %}
+        </form>
+
+        <!-- Stat cards -->
+        <section class="stat-cards">
+            <a class="stat-card" href="{{ url_for('pswdo.gis_map') }}">
+                <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
+                <span class="stat-value">{{ active_events|length }}</span>
+                <span class="stat-label">{{ 'Typhoon Events' if is_filtered else 'Active Typhoon' }}</span>
+                <span class="stat-sub">{{ active_events|map(attribute='event_name')|join(' · ') if active_events else 'None' }}</span>
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.gis_map') }}">
+                <div class="stat-icon orange">{{ icon('map-pin', 18, '#e67e22') }}</div>
+                <span class="stat-value">{{ affected_municipalities_count }}</span>
+                <span class="stat-label">Affected Municipalities</span>
+                <span class="stat-sub">Out of {{ total_target_lgus }}</span>
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.gis_map') }}">
+                <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_affected_families) }}</span>
+                <span class="stat-label">Affected Families</span>
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.warehouse_inventory') }}">
+                <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
+                {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot - this is always today's actual figure.">LIVE</span>{% endif %}
+                <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span>
+                <span class="stat-label">Food Packs Available</span>
+                <span class="stat-sub">Across {{ warehouses|length }} warehouses</span>
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.relief_requests') }}">
+                <div class="stat-icon amber">{{ icon('clipboard', 18, '#f39c12') }}</div>
+                <span class="stat-value">{{ pending_requests_count }}</span>
+                <span class="stat-label">Pending Stock Requests</span>
+                <span class="stat-sub">{{ 'Submitted this period, still awaiting approval' if is_filtered else 'Awaiting approval' }}</span>
+            </a>
+            <a class="stat-card" href="{{ url_for('pswdo.warehouse_inventory') }}">
+                <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
+                {% if is_filtered %}<span class="stat-live-tag" title="Warehouse stock has no historical snapshot - this is always today's actual figure.">LIVE</span>{% endif %}
+                <span class="stat-value">{{ low_stock_warehouses|length }}</span>
+                <span class="stat-label">Low Stock Warehouses</span>
+            </a>
+        </section>
+
+        <!-- Weather & Typhoon Watch (live, via app/utils/weather.py) -->
+        <div class="weather-widget" data-weather-widget data-endpoint="{{ url_for('pswdo.dashboard_weather') }}"
+             data-can-declare-events="true"
+             data-active-event-id="{{ primary_event.event_id if primary_event else '' }}"
+             data-active-event-name="{{ primary_event.event_name if primary_event else '' }}"
+             data-declare-url="{{ url_for('pswdo.declare_disaster_event') }}"
+             data-end-url="{{ url_for('pswdo.end_disaster_event', event_id=primary_event.event_id) if primary_event else '' }}">
+            <div class="weather-widget-header">
+                <span class="weather-widget-title">{{ icon('cloud', 16) }} Weather &amp; Typhoon Watch</span>
+            </div>
+            <p class="weather-empty skeleton-shimmer">Loading live weather…</p>
+        </div>
+
+        <!-- Declare Disaster Event modal - see app.routes.pswdo.declare_disaster_event.
+             Opened by static/js/weather_widget.js, either manually via the panel's
+             header button or pre-filled off a live-detected storm. -->
+        <div class="rd-modal-overlay" id="declare-event-modal" hidden>
+            <div class="rd-modal">
+                <div class="rd-modal-header">
+                    <h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Declare Typhoon-Related Event</h3>
+                    <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+                </div>
+                <p class="form-hint">This opens a new active <strong>typhoon-related event</strong> and ties every relief request and allocation to it until you end it. The system is scoped to typhoon response - the specific hazard (flooding, storm surge, strong winds) is recorded per barangay, not as a separate event type.</p>
+                <form method="POST" action="{{ url_for('pswdo.declare_disaster_event') }}" class="settings-form">
+                    <div class="form-row">
+                        <label for="declare-event-name">Event Name *</label>
+                        <input type="text" name="event_name" id="declare-event-name" placeholder="e.g. Typhoon Josie" required>
+                    </div>
+                    <input type="hidden" name="event_type" value="typhoon">
+                    <div class="form-row">
+                        <label for="declare-start-date">Start Date *</label>
+                        <input type="date" name="start_date" id="declare-start-date" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="form-row">
+                        <label for="declare-weather-condition">Weather Condition</label>
+                        <input type="text" name="weather_condition" id="declare-weather-condition" placeholder="e.g. Super Typhoon">
+                    </div>
+                    <div class="rd-modal-actions">
+                        <button type="submit" class="btn-decision btn-partial">{{ icon('cloud-lightning', 16, 'white') }} Declare Event</button>
+                        <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- End Disaster Event confirmation modal - see app.routes.pswdo.end_disaster_event.
+             Opened by static/js/weather_widget.js in place of a native confirm() dialog. -->
+        <div class="rd-modal-overlay" id="end-event-modal" hidden>
+            <div class="rd-modal">
+                <div class="rd-modal-header">
+                    <h3>{{ icon('check-circle', 18, '#0f2547') }} End Disaster Event</h3>
+                    <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+                </div>
+                <p class="form-hint">End "<strong id="end-event-name"></strong>" as the active disaster event? New relief requests and allocations will no longer be tied to it once it's closed out.</p>
+                <div class="rd-modal-actions">
+                    <button type="button" class="btn-decision btn-partial" id="end-event-confirm-btn">{{ icon('check-circle', 16, 'white') }} End Event</button>
+                    <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GIS Map + Pending Stock Requests -->
+        <div class="main-grid dash-grid-even">
+
+            <section class="panel map-panel">
+                <div class="panel-header">
+                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map - Province of Pangasinan</h3>
+                    <div class="map-legend">
+                        <span><i class="legend-dot normal"></i> Low</span>
+                        <span><i class="legend-dot monitoring"></i> Medium</span>
+                        <span><i class="legend-dot needs-assistance"></i> High</span>
+                        <span><i class="legend-dot high-priority"></i> Critical</span>
+                    </div>
+                </div>
+                <div class="map-placeholder-box">
+                    <div id="dashboard-mini-map"></div>
+                    <span class="map-toggle">Province</span>
+                    <a href="{{ url_for('pswdo.gis_map') }}" class="map-fullscreen-btn" title="Open full GIS Map">{{ icon('maximize', 16, '#444') }}</a>
+
+                    <div class="map-legend-box">
+                        <span class="map-legend-title">Municipality Status</span>
+                        <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
+                        <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
+                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
+                        <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
+                        <div class="map-legend-divider"></div>
+                        <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
+                    </div>
+
+                    <div class="map-zoom-wrapper">
+                        <span class="map-zoom-pct" id="dashboard-map-zoom-pct">100%</span>
+                        <div class="map-zoom-controls">
+                            <button type="button" id="dashboard-map-zoom-in" title="Zoom in">{{ icon('plus', 16) }}</button>
+                            <button type="button" id="dashboard-map-zoom-out" title="Zoom out">{{ icon('minus', 16) }}</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel requests-panel">
+                <div class="panel-header">
+                    <h3>Pending Stock Requests</h3>
+                    <span class="badge-count">{{ pending_requests_count }}</span>
+                </div>
+
+                {% for b in pending_requests %}
+                <div class="request-card">
+                    <div class="request-top">
+                        <strong>{{ b.office.area_covered if b.office else '-' }}</strong>
+                    </div>
+                    <span class="request-sub">{{ b.ref }} · {{ "{:,}".format(b.requested_food_packs) }} packs · {{ b.submitted_at.strftime('%b %d') if b.submitted_at }}</span>
+                    <div class="request-actions">
+                        <a href="{{ url_for('pswdo.relief_request_detail', batch_id=b.batch_id) }}" class="btn-approve">{{ icon('check-circle', 14, 'white') }} Review</a>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">No pending stock requests.</p>
+                {% endfor %}
+
+                <a href="{{ url_for('pswdo.relief_requests', status='pending') }}" class="btn-view-all">View All →</a>
+            </section>
+
+        </div>
+
+        <!-- Warehouse Status + Recommendations -->
+        <div class="main-grid dash-grid-even" style="margin-top: 16px;">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>{{ icon('building', 18, '#0f2547') }} Warehouse Status</h3>
+                    <a href="{{ url_for('pswdo.warehouse_inventory') }}" class="link-manage">Manage →</a>
+                </div>
+                {% for w in warehouses %}
+                <a href="{{ url_for('pswdo.warehouse_detail', office_id=w.office.office_id) }}" class="warehouse-status-row">
+                    <div class="warehouse-status-top">
+                        <div class="warehouse-status-name">
+                            <span class="warehouse-status-icon icon-{{ w.health|lower }}">{{ icon('building', 16) }}</span>
+                            <div>
+                                <strong>{{ w.office.office_name }}</strong>
+                                <span>{{ w.office.area_covered }}</span>
+                            </div>
+                        </div>
+                        <div class="warehouse-status-right">
+                            <strong>{{ "{:,}".format(w.food_pack_qty) }}</strong>
+                            <span class="badge-health badge-{{ w.health|lower }}">{{ w.health }}</span>
+                        </div>
+                    </div>
+                    <div class="warehouse-bar">
+                        <div class="warehouse-bar-fill fill-{{ w.health|lower }}" style="width: {{ w.pct if w.pct <= 100 else 100 }}%;"></div>
+                    </div>
+                    <span class="warehouse-status-sub">{{ w.pct|int }}% capacity · {{ "{:,}".format(w.food_pack_qty) }} / {{ "{:,}".format(w.capacity) }} packs</span>
+                </a>
+                {% endfor %}
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Recommendations</h3>
+                    <a href="{{ url_for('pswdo.recommendations_page') }}" class="link-manage">Full view →</a>
+                </div>
+
+                <div class="pa-metrics">
+                    <div class="pa-metric pa-blue">
+                        <span>ESTIMATED NEED</span>
+                        <strong>{{ "{:,}".format(estimated_need) }}</strong>
+                        <span class="pa-sub">food packs</span>
+                    </div>
+                    <div class="pa-metric pa-green">
+                        <span>CURRENT STOCKS</span>
+                        <strong>{{ "{:,}".format(total_food_packs) }}</strong>
+                        <span class="pa-sub">available</span>
+                    </div>
+                    <div class="pa-metric pa-green">
+                        <span>REMAINING</span>
+                        <strong>{{ "{:,}".format(remaining_after_3days) }}</strong>
+                        <span class="pa-sub">after 3 days</span>
+                    </div>
+                </div>
+
+                <div class="pa-burn-row">
+                    <div>
+                        <span class="pa-burn-label">{{ icon('activity', 12) }} BURN RATE</span>
+                        <strong>~{{ burn_rate|int }} packs / day</strong>
+                    </div>
+                    <div class="pa-burn-good">
+                        <span class="pa-burn-label">{{ icon('calendar', 12) }} GOOD FOR</span>
+                        <strong>{% if days_remaining %}{{ days_remaining|int }}+ Days{% else %}N/A{% endif %}</strong>
+                    </div>
+                </div>
+
+                <h4 class="pa-rec-title">SYSTEM RECOMMENDATIONS</h4>
+                {% for rec in recommendations %}
+                <div class="recommendation-row rec-{{ rec.type }}">
+                    {% if rec.type == 'info' %}{{ icon('arrow-right', 14) }}{% elif rec.type == 'warning' %}{{ icon('alert-triangle', 14) }}{% else %}{{ icon('alert-triangle', 14) }}{% endif %}
+                    <div>
+                        <strong>{{ rec.title }}</strong>
+                        <span>{{ rec.detail }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">No recommendations right now - stock levels are healthy.</p>
+                {% endfor %}
+
+                {{ prediction_disclaimer() }}
+            </section>
+
+        </div>
+
+        <!-- Distribution Progress + Recent Activities -->
+        <div class="main-grid dash-grid-even" style="margin-top: 16px;">
+
+            <section class="panel distribution-progress-panel">
+                <div class="panel-header">
+                    <h3>Today's Distribution Progress</h3>
+                    <a href="{{ url_for('pswdo.transfers') }}" class="link-manage">Transfers →</a>
+                </div>
+
+                <div class="progress-summary">
+                    <div class="progress-ring-wrapper">
+                        <svg width="90" height="90" viewBox="0 0 90 90">
+                            <circle cx="45" cy="45" r="38" fill="none" stroke="#eee" stroke-width="8"/>
+                            <circle cx="45" cy="45" r="38" fill="none" stroke="#0f2547" stroke-width="8"
+                                stroke-dasharray="{{ (completion_pct / 100 * 238.76)|round(1) }} 238.76"
+                                stroke-linecap="round" transform="rotate(-90 45 45)"/>
+                        </svg>
+                        <div class="progress-ring-text">
+                            <strong>{{ completion_pct|int }}%</strong>
+                            <span>Complete</span>
+                        </div>
+                    </div>
+                    <div class="progress-stats-grid">
+                        <div><strong>{{ municipalities_served }}</strong><span>Municipalities Served</span></div>
+                        <div><strong class="text-green">{{ "{:,}".format(total_released_today) }}</strong><span>Food Packs Released</span></div>
+                        <div><strong class="text-amber">{{ vehicles_active }}</strong><span>Vehicles Active</span></div>
+                        <div><strong>{{ "{:,}".format(packs_remaining) }}</strong><span>Packs Remaining</span></div>
+                    </div>
+                </div>
+
+                <h4 class="pa-rec-title">BY MUNICIPALITY</h4>
+                {% for m in by_municipality %}
+                {% set pct = (m.released / m.allocated * 100) if m.allocated > 0 else 0 %}
+                <div class="municipality-row">
+                    <div class="municipality-row-top">
+                        <span>{{ m.lgu }}</span>
+                        <span>{{ "{:,}".format(m.released) }} / {{ "{:,}".format(m.allocated) }} <strong class="municipality-pct">({{ pct|round|int }}%)</strong></span>
+                    </div>
+                    <div class="municipality-bar">
+                        <div class="municipality-bar-fill {{ 'bar-low' if pct < 30 else ('bar-mid' if pct < 70 else 'bar-high') }}" style="width: {{ pct }}%;"></div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">No distribution data yet.</p>
+                {% endfor %}
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Recent Activities</h3>
+                    <span class="panel-date">{{ now.strftime('%B') }} {{ now.day }}, {{ now.strftime('%Y') }}</span>
+                </div>
+                {% for act in recent_activities %}
+                <div class="activity-row">
+                    <div class="activity-icon">{{ icon('check-circle', 14, '#27ae60') }}</div>
+                    <div>
+                        <span class="activity-time">{{ act.created_at.strftime('%H:%M') }}</span>
+                        <span class="activity-desc">{{ act.description }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-note">No recent activity.</p>
+                {% endfor %}
+            </section>
+
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+window.RELIEFLINE_GIS_MAP_URL = "{{ url_for('pswdo.gis_map') }}";
+window.RELIEFLINE_DASHBOARD_EVENT_ID = {{ map_event_id if map_event_id else 'null' }};
+window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
+</script>
+<script src="{{ url_for('static', filename='js/dashboard_map.js') }}?v={{ asset_version('js/dashboard_map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
+<script src="{{ url_for('static', filename='js/weather_widget.js') }}?v={{ asset_version('js/weather_widget.js') }}"></script>
+<script>
+(function () {
+    var clockEl = document.getElementById('live-clock');
+    var dateEl = document.getElementById('live-date');
+    if (!clockEl || !dateEl) return;
+
+    var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'];
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function tick() {
+        var now = new Date();
+        var hours24 = now.getHours();
+        var period = hours24 >= 12 ? 'PM' : 'AM';
+        var hours12 = hours24 % 12 || 12;
+        clockEl.textContent = pad(hours12) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()) + ' ' + period;
+        dateEl.textContent = weekdays[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+    }
+
+    tick();
+    setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% from "_macros.html" import icon with context %}
+<!-- Breadcrumb -->
+{% if crumbs %}
+<nav class="wh-breadcrumb">
+    {% for crumb in crumbs %}
+        {% if crumb.url %}
+        <a href="{{ crumb.url }}">{% if loop.first %}<span class="wh-breadcrumb-back">{{ icon('chevron-down', 14) }}</span>{% endif %}{{ crumb.label }}</a>
+        <span class="wh-breadcrumb-sep">/</span>
+        {% else %}
+        <span class="wh-breadcrumb-current">{{ crumb.label }}</span>
+        {% if crumb.status %}<span class="wh-breadcrumb-status"><i class="wh-status-dot wh-status-dot-{{ crumb.status|lower }}"></i> {{ crumb.status }}</span>{% endif %}
+        {% endif %}
+    {% endfor %}
+</nav>
+{% endif %}

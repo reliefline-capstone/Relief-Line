@@ -50,14 +50,14 @@
 .notification-item-body { flex: 1; min-width: 0; }
 .notification-item-top {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
-    flex-wrap: wrap;
 }
-.notification-item-desc { font-size: 13.5px; color: #1a1a1a; }
+.notification-item-desc { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.45; color: #1a1a1a; }
 .notification-item.unread .notification-item-desc { font-weight: 600; }
 .unread-dot {
     width: 7px; height: 7px;
+    margin-top: 6px; /* centers on the first line of the description */
     border-radius: 50%;
     background: #5347ce;
     flex-shrink: 0;

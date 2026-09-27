@@ -25,12 +25,14 @@
             </div>
         </section>
 
-        <div class="notif-filter-tabs">
+        <nav class="page-tabs">
             {% for cat in categories %}
             <a href="{{ url_for('cswdo.notifications', category=cat.value) }}"
-               class="notif-filter-tab {{ 'active' if category_filter == cat.value }}">{{ cat.label }}</a>
+               class="page-tab {{ 'active' if category_filter == cat.value }}">
+                {{ cat.label }} <span class="page-tab-badge">{{ category_counts.get(cat.value, 0) }}</span>
+            </a>
             {% endfor %}
-        </div>
+        </nav>
 
         <section class="panel">
             <div class="notif-panel-header">

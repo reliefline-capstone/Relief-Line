@@ -629,4 +629,19 @@
    high/medium/low/unrated set is defined in dashboard.css, which every page
    using this also links. Only the extra aliases are needed here. */
 .badge-priority.tier-moderate { background: #fef5e3; color: #d68910; }
-.badge-priority.tier-none { background: #f0f2f6; color: #8a94a6; }
+.badge-priority.tier-none { background: #f0f2f6; color: #8a94a6; }
+/* "New" tag beside a stock request awaiting PSWDO review (see
+   ReliefRequestBatch.is_new). .da-new-badge uses the same look. */
+.badge-new {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 7px;
+    border-radius: 8px;
+    background: #5347ce;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    vertical-align: middle;
+}

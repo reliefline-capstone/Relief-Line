@@ -71,7 +71,7 @@
                 <tbody>
                     {% for b in rows %}
                     <tr>
-                        <td>{{ b.ref }}</td>
+                        <td>{{ b.ref }}{% if b.is_new %} <span class="badge-new">New</span>{% endif %}</td>
                         <td>{{ b.office.area_covered if b.office else '-' }}</td>
                         <td>{{ b.event.event_name if b.event else '-' }}</td>
                         <td><strong>{{ "{:,}".format(b.requested_food_packs) }}</strong></td>

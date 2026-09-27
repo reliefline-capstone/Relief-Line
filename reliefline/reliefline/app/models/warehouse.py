@@ -1,0 +1,76 @@
+from app.extensions import db
+
+class WarehouseInventory(db.Model):
+    __tablename__ = "warehouse_inventory"
+
+    inventory_id = db.Column(db.Integer, primary_key=True)
+    office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=False)
+    # "food_pack" is a reserved key - the predictive/allocation pipeline and burn-rate
+    # math key off it specifically. Any other slug (e.g. "rice_50kg") is a free-form
+    # warehouse stock-monitoring line item with no predictive model behind it.
+    item_type = db.Column(db.String(50), nullable=False)
+    item_name = db.Column(db.String(100), nullable=False, default="Food Packs")
+    unit = db.Column(db.String(20), nullable=False, default="packs")
+    quantity_available = db.Column(db.Integer, default=0)
+    min_stock_level = db.Column(db.Integer, default=0)
+    # Only set for non-Food-Pack items the user marked as perishable when adding
+    # them (Food Packs track expiry per batch/component instead).
+    expiration_date = db.Column(db.Date, nullable=True)
+    updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
+
+    office = db.relationship("Office", backref="inventory_items")
+
+
+class WarehouseStockLog(db.Model):
+    """Manual stock adjustments (Add Stock / Update Stock) - feeds the 'Received'
+    entries in the Stock Movement history, distinct from releases and transfers.
+
+    source_type/donor_name give the manuscript's "tracks incoming relief supplies
+    including special donations from external agencies" (Chapter 1 - Purpose and
+    Description) a structured field instead of leaving it to the free-text reason
+    alone. Per the Scope and Limitations section, this is stock-visibility
+    metadata only - donation supplies are still counted as ordinary warehouse
+    stock for allocation/pre-positioning math; only their provenance is tagged,
+    and distribution routing stays outside the system's control either way.
+    """
+    __tablename__ = "warehouse_stock_logs"
+
+    log_id = db.Column(db.Integer, primary_key=True)
+    office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=False)
+    item_type = db.Column(db.String(50), nullable=False)
+    item_name = db.Column(db.String(100), nullable=False)
+    delta = db.Column(db.Integer, nullable=False)
+    reason = db.Column(db.String(255), nullable=True)
+    # "standard" covers provincial supply, transfers-in, and any other routine
+    # restock; "donation" is a special relief supply from an external agency
+    # (NGO, LGU partner, private donor). donor_name is only meaningful when
+    # source_type="donation" - NULL otherwise. "returned_damaged" is system-
+    # generated only (see app.routes.barangay._return_damaged_packs) when a
+    # barangay confirms a delivery with damaged packs - those packs come back
+    # into this office's warehouse under the "food_pack_damaged" item_type,
+    # never mixed into the "food_pack" figure the allocation/prediction
+    # pipeline reads. "expired" is system-generated only (see
+    # app.routes.pswdo._sync_food_pack_batches) when a FoodPackBatch passes
+    # its expiration_date - moved into the separate "food_pack_expired"
+    # item_type, kept apart from "food_pack_damaged" so the cause stays
+    # distinguishable.
+    source_type = db.Column(db.Enum("standard", "donation", "returned_damaged", "expired"), nullable=False,
+                             default="standard", server_default="standard")
+    donor_name = db.Column(db.String(150), nullable=True)
+    updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+
+    office = db.relationship("Office", backref="stock_logs")
+    updated_by_user = db.relationship("User", foreign_keys=[updated_by])
+
+    @property
+    def is_donation(self):
+        return self.source_type == "donation"
+
+    @property
+    def is_damaged_return(self):
+        return self.source_type == "returned_damaged"
+
+    @property
+    def is_expired(self):
+        return self.source_type == "expired"

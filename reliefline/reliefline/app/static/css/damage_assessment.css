@@ -1,0 +1,527 @@
+/* Municipality summary quick bar (Overview tab) */
+.da-summary-bar {
+    background: #efedfd;
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.da-summary-bar-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #5347ce;
+}
+
+.da-summary-item span { display: block; font-size: 10px; color: #8579c8; letter-spacing: 0.3px; }
+.da-summary-item strong { font-size: 15px; color: #5347ce; }
+
+.da-summary-pill {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fef5e3;
+    color: #b7791f;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+}
+
+/* Alert banners (Pending / Verified tabs) */
+.da-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.da-banner-warning { background: #fef5e3; color: #7d5a12; }
+.da-banner-success { background: #e8faf0; color: #1e8449; display: flex; justify-content: space-between; align-items: center; }
+.da-banner-success span { display: inline-flex; align-items: center; gap: 6px; }
+.da-banner-success a { color: #1e8449; font-weight: 700; text-decoration: underline; }
+.da-banner strong { font-weight: 700; }
+
+/* Filter bar (Barangay Reports tab) */
+.da-filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.da-filter-bar input[type="text"],
+.da-filter-bar select {
+    border: 1px solid #e3e4ec;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    background: white;
+}
+
+.da-filter-bar input[type="text"] { flex: 1; min-width: 220px; }
+.da-filter-count { margin-left: auto; font-size: 12px; color: #8a94a6; }
+
+/* Generic data table */
+.da-table-wrap {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* overflow: hidden above clips the rounded corners but also - on a phone,
+   where .da-table is wider than the viewport - clipped away every column
+   that didn't fit, with no way to reach them. Let it scroll horizontally
+   below the width tables actually need to fit unclipped. */
+@media (max-width: 900px) {
+    .da-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+.da-table { width: 100%; border-collapse: collapse; }
+
+.da-table thead th {
+    text-align: left;
+    font-size: 10.5px;
+    letter-spacing: 0.4px;
+    color: #8a94a6;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f2f6;
+}
+
+.da-table tbody td {
+    padding: 14px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid #eceef4;
+    vertical-align: middle;
+}
+
+.da-table tbody tr:last-child td { border-bottom: none; }
+.da-table .da-barangay-name { font-weight: 700; color: #1a1a1a; }
+
+/* Queue tab mixes fresh submissions (status="pending", never reviewed
+   yet) with reports CSWDO already reviewed once and sent back
+   (status="returned", now waiting on the barangay) - both show a
+   "Status" badge, but nothing set the truly-new one apart at a glance.
+   This tints the whole row and tags the ref with a small badge, using
+   the same amber as .badge-status.status-pending so it reads as an
+   extension of that status rather than a clashing new color. */
+.da-table tbody tr.da-row-new { background: #fffaf1; }
+.da-table tbody tr.da-row-new:hover { background: #fef3e0; }
+.da-table tbody tr.da-row-new td:first-child { box-shadow: inset 3px 0 0 #d68910; }
+
+.da-new-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 7px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #d68910;
+    color: white;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.da-table-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+.btn-view-sm, .btn-review-sm {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    /* Matches .btn-view's padding/line-height (relief_requests.css) exactly -
+       this class is also declared there with different padding and no
+       line-height, and since both files load on the same barangay report
+       list page, the two partial declarations were mixing into a box a
+       couple pixels shorter than its .btn-view sibling in the same
+       actions cell. */
+    line-height: 1.4;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.btn-view-sm { border: 1px solid #e3e4ec; background: white; color: #333; }
+.btn-view-sm:hover { background: #f4f4fb; }
+.btn-review-sm { background: #5347ce; color: white; }
+.btn-review-sm:hover { background: #3f34a0; }
+
+/* Municipality Summary tab */
+.da-summary-header {
+    background: linear-gradient(135deg, #5347ce, #4436b4);
+    color: white;
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 16px;
+}
+
+.da-summary-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.da-summary-header-label { font-size: 10.5px; letter-spacing: 0.5px; opacity: 0.7; }
+.da-summary-header h2 { font-size: 22px; margin: 4px 0; }
+.da-summary-header-sub { font-size: 12px; opacity: 0.8; display: flex; align-items: center; gap: 6px; }
+.da-summary-header-ratio { text-align: right; }
+.da-summary-header-ratio span { display: block; font-size: 10.5px; opacity: 0.7; }
+.da-summary-header-ratio strong { font-size: 26px; }
+
+.da-progress-label { font-size: 10.5px; opacity: 0.7; margin-bottom: 6px; }
+.da-progress-track { height: 8px; background: rgba(255,255,255,0.18); border-radius: 4px; overflow: hidden; }
+.da-progress-fill { height: 100%; background: white; }
+
+.da-flood-distribution-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.da-flood-box {
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+}
+
+.da-flood-box .status-dot { display: inline-block; margin: 0 auto 8px; }
+.da-flood-box strong { display: block; font-size: 22px; margin-bottom: 2px; }
+.da-flood-box span { font-size: 11px; color: #8a94a6; }
+
+.da-flood-box.tier-critical { background: #fdecea; }
+.da-flood-box.tier-critical strong { color: #c0392b; }
+.da-flood-box.tier-high { background: #fdf0e4; }
+.da-flood-box.tier-high strong { color: #b7591f; }
+.da-flood-box.tier-medium { background: #fef5e3; }
+.da-flood-box.tier-medium strong { color: #d68910; }
+.da-flood-box.tier-low { background: #e8faf0; }
+.da-flood-box.tier-low strong { color: #1e8449; }
+
+.da-cta-banner {
+    background: #efedfd;
+    border: 1px solid #d6d1f4;
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.da-cta-banner strong { display: block; color: #5347ce; font-size: 13px; margin-bottom: 2px; }
+.da-cta-banner span { font-size: 12px; color: #556; }
+
+/* Modal */
+.da-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(83, 71, 206, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Same reasoning as .rd-modal-overlay (relief_request_detail.css): pages
+       using this modal (e.g. cswdo/dashboard.html) can have a Leaflet map
+       whose internal panes run up to z-index 700 with no isolating stacking
+       context, so a low z-index here could render underneath it. */
+    z-index: 2000;
+    padding: 20px;
+}
+
+.da-modal-overlay[hidden] { display: none; }
+
+.da-modal {
+    background: white;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 640px;
+    /* /--ui-scale - see .dashboard-layout zoom in base.css. */
+    max-height: calc(90vh / var(--ui-scale));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalPopIn 0.18s ease-out both;
+}
+
+.da-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 18px 22px;
+    border-bottom: 1px solid #f0f2f6;
+}
+
+.da-modal-title { display: flex; gap: 12px; }
+.da-modal-title strong { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.da-modal-sub { display: block; font-size: 11.5px; color: #8a94a6; margin-top: 3px; }
+
+.da-modal-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.da-modal-icon.status-pending { background: #fef5e3; color: #d68910; }
+.da-modal-icon.status-verified { background: #e8faf0; color: #1e8449; }
+.da-modal-icon.status-returned { background: #fdecea; color: #c0392b; }
+
+.da-modal-close { background: none; padding: 4px; color: #8a94a6; }
+.da-modal-close:hover { color: #1a1a1a; }
+
+.da-modal-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 22px;
+    border-bottom: 1px solid #f0f2f6;
+}
+
+.da-modal-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    padding: 12px 6px;
+    margin-right: 20px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #8a94a6;
+    border-bottom: 2px solid transparent;
+}
+
+.da-modal-tab.active { color: #5347ce; border-bottom-color: #5347ce; }
+
+.da-modal-body { padding: 20px 22px; overflow-y: auto; flex: 1; }
+.da-modal-pane { display: none; }
+.da-modal-pane.active { display: block; }
+
+.da-data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.da-data-field {
+    border: 1px solid #eef0f4;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.da-data-field span { display: block; font-size: 10px; letter-spacing: 0.3px; color: #8a94a6; margin-bottom: 4px; }
+.da-data-field strong { font-size: 14px; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
+
+.da-evidence-label {
+    display: block;
+    font-size: 10.5px;
+    letter-spacing: 0.3px;
+    color: #8a94a6;
+    margin-bottom: 10px;
+}
+
+.da-evidence-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.da-evidence-chip {
+    width: 100px;
+    background: #efedfd;
+    border-radius: 8px;
+    padding: 14px 8px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.da-evidence-chip span {
+    font-size: 10px;
+    color: #556;
+    word-break: break-all;
+}
+
+/* .da-remarks-box now lives in dashboard.css - every page using it loads
+   that stylesheet, which wasn't true of relief_request_detail.html. */
+
+.da-verification-record {
+    display: flex;
+    gap: 10px;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    margin-top: 4px;
+}
+
+.da-verification-record strong { display: block; margin-bottom: 3px; }
+.da-verification-record.status-verified { background: #e8faf0; color: #1e8449; }
+.da-verification-record.status-returned { background: #fdecea; color: #c0392b; }
+
+.da-verify-section { border-top: 1px dashed #e6e7ef; padding-top: 16px; margin-top: 4px; }
+.da-verify-section h4 { font-size: 13px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+
+.da-verify-section label {
+    display: block;
+    font-size: 11.5px;
+    color: #8a94a6;
+    margin-bottom: 6px;
+}
+
+.da-verify-section textarea {
+    width: 100%;
+    border: 1px solid #e3e4ec;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    resize: vertical;
+    min-height: 64px;
+    margin-bottom: 14px;
+}
+
+.da-verify-actions { display: flex; gap: 10px; }
+
+.btn-return, .btn-verify {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.btn-return { border: 1px solid #f3c9c2; background: white; color: #c0392b; }
+.btn-return:hover { background: #fdecea; }
+.btn-verify { background: #1e8449; color: white; }
+.btn-verify:hover { background: #196b3b; }
+
+.da-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 22px;
+    border-top: 1px solid #f0f2f6;
+    font-size: 11.5px;
+    color: #8a94a6;
+}
+
+/* Barangay Reports review modal - single-column body that reads top to bottom
+   and simply scrolls when it runs long (.rd-modal already caps height and sets
+   overflow-y). The decision-support numbers sit in a compact 2×2 grid rather
+   than a tall centered stack. */
+.rd-modal.rr-review-modal { max-width: 600px; }
+
+.rr-review-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 4px;
+}
+.rr-review-body > div { min-width: 0; }
+
+.rr-review-details .rd-info-grid { gap: 12px 18px; }
+
+.rr-review-decision {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Decision-support figures: 2×2 grid of left-aligned cells, hairline dividers
+   from the container colour showing through the 1px gap. */
+.rr-review-decision .rd-amount-tile {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    padding: 0;
+    background: #e6e7ef;
+    overflow: hidden;
+}
+.rr-review-decision .rd-amount-tile > div {
+    background: #f4f4fb;
+    padding: 12px 14px;
+    text-align: left;
+}
+.rr-review-decision .rd-amount-tile > div > span:first-child {
+    display: block;
+    font-size: 11px;
+    color: #8a94a6;
+    margin-bottom: 3px;
+}
+.rr-review-decision .rd-amount-tile strong { display: block; font-size: 18px; margin: 0; }
+.rr-review-decision .rd-amount-tile .rd-sub { display: block; margin-top: 2px; }
+/* Allocation confirmation strip: info on the left, a real "Track delivery"
+   button on the right (was a bare "track it →" text link). */
+.rr-review-decision .rd-decision-summary {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #edf7f0;
+    border: 1px solid #cfe9d9;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+.rr-allocation-info { display: flex; align-items: flex-start; gap: 10px; }
+.rr-allocation-info svg { flex-shrink: 0; margin-top: 1px; }
+.rr-allocation-info strong { display: block; font-size: 13.5px; }
+.rr-allocation-info span { display: block; font-size: 12px; color: #55606f; margin-top: 2px; }
+.rr-allocation-track {
+    flex-shrink: 0;
+    text-decoration: none;
+    border-color: #cfe9d9;
+    background: #fff;
+    color: #1e8449;
+}
+.rr-allocation-track:hover { background: #f4fbf7; }
+.rr-review-decision .settings-form { gap: 14px; }
+.rr-review-decision .settings-form textarea { min-height: 56px; }
+
+.rd-modal.rr-review-modal .rr-review-actions { margin-top: 18px; flex-wrap: wrap; }
+.rd-modal.rr-review-modal .rr-review-actions .btn-decision { min-width: 140px; }
+.rd-modal.rr-review-modal > .rr-review-foot-hint { margin: 12px 0 0; }
+
+@media (max-width: 700px) {
+    .da-data-grid { grid-template-columns: 1fr; }
+    .da-flood-distribution-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-cards-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rr-review-body { gap: 16px; }
+    .rr-review-decision .rd-amount-tile { grid-template-columns: 1fr; }
+}
+
+/* Affected-families chips in the report review modal - mirrors
+   .fam-badge in barangay.css (Family Profiles checklist). */
+.fam-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    background: #eef1f6; color: #5a6472; white-space: nowrap;
+}

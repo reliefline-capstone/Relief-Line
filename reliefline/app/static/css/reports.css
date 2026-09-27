@@ -129,6 +129,25 @@
 }
 .rpt-table tbody tr:nth-child(even) { background: #f9f9fd; }
 
+/* Report document preview: fit wide reports (up to 11 columns) inside the
+   page instead of running off the right edge behind a horizontal scroll -
+   long headers wrap onto two lines, cells are tighter, and short values
+   (IDs like RR-2026-082, dates, numbers) stay on one line rather than
+   breaking at every hyphen. */
+.rpt-document .rpt-table { font-size: 12px; }
+.rpt-document .rpt-table th {
+    white-space: normal;
+    font-size: 10px;
+    letter-spacing: 0;
+    line-height: 1.25;
+    padding: 9px 6px;
+    vertical-align: bottom;
+}
+.rpt-document .rpt-table td { padding: 9px 6px; }
+/* Set in report_view.html on single-word cells (IDs, numbers) and ones of
+   12 characters or fewer (dates like "Sep 14, 2026"). */
+.rpt-document .rpt-table td.rpt-nowrap { white-space: nowrap; }
+
 .format-tag {
     font-size: 11px;
     font-weight: 700;
@@ -298,17 +317,52 @@
 .rpt-notes strong { color: #5347ce; display: block; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.3px; }
 .rpt-notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 
+/* Official LGU letterhead (_report_letterhead.html): centered
+   Republic / Province / City-Municipality / Barangay lines, the issuing
+   office, then the document title and its details. Plain black-on-white so
+   it reads the same on screen, on paper and photocopied. */
+.rpt-lh {
+    text-align: center;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #1a1a1a;
+    margin-bottom: 18px;
+    color: #1a1a1a;
+}
+.rpt-lh-lines { display: flex; flex-direction: column; font-size: 12.5px; line-height: 1.45; }
+.rpt-lh-lgu { font-weight: 700; }
+.rpt-lh-office { margin-top: 6px; font-size: 14px; font-weight: 800; letter-spacing: 0.4px; }
+.rpt-lh-title {
+    text-align: center;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #1a1a1a;
+    margin: 0 0 12px;
+}
+.rpt-lh-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 4px 20px;
+    margin: 0 0 16px;
+    font-size: 12.5px;
+}
+.rpt-lh-meta div { display: flex; gap: 6px; }
+.rpt-lh-meta dt { color: #555; font-weight: 600; white-space: nowrap; }
+.rpt-lh-meta dd { margin: 0; color: #1a1a1a; font-weight: 700; }
+
+/* Signatories (_report_signatures.html): "Prepared By:" label, the name
+   (uppercase, bold) sitting on the line, position underneath. Column count
+   is set inline from the number of signatories. */
 .rpt-signatures {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-top: 40px;
-    text-align: center;
+    gap: 28px;
+    margin-top: 44px;
 }
-.rpt-signatures div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.rpt-sig-line { width: 100%; border-top: 1px solid #999; margin-bottom: 6px; }
-.rpt-signatures strong { font-size: 12.5px; color: #1a1a1a; }
-.rpt-signatures span { font-size: 11.5px; color: #8a94a6; }
+.rpt-sig { display: flex; flex-direction: column; min-width: 0; }
+.rpt-sig-label { font-size: 12px; color: #1a1a1a; margin-bottom: 30px; }
+.rpt-sig-name { font-size: 12.5px; font-weight: 800; color: #1a1a1a; text-align: center; min-height: 1.2em; }
+.rpt-sig-line { width: 100%; border-top: 1px solid #1a1a1a; margin: 2px 0 3px; }
+.rpt-sig-position { font-size: 11.5px; color: #333; text-align: center; }
 
 .rpt-doc-footer {
     text-align: center;
@@ -318,9 +372,33 @@
 }
 
 @media print {
-    .sidebar, .topbar, .rpt-filterbar, .rpt-export-row, .wh-breadcrumb, .flash-messages { display: none !important; }
-    .dashboard-main { margin: 0 !important; padding: 0 !important; }
-    .rpt-document { box-shadow: none !important; padding: 0 !important; }
+    .rpt-filterbar, .rpt-export-row { display: none !important; }
+    .rpt-document { box-shadow: none !important; padding: 0 !important; border-radius: 0; }
+
+    /* Tables: never scroll-clip or overflow the page - wrap instead, keep
+       rows whole, and repeat the header row on every page. */
+    .rpt-table-wrap { overflow: visible !important; }
+    .rpt-table { font-size: 10.5px; table-layout: auto; }
+    /* Wrap between words only - never mid-word ("Submitte-d") or at every
+       hyphen of an ID; IDs/dates/numbers (td.rpt-nowrap) stay on one line. */
+    .rpt-table th,
+    .rpt-table td {
+        padding: 5px 6px;
+        white-space: normal !important;
+        word-break: normal;
+        overflow-wrap: normal;
+        border: 1px solid #999;
+    }
+    .rpt-table td.rpt-nowrap { white-space: nowrap !important; }
+    .rpt-table thead { display: table-header-group; }
+    .rpt-table thead tr { background: #e8e8e8 !important; }
+    .rpt-table thead th { color: #1a1a1a !important; font-size: 9.5px; }
+    .rpt-table tr { break-inside: avoid; }
+    .rpt-table tbody tr:nth-child(even) { background: none; }
+    .rpt-status-pill { padding: 0; background: none !important; color: #1a1a1a !important; font-weight: 600; }
+
+    .rpt-signatures, .rpt-notes { break-inside: avoid; }
+    .rpt-lh-meta { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Distribution announcement print sheet (print_family_list.html) - a blank

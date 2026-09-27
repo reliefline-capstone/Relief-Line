@@ -1,0 +1,20 @@
+{# Official LGU letterhead for printable documents (see
+   report_data.build_letterhead). Expects `lh` (letterhead dict),
+   `doc_title`, and `doc_meta` - a list of (label, value) pairs shown
+   under the title. #}
+<header class="rpt-lh">
+    <div class="rpt-lh-lines">
+        {% for line in lh.lines %}<span class="{{ 'rpt-lh-lgu' if loop.index > 2 }}">{{ line }}</span>{% endfor %}
+    </div>
+    <div class="rpt-lh-office">{{ lh.office|upper }}</div>
+</header>
+
+<h2 class="rpt-lh-title">{{ doc_title|upper }}</h2>
+
+{% if doc_meta %}
+<dl class="rpt-lh-meta">
+    {% for label, value in doc_meta %}
+    <div><dt>{{ label }}:</dt><dd>{{ value }}</dd></div>
+    {% endfor %}
+</dl>
+{% endif %}

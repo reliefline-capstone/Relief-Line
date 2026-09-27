@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Warehouse Management - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}?v={{ asset_version('css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v={{ asset_version('css/admin.css') }}">
+<style>
+    .confirm-modal { max-width: 400px; text-align: center; }
+    .confirm-modal-icon {
+        width: 48px; height: 48px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 14px;
+    }
+    .confirm-modal h3 { font-size: 17px; color: #0f2547; margin-bottom: 6px; }
+    .confirm-modal p { font-size: 13px; color: #5b6472; line-height: 1.55; margin-bottom: 18px; }
+    .confirm-modal .rd-modal-actions { margin-top: 0; }
+    #confirm-modal[data-tone="danger"] .confirm-modal-icon { background: #fdecea; color: #c0392b; }
+    #confirm-modal[data-tone="success"] .confirm-modal-icon { background: #e8faf0; color: #1e8449; }
+    #confirm-modal[data-tone="danger"] [data-confirm-ok] { background: #c0392b; }
+    #confirm-modal[data-tone="danger"] [data-confirm-ok]:hover { background: #a53125; }
+    #confirm-modal[data-tone="success"] [data-confirm-ok] { background: #1e8449; }
+    #confirm-modal[data-tone="success"] [data-confirm-ok]:hover { background: #196f3d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'offices' %}
+    {% include "admin/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <section class="page-header">
+            <div>
+                <h2>Warehouse Management</h2>
+                <p>{{ rows|length }} registered warehouse{{ 's' if rows|length != 1 }} and their assignments</p>
+            </div>
+            <button type="button" class="btn-add-warehouse" data-open-modal="add-office-modal">{{ icon('plus', 14, 'white') }} Add Warehouse</button>
+        </section>
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table">
+                <thead>
+                    <tr>
+                        <th>WAREHOUSE NAME</th>
+                        <th>CODE</th>
+                        <th>TYPE</th>
+                        <th>LOCATION</th>
+                        <th>WAREHOUSE MANAGER</th>
+                        <th>USERS</th>
+                        <th>STATUS</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    {% set office = row.office %}
+                    <tr>
+                        <td><strong>{{ office.office_name }}</strong></td>
+                        <td><span class="badge-module mod-blue">{{ row.code }}</span></td>
+                        <td>{{ row.type_label }}</td>
+                        <td>{{ office.area_covered }}</td>
+                        <td>{{ office.manager_name or '-' }}</td>
+                        <td>{{ row.user_count }}</td>
+                        <td><span class="badge-status-pill {{ 'is-active' if office.is_active else 'is-inactive' }}">{{ 'Active' if office.is_active else 'Inactive' }}</span></td>
+                        <td>
+                            <div class="admin-row-actions">
+                                <button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-office-modal-{{ office.office_id }}">Edit</button>
+                                <form method="POST" action="{{ url_for('admin.toggle_office_active', office_id=office.office_id) }}">
+                                    <button type="button" class="admin-btn {{ 'admin-btn-danger' if office.is_active else 'admin-btn-success' }}"
+                                            data-open-modal="confirm-modal"
+                                            data-confirm-trigger
+                                            data-confirm-tone="{{ 'danger' if office.is_active else 'success' }}"
+                                            data-confirm-title="{{ 'Deactivate' if office.is_active else 'Activate' }} warehouse?"
+                                            data-confirm-message="{{ office.office_name }} will {{ 'be hidden from stock operations and dashboards' if office.is_active else 'be restored to active status' }}."
+                                            data-confirm-label="{{ 'Deactivate' if office.is_active else 'Activate' }}">{{ 'Deactivate' if office.is_active else 'Activate' }}</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="empty-note" style="text-align:center; padding:30px;">No warehouses registered yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+
+<!-- Add Warehouse modal -->
+<div class="rd-modal-overlay" id="add-office-modal" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('plus', 18, '#0f2547') }} Add Warehouse</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.add_office') }}" class="settings-form">
+            <div class="form-row">
+                <label for="add-office-name">Warehouse Name *</label>
+                <input type="text" name="office_name" id="add-office-name" placeholder="e.g. Calasiao Municipal Social Welfare and Development Office" required>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-office-type">Warehouse Type *</label>
+                    <select name="office_type" id="add-office-type" required>
+                        <option value="cswdo">CSWDO / MSWDO</option>
+                        <option value="pswdo">PSWDO / Warehouse</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="add-area-covered">Area Covered *</label>
+                    <input type="text" name="area_covered" id="add-area-covered" placeholder="e.g. Calasiao" required>
+                </div>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-capacity">Food Pack Capacity</label>
+                    <input type="number" name="capacity_food_pack" id="add-capacity" min="0" value="20000">
+                </div>
+                <div>
+                    <label for="add-fp-min">Food Pack Minimum Stock Level</label>
+                    <input type="number" name="food_pack_min_stock" id="add-fp-min" min="0" value="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="add-full-address">Full Address</label>
+                <input type="text" name="full_address" id="add-full-address">
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-manager">Warehouse Manager</label>
+                    <input type="text" name="manager_name" id="add-manager">
+                </div>
+                <div>
+                    <label for="add-contact">Contact Number</label>
+                    <input type="text" name="contact_number" id="add-contact">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="add-office-email">Email</label>
+                <input type="email" name="email" id="add-office-email">
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Add Warehouse</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Warehouse modals (one per row) -->
+{% for row in rows %}
+{% set office = row.office %}
+<div class="rd-modal-overlay" id="edit-office-modal-{{ office.office_id }}" hidden>
+    <div class="rd-modal">
+        <div class="rd-modal-header">
+            <h3>Edit: {{ office.office_name }}</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.edit_office', office_id=office.office_id) }}" class="settings-form">
+            <div class="form-row">
+                <label for="edit-office-name-{{ office.office_id }}">Warehouse Name *</label>
+                <input type="text" name="office_name" id="edit-office-name-{{ office.office_id }}" value="{{ office.office_name }}" required>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-office-type-{{ office.office_id }}">Warehouse Type *</label>
+                    <select name="office_type" id="edit-office-type-{{ office.office_id }}" required>
+                        <option value="cswdo" {{ 'selected' if office.office_type == 'cswdo' }}>CSWDO / MSWDO</option>
+                        <option value="pswdo" {{ 'selected' if office.office_type == 'pswdo' }}>PSWDO / Warehouse</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-area-covered-{{ office.office_id }}">Area Covered *</label>
+                    <input type="text" name="area_covered" id="edit-area-covered-{{ office.office_id }}" value="{{ office.area_covered }}" required>
+                </div>
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-capacity-{{ office.office_id }}">Food Pack Capacity</label>
+                    <input type="number" name="capacity_food_pack" id="edit-capacity-{{ office.office_id }}" min="0" value="{{ office.capacity_food_pack }}">
+                </div>
+                <div>
+                    <label for="edit-fp-min-{{ office.office_id }}">Food Pack Minimum Stock Level</label>
+                    <input type="number" name="food_pack_min_stock" id="edit-fp-min-{{ office.office_id }}" min="0" value="{{ row.food_pack_min }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="edit-full-address-{{ office.office_id }}">Full Address</label>
+                <input type="text" name="full_address" id="edit-full-address-{{ office.office_id }}" value="{{ office.full_address or '' }}">
+            </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-manager-{{ office.office_id }}">Warehouse Manager</label>
+                    <input type="text" name="manager_name" id="edit-manager-{{ office.office_id }}" value="{{ office.manager_name or '' }}">
+                </div>
+                <div>
+                    <label for="edit-contact-{{ office.office_id }}">Contact Number</label>
+                    <input type="text" name="contact_number" id="edit-contact-{{ office.office_id }}" value="{{ office.contact_number or '' }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="edit-office-email-{{ office.office_id }}">Email</label>
+                <input type="email" name="email" id="edit-office-email-{{ office.office_id }}" value="{{ office.email or '' }}">
+            </div>
+            <div class="rd-modal-actions">
+                <button type="submit" class="btn-decision btn-partial">Save Changes</button>
+                <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Shared confirmation modal (Activate / Deactivate) -->
+<div class="rd-modal-overlay" id="confirm-modal" data-tone="danger" hidden>
+    <div class="rd-modal confirm-modal">
+        <div class="confirm-modal-icon" data-confirm-icon>{{ icon('alert-triangle', 22) }}</div>
+        <h3 data-confirm-title-target>Are you sure?</h3>
+        <p data-confirm-message-target></p>
+        <div class="rd-modal-actions">
+            <button type="button" class="btn-decision" data-confirm-ok>Confirm</button>
+            <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('confirm-modal');
+        if (!modal) return;
+        var titleEl = modal.querySelector('[data-confirm-title-target]');
+        var msgEl = modal.querySelector('[data-confirm-message-target]');
+        var okBtn = modal.querySelector('[data-confirm-ok]');
+        var pendingForm = null;
+
+        document.querySelectorAll('[data-confirm-trigger]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                pendingForm = btn.closest('form');
+                modal.dataset.tone = btn.dataset.confirmTone === 'success' ? 'success' : 'danger';
+                titleEl.textContent = btn.dataset.confirmTitle || 'Are you sure?';
+                msgEl.textContent = btn.dataset.confirmMessage || '';
+                okBtn.textContent = btn.dataset.confirmLabel || 'Confirm';
+            });
+        });
+
+        okBtn.addEventListener('click', function () {
+            if (pendingForm) pendingForm.submit();
+        });
+    });
+</script>
+{% endblock %}

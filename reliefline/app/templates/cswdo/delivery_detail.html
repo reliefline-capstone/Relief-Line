@@ -19,20 +19,19 @@
     <main class="dashboard-main">
 
 
-        <div class="rd-breadcrumb">
-            <a href="{{ url_for('cswdo.deliveries') }}">{{ icon('arrow-left', 14) }} Deliveries</a>
-        </div>
-
         <div class="page-header">
             <div>
-                <h2>{{ ref }}</h2>
+                <div class="wh-title-row">
+                    <a href="{{ url_for('cswdo.deliveries') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+                    <h2>{{ ref }}</h2>
+                </div>
                 <p>Brgy. {{ rec.barangay.barangay_name }}
                     {%- if alloc and alloc.event %} · {{ icon('cloud-lightning', 12) }} {{ alloc.event.event_name }}{% endif %}
                     {%- if report %} · Barangay Report {{ report.ref }}
                     {%- elif alloc and alloc.source == 'cswdo_direct' %} · Proactive Allocation (no barangay request){% endif %}
                     · {{ "{:,}".format(rec.quantity_released) }} food packs</p>
             </div>
-            <a href="{{ url_for('receipts.distribution_receipt', distribution_id=rec.distribution_id) }}" class="btn-decision btn-partial" style="text-decoration:none;">{{ icon('file-text', 14, 'white') }} View Receipt</a>
+            <a href="{{ url_for('receipts.distribution_receipt', distribution_id=rec.distribution_id) }}" class="btn-outline btn-outline-accent">{{ icon('file-text', 14) }} View Receipt</a>
         </div>
 
         {% if rec.replaces %}

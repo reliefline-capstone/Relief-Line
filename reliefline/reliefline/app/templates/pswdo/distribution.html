@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Distribution - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}?v={{ asset_version('css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'distribution' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <!-- Page title -->
+        <section class="page-header">
+            <div>
+                <h2>Distribution Operations</h2>
+                <p>{{ primary_event.event_name if primary_event else 'No active event' }} · {{ today.strftime('%B') }} {{ today.day }}, {{ today.strftime('%Y') }}</p>
+            </div>
+            <div class="rr-actions">
+                <a href="{{ url_for('pswdo.completed_deliveries') }}" class="btn-outline">{{ icon('file-text', 14) }} Completed</a>
+                <button type="button" class="btn-primary" data-open-modal="new-distribution-modal">{{ icon('plus', 14, 'white') }} New Distribution</button>
+            </div>
+        </section>
+
+        <!-- Stat cards -->
+        <section class="stat-cards dist-stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ total_today }}</span>
+                <span class="stat-label">Total Today</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('clock', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ preparing_count }}</span>
+                <span class="stat-label">Preparing</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon brown">{{ icon('navigation', 18, '#a5713a') }}</div>
+                <span class="stat-value">{{ in_transit_count }}</span>
+                <span class="stat-label">In Transit</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ delivered_count }}</span>
+                <span class="stat-label">Delivered</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
+                <span class="stat-value">{{ delayed_count }}</span>
+                <span class="stat-label">Delayed</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ "{:,}".format(packs_released) }}</span>
+                <span class="stat-label">Packs Released</span>
+            </div>
+        </section>
+
+        <!-- Filter bar -->
+        <form method="GET" class="filter-bar dist-filter-bar">
+            <div class="rr-search-wrapper">
+                {{ icon('search', 14, '#8a94a6') }}
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search...">
+            </div>
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if status_filter == 'all' }}>All Status</option>
+                {% for key, label in dispatch_labels.items() %}
+                <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <a href="{{ url_for('pswdo.export_distribution', status=status_filter, q=search_query) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+        </form>
+
+        <!-- Table -->
+        <section class="panel rr-table-panel">
+            <table class="rr-table">
+                <thead>
+                    <tr>
+                        <th>DISTRIBUTION ID</th>
+                        <th>MUNICIPALITY</th>
+                        <th>WAREHOUSE</th>
+                        <th>PACKS</th>
+                        <th>STATUS</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in records %}
+                    {% set fulfilling = rec.allocation.fulfilling_office or rec.allocation.office %}
+                    <tr>
+                        <td>
+                            <strong class="dist-id">D-{{ rec.distribution_date.year }}-{{ '%03d'|format(rec.distribution_id) }}</strong>
+                            <span class="rr-sub">RR-{{ rec.allocation.allocation_date.year }}-{{ '%03d'|format(rec.allocation.allocation_id) }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ rec.barangay.city_municipality }}</strong>
+                            <span class="rr-sub">{{ rec.distribution_date.strftime('%B') }} {{ rec.distribution_date.day }}, {{ rec.distribution_date.strftime('%Y') }}</span>
+                        </td>
+                        <td>{{ fulfilling.office_name if fulfilling else '-' }}</td>
+                        <td>
+                            <strong>{{ "{:,}".format(rec.quantity_released) }}</strong>
+                            <span class="rr-sub">food packs</span>
+                        </td>
+                        <td>
+                            <span class="badge-status badge-status-{{ rec.dispatch_status }}">
+                                <i class="priority-dot"></i> {{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('pswdo.distribution_detail', distribution_id=rec.distribution_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-note" style="text-align:center; padding: 30px;">No distributions match your filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="rr-pagination">
+                <span>{{ records|length }} distribution{{ 's' if records|length != 1 }}</span>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- New Distribution modal -->
+<div class="rd-modal-overlay" id="new-distribution-modal" hidden>
+    <div class="rd-modal nd-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('plus', 18, '#0f2547') }} New Distribution</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        {% if eligible_allocations %}
+        <div class="nd-steps">
+            <span class="nd-step is-active" data-step-dot="1"><span class="nd-step-num">1</span> Municipality</span>
+            <span class="nd-step-line"></span>
+            <span class="nd-step" data-step-dot="2"><span class="nd-step-num">2</span> Request &amp; Stock Check</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('pswdo.create_distribution') }}" id="new-distribution-form">
+            <input type="hidden" name="allocation_id" id="nd-allocation-id">
+
+            <!-- Step 1: municipality first, so the request list below is never
+                 a mixed-municipality wall of options to scroll through. -->
+            <div class="nd-step-panel" data-step-panel="1">
+                <label>Select City/Municipality *</label>
+                <div class="nd-muni-grid">
+                    {% for muni, count in municipality_counts.items() %}
+                    <button type="button" class="nd-muni-tile" data-municipality="{{ muni }}">
+                        <strong>{{ muni }}</strong>
+                        <span>{{ count }} request{{ 's' if count != 1 }} ready</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Step 2: only reachable after a municipality is picked, and the
+                 stock check runs here - before submission, not after. -->
+            <div class="nd-step-panel" data-step-panel="2" hidden>
+                <button type="button" class="nd-back-link" data-step-back>{{ icon('arrow-left', 14) }} Back to municipality</button>
+
+                <label>Approved Barangay Report in <span id="nd-selected-muni"></span> *</label>
+                <div class="nd-request-list" id="nd-request-list">
+                    {% for row in eligible_allocations %}
+                    <label class="nd-request-option" data-municipality="{{ row.municipality }}" data-stock-ok="{{ 'true' if row.stock_ok else 'false' }}">
+                        <input type="radio" name="allocation_id_radio" value="{{ row.allocation.allocation_id }}">
+                        <div class="nd-request-body">
+                            <strong>{{ row.allocation.barangay.barangay_name }}</strong>
+                            <span>{{ "{:,}".format(row.allocation.allocated_quantity) }} packs{% if row.allocation.fulfilling_office %} · from {{ row.allocation.fulfilling_office.office_name }}{% endif %}</span>
+                        </div>
+                        <span class="nd-stock-badge {{ 'is-ok' if row.stock_ok else 'is-low' }}">
+                            {{ icon('check-circle', 12) if row.stock_ok else icon('alert-triangle', 12) }}
+                            {{ "{:,}".format(row.available_stock) }} in stock
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <label for="distribution_date">Distribution Date</label>
+                <input type="date" name="distribution_date" id="distribution_date" value="{{ today_str }}">
+
+                <div class="nd-stock-warning" id="nd-stock-warning" hidden>
+                    {{ icon('alert-triangle', 14) }}
+                    <span>The fulfilling warehouse doesn't currently have enough stock for this request. Scheduling is blocked until stock is available - transfer more in first.</span>
+                </div>
+
+                <div class="rd-modal-actions">
+                    <button type="submit" class="btn-decision btn-partial" id="nd-submit-btn" disabled>{{ icon('check-circle', 16, 'white') }} Schedule Distribution</button>
+                    <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+                </div>
+            </div>
+        </form>
+        {% else %}
+        <p class="empty-note" style="padding: 8px 0 16px;">No approved relief requests are waiting to be scheduled right now - approve a relief request first.</p>
+        <div class="rd-modal-actions">
+            <a href="{{ url_for('pswdo.relief_requests', status='approved') }}" class="btn-decision btn-partial" style="text-decoration:none; text-align:center;">{{ icon('clipboard', 16, 'white') }} View Approved Requests</a>
+            <button type="button" class="btn-cancel" data-close-modal>Close</button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+<script src="{{ url_for('static', filename='js/new_distribution_wizard.js') }}"></script>
+{% endblock %}

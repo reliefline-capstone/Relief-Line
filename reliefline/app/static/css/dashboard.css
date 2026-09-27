@@ -77,10 +77,24 @@ html.sidebar-collapsed .sidebar {
     transition: left 0.22s ease, opacity 0.15s ease;
 }
 
-/* Revealed by hovering the sidebar itself (edge included) or the button;
-   :focus-visible keeps it reachable for keyboard users without requiring a
-   mouse hover at all. */
-.sidebar:hover ~ .sidebar-toggle,
+/* Invisible hover strip straddling the sidebar's right border (see
+   _sidebar.html) - only pointing at the edge itself reveals the toggle,
+   not hovering the nav links. Sits just under the toggle's z-index. */
+.sidebar-edge {
+    position: fixed;
+    top: 0;
+    left: 250px;
+    transform: translateX(-50%);
+    width: 16px;
+    height: calc(100vh / var(--ui-scale));
+    z-index: 500;
+    transition: left 0.22s ease;
+}
+html.sidebar-collapsed .sidebar-edge { left: 72px; }
+
+/* Revealed by hovering the edge strip or the button; :focus-visible keeps it
+   reachable for keyboard users without requiring a mouse hover at all. */
+.sidebar-edge:hover ~ .sidebar-toggle,
 .sidebar-toggle:hover,
 .sidebar-toggle:focus-visible {
     opacity: 1;
@@ -443,6 +457,66 @@ html.sidebar-collapsed .dashboard-main {
    to it. */
 .btn-outline-accent { color: #5347ce; }
 .btn-outline-accent:hover { background: #efedfd; }
+
+/* Printing any page (reports, receipts, family lists): the app shell is a
+   zoomed, viewport-tall, overflow-hidden box whose main column scrolls on
+   its own - printed as-is, only the first screenful reached the paper and
+   the rest was cut off. Unwind all of that so the whole document flows
+   across as many pages as it needs, and drop the navigation chrome. */
+/* Letter (short bond - the usual office paper here). The page margins stay
+   tiny (0 top/bottom, 12mm sides): any larger and the browser finds room to
+   print its own header/footer (URL, title, "1/1" page number). The real
+   margin comes from .dashboard-main's padding below instead - 12mm top/
+   bottom plus 7mm more each side (19mm total), enough that the page still
+   fits if the printer holds A4 paper. Cloned onto every page so
+   continuation pages get it too. */
+@page { size: letter; margin: 0 12mm; }
+@media print {
+    html, body { background: white !important; }
+    .dashboard-layout {
+        zoom: 1 !important;
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: white !important;
+    }
+    .dashboard-main,
+    html.sidebar-collapsed .dashboard-main {
+        height: auto !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 12mm 7mm !important;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+    }
+    /* .rl-mnav is the phone top bar (menu button + ReliefLine logo) - a printed
+       page is narrow enough to trip its breakpoint, so it has to be hidden
+       explicitly or it prints above the document's own letterhead. */
+    .sidebar, .sidebar-brand, .sidebar-toggle, .sidebar-edge, .topbar,
+    .rl-mnav, .rl-mnav-backdrop,
+    .wh-breadcrumb, .wh-back-btn, .flash-messages { display: none !important; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* The one back button used on every in-app page: an icon-only arrow-left
+   square, placed either in the .wh-breadcrumb nav (_warehouse_subnav.html)
+   or beside a page's own title via .wh-title-row. */
+.wh-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    border: 1px solid #e3e4ec;
+    background: white;
+    color: #5347ce;
+    transition: background 0.12s, border-color 0.12s;
+}
+.wh-back-btn:hover { background: #f1eefc; border-color: #d9d3f7; }
+.wh-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wh-title-row h2 { margin: 0; }
 
 /* Label-above-field modal/settings form layout, used across admin, pswdo,
    cswdo and barangay forms. Moved here (from profile_settings.css) since
@@ -1465,7 +1539,7 @@ html.sidebar-collapsed .dashboard-main {
     body.rl-mnav-open .sidebar,
     body.rl-mnav-open html.sidebar-collapsed .sidebar { transform: none; }
 
-    .sidebar-toggle { display: none; }
+    .sidebar-toggle, .sidebar-edge { display: none; }
     /* always show full labels inside the drawer */
     .sidebar-label, .sidebar-brand > div, .sidebar-user-info,
     html.sidebar-collapsed .sidebar-label,

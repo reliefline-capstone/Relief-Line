@@ -479,6 +479,64 @@
 }
 .dm-confirm-btn:hover { background: #196f3d; }
 
+/* Bottom action row on a delivery card: the receipt link as a secondary
+   outline button, beside the (primary) Confirm button when there is one;
+   they stack on a phone. */
+.dm-card-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 14px;
+}
+.dm-card-actions .dm-confirm-btn { flex: 1; width: auto; margin-top: 0; }
+.dm-receipt-btn { justify-content: center; white-space: nowrap; color: #5347ce; }
+.dm-receipt-btn:hover { background: #efedfd; }
+@media (max-width: 600px) {
+    .dm-card-actions { flex-direction: column; }
+}
+
+/* Confirm Receipt modal: optional, collapsed delivery receipt summary. */
+.confirm-receipt-summary {
+    margin-bottom: 14px;
+    border: 1px solid #e3e4ec;
+    border-radius: 10px;
+    background: #fafbfd;
+}
+.confirm-receipt-summary summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #5347ce;
+    cursor: pointer;
+    list-style: none;
+}
+.confirm-receipt-summary summary::-webkit-details-marker { display: none; }
+.confirm-receipt-chevron { margin-left: auto; display: inline-flex; transition: transform 0.15s; }
+.confirm-receipt-summary[open] .confirm-receipt-chevron { transform: rotate(180deg); }
+.confirm-receipt-rows { padding: 0 12px; border-top: 1px solid #eef0f4; }
+.confirm-receipt-rows > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    font-size: 12.5px;
+    border-bottom: 1px solid #eef0f4;
+}
+.confirm-receipt-rows span { color: #8a94a6; }
+.confirm-receipt-rows strong { color: #1a1a1a; text-align: right; }
+.confirm-receipt-full {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #5347ce;
+}
+
 /* Damage report view - "Report Information" and the sidebar (Barangay
    Assessment + Relief Allocation) bottom-align as an equal-height pair.
    .review-row-list is the flex child that actually absorbs the stretched

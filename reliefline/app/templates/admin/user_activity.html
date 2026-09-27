@@ -19,9 +19,7 @@
 
 
         <div class="wh-breadcrumb">
-            <a href="{{ url_for('admin.users') }}"><span class="wh-breadcrumb-back">{{ icon('chevron-down', 14) }}</span>User Management</a>
-            <span class="wh-breadcrumb-sep">/</span>
-            <span class="wh-breadcrumb-current">{{ user.name }}</span>
+            <a href="{{ url_for('admin.users') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
         </div>
 
         <section class="page-header">

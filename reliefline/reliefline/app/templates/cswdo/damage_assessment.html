@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}Barangay Reports - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/damage_assessment.css') }}?v={{ asset_version('css/damage_assessment.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
+{% endblock %}
+
+{% set TABS = [('queue','Queue', pending_rows), ('verified','Verified', verified_rows),
+               ('approved','Approved', approved_rows),
+               ('fulfilled','Fulfilled', fulfilled_rows), ('declined','Declined', declined_rows),
+               ('all','All Reports', rows)] %}
+{% set active_rows = (pending_rows if tab == 'queue' else (verified_rows if tab == 'verified'
+                      else (approved_rows if tab == 'approved'
+                      else (fulfilled_rows if tab == 'fulfilled'
+                      else (declined_rows if tab == 'declined' else rows))))) %}
+
+{% macro request_modal(r) %}
+{% set rep = r.report %}
+{% set can_decide = rep.status in ('pending', 'returned') %}
+<div class="rd-modal-overlay" id="rr-modal-{{ rep.report_id }}" hidden>
+    <div class="rd-modal rr-review-modal">
+        <div class="rd-modal-header">
+            <h3>{{ icon('clipboard', 18, '#0f2547') }}
+                {{ rep.ref }} - Brgy. {{ r.barangay.barangay_name }}
+                <span class="badge-status status-{{ rep.status }}">{{ status_labels.get(rep.status, rep.status) }}</span>
+            </h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+
+        <p class="form-hint">
+            {%- if rep.event %}{{ icon('cloud-lightning', 12) }} {{ rep.event.event_name }} · {% endif -%}
+            Submitted by {{ rep.submitted_by_name }}
+            {%- if rep.submitted_by_designation %} ({{ rep.submitted_by_designation }}){% endif %}
+            {%- if rep.submitted_at %} · {{ rep.submitted_at.strftime('%b %d, %Y %I:%M %p') }}{% endif %}
+        </p>
+
+        <div class="rr-review-body">
+            <div class="rr-review-details">
+                <p style="font-size:11px; font-weight:700; color:#8a94a6; text-transform:uppercase; letter-spacing:0.4px; margin:0 0 10px;">Barangay Assessment</p>
+                <div class="rd-info-grid">
+                    <div><span>Affected Families</span><strong>{{ "{:,}".format(rep.affected_families or 0) }}</strong></div>
+                    <div><span>Affected Individuals</span><strong>{{ "{:,}".format(rep.affected_individuals or 0) }}</strong></div>
+                    <div><span>PWD</span><strong>{{ "{:,}".format(rep.affected_pwd or 0) }}</strong></div>
+                    <div><span>Senior Citizens</span><strong>{{ "{:,}".format(rep.affected_seniors or 0) }}</strong></div>
+                    <div><span>Children</span><strong>{{ "{:,}".format(rep.affected_children or 0) }}</strong></div>
+                    <div><span>Totally Damaged Houses</span><strong>{{ rep.totally_damaged_houses or 0 }}</strong></div>
+                    <div><span>Partially Damaged</span><strong>{{ rep.partially_damaged_houses or 0 }}</strong></div>
+                </div>
+
+                {% if rep.affected_families_list %}
+                <p class="form-hint" style="margin:12px 0 6px;">Affected families ({{ rep.affected_families_list|length }})</p>
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                    {% for rf in rep.affected_families_list %}
+                    <span class="fam-badge" title="{% if rf.head_name %}Head: {{ rf.head_name }} - {% endif %}{{ rf.member_count }} members{% if rf.pwd_count %}, {{ rf.pwd_count }} PWD{% endif %}{% if rf.senior_count %}, {{ rf.senior_count }} senior{% endif %}">{{ rf.family_name }} ({{ rf.member_count }})</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if rep.remarks %}<p class="da-remarks-box" style="margin-top:12px;">{{ rep.remarks }}</p>{% endif %}
+                {% if rep.review_remarks and rep.status in ('declined','returned') %}
+                <p class="da-remarks-box" style="margin-top:8px; border-color:#e0b4b4;"><strong>MSWDO/CSWDO note:</strong> {{ rep.review_remarks }}</p>
+                {% endif %}
+            </div>
+
+            <div class="rr-review-decision">
+                <div class="rd-amount-tile">
+                    <div><span>Barangay Requested</span><strong>
+                        {%- if r.requested %}{{ "{:,}".format(r.requested) }} packs{% else %}Not specified{% endif -%}
+                    </strong> <span class="rd-sub">barangay's own estimate</span></div>
+                    <div><span>Barangay Stock on Hand</span><strong>
+                        {%- if r.barangay_on_hand is none %}No stock reported{% else %}{{ "{:,}".format(r.barangay_on_hand) }} packs{% endif -%}
+                    </strong></div>
+                </div>
+
+                {% if r.allocation %}
+                {% set d = r.allocation.distribution_records[0] if r.allocation.distribution_records else none %}
+                <div class="rd-decision-summary">
+                    <div class="rr-allocation-info">
+                        {{ icon('truck', 16, '#1e8449') }}
+                        <div>
+                            <strong>Allocated {{ "{:,}".format(r.allocation.allocated_quantity) }} food packs</strong>
+                            {% if d %}<span>Delivery {{ dispatch_labels.get(d.dispatch_status, d.dispatch_status) }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% if d %}
+                    <a href="{{ url_for('cswdo.delivery_detail', distribution_id=d.distribution_id) }}" class="btn-view-sm rr-allocation-track">
+                        {{ icon('map-pin', 13, '#1e8449') }} Track delivery
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if can_decide %}
+                <form method="POST" action="{{ url_for('cswdo.approve_relief_request', report_id=rep.report_id) }}"
+                      id="rr-form-{{ rep.report_id }}" class="settings-form">
+                    <div class="form-row">
+                        <label for="rr-q-{{ rep.report_id }}">Food packs to allocate *</label>
+                        <input type="number" name="quantity" id="rr-q-{{ rep.report_id }}" min="1"
+                               value="{{ r.prefill_quantity }}" required>
+                        <span class="form-hint">
+                            {%- if r.requested %}Prefilled with the barangay's request of {{ "{:,}".format(r.requested) }} · {% endif -%}
+                            your warehouse: {{ "{:,}".format(on_hand) }} on hand</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="rr-r-{{ rep.report_id }}">Remarks (optional)</label>
+                        <textarea name="review_remarks" id="rr-r-{{ rep.report_id }}" rows="2"></textarea>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if can_decide %}
+        <div class="rd-modal-actions rr-review-actions">
+            <button type="submit" form="rr-form-{{ rep.report_id }}" class="btn-decision btn-approve-full">{{ icon('check-circle', 16, 'white') }} Allocate &amp; Fulfil</button>
+            <button type="submit" form="rr-form-{{ rep.report_id }}" formaction="{{ url_for('cswdo.verify_relief_request', report_id=rep.report_id) }}" class="btn-decision btn-verify-only" formnovalidate>{{ icon('check', 16, 'white') }} Verify Only</button>
+            <button type="submit" form="rr-form-{{ rep.report_id }}" formaction="{{ url_for('cswdo.return_damage_report', report_id=rep.report_id) }}" class="btn-decision btn-partial" formnovalidate>{{ icon('rotate-ccw', 16, 'white') }} Return</button>
+            <button type="submit" form="rr-form-{{ rep.report_id }}" formaction="{{ url_for('cswdo.decline_relief_request', report_id=rep.report_id) }}" class="btn-decision btn-reject" formnovalidate>{{ icon('x-circle', 16, 'white') }} Decline</button>
+        </div>
+        <p class="form-hint rr-review-foot-hint"><strong>Verify Only</strong> acknowledges the report with no delivery (barangay has enough stock). Return sends it back to fix; Decline closes it. The remark above is the reason for Return and Decline.</p>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'damage_assessment' %}
+    {% include "cswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <div class="page-header">
+            <div>
+                <h2>Barangay Reports</h2>
+                <p>{{ lgu or '-' }}{% if primary_event %} · {{ icon('cloud-lightning', 12) }} {{ primary_event.event_name }}{% endif %} · {{ now.strftime('%B %d, %Y') }}</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <a href="{{ url_for('cswdo.deliveries') }}" class="btn-outline">{{ icon('truck', 16) }} Deliveries</a>
+                <a href="{{ url_for('cswdo.damage_assessment_export') }}" class="btn-outline">{{ icon('download', 16) }} Export</a>
+            </div>
+        </div>
+
+        <section class="stat-cards stat-cards-4">
+            <div class="stat-card">
+                <div class="stat-icon amber">{{ icon('clock', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ pending_rows|length }}</span>
+                <span class="stat-label">Awaiting Decision</span>
+                <span class="stat-sub">{{ "{:,}".format(suggested_pending) }} packs suggested (model)</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('check-circle', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ approved_rows|length }}</span>
+                <span class="stat-label">Approved - In Delivery</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('package', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ fulfilled_rows|length }}</span>
+                <span class="stat-label">Fulfilled</span>
+                <span class="stat-sub">{{ "{:,}".format(approved_packs) }} packs allocated</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon {{ 'red' if on_hand < suggested_pending else 'purple' }}">{{ icon('building', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ "{:,}".format(on_hand) }}</span>
+                <span class="stat-label">Warehouse On Hand</span>
+                <span class="stat-sub"><a href="{{ url_for('cswdo.municipal_inventory') }}">manage stock →</a></span>
+            </div>
+        </section>
+
+        {% if on_hand < suggested_pending and pending_rows %}
+        <div class="da-banner da-banner-warning">
+            {{ icon('alert-triangle', 16) }}
+            <span>Pending reports suggest <strong>{{ "{:,}".format(suggested_pending) }} packs</strong> but your warehouse holds only <strong>{{ "{:,}".format(on_hand) }}</strong>. Submit a stock request to PSWDO or allocate smaller quantities.</span>
+        </div>
+        {% endif %}
+
+        <div class="page-tabs">
+            {% for key, label, coll in TABS %}
+            <a href="{{ url_for('cswdo.damage_assessment', tab=key) }}" class="page-tab {{ 'active' if tab == key }}">{{ label }} <span class="page-tab-badge">{{ coll|length }}</span></a>
+            {% endfor %}
+        </div>
+
+        <form class="da-filter-bar" method="GET">
+            <input type="hidden" name="tab" value="{{ tab }}">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search barangay or request ID...">
+            <button type="submit" class="btn-outline">{{ icon('search', 14) }} Search</button>
+            <span class="da-filter-count">{{ active_rows|length }} request{{ 's' if active_rows|length != 1 }}</span>
+        </form>
+
+        <div class="da-table-wrap">
+            <table class="da-table">
+                <thead>
+                    <tr>
+                        <th>Report ID</th><th>Barangay</th><th>Typhoon Event</th>
+                        <th>Affected Fam.</th><th>Requested</th><th>Brgy. Stock</th><th>Status</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in active_rows %}
+                    {% set rep = r.report %}
+                    <tr class="{{ 'da-row-new' if rep.status == 'pending' }}">
+                        <td>{{ rep.ref }}{% if rep.status == 'pending' %}<span class="da-new-badge">New</span>{% endif %}</td>
+                        <td class="da-barangay-name">{{ r.barangay.barangay_name }}</td>
+                        <td>{{ rep.event.event_name if rep.event else '-' }}</td>
+                        <td>{{ "{:,}".format(rep.affected_families or 0) }}</td>
+                        <td>{% if r.requested %}{{ "{:,}".format(r.requested) }}{% else %}<span class="rd-sub">-</span>{% endif %}</td>
+                        <td>{% if r.barangay_on_hand is none %}<span class="rd-sub">none reported</span>{% else %}{{ "{:,}".format(r.barangay_on_hand) }}{% endif %}</td>
+                        <td><span class="badge-status status-{{ rep.status }}">{{ status_labels.get(rep.status, rep.status) }}</span></td>
+                        <td>
+                            <button type="button" class="btn-view-sm" data-open-modal="rr-modal-{{ rep.report_id }}">
+                                {{ icon('eye', 13) }} {{ 'Review' if rep.status in ('pending','returned') else 'View' }}
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8"><p class="empty-note" style="padding:14px 0;">No relief requests in this view.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% for r in active_rows %}{{ request_modal(r) }}{% endfor %}
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
+<script>
+document.querySelectorAll('[data-fill]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var t = document.querySelector(a.dataset.fill);
+        if (t) t.value = a.dataset.value;
+    });
+});
+</script>
+{% endblock %}

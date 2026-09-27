@@ -7,6 +7,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}?v={{ asset_version('css/reports.css') }}">
+{# Wide reports print the WHOLE document landscape - a landscape page
+   inside an otherwise-portrait document gets rotated onto portrait
+   paper by the browser and its right edge cut off. #}
+{% if report.columns|length > 7 %}<style>@page { size: letter landscape; }</style>{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -19,8 +23,7 @@
 
 
         {% set crumbs = [
-            {"label": "Reports", "url": url_for('barangay.reports')},
-            {"label": report.title, "url": none}
+            {"label": "Reports", "url": url_for('barangay.reports')}
         ] %}
         {% include "pswdo/_warehouse_subnav.html" %}
 
@@ -42,37 +45,20 @@
             <span class="rpt-export-label">Export as:</span>
             <a href="{{ pdf_url }}" class="btn-export btn-export-pdf">{{ icon('file-text', 14, 'white') }} Export PDF</a>
             <a href="{{ excel_url }}" class="btn-export btn-export-excel">{{ icon('download', 14, 'white') }} Export Excel</a>
-            <button type="button" class="btn-export btn-export-print" onclick="window.print()">{{ icon('list', 14, 'white') }} Print</button>
-            <a href="{{ url_for('barangay.reports') }}" class="rpt-back-link">{{ icon('rotate-ccw', 12) }} Back to Reports</a>
+            <button type="button" class="btn-export btn-export-print" data-print-pdf="{{ pdf_url }}&inline=1">{{ icon('list', 14, 'white') }} Print</button>
         </section>
 
         <section class="rpt-document" id="report-document">
-            <div class="rpt-doc-header">
-                <div class="rpt-doc-brand">
-                    <div class="rpt-doc-icon">{{ icon('file-text', 20, 'white') }}</div>
-                    <div>
-                        <span class="rpt-doc-eyebrow">REPUBLIC OF THE PHILIPPINES</span>
-                        <span class="rpt-doc-eyebrow">BRGY. {{ barangay.barangay_name|upper }} &middot; {{ barangay.city_municipality|upper }}</span>
-                        <h2>{{ report.title }}</h2>
-                    </div>
-                </div>
-                <div class="rpt-doc-meta">
-                    <div><span>Coverage:</span><strong>{{ report.coverage }}</strong></div>
-                    <div><span>Typhoon Event:</span><strong>{{ report.event_name }}</strong></div>
-                    <div><span>Date Generated:</span><strong>{{ report.date_generated.strftime('%B %d, %Y') }}</strong></div>
-                    <div><span>Prepared By:</span><strong>{{ report.prepared_by_role }}</strong></div>
-                    <div><span>System:</span><strong>ReliefLine</strong></div>
-                </div>
-            </div>
-
-            <div class="rpt-doc-strip">
-                <span>{{ icon('cloud-lightning', 12) }} <strong>Event:</strong> {{ report.event_name }}</span>
-                <span><strong>Barangay:</strong> {{ report.municipality_label }}</span>
-                <span><strong>Records:</strong> {{ report.record_count }} entries</span>
-                <span class="rpt-status-ready"><strong>Status:</strong> Ready for Export</span>
-            </div>
-
-            <h3 class="rpt-doc-title">{{ report.title.upper() }}</h3>
+            {% set lh = report.letterhead %}
+            {% set doc_title = report.title %}
+            {% set doc_meta = [
+                ("Coverage", report.coverage),
+                ("Typhoon Event", report.event_name),
+                ("Barangay", report.municipality_label),
+                ("Date Generated", report.date_generated.strftime('%B %d, %Y')),
+                ("No. of Records", report.record_count),
+            ] %}
+            {% include "_report_letterhead.html" %}
 
             {% if report.rows %}
             <div class="rpt-table-wrap">
@@ -84,7 +70,7 @@
                         {% for row in report.rows %}
                         <tr>
                             {% for cell in row %}
-                            <td>
+                            <td class="{{ 'rpt-nowrap' if ' ' not in cell|string or (cell|string)|length <= 12 }}">
                                 {% if loop.last and report.columns[-1] == 'Status' %}
                                 <span class="rpt-status-pill rpt-status-{{ cell|lower|replace(' ', '-') }}">{{ cell }}</span>
                                 {% else %}{{ cell }}{% endif %}
@@ -106,19 +92,13 @@
             </div>
             {% endif %}
 
-            <div class="rpt-signatures">
-                <div><span class="rpt-sig-line"></span><strong>Prepared By</strong><span>{{ report.prepared_by_role }}</span></div>
-                <div><span class="rpt-sig-line"></span><strong>Reviewed By</strong><span>Municipal/City Social Welfare Officer</span></div>
-                <div><span class="rpt-sig-line"></span><strong>Approved By</strong><span>PSWDO Office</span></div>
-            </div>
-
-            <p class="rpt-doc-footer">Generated by ReliefLine - Data-Driven Food Pack Allocation System &middot; Brgy. {{ barangay.barangay_name }} &middot; {{ report.date_generated.strftime('%B %d, %Y') }}</p>
+            {% include "_report_signatures.html" %}
         </section>
 
         <section class="rpt-export-row rpt-export-row-bottom">
             <a href="{{ pdf_url }}" class="btn-export btn-export-pdf">{{ icon('file-text', 14, 'white') }} Export PDF</a>
             <a href="{{ excel_url }}" class="btn-export btn-export-excel">{{ icon('download', 14, 'white') }} Export Excel</a>
-            <button type="button" class="btn-export btn-export-print" onclick="window.print()">{{ icon('list', 14, 'white') }} Print</button>
+            <button type="button" class="btn-export btn-export-print" data-print-pdf="{{ pdf_url }}&inline=1">{{ icon('list', 14, 'white') }} Print</button>
         </section>
 
     </main>

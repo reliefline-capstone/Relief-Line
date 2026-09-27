@@ -1,0 +1,145 @@
+from app.extensions import db
+
+class BarangayReport(db.Model):
+    """Barangay-submitted disaster *situation report*, reviewed by the
+    CSWDO/MSWDO office. It is a pure impact/status report - the barangay no
+    longer states a food-pack figure. Deciding an allocation is entirely a
+    CSWDO/MSWDO call, informed by the time-forecasting model's recommended
+    quantity and the barangay's own current stock (manuscript Ch.1/Scope:
+    "allocation ... based on predictive model outputs and CSWDO/MSWDO
+    operational decisions").
+
+    CSWDO/MSWDO acts on a submitted report one of three ways:
+      * verified  - situation acknowledged, no allocation needed (barangay has
+                    enough stock, or the impact doesn't warrant a delivery)
+      * approved  - an AllocationRecord + DistributionRecord is created
+      * declined / returned - as before
+
+    Both `verified` and `approved` upsert the matching BarangayDisasterStatus
+    row for the same barangay+event, so the priority tier shown here, on the
+    dashboards, and on the GIS map all stay driven by one source of truth.
+
+    Severity (`flood_level`) is COMPUTED server-side from the entered impact
+    data (see app.routes.barangay._compute_severity) - not picked by hand.
+    A zero-impact report (all damage figures 0) is allowed on purpose: a
+    barangay may just want to post a status update ("we're fine").
+
+    Excludes evacuation-center/evacuee headcounts (manuscript: real-time
+    evacuee monitoring not supported).
+
+    `requested_food_packs` is collected again but OPTIONAL - a barangay may
+    state how many food packs it thinks it needs, or leave it blank (0). When
+    given, CSWDO/MSWDO sees it and it pre-fills the allocation quantity, but it
+    is purely decision support: the CSWDO/MSWDO admin can adjust it freely and
+    the model estimate + barangay stock are still shown alongside it.
+
+    `hygiene_kits_est`, `kitchen_kits_est` are retained as columns for
+    historical rows only - the form no longer collects them and nothing in the
+    app reads them. Non-food items stay warehouse-monitoring-only per the
+    manuscript Scope.
+    """
+    __tablename__ = "barangay_reports"
+
+    report_id = db.Column(db.Integer, primary_key=True)
+    barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
+    # Nullable - a barangay can file a report anytime, not only while PSWDO
+    # has a declared active DisasterEvent (see app.routes.barangay's
+    # new_damage_report/_apply_report_form, which auto-links to whichever
+    # event is currently active, or leaves this NULL when none is). A NULL
+    # report never updates BarangayDisasterStatus (see
+    # app.routes.cswdo.verify_damage_report) since that table stays
+    # event-scoped - it just doesn't participate in a per-event GIS view.
+    event_id = db.Column(db.Integer, db.ForeignKey("disaster_events.event_id"), nullable=True)
+
+    submitted_by_name = db.Column(db.String(150), nullable=False)
+    submitted_by_designation = db.Column(db.String(100), nullable=True)
+    # Set only once the report actually leaves draft state - NULL while
+    # status="draft", same created_at/submitted_at split ReliefRequestBatch
+    # already uses (app/models/relief_request_batch.py) so "when was this
+    # first drafted" and "when was it actually sent to MSWDO" stay distinct.
+    created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+    submitted_at = db.Column(db.DateTime, nullable=True)
+
+    # Incident step
+    incident_date = db.Column(db.Date, nullable=True)
+    incident_time = db.Column(db.Time, nullable=True)
+    # Priority tier - COMPUTED server-side from the reported impact (see
+    # app.routes.barangay._compute_severity), never shown on the report itself.
+    # Internal signal only: same 4-tier vocabulary as BarangayDisasterStatus.
+    # status, drives the GIS map colours and the CSWDO priority list.
+    flood_level = db.Column(
+        db.Enum("normal", "monitoring", "needs_assistance", "high_priority"),
+        default="normal"
+    )
+
+    # Damage Data step
+    affected_families = db.Column(db.Integer, default=0)
+    affected_individuals = db.Column(db.Integer, default=0)
+    # Breakdown of affected_individuals, summed from the checked families on
+    # the Family Profiles checklist (see app.models.family.Family /
+    # ReportAffectedFamily and app.routes.barangay._apply_report_form). 0 on
+    # reports filed manually (no registered family profiles yet) or filed
+    # before this feature existed.
+    affected_pwd = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+    affected_seniors = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+    affected_children = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+    totally_damaged_houses = db.Column(db.Integer, default=0)
+    partially_damaged_houses = db.Column(db.Integer, default=0)
+    # No longer collected by the form; left inert on new reports.
+    roofs_damaged = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+    wind_signal = db.Column(db.String(20), nullable=True)
+
+    # Optional barangay-stated food-pack request. 0 = the barangay did not
+    # state a figure. When > 0 it is shown to CSWDO/MSWDO and pre-fills the
+    # allocation quantity as decision support (still fully adjustable).
+    requested_food_packs = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+    # Legacy - no longer collected by the form, not read anywhere. Kept so
+    # historical rows keep their values (same treatment as roofs_damaged).
+    hygiene_kits_est = db.Column(db.Integer, default=0)
+    kitchen_kits_est = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+
+    # Evidence step
+    remarks = db.Column(db.Text, nullable=True)
+    # Comma-joined filenames, same convention as DistributionRecord.validation_file
+    photo_paths = db.Column(db.String(500), nullable=True)
+
+    # draft -> pending -> {returned (barangay fixes & resubmits) |
+    #   verified (situation acknowledged, no allocation) |
+    #   approved (CSWDO will fulfil, an AllocationRecord + delivery is created) |
+    #   declined (CSWDO won't fulfil)} -> fulfilled (delivery confirmed received)
+    status = db.Column(
+        db.Enum("draft", "pending", "returned", "approved", "declined", "verified", "fulfilled"),
+        default="draft"
+    )
+    review_remarks = db.Column(db.Text, nullable=True)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+
+    barangay = db.relationship("Barangay", backref="reports")
+    event = db.relationship("DisasterEvent")
+    reviewed_by_user = db.relationship("User", foreign_keys=[reviewed_by])
+
+    @property
+    def is_draft(self):
+        return self.status == "draft"
+
+    @property
+    def allocation(self):
+        """The AllocationRecord CSWDO created when it approved this request, if any."""
+        from app.models.allocation import AllocationRecord
+        return AllocationRecord.query.filter_by(barangay_report_id=self.report_id).first()
+
+    @property
+    def ref(self):
+        year = (self.submitted_at or self.created_at).year
+        return f"RR-{year}-{self.report_id:03d}"
+
+    @property
+    def suggested_food_packs(self):
+        """Food-pack suggestion: 1 pack for each affected family + 1 per
+        affected PWD member + 1 per affected senior member (panelist-
+        requested formula). Only meaningful when the checklist was used -
+        falls back to affected_families alone (no PWD/senior data) on
+        manually-entered reports.
+        """
+        return (self.affected_families or 0) + (self.affected_pwd or 0) + (self.affected_seniors or 0)

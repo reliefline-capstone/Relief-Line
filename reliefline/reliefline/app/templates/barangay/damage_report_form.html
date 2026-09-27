@@ -1,0 +1,606 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+
+{% block title %}{{ 'Edit ' + report.ref if report else 'New Barangay Report' }} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_settings.css') }}?v={{ asset_version('css/profile_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'damage_report' %}
+    {% include "barangay/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <section class="page-header">
+            <div>
+                <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Cancel</a>
+                <h2>{{ 'Edit ' + report.ref if report else 'New Barangay Report' }}</h2>
+                <p>Brgy. {{ barangay.barangay_name }} · {{ default_event.event_name if default_event else 'Standing Request' }}</p>
+            </div>
+            {% if not report or report.status == 'draft' %}
+            <div class="wh-header-actions">
+                <button type="submit" form="damage-report-form" formaction="{{ url_for('barangay.save_damage_report_draft') }}" formnovalidate class="btn-outline">{{ icon('file-text', 14) }} Save Draft</button>
+            </div>
+            {% endif %}
+        </section>
+
+        {% if report and report.status == 'returned' %}
+        <div class="stock-warning" style="margin-bottom:16px;">
+            {{ icon('x-circle', 14, '#c0392b') }}
+            <span><strong>Returned by {{ barangay.city_municipality }} MSWDO/CSWDO:</strong> {{ report.review_remarks }}</span>
+        </div>
+        {% endif %}
+
+        <div class="panel wizard-stepper-panel">
+            <div class="wizard-stepper" id="wizard-stepper">
+                {% for s in [
+                    ('1','Basic Info'), ('2','Situation'), ('3','Barangay Data'),
+                    ('4','Evidence'), ('5','Review & Submit')
+                ] %}
+                <div class="wizard-step-node" data-step-node="{{ s[0] }}">
+                    <div class="step-circle">{{ s[0] }}</div>
+                    <span class="step-label">{{ s[1] }}</span>
+                </div>
+                {% if not loop.last %}<div class="wizard-step-line"></div>{% endif %}
+                {% endfor %}
+            </div>
+            <div class="wizard-progress-row">
+                <span id="wizard-step-count">Step 1 of 5</span>
+                <div class="wizard-progress-track"><div class="wizard-progress-fill" id="wizard-progress-fill" style="width: 0%;"></div></div>
+                <span id="wizard-pct">0% complete</span>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('barangay.submit_damage_report') }}" enctype="multipart/form-data" id="damage-report-form" class="wizard-form">
+            <input type="hidden" name="report_id" value="{{ report.report_id if report else '' }}">
+
+            <!-- Step 1: Basic Info -->
+            <section class="panel wizard-step" data-step="1">
+                <div class="panel-header"><h3>{{ icon('map-pin', 18, '#0f2547') }} Basic Information</h3></div>
+                <p class="form-hint">Confirm the identifying details below, then continue.</p>
+                <div class="autofill-box">
+                    <span class="autofill-box-title">Auto-filled Basic Information</span>
+                    <div class="autofill-grid">
+                        <div class="autofill-field"><span>Barangay</span><strong>{{ barangay.barangay_name }}</strong></div>
+                        <div class="autofill-field"><span>Municipality</span><strong>{{ barangay.city_municipality }}</strong></div>
+                        <div class="autofill-field"><span>Submitted By</span><strong>{{ report.submitted_by_name if report else current_user.name }}</strong></div>
+                        <div class="autofill-field"><span>Date Today</span><strong>{{ today.strftime('%B %d, %Y') }}</strong></div>
+                    </div>
+                </div>
+                <input type="hidden" name="submitted_by_name" value="{{ report.submitted_by_name if report else current_user.name }}">
+                <input type="hidden" name="submitted_by_designation" value="{{ (report.submitted_by_designation if report else current_user.designation) or '' }}">
+                {% if event_options|length > 1 %}
+                <div class="form-row">
+                    <label>Typhoon-Related Event</label>
+                    <div class="event-radio-group">
+                        {% for e in event_options %}
+                        <label class="event-radio-option{{ ' is-ended' if e.status != 'active' }}">
+                            <input type="radio" name="event_id" value="{{ e.event_id }}" {% if e.event_id == default_event_id %}checked{% endif %}>
+                            <span class="event-radio-name">{{ e.event_name }}</span>
+                            <span class="event-radio-tag">{{ 'Province-wide' if e.scope == 'province' else 'Local' }}{% if e.status != 'active' %} · ended{% endif %}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <p class="form-hint">More than one active typhoon-related event applies to your barangay right now - choose which one this report is for.</p>
+                </div>
+                {% elif event_options %}
+                <input type="hidden" name="event_id" value="{{ event_options[0].event_id }}">
+                <p class="form-hint">This report will be linked to the active typhoon-related event: <strong>{{ event_options[0].event_name }}</strong>.</p>
+                {% else %}
+                <input type="hidden" name="event_id" value="">
+                <p class="form-hint">There is no PSWDO-declared active event right now - this will be filed as a standing report.</p>
+                {% endif %}
+                <div class="wizard-nav"><span></span><button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button></div>
+            </section>
+
+            <!-- Step 2: Incident -->
+            <section class="panel wizard-step" data-step="2" hidden>
+                <div class="panel-header"><h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Incident Details</h3></div>
+                <p class="form-hint">
+                    This report is for the <strong>typhoon-related event</strong> selected in Step 1{% if event_options|length == 1 %} ({{ event_options[0].event_name }}){% endif %}.
+                    When did the impact happen in your barangay?
+                </p>
+
+                <div class="form-row-2col">
+                    <div class="form-row">
+                        <label for="incident_date">Date of Incident <span class="required-mark">*</span></label>
+                        <input type="date" id="incident_date" name="incident_date" max="{{ today.isoformat() }}"
+                               value="{{ report.incident_date.isoformat() if report and report.incident_date else '' }}" required>
+                    </div>
+                    <div class="form-row">
+                        <label for="incident_time">Time of Incident</label>
+                        <input type="time" id="incident_time" name="incident_time"
+                               value="{{ report.incident_time.strftime('%H:%M') if report and report.incident_time else '' }}">
+                    </div>
+                </div>
+                <div class="wizard-nav">
+                    <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
+                    <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
+                </div>
+            </section>
+
+            <!-- Step 3: Barangay Data -->
+            <section class="panel wizard-step" data-step="3" hidden>
+                <div class="panel-header"><h3>{{ icon('alert-triangle', 18, '#0f2547') }} Barangay Assessment</h3></div>
+                <p class="form-hint">Check off which of your registered families were affected - families, individuals, PWD, and senior citizen counts are totalled automatically.</p>
+
+                {% if families %}
+                {% set puroks = families|map(attribute='purok')|reject('none')|unique|sort|list %}
+                <div class="fam-filter-bar">
+                    <div class="fam-search-wrapper">
+                        {{ icon('search', 14, '#8a94a6') }}
+                        <input type="text" id="fam-search" placeholder="Search family name...">
+                    </div>
+                    {% if puroks|length > 1 %}
+                    <select id="fam-purok-filter">
+                        <option value="">All Puroks</option>
+                        {% for p in puroks %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+                    </select>
+                    {% endif %}
+                    <select id="fam-category-filter">
+                        <option value="">All Families</option>
+                        <option value="pwd">With PWD Members</option>
+                        <option value="senior">With Senior Citizens</option>
+                        <option value="children">With Children</option>
+                    </select>
+                    <a href="{{ url_for('barangay.family_profiles') }}" target="_blank" class="fam-manage-link">{{ icon('external-link', 12) }} Manage Family Profiles</a>
+                </div>
+                <div class="fam-checklist-frame">
+                <div class="fam-checklist" id="fam-checklist">
+                    <div class="fam-checklist-toolbar">
+                        <label class="fam-checklist-selectall"><input type="checkbox" id="fam-select-all"> Select All (<span id="fam-select-all-count">{{ families|length }}</span>)</label>
+                    </div>
+                    {% for f in families %}
+                    <label class="fam-checklist-row" data-name="{{ (f.family_name ~ ' ' ~ (f.head_name or ''))|lower }}" data-purok="{{ f.purok or '' }}"
+                           data-pwd="{{ 1 if f.pwd_count else 0 }}" data-senior="{{ 1 if f.senior_count else 0 }}" data-children="{{ 1 if f.children_count else 0 }}">
+                        <input type="checkbox" name="family_ids" class="fam-checkbox" value="{{ f.family_id }}"
+                               data-members="{{ f.member_count }}" data-pwd="{{ f.pwd_count }}"
+                               data-senior="{{ f.senior_count }}" data-children="{{ f.children_count }}"
+                               {{ 'checked' if f.family_id in selected_family_ids }}>
+                        <span class="fam-checklist-name">
+                            {{ f.family_name }}{% if f.purok %} <em>· {{ f.purok }}</em>{% endif %}
+                            {% if f.head_name %}<span class="wh-table-sub">{{ f.head_name }}</span>{% endif %}
+                        </span>
+                        <span class="fam-checklist-badges">
+                            <span class="fam-badge">{{ f.member_count }} member{{ 's' if f.member_count != 1 }}</span>
+                            {% if f.pwd_count %}<span class="fam-badge fam-badge-pwd">{{ f.pwd_count }} PWD</span>{% endif %}
+                            {% if f.senior_count %}<span class="fam-badge fam-badge-senior">{{ f.senior_count }} senior</span>{% endif %}
+                            {% if f.children_count %}<span class="fam-badge fam-badge-child">{{ f.children_count }} children</span>{% endif %}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                </div><!-- /.fam-checklist-frame -->
+                <div class="fam-checklist-hint-row">
+                    <p class="fam-checklist-hint" id="fam-checklist-hint"></p>
+                    <span class="fam-scroll-hint" id="fam-scroll-hint" hidden>{{ icon('chevron-down', 12) }} Scroll to view more</span>
+                </div>
+
+                <div class="fam-stat-pills">
+                    <div class="fam-pill fam-pill-purple"><span>Affected Families</span><strong id="fam-sum-families">0</strong><em>of {{ families|length }} registered</em></div>
+                    <div class="fam-pill fam-pill-blue"><span>Individuals</span><strong id="fam-sum-individuals">0</strong><em>of {{ families|sum(attribute='member_count') }} registered</em></div>
+                    <div class="fam-pill fam-pill-green"><span>PWD</span><strong id="fam-sum-pwd">0</strong><em>of {{ families|sum(attribute='pwd_count') }} registered</em></div>
+                    <div class="fam-pill fam-pill-amber"><span>Senior</span><strong id="fam-sum-senior">0</strong><em>of {{ families|sum(attribute='senior_count') }} registered</em></div>
+                    <div class="fam-pill fam-pill-red"><span>Children</span><strong id="fam-sum-children">0</strong><em>of {{ families|sum(attribute='children_count') }} registered</em></div>
+                </div>
+                {% else %}
+                <div class="stock-warning" style="margin-bottom:12px;">
+                    {{ icon('info', 14) }}
+                    <span>No Family Profiles registered yet. <a href="{{ url_for('barangay.family_profiles') }}" target="_blank">Add them here</a> to use the checklist next time - for now, enter counts manually below.</span>
+                </div>
+                {% endif %}
+
+                {% set is_manual_default = manual_mode or not families %}
+                <label class="fam-manual-toggle">
+                    <input type="checkbox" id="fam-manual-toggle" {{ 'checked' if is_manual_default }}>
+                    Enter Affected Families / Individuals manually instead
+                </label>
+
+                <div class="form-row-2col" id="fam-manual-fields">
+                    <div class="form-row">
+                        <label for="manual_affected_families">Affected Families</label>
+                        <input type="number" id="manual_affected_families" min="0" {{ 'readonly' if not is_manual_default }}
+                               value="{{ report.affected_families if report else 0 }}">
+                        <span class="form-hint">Total households with damage</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="manual_affected_individuals">Affected Individuals</label>
+                        <input type="number" id="manual_affected_individuals" min="0" {{ 'readonly' if not is_manual_default }}
+                               value="{{ report.affected_individuals if report else 0 }}">
+                        <span class="form-hint" id="individuals-hint">Must be &ge; affected families</span>
+                    </div>
+                </div>
+
+                <input type="hidden" name="entry_mode" id="entry_mode">
+                <input type="hidden" name="affected_families" id="affected_families">
+                <input type="hidden" name="affected_individuals" id="affected_individuals">
+
+                <div class="form-row-2col">
+                    <div class="form-row">
+                        <label for="totally_damaged_houses">Totally Damaged Houses <span class="required-mark">*</span></label>
+                        <input type="number" id="totally_damaged_houses" name="totally_damaged_houses" min="0" required
+                               value="{{ report.totally_damaged_houses if report else 0 }}">
+                        <span class="form-hint">Enter 0 if none</span>
+                    </div>
+                    <div class="form-row">
+                        <label for="partially_damaged_houses">Partially Damaged Houses</label>
+                        <input type="number" id="partially_damaged_houses" name="partially_damaged_houses" min="0"
+                               value="{{ report.partially_damaged_houses if report else 0 }}">
+                        <span class="form-hint">Enter 0 if none</span>
+                    </div>
+                </div>
+                <div class="step3-predict-row">
+                    <div class="form-row">
+                        <label for="requested_food_packs">Food Packs Requested <span style="font-weight:400; color:#8a94a6;">(optional)</span></label>
+                        <input type="number" id="requested_food_packs" name="requested_food_packs" min="0"
+                               value="{{ report.requested_food_packs if report and report.requested_food_packs else '' }}"
+                               placeholder="Leave blank if unsure">
+                        <span class="form-hint">If you have an estimate of how many food packs your barangay needs, enter it here.</span>
+                    </div>
+
+                    <div class="step3-predict-card" id="fam-suggest-box" hidden>
+                        <div class="step3-predict-info">
+                            <span class="step3-predict-eyebrow">{{ icon('package', 14, 'white') }} Suggestion</span>
+                            <div class="step3-predict-figure"><strong id="fam-suggest-value">0</strong><span class="step3-predict-unit">packs</span></div>
+                            <p id="fam-suggest-text"></p>
+                        </div>
+                        <button type="button" id="fam-suggest-use">Use suggested</button>
+                    </div>
+                </div>
+
+                <div class="wizard-nav">
+                    <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
+                    <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
+                </div>
+            </section>
+
+            <!-- Step 4: Evidence -->
+            <section class="panel wizard-step" data-step="4" hidden>
+                <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Supporting Evidence</h3></div>
+                <p class="form-hint">Upload photos of affected areas and damaged houses.</p>
+                <label for="photo_files" class="upload-dropzone">
+                    <div class="qa-icon" style="background:#eaf0fd; width:52px; height:52px; margin:0 auto 10px;">{{ icon('file-text', 22, '#2c5aa0') }}</div>
+                    <strong>Tap to upload photos</strong>
+                    <span>JPG, PNG, or PDF - up to 10MB each · multiple files allowed</span>
+                    <input type="file" id="photo_files" name="photo_files" accept=".jpg,.jpeg,.png,.pdf" multiple style="display:none;">
+                </label>
+                {% if report and report.photo_paths %}
+                <p class="form-hint" style="margin-top:8px;">Already attached: {{ report.photo_paths.split(',')|length }} file(s). Uploading new files will add to these.</p>
+                {% endif %}
+                <div class="form-row" style="margin-top:16px;">
+                    <label for="remarks">Remarks &amp; Observations</label>
+                    <textarea id="remarks" name="remarks" rows="4" placeholder="Describe the current situation in your barangay. Include road access status, ongoing rescue operations, urgent needs, special observations, etc.
+
+Example: Flood water reached approximately 1.5 meters. Several roads are not passable. Immediate food assistance is needed for evacuees.">{{ report.remarks if report else '' }}</textarea>
+                </div>
+                <div class="wizard-nav">
+                    <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
+                    <button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button>
+                </div>
+            </section>
+
+            <!-- Step 5: Review & Submit -->
+            <section class="panel wizard-step" data-step="5" hidden>
+                <div class="panel-header"><h3>{{ icon('check-circle', 18, '#0f2547') }} Review &amp; Submit</h3></div>
+                <p class="form-hint">Review all information before submitting. Once submitted, this report cannot be edited unless returned by MSWDO/CSWDO.</p>
+                <div class="review-grid">
+                    <div class="review-box">
+                        <span class="review-box-title">Incident</span>
+                        <div class="review-row"><span>Typhoon Event</span><strong id="rv-event">{{ default_event.event_name if default_event else '-' }}</strong></div>
+                        <div class="review-row"><span>Date of Incident</span><strong id="rv-date"></strong></div>
+                    </div>
+                    <div class="review-box">
+                        <span class="review-box-title">Barangay Data</span>
+                        <div class="review-row"><span>Families</span><strong id="rv-families"></strong></div>
+                        <div class="review-row"><span>Individuals</span><strong id="rv-individuals"></strong></div>
+                        <div class="review-row"><span>PWD</span><strong id="rv-pwd"></strong></div>
+                        <div class="review-row"><span>Senior Citizens</span><strong id="rv-senior"></strong></div>
+                        <div class="review-row"><span>Children</span><strong id="rv-children"></strong></div>
+                        <div class="review-row"><span>Totally Damaged</span><strong id="rv-totally"></strong></div>
+                        <div class="review-row"><span>Partially Damaged</span><strong id="rv-partially"></strong></div>
+                        <div class="review-row"><span>Food Packs Requested</span><strong id="rv-requested"></strong></div>
+                    </div>
+                    <div class="review-box">
+                        <span class="review-box-title">Evidence</span>
+                        <div class="review-row"><span>Photos</span><strong id="rv-photo-count"></strong></div>
+                        <div class="review-row" style="display:block;"><span>Remarks</span><p id="rv-remarks" style="margin:4px 0 0; font-size:12px; color:#333;"></p></div>
+                    </div>
+                </div>
+                <div class="wizard-important-note">
+                    {{ icon('alert-triangle', 14, '#b7791f') }}
+                    <span><strong>Important:</strong> Once submitted, this report will be sent to MSWDO/CSWDO for verification. You will only be able to edit it if MSWDO/CSWDO returns it for correction. Make sure all information is accurate.</span>
+                </div>
+                <div class="wizard-nav">
+                    <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>
+                    <button type="submit" formaction="{{ url_for('barangay.submit_damage_report') }}" class="btn-submit-final">{{ icon('arrow-right', 14, 'white') }} Submit to MSWDO</button>
+                </div>
+            </section>
+        </form>
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var steps = Array.prototype.slice.call(document.querySelectorAll('.wizard-step'));
+    var totalSteps = steps.length;
+    var current = 1;
+
+    function showStep(n) {
+        steps.forEach(function (el) {
+            el.hidden = (parseInt(el.dataset.step, 10) !== n);
+        });
+        document.querySelectorAll('.wizard-step-node').forEach(function (node) {
+            var stepNum = parseInt(node.dataset.stepNode, 10);
+            node.classList.remove('done', 'current');
+            if (stepNum < n) node.classList.add('done');
+            else if (stepNum === n) node.classList.add('current');
+        });
+        var pct = Math.round(((n - 1) / (totalSteps - 1)) * 100);
+        document.getElementById('wizard-step-count').textContent = 'Step ' + n + ' of ' + totalSteps;
+        document.getElementById('wizard-progress-fill').style.width = pct + '%';
+        document.getElementById('wizard-pct').textContent = pct + '% complete';
+        current = n;
+        if (n === totalSteps) populateReview();
+        // .fam-checklist has 0 scrollHeight/clientHeight while its wizard step
+        // is hidden (display:none), so the scroll-hint's initial computation
+        // at page load sees "nothing to scroll" - recompute once this step
+        // is actually visible and laid out.
+        if (typeof updateFamScrollHint === 'function') updateFamScrollHint();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function currentStepEl() {
+        return steps.find(function (el) { return parseInt(el.dataset.step, 10) === current; });
+    }
+
+    function validateCurrentStep() {
+        var el = currentStepEl();
+        var invalid = el.querySelector(':invalid');
+        if (invalid) {
+            invalid.reportValidity();
+            return false;
+        }
+        if (current === 3) {
+            recomputeFamilyCounts();
+            var families = parseInt(document.getElementById('affected_families').value || '0', 10);
+            var individuals = parseInt(document.getElementById('affected_individuals').value || '0', 10);
+            if (individuals < families) {
+                var hint = document.getElementById('individuals-hint');
+                hint.classList.add('hint-error');
+                var manualIndividuals = document.getElementById('manual_affected_individuals');
+                if (manualIndividuals) manualIndividuals.focus();
+                return false;
+            }
+            document.getElementById('individuals-hint').classList.remove('hint-error');
+        }
+        return true;
+    }
+
+    function num(id) { return parseInt((document.getElementById(id) || {}).value || '0', 10) || 0; }
+
+    document.querySelectorAll('.wizard-next').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (!validateCurrentStep()) return;
+            if (current < totalSteps) showStep(current + 1);
+        });
+    });
+    document.querySelectorAll('.wizard-back').forEach(function (btn) {
+        btn.addEventListener('click', function () { if (current > 1) showStep(current - 1); });
+    });
+
+    function textOf(id) {
+        var el = document.getElementById(id);
+        return el ? (el.tagName === 'SELECT' ? el.options[el.selectedIndex].text : el.value) : '';
+    }
+
+    // fam-sum-pwd/senior/children only exist when the barangay has
+    // registered families to check off (they sit inside Step 3's
+    // families-present branch) - a manual-only barangay never renders
+    // them, so this can't assume getElementById() succeeds the way
+    // textOf() does for the always-present form fields above.
+    function contentOf(id) {
+        var el = document.getElementById(id);
+        return el ? el.textContent : '';
+    }
+
+    function populateReview() {
+        // Typhoon Event is a radio group (see .event-radio-group), not a
+        // single element with its own id, so it can't use textOf() like
+        // the plain inputs below - only present at all when more than one
+        // active event exists (event_options|length > 1 in the template).
+        var checkedEvent = document.querySelector('.event-radio-group input[name="event_id"]:checked');
+        if (checkedEvent) {
+            var nameEl = checkedEvent.closest('.event-radio-option').querySelector('.event-radio-name');
+            document.getElementById('rv-event').textContent = (nameEl ? nameEl.textContent : '') || '-';
+        }
+        document.getElementById('rv-date').textContent = (textOf('incident_date') || '-') + (textOf('incident_time') ? ' ' + textOf('incident_time') : '');
+        document.getElementById('rv-families').textContent = textOf('affected_families') || '0';
+        document.getElementById('rv-individuals').textContent = textOf('affected_individuals') || '0';
+        document.getElementById('rv-pwd').textContent = contentOf('fam-sum-pwd') || '0';
+        document.getElementById('rv-senior').textContent = contentOf('fam-sum-senior') || '0';
+        document.getElementById('rv-children').textContent = contentOf('fam-sum-children') || '0';
+        document.getElementById('rv-totally').textContent = textOf('totally_damaged_houses') || '0';
+        document.getElementById('rv-partially').textContent = textOf('partially_damaged_houses') || '0';
+        document.getElementById('rv-requested').textContent = textOf('requested_food_packs') || 'Not specified';
+        var fileInput = document.getElementById('photo_files');
+        document.getElementById('rv-photo-count').textContent = (fileInput && fileInput.files ? fileInput.files.length : 0) + ' photo(s) attached';
+        document.getElementById('rv-remarks').textContent = textOf('remarks') || 'None';
+    }
+
+    var photoInput = document.getElementById('photo_files');
+    if (photoInput) {
+        photoInput.addEventListener('change', function () {
+            var label = photoInput.closest('.upload-dropzone').querySelector('strong');
+            label.textContent = photoInput.files.length ? photoInput.files.length + ' file(s) selected' : 'Tap to upload photos';
+        });
+    }
+
+    // --- Step 3: Family checklist / manual entry -----------------------
+    // Drives the hidden affected_families/affected_individuals fields
+    // (the ones actually submitted) from either the checked Family
+    // Profiles or the manual fallback inputs - see
+    // app.routes.barangay._apply_affected_families for the server side.
+    var famCheckboxes = Array.prototype.slice.call(document.querySelectorAll('.fam-checkbox'));
+    var manualToggle = document.getElementById('fam-manual-toggle');
+    var manualFamiliesInput = document.getElementById('manual_affected_families');
+    var manualIndividualsInput = document.getElementById('manual_affected_individuals');
+    var entryModeField = document.getElementById('entry_mode');
+    var familiesField = document.getElementById('affected_families');
+    var individualsField = document.getElementById('affected_individuals');
+    var selectAll = document.getElementById('fam-select-all');
+    var suggestBox = document.getElementById('fam-suggest-box');
+    var suggestValue = document.getElementById('fam-suggest-value');
+    var suggestText = document.getElementById('fam-suggest-text');
+    var suggestUseBtn = document.getElementById('fam-suggest-use');
+    var requestedInput = document.getElementById('requested_food_packs');
+    var famRows = Array.prototype.slice.call(document.querySelectorAll('.fam-checklist-row'));
+    var famSearch = document.getElementById('fam-search');
+    var famPurokFilter = document.getElementById('fam-purok-filter');
+    var famCategoryFilter = document.getElementById('fam-category-filter');
+    var famChecklistHint = document.getElementById('fam-checklist-hint');
+    var famChecklistEl = document.getElementById('fam-checklist');
+    var famScrollHint = document.getElementById('fam-scroll-hint');
+
+    function updateFamScrollHint() {
+        if (!famChecklistEl || !famScrollHint) return;
+        var hasMore = famChecklistEl.scrollHeight - famChecklistEl.scrollTop - famChecklistEl.clientHeight > 4;
+        famScrollHint.hidden = !hasMore;
+    }
+    if (famChecklistEl) famChecklistEl.addEventListener('scroll', updateFamScrollHint);
+
+    function setText(id, val) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = val;
+    }
+
+    function updateIndividualsHint(families, individuals) {
+        var hint = document.getElementById('individuals-hint');
+        if (!hint) return;
+        hint.classList.toggle('hint-error', individuals < families);
+    }
+
+    function recomputeFamilyCounts() {
+        var isManual = !!(manualToggle && manualToggle.checked);
+        if (entryModeField) entryModeField.value = isManual ? 'manual' : 'checklist';
+        // The Affected Families/Individuals boxes stay visible either way -
+        // in checklist mode they're read-only and mirror the checked-off
+        // totals live; switching to manual mode unlocks them for typing.
+        if (manualFamiliesInput) manualFamiliesInput.readOnly = !isManual;
+        if (manualIndividualsInput) manualIndividualsInput.readOnly = !isManual;
+
+        if (isManual) {
+            var mf = num('manual_affected_families');
+            var mi = num('manual_affected_individuals');
+            if (familiesField) familiesField.value = mf;
+            if (individualsField) individualsField.value = mi;
+            if (suggestBox) suggestBox.hidden = true;
+            // No checklist selection to tally PWD/senior/children from in
+            // manual mode - zero these out instead of leaving whatever was
+            // last computed from a checklist selection made before the
+            // toggle was switched on.
+            setText('fam-sum-pwd', 0);
+            setText('fam-sum-senior', 0);
+            setText('fam-sum-children', 0);
+            updateIndividualsHint(mf, mi);
+            return;
+        }
+
+        var famCount = 0, indiv = 0, pwd = 0, senior = 0, children = 0;
+        famCheckboxes.forEach(function (cb) {
+            if (!cb.checked) return;
+            famCount++;
+            indiv += parseInt(cb.dataset.members || '0', 10) || 0;
+            pwd += parseInt(cb.dataset.pwd || '0', 10) || 0;
+            senior += parseInt(cb.dataset.senior || '0', 10) || 0;
+            children += parseInt(cb.dataset.children || '0', 10) || 0;
+        });
+
+        if (familiesField) familiesField.value = famCount;
+        if (individualsField) individualsField.value = indiv;
+        if (manualFamiliesInput) manualFamiliesInput.value = famCount;
+        if (manualIndividualsInput) manualIndividualsInput.value = indiv;
+        setText('fam-sum-families', famCount);
+        setText('fam-sum-individuals', indiv);
+        setText('fam-sum-pwd', pwd);
+        setText('fam-sum-senior', senior);
+        setText('fam-sum-children', children);
+        updateIndividualsHint(famCount, indiv);
+
+        if (selectAll) {
+            var visibleCbs = famCheckboxes.filter(function (cb) { return !cb.closest('.fam-checklist-row').hidden; });
+            selectAll.checked = visibleCbs.length > 0 && visibleCbs.every(function (cb) { return cb.checked; });
+        }
+
+
+        if (suggestBox && suggestText && suggestUseBtn) {
+            var suggested = famCount + pwd + senior;
+            suggestBox.hidden = false;
+            if (suggestValue) suggestValue.textContent = suggested;
+            suggestText.textContent = 'Based on ' + famCount + ' famil' + (famCount === 1 ? 'y' : 'ies') + ' + ' + pwd + ' PWD + ' + senior + ' senior';
+            suggestUseBtn.dataset.value = suggested;
+        }
+    }
+
+    // --- Step 3: search + purok/category filters for the checklist ------
+    function applyFamFilter() {
+        if (!famRows.length) return;
+        var q = famSearch ? famSearch.value.trim().toLowerCase() : '';
+        var purok = famPurokFilter ? famPurokFilter.value : '';
+        var category = famCategoryFilter ? famCategoryFilter.value : '';
+        var visible = 0;
+        famRows.forEach(function (row) {
+            var matchesName = !q || row.dataset.name.indexOf(q) !== -1;
+            var matchesPurok = !purok || row.dataset.purok === purok;
+            var matchesCategory = !category || row.dataset[category] === '1';
+            var show = matchesName && matchesPurok && matchesCategory;
+            row.hidden = !show;
+            if (show) visible++;
+        });
+        if (famChecklistHint) {
+            famChecklistHint.textContent = (visible === famRows.length)
+                ? 'Showing all ' + famRows.length + ' families'
+                : 'Showing ' + visible + ' of ' + famRows.length + ' families';
+        }
+        setText('fam-select-all-count', visible);
+        recomputeFamilyCounts();
+        updateFamScrollHint();
+    }
+    if (famSearch) famSearch.addEventListener('input', applyFamFilter);
+    if (famPurokFilter) famPurokFilter.addEventListener('change', applyFamFilter);
+    if (famCategoryFilter) famCategoryFilter.addEventListener('change', applyFamFilter);
+    applyFamFilter();
+
+    famCheckboxes.forEach(function (cb) { cb.addEventListener('change', recomputeFamilyCounts); });
+    if (manualFamiliesInput) manualFamiliesInput.addEventListener('input', recomputeFamilyCounts);
+    if (manualIndividualsInput) manualIndividualsInput.addEventListener('input', recomputeFamilyCounts);
+    if (manualToggle) manualToggle.addEventListener('change', recomputeFamilyCounts);
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            famCheckboxes.forEach(function (cb) {
+                if (!cb.closest('.fam-checklist-row').hidden) cb.checked = selectAll.checked;
+            });
+            recomputeFamilyCounts();
+        });
+    }
+    if (suggestUseBtn) {
+        suggestUseBtn.addEventListener('click', function () {
+            if (requestedInput) requestedInput.value = suggestUseBtn.dataset.value || '0';
+        });
+    }
+
+    recomputeFamilyCounts();
+
+    showStep(1);
+})();
+</script>
+{% endblock %}

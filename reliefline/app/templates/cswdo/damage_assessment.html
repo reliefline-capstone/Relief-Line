@@ -182,7 +182,7 @@
 
         <div class="page-tabs">
             {% for key, label, coll in TABS %}
-            <a href="{{ url_for('cswdo.damage_assessment', tab=key) }}" class="page-tab {{ 'active' if tab == key }}">{{ label }} <span class="page-tab-badge">{{ coll|length }}</span></a>
+            <a href="{{ url_for('cswdo.damage_assessment', tab=key) }}" class="page-tab {{ 'active' if tab == key }}">{{ label }}{% if key == 'queue' %} <span class="page-tab-badge">{{ coll|length }}</span>{% endif %}</a>
             {% endfor %}
         </div>
 

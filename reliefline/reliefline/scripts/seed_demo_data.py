@@ -1,0 +1,271 @@
+"""
+Populates ReliefLine's dev database with realistic demo data spanning the
+dashboard, relief requests, and distribution operations pages: barangay
+disaster statuses (drives Priority/Affected Families), allocation requests in
+every status (pending/approved/partially approved/rejected), and distribution
+records covering every dispatch stage (preparing, loaded, dispatched, in
+transit, delivered, delayed).
+
+Safe to re-run: exits early if demo data already appears to be present
+(checks for any existing DistributionRecord). To reset, delete the seeded
+rows first (see the bottom of this file for the exact tables touched).
+
+Usage:
+    .venv/Scripts/python.exe scripts/seed_demo_data.py
+"""
+import sys
+import os
+from datetime import date, datetime, timedelta, time as dtime
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.utils.timezone import ph_today
+
+from app import create_app
+from app.extensions import db
+from app.models.barangay import Barangay
+from app.models.office import Office
+from app.models.disaster_event import DisasterEvent
+from app.models.barangay_status import BarangayDisasterStatus
+from app.models.allocation import AllocationRecord
+from app.models.validation import DistributionRecord
+from app.models.warehouse import WarehouseInventory
+from app.models.activity_log import ActivityLog, DailyOpsStat
+from app.models.relief_request_batch import ReliefRequestBatch
+from app.models.user import User
+
+app = create_app()
+
+TARGET_LGUS = ["Urdaneta City", "Santa Barbara", "Calasiao"]
+
+
+def run():
+    with app.app_context():
+        if DistributionRecord.query.first():
+            print("Demo data already present (found a DistributionRecord) - skipping. "
+                  "Delete existing rows first if you want to reseed.")
+            return
+
+        today = ph_today()
+        barangays = {b.barangay_name: b for b in Barangay.query.filter(
+            Barangay.city_municipality.in_(TARGET_LGUS)
+        ).all()}
+        muni_offices = {o.area_covered: o for o in Office.query.filter_by(office_type="cswdo").all()}
+        warehouse_a = Office.query.filter_by(office_name="PSWDO Warehouse").first()
+        admin_users = {u.role: u for u in User.query.all()}
+        pswdo_admin = admin_users.get("pswdo_admin") or admin_users.get("system_admin")
+        cswdo_admin_by_office = {u.office_id: u for u in User.query.filter_by(role="cswdo_admin").all()}
+
+        event = DisasterEvent.query.filter_by(status="active").order_by(DisasterEvent.start_date.desc()).first()
+        if not event:
+            # A real, PAGASA-named 2026 typhoon rather than an invented
+            # placeholder (earlier demo data used "Typhoon Crising"/"Sample
+            # Typhoon Event", neither of which referred to an actual storm).
+            # Typhoon Inday (international name Bavi) was a real super
+            # typhoon affecting the Philippines in early-to-mid July 2026 -
+            # see Rappler (https://www.rappler.com/philippines/weather/super-typhoon-inday-update-pagasa-forecast-july-7-2026-11pm/)
+            # and Al Jazeera (https://www.aljazeera.com/news/2026/7/10/philippines-landslides-kill-15-as-typhoon-bavi-threatens-region).
+            # The seeded start_date below (7 days before "today") is meant to
+            # land in that same window for a fresh reseed; it won't exactly
+            # match if reseeded much later, but stays a real storm name either way.
+            event = DisasterEvent(
+                event_name="Typhoon Inday", event_type="typhoon", status="active",
+                weather_condition="Super Typhoon", start_date=today - timedelta(days=7),
+                created_by=pswdo_admin.user_id if pswdo_admin else None,
+            )
+            db.session.add(event)
+            db.session.flush()
+        print(f"Using event: {event.event_name} (id={event.event_id})")
+
+        # --- PSWDO Warehouse stock: give it real, non-zero inventory to fulfill demo allocations ---
+        wa_inventory = WarehouseInventory.query.filter_by(office_id=warehouse_a.office_id, item_type="food_pack").first()
+        if not wa_inventory:
+            wa_inventory = WarehouseInventory(office_id=warehouse_a.office_id, item_type="food_pack",
+                                               quantity_available=22000, min_stock_level=3000)
+            db.session.add(wa_inventory)
+        else:
+            wa_inventory.quantity_available = 22000
+
+        # --- PSWDO Warehouse general info + extra stock catalog (demonstrates the
+        # flexible, non-food_pack inventory catalog alongside the reserved item) ---
+        if not warehouse_a.full_address:
+            warehouse_a.full_address = f"Capitol Compound, {warehouse_a.area_covered}, Pangasinan"
+            warehouse_a.manager_name = "Juan Dela Cruz"
+            warehouse_a.contact_number = "0917-123-4567"
+            warehouse_a.email = "warehouse.a@pangasinan.gov.ph"
+
+        extra_items = [
+            ("rice_50kg", "Rice (50kg)", "sacks", 820, 200),
+            ("water_1l", "Water (1L)", "bottles", 5000, 1000),
+            ("blankets", "Blankets", "pieces", 800, 200),
+            ("medicine_kit", "Medicine Kit", "kits", 450, 300),
+        ]
+        for item_type, item_name, unit, qty, min_level in extra_items:
+            if not WarehouseInventory.query.filter_by(office_id=warehouse_a.office_id, item_type=item_type).first():
+                db.session.add(WarehouseInventory(
+                    office_id=warehouse_a.office_id, item_type=item_type, item_name=item_name,
+                    unit=unit, quantity_available=qty, min_stock_level=min_level,
+                ))
+        db.session.flush()
+        print("Seeded PSWDO Warehouse general info + extra stock catalog (rice, water, blankets, medicine kit)")
+
+        # --- Barangay disaster statuses (drives Priority + Affected Families everywhere) ---
+        status_plan = [
+            ("Anonas", "high_priority", 1200),
+            ("Bactad East", "needs_assistance", 800),
+            ("Bayaoas", "monitoring", 400),
+            ("Cabaruan", "needs_assistance", 600),
+            ("Botao", "high_priority", 900),
+            ("Dalongue", "needs_assistance", 600),
+            ("Balingueo", "monitoring", 300),
+            ("Lasip", "high_priority", 700),
+            ("Cabilocaan", "needs_assistance", 500),
+            ("Doyong", "monitoring", 350),
+            ("Banaoang", "monitoring", 250),
+        ]
+        for name, status, families in status_plan:
+            b = barangays[name]
+            existing = BarangayDisasterStatus.query.filter_by(barangay_id=b.barangay_id, event_id=event.event_id).first()
+            if not existing:
+                db.session.add(BarangayDisasterStatus(
+                    barangay_id=b.barangay_id, event_id=event.event_id,
+                    status=status, affected_families=families,
+                    updated_by=pswdo_admin.user_id if pswdo_admin else None,
+                ))
+        db.session.flush()
+        print(f"Seeded {len(status_plan)} BarangayDisasterStatus rows")
+
+        # One ReliefRequestBatch per office, created lazily on first use - every
+        # AllocationRecord below now goes through the same submission wrapper the
+        # real CSWDO "Relief Requests" flow uses (app.routes.cswdo.relief_request_submit),
+        # instead of being created directly. Without this, these records would be
+        # invisible on the CSWDO Relief Requests page (which only reads
+        # ReliefRequestBatch) while still showing up on the CSWDO Dashboard's
+        # "Relief Request Status" widget (which reads AllocationRecord directly) -
+        # the two pages would silently disagree about how many requests exist.
+        _relief_batches = {}
+        submitted_at = datetime.combine(today - timedelta(days=1), dtime(9, 0))
+
+        def _get_or_create_batch(office):
+            if office.office_id not in _relief_batches:
+                cswdo_admin = cswdo_admin_by_office.get(office.office_id)
+                batch = ReliefRequestBatch(
+                    office_id=office.office_id, event_id=event.event_id,
+                    requested_food_packs=0, priority="medium", status="pending",
+                    reason="Municipal warehouse replenishment for the active event.",
+                    created_by=cswdo_admin.user_id if cswdo_admin else None,
+                    created_at=submitted_at, submitted_at=submitted_at,
+                )
+                db.session.add(batch)
+                db.session.flush()
+                _relief_batches[office.office_id] = batch
+            return _relief_batches[office.office_id]
+
+        def make_allocation(barangay_name, muni, predicted, alloc_status, allocated=0,
+                             expected_delivery_days=2, rejection_reason=None):
+            b = barangays[barangay_name]
+            office = muni_offices[muni]
+            batch = _get_or_create_batch(office)
+            batch.requested_food_packs += predicted
+            alloc = AllocationRecord(
+                barangay_id=b.barangay_id, office_id=office.office_id,
+                predicted_quantity=predicted, allocated_quantity=allocated,
+                allocation_date=today - timedelta(days=1), event_id=event.event_id,
+                status=alloc_status, batch_id=batch.batch_id,
+            )
+            if alloc_status == "approved":
+                alloc.fulfilling_office_id = warehouse_a.office_id
+                alloc.expected_delivery_date = today + timedelta(days=expected_delivery_days)
+                alloc.decided_by = pswdo_admin.user_id if pswdo_admin else None
+                alloc.created_by = pswdo_admin.user_id if pswdo_admin else None
+            if rejection_reason:
+                alloc.rejection_reason = rejection_reason
+                alloc.decided_by = pswdo_admin.user_id if pswdo_admin else None
+            db.session.add(alloc)
+            db.session.flush()
+            return alloc
+
+        def make_distribution(alloc, dispatch_status,
+                               departure=None, arrival=None, received_by=None,
+                               condition=None, travel_time=None):
+            rec = DistributionRecord(
+                barangay_id=alloc.barangay_id, allocation_id=alloc.allocation_id,
+                quantity_released=alloc.allocated_quantity,
+                distribution_date=today, dispatch_status=dispatch_status,
+                departure_time=departure, expected_arrival_time=arrival,
+                received_by=received_by, condition=condition, travel_time=travel_time,
+                status="confirmed" if dispatch_status == "delivered" else "pending",
+                submitted_by=pswdo_admin.user_id if pswdo_admin else None,
+            )
+            db.session.add(rec)
+            # Mirror the real approve flow's inventory deduction so numbers stay consistent
+            wa_inventory.quantity_available -= alloc.allocated_quantity
+            return rec
+
+        # --- Allocations + distributions (covers every status combo) ---
+        a1 = make_allocation("Anonas", "Urdaneta City", 2300, "approved", 2300)
+        d1 = make_distribution(a1, "delivered",
+                           dtime(8, 0), dtime(10, 30), "Aivan Flores", "complete", "2 hrs 30 mins")
+
+        a2 = make_allocation("Bactad East", "Urdaneta City", 1500, "approved", 1500)
+        d2 = make_distribution(a2, "in_transit",
+                           dtime(7, 30), dtime(9, 45))
+
+        a3 = make_allocation("Botao", "Santa Barbara", 900, "approved", 900)
+        make_distribution(a3, "dispatched",
+                           dtime(9, 0), dtime(11, 15))
+
+        a4 = make_allocation("Dalongue", "Santa Barbara", 600, "approved", 600)
+        make_distribution(a4, "loaded")
+
+        a5 = make_allocation("Lasip", "Calasiao", 1800, "approved", 1800)
+        make_distribution(a5, "preparing")
+
+        a6 = make_allocation("Cabilocaan", "Calasiao", 1200, "approved", 1200)
+        make_distribution(a6, "delayed")
+
+        a7 = make_allocation("Doyong", "Calasiao", 1100, "approved", 1100)
+        make_distribution(a7, "delivered",
+                           dtime(6, 45), dtime(9, 0), "Maria Santos", "complete", "2 hrs 15 mins")
+
+        make_allocation("Bayaoas", "Urdaneta City", 1000, "pending")
+        make_allocation("Balingueo", "Santa Barbara", 700, "pending")
+        make_allocation("Banaoang", "Calasiao", 500, "approved", 300, expected_delivery_days=1)
+        make_allocation("Cabaruan", "Urdaneta City", 800, "pending",
+                         rejection_reason="Municipal warehouse already has adequate stock for this barangay; redirected to Bayaoas instead.")
+
+        db.session.flush()
+        print("Seeded 11 AllocationRecords (2 pending, 7 approved/full, 1 partial, 1 rejected)")
+        print("Seeded 7 DistributionRecords covering preparing/loaded/dispatched/in_transit/delivered(x2)/delayed")
+
+        # --- Recent activity feed ---
+        activities = [
+            ("allocation_approved", f"Approved 2,300 food packs for Urdaneta City from {warehouse_a.office_name}", a1.barangay_id),
+            ("distribution_delivered", "D-{}-{:03d} delivered to Urdaneta City, received by Aivan Flores".format(today.year, d1.distribution_id), a1.barangay_id),
+            ("allocation_approved", f"Approved 900 food packs for Santa Barbara from {warehouse_a.office_name}", a3.barangay_id),
+            ("distribution_status", "Distribution marked In Transit for Bactad East, Urdaneta City", a2.barangay_id),
+            ("allocation_rejected", "Rejected relief request from Urdaneta City: adequate stock on hand", barangays["Cabaruan"].barangay_id),
+        ]
+        for action_type, desc, b_id in activities:
+            db.session.add(ActivityLog(
+                actor_id=pswdo_admin.user_id if pswdo_admin else None,
+                action_type=action_type, description=desc,
+                office_id=warehouse_a.office_id, barangay_id=b_id,
+            ))
+
+        # --- Today's vehicle activity stat (feeds the dashboard's "Vehicles Active") ---
+        for muni in TARGET_LGUS:
+            office = muni_offices[muni]
+            if not DailyOpsStat.query.filter_by(office_id=office.office_id, stat_date=today).first():
+                db.session.add(DailyOpsStat(
+                    office_id=office.office_id, stat_date=today,
+                    vehicles_active=1, updated_by=pswdo_admin.user_id if pswdo_admin else None,
+                ))
+
+        db.session.commit()
+        print("\nSeed complete.")
+        print(f"PSWDO Warehouse food_pack stock: {wa_inventory.quantity_available:,} / 22,000 capacity")
+
+
+if __name__ == "__main__":
+    run()

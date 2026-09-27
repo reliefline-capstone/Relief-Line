@@ -1,15 +1,18 @@
 {% from "_macros.html" import icon with context %}
-<!-- Breadcrumb -->
+<!-- Page header nav: a back button to the parent page + the current page's
+     title. `crumbs` = [parent, current]; only the parent's url and the
+     current label/status are shown (no directory-style trail). Pass just
+     [parent] for a back button alone (the page shows its own title). -->
 {% if crumbs %}
+{% set back = crumbs|first %}
+{% set current = crumbs|last %}
 <nav class="wh-breadcrumb">
-    {% for crumb in crumbs %}
-        {% if crumb.url %}
-        <a href="{{ crumb.url }}">{% if loop.first %}<span class="wh-breadcrumb-back">{{ icon('chevron-down', 14) }}</span>{% endif %}{{ crumb.label }}</a>
-        <span class="wh-breadcrumb-sep">/</span>
-        {% else %}
-        <span class="wh-breadcrumb-current">{{ crumb.label }}</span>
-        {% if crumb.status %}<span class="wh-breadcrumb-status"><i class="wh-status-dot wh-status-dot-{{ crumb.status|lower }}"></i> {{ crumb.status }}</span>{% endif %}
-        {% endif %}
-    {% endfor %}
+    {% if back.url %}
+    <a href="{{ back.url }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+    {% endif %}
+    {% if not current.url %}
+    <span class="wh-breadcrumb-current">{{ current.label }}</span>
+    {% if current.status %}<span class="wh-breadcrumb-status"><i class="wh-status-dot wh-status-dot-{{ current.status|lower }}"></i> {{ current.status }}</span>{% endif %}
+    {% endif %}
 </nav>
 {% endif %}
