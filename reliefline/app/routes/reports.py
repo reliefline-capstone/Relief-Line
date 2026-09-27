@@ -14,7 +14,7 @@ from app.models.disaster_event import DisasterEvent
 from app.models.report import ReportLog
 
 from app.routes.pswdo import TARGET_LGUS
-from app.routes.report_data import REPORT_TYPES, resolve_filters, build_report
+from app.routes.report_data import REPORT_TYPES, PSWDO_REPORT_TYPES, resolve_filters, build_report
 from app.routes.report_files import generate_file
 
 reports_bp = Blueprint("reports", __name__)
@@ -64,7 +64,7 @@ def _regenerate_from_log(log):
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def view(report_type):
-    if report_type not in REPORT_TYPES:
+    if report_type not in PSWDO_REPORT_TYPES:
         abort(404)
     filters = resolve_filters(request.args)
     report = build_report(report_type, filters, current_user)
@@ -82,7 +82,7 @@ def view(report_type):
 
 
 def _export(report_type, fmt):
-    if report_type not in REPORT_TYPES:
+    if report_type not in PSWDO_REPORT_TYPES:
         abort(404)
     filters = resolve_filters(request.args)
     report = build_report(report_type, filters, current_user)
@@ -128,7 +128,7 @@ def download(report_id):
     """Re-download from Recent Reports - regenerates the same file from the
     log's stored filters rather than keeping binary blobs on disk/DB."""
     log = ReportLog.query.get_or_404(report_id)
-    if log.report_type not in REPORT_TYPES:
+    if log.report_type not in PSWDO_REPORT_TYPES:
         abort(404)
 
     content, _ = _regenerate_from_log(log)
@@ -151,7 +151,7 @@ def download_all():
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for i, log in enumerate(logs, start=1):
-            if log.report_type not in REPORT_TYPES:
+            if log.report_type not in PSWDO_REPORT_TYPES:
                 continue
             content, _ = _regenerate_from_log(log)
             fname = f"{i:02d}_{log.report_type}_{log.generated_at.strftime('%Y%m%d')}.{EXTENSIONS[log.format]}"

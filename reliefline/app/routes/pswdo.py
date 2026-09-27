@@ -2269,7 +2269,7 @@ def warehouse_reports():
     # Deferred import - report_data imports helpers back from this module,
     # so this must be a call-time import to avoid a circular import.
     from app.models.report import ReportLog
-    from app.routes.report_data import REPORT_TYPES, resolve_filters
+    from app.routes.report_data import REPORT_TYPES, PSWDO_REPORT_TYPES, resolve_filters
 
     filters = resolve_filters(request.args)
     # Every event, not just the currently-active one - a report is almost
@@ -2295,7 +2295,10 @@ def warehouse_reports():
         approved_q = approved_q.filter(AllocationRecord.event_id == filters["event_id"])
         delivered_q = delivered_q.join(AllocationRecord).filter(AllocationRecord.event_id == filters["event_id"])
 
-    reports_generated = ReportLog.query.filter(ReportLog.generated_at >= filters["start_date"]).count()
+    reports_generated = ReportLog.query.filter(
+        ReportLog.report_type.in_(PSWDO_REPORT_TYPES),
+        ReportLog.generated_at >= filters["start_date"],
+    ).count()
     approved_requests = approved_q.count()
     packs_distributed = sum(d.quantity_released for d in delivered_q.all())
     completed_deliveries = delivered_q.count()
@@ -2305,12 +2308,18 @@ def warehouse_reports():
     # "no event filter", and resolve_filters() would then treat that as "not
     # chosen yet" and silently default back to the active event.
     query_params = {"event_id": filters["event_id"] or "", "municipality": filters["municipality"], "days": filters["days"]}
+    # Only the report types that map to a feature actually in the PSWDO
+    # sidebar (Warehouse Inventory, Stock Transfers, Recommendations) - see
+    # PSWDO_REPORT_TYPES in report_data.py. The rest (Barangay Reports,
+    # Deliveries, Municipality/Typhoon summaries) are CSWDO/MSWDO features.
     report_cards = [
-        {"slug": slug, **info, "generate_url": url_for("reports.view", report_type=slug, **query_params)}
-        for slug, info in REPORT_TYPES.items()
+        {"slug": slug, **REPORT_TYPES[slug], "generate_url": url_for("reports.view", report_type=slug, **query_params)}
+        for slug in PSWDO_REPORT_TYPES
     ]
 
-    recent_logs = ReportLog.query.order_by(ReportLog.generated_at.desc()).limit(10).all()
+    recent_logs = ReportLog.query.filter(
+        ReportLog.report_type.in_(PSWDO_REPORT_TYPES)
+    ).order_by(ReportLog.generated_at.desc()).limit(10).all()
     recent_reports = []
     for log in recent_logs:
         stored = json.loads(log.filters_json) if log.filters_json else {}

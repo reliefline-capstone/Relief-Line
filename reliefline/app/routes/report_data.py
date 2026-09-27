@@ -441,6 +441,16 @@ BUILDERS = {
     "analytics": _build_analytics,
 }
 
+# PSWDO's own Reports page (app.routes.pswdo.warehouse_reports) only offers
+# the report types that map to a feature actually in the PSWDO sidebar -
+# Warehouse Inventory, Stock Transfers (the stock_movement builder - covers
+# inter-warehouse transfers, the closest existing match) and Recommendations
+# (the analytics/Predictive Analytics builder). "Barangay Reports",
+# "Deliveries Report", "Municipality Summary" and "Typhoon Event Summary"
+# belong to features PSWDO doesn't have (those are CSWDO/MSWDO's, via
+# app.routes.cswdo's own reports blueprint) - CSWDO keeps all of REPORT_TYPES.
+PSWDO_REPORT_TYPES = ("warehouse_inventory", "stock_movement", "analytics")
+
 
 def build_report(report_type, filters, user=None):
     if report_type not in REPORT_TYPES:

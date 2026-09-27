@@ -82,7 +82,6 @@
             <section class="rc-section">
                 <h3>What was delivered</h3>
                 {% if lots %}
-                <p class="rc-hint">Taken from the sender's stock, nearest expiry first. Each item shows what one pack holds and its expiration date.</p>
                 {% for lot in lots %}
                 <div class="rc-lot">
                     <div class="rc-lot-head">
@@ -119,7 +118,6 @@
 
             <footer class="rc-footer">
                 <span>Generated {{ generated_at.strftime('%b %d, %Y %I:%M %p') }} by {{ current_user.name }}</span>
-                <span>System-generated record - ReliefLine</span>
             </footer>
         </article>
     </main>
