@@ -5,18 +5,23 @@ already carries generic columns/rows, so no per-report-type layout code is
 needed here.
 """
 import io
+import os
 from xml.sax.saxutils import escape
+
+from flask import current_app
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as XLImage
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, KeepTogether
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, KeepTogether, Image
 
 NAVY = colors.HexColor("#0f2547")
 MUTED = colors.HexColor("#8a94a6")
@@ -38,6 +43,45 @@ def _column_widths(columns, rows, total_width):
         weights.append(min(max(longest_word + 2, min(longest_cell, 28), 4), 30))
     scale = total_width / sum(weights)
     return [w * scale for w in weights]
+
+
+# Box a letterhead seal is scaled into - wider than tall, so a landscape
+# logo (Urdaneta's) isn't shrunk down to a round seal's width.
+SEAL_W, SEAL_H = 1.3 * inch, 0.95 * inch
+
+
+def _static_path(rel):
+    """Absolute path of a file under app/static, or None if it's missing."""
+    if not rel:
+        return None
+    path = os.path.join(current_app.static_folder, *rel.split("/"))
+    return path if os.path.exists(path) else None
+
+
+def _seal(rel):
+    """A letterhead seal image scaled to fit SEAL_W x SEAL_H (keeps its aspect)."""
+    path = _static_path(rel)
+    if not path:
+        return ""
+    iw, ih = ImageReader(path).getSize()
+    scale = min(SEAL_W / iw, SEAL_H / ih)
+    return Image(path, width=iw * scale, height=ih * scale)
+
+
+def _letterhead_block(lh, width, line_style, lgu_style, office_style):
+    """[left seal | centered Republic/Province/LGU lines + office | right seal]."""
+    text = [Paragraph(escape(line), lgu_style if i >= 2 else line_style) for i, line in enumerate(lh["lines"])]
+    text.append(Paragraph(escape(lh["office"].upper()), office_style))
+    side = SEAL_W + 6
+    table = Table([[_seal(lh.get("logo_left")), text, _seal(lh.get("logo_right"))]],
+                  colWidths=[side, width - 2 * side, side])
+    table.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+    ]))
+    return table
 
 
 def _signature_table(letterhead, width):
@@ -101,10 +145,7 @@ def generate_pdf(report):
     head_style = ParagraphStyle("RLHead", parent=body_style, fontName="Helvetica-Bold")
     note_style = ParagraphStyle("RLNote", parent=body_style, fontSize=9, leftIndent=10, spaceAfter=3)
 
-    story = []
-    for i, line in enumerate(lh["lines"]):
-        story.append(Paragraph(escape(line), lh_lgu if i >= 2 else lh_line))
-    story.append(Paragraph(escape(lh["office"].upper()), lh_office))
+    story = [_letterhead_block(lh, doc.width, lh_line, lh_lgu, lh_office)]
     story += [Spacer(1, 6), HRFlowable(width="100%", thickness=1.5, color=colors.black), Spacer(1, 10)]
     story.append(Paragraph(escape(report["title"].upper()), title_style))
 
@@ -185,6 +226,16 @@ def generate_excel(report):
         row += 1
     centered(row, lh["office"].upper(), Font(size=11, bold=True))
     row += 2
+
+    # Seals over the letterhead rows' left and right ends.
+    for rel, col in ((lh.get("logo_left"), 1), (lh.get("logo_right"), last_col)):
+        path = _static_path(rel)
+        if not path:
+            continue
+        img = XLImage(path)
+        scale = 70 / max(img.width, img.height)
+        img.width, img.height = img.width * scale, img.height * scale
+        ws.add_image(img, f"{get_column_letter(col)}1")
     centered(row, report["title"].upper(), title_font)
     row += 1
 

@@ -481,6 +481,10 @@ def _municipality_centroid(area_covered):
 # centroid.
 WAREHOUSE_COORDS = {
     "Lingayen": (16.018148620092937, 120.22850482048867),
+    # The provincial PSWDO office's area is recorded as the whole province,
+    # which has no single point - its warehouse physically sits in Lingayen,
+    # the provincial capital, so it's pinned there.
+    "Province of Pangasinan": (16.018148620092937, 120.22850482048867),
     "Urdaneta City": (15.976373250682347, 120.56670137845737),
     "Santa Barbara": (15.998539153802154, 120.42154479771158),
     "Calasiao": (16.008967715946202, 120.35641917730929),

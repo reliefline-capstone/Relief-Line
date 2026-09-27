@@ -1,12 +1,17 @@
 {# Official LGU letterhead for printable documents (see
    report_data.build_letterhead). Expects `lh` (letterhead dict),
    `doc_title`, and `doc_meta` - a list of (label, value) pairs shown
-   under the title. #}
+   under the title. The issuing LGU's seal sits left of the centered text,
+   the provincial seal right; an empty slot keeps the text centered. #}
 <header class="rpt-lh">
-    <div class="rpt-lh-lines">
-        {% for line in lh.lines %}<span class="{{ 'rpt-lh-lgu' if loop.index > 2 }}">{{ line }}</span>{% endfor %}
+    <div class="rpt-lh-seal">{% if lh.logo_left %}<img src="{{ url_for('static', filename=lh.logo_left) }}" alt="">{% endif %}</div>
+    <div class="rpt-lh-text">
+        <div class="rpt-lh-lines">
+            {% for line in lh.lines %}<span class="{{ 'rpt-lh-lgu' if loop.index > 2 }}">{{ line }}</span>{% endfor %}
+        </div>
+        <div class="rpt-lh-office">{{ lh.office|upper }}</div>
     </div>
-    <div class="rpt-lh-office">{{ lh.office|upper }}</div>
+    <div class="rpt-lh-seal">{% if lh.logo_right %}<img src="{{ url_for('static', filename=lh.logo_right) }}" alt="">{% endif %}</div>
 </header>
 
 <h2 class="rpt-lh-title">{{ doc_title|upper }}</h2>

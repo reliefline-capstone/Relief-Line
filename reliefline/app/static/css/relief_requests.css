@@ -636,8 +636,8 @@
     display: inline-block;
     margin-left: 6px;
     padding: 2px 7px;
-    border-radius: 8px;
-    background: #5347ce;
+    border-radius: 999px;
+    background: #e8a33d;
     color: white;
     font-size: 10px;
     font-weight: 700;

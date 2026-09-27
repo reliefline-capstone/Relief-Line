@@ -48,6 +48,24 @@ def lgu_names(lgu):
     return f"Municipality of {name}", "Municipal"
 
 
+# Official seals shown on the letterhead (paths under app/static). The
+# issuing LGU's own logo sits on the left and the provincial seal on the
+# right; a province-level report has just the provincial seal, on the left.
+PROVINCE_SEAL = "img/province-seal.png"
+LGU_LOGOS = {
+    "Urdaneta City": "img/lgu/urdaneta.png",
+    "Santa Barbara": "img/lgu/santa-barbara.png",
+    "Calasiao": "img/lgu/calasiao.png",
+}
+
+
+def _seals(lgu=None):
+    logo = LGU_LOGOS.get(lgu) if lgu else None
+    if logo:
+        return {"logo_left": logo, "logo_right": PROVINCE_SEAL}
+    return {"logo_left": PROVINCE_SEAL, "logo_right": None}
+
+
 def _preparer(user, fallback_position):
     if not user:
         return {"label": "Prepared By", "name": "", "position": fallback_position}
@@ -66,6 +84,7 @@ def build_letterhead(user=None, barangay=None):
             "lines": lines,
             "office": "Office of the Punong Barangay",
             "place": f"Brgy. {barangay.barangay_name}, {barangay.city_municipality}",
+            **_seals(barangay.city_municipality),
             "signatories": [
                 _preparer(user, "Barangay Secretary"),
                 {"label": "Approved By", "name": "", "position": "Punong Barangay"},
@@ -79,6 +98,7 @@ def build_letterhead(user=None, barangay=None):
             "lines": lines,
             "office": f"{kind} Social Welfare and Development Office",
             "place": office.area_covered,
+            **_seals(office.area_covered),
             "signatories": [
                 _preparer(user, f"{kind} Social Welfare Staff"),
                 {"label": "Noted By", "name": "", "position": f"{kind} Social Welfare and Development Officer"},
@@ -89,6 +109,7 @@ def build_letterhead(user=None, barangay=None):
         "lines": lines,
         "office": "Provincial Social Welfare and Development Office",
         "place": "Province of Pangasinan",
+        **_seals(),
         "signatories": [
             _preparer(user, "PSWDO Staff"),
             {"label": "Noted By", "name": "", "position": "Provincial Social Welfare and Development Officer"},
