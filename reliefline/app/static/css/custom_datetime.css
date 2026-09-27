@@ -124,6 +124,20 @@
     margin-bottom: 8px;
 }
 .cdt-cal-title { font-size: 13.5px; font-weight: 700; color: #1a2233; }
+/* Clickable header title: steps up to the month / year picker. */
+.cdt-cal-title-btn {
+    border: none;
+    background: none;
+    font-family: inherit;
+    padding: 5px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+}
+.cdt-cal-title-btn:hover { background: #efedfd; color: #5347ce; }
+
+/* Month and year pages: 3 x 4 grid of bigger cells. */
+.cdt-cal-grid.cdt-grid-3 { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.cdt-day.cdt-cell { height: 46px; font-size: 13.5px; font-weight: 600; }
 .cdt-nav {
     display: flex;
     align-items: center;

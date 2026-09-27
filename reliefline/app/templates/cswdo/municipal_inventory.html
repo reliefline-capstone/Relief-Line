@@ -261,7 +261,7 @@
             </select>
             <div data-toggle-field="yes" data-toggle-scope="expires">
                 <label for="mi-expdate">Expiration Date *</label>
-                <input type="date" name="expiration_date" id="mi-expdate">
+                <input type="date" data-year-first name="expiration_date" id="mi-expdate">
             </div>
             <label for="mi-source">Source</label>
             <select name="source_type" id="mi-source" data-toggle-select>
@@ -327,7 +327,7 @@
                         <span>{{ c.name }}</span>
                     </label>
                     <input type="text" name="qty_{{ c.component_id }}" value="{{ c.quantity_label }}" maxlength="50" placeholder="Qty per pack" aria-label="{{ c.name }} quantity per pack" data-fp-qty>
-                    <input type="date" name="exp_{{ c.component_id }}" id="mi-exp-{{ item.inventory_id }}-{{ c.component_id }}" aria-label="{{ c.name }} expiration date" data-fp-date>
+                    <input type="date" data-year-first name="exp_{{ c.component_id }}" id="mi-exp-{{ item.inventory_id }}-{{ c.component_id }}" aria-label="{{ c.name }} expiration date" data-fp-date>
                 </div>
                 {% endfor %}
                 <div class="fp-content-row">
@@ -341,7 +341,7 @@
                         <div class="fp-other-row" data-fp-other-row>
                             <input type="text" name="other_name" maxlength="100" placeholder="Item name (e.g. Coffee)">
                             <input type="text" name="other_qty" maxlength="50" placeholder="Qty per pack" aria-label="Quantity per pack">
-                            <input type="date" name="other_date" aria-label="Expiration date">
+                            <input type="date" data-year-first name="other_date" aria-label="Expiration date">
                             <button type="button" class="fp-other-remove" data-fp-other-remove title="Remove">&times;</button>
                         </div>
                     </div>
@@ -351,7 +351,7 @@
             {% endif %}
             {% if item.expiration_date %}
             <label for="mi-newexp-{{ item.inventory_id }}">New Expiration Date</label>
-            <input type="date" name="expiration_date" id="mi-newexp-{{ item.inventory_id }}">
+            <input type="date" data-year-first name="expiration_date" id="mi-newexp-{{ item.inventory_id }}">
             <p class="form-hint">Currently expires {{ item.expiration_date.strftime('%b %d, %Y') }}. Fill this in only when adding stock with a different date.</p>
             {% endif %}
             <label for="mi-min-{{ item.inventory_id }}">Min Stock Level</label>

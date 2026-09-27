@@ -88,6 +88,7 @@
         if (pop.parentNode !== document.body) document.body.appendChild(pop);
         pop.hidden = false;
         trig.setAttribute('aria-expanded', 'true');
+        if (wrap._onOpen) wrap._onOpen();
         if (wrap._render) wrap._render();
         reposition();
     }
@@ -186,17 +187,38 @@
     }
 
     // ---------------------------------------------------------------- DATE
+    // Three levels: days (a month's grid), months (a year's 12 months) and
+    // years (a 12-year page). The header title steps up a level (days ->
+    // months -> years); picking a year steps down to its months, a month
+    // down to its days. The arrows page within the current level. Fields
+    // marked `data-year-first` (expiration dates, usually a year or more
+    // out) open on the year page when empty, so it's year -> month -> day
+    // instead of clicking "next month" a dozen times.
     function enhanceDate(input) {
         var b = baseWrap(input, 'date');
         var minD = parseISO(input.getAttribute('min'));
         var maxD = parseISO(input.getAttribute('max'));
-        var view = null;
+        var yearFirst = input.hasAttribute('data-year-first');
+        var view = null;   // first day of the month (days level) / any day in the year
+        var mode = null;   // 'days' | 'months' | 'years'
+        var yearPage = null; // first year shown on the years page
 
         function selected() { return parseISO(input.value); }
         function inRange(d) {
             var s = startOfDay(d);
             if (minD && s < startOfDay(minD)) return false;
             if (maxD && s > startOfDay(maxD)) return false;
+            return true;
+        }
+        // A whole month / year is selectable if any of its days is in range.
+        function monthInRange(y, m) {
+            if (minD && new Date(y, m + 1, 0) < startOfDay(minD)) return false;
+            if (maxD && new Date(y, m, 1) > startOfDay(maxD)) return false;
+            return true;
+        }
+        function yearInRange(y) {
+            if (minD && y < minD.getFullYear()) return false;
+            if (maxD && y > maxD.getFullYear()) return false;
             return true;
         }
         function syncLabel() {
@@ -206,6 +228,22 @@
                 '</span>' + CAL_ICON;
         }
 
+        function head(title, prevLabel, nextLabel, upLabel) {
+            return '<div class="cdt-cal-head">' +
+                '<button type="button" class="cdt-nav" data-nav="-1" aria-label="' + prevLabel + '">' + CHEV_L + '</button>' +
+                (upLabel
+                    ? '<button type="button" class="cdt-cal-title cdt-cal-title-btn" data-up aria-label="' + upLabel + '">' + title + '</button>'
+                    : '<span class="cdt-cal-title">' + title + '</span>') +
+                '<button type="button" class="cdt-nav" data-nav="1" aria-label="' + nextLabel + '">' + CHEV_R + '</button>' +
+                '</div>';
+        }
+        function foot() {
+            return '<div class="cdt-cal-foot">' +
+                '<button type="button" class="cdt-foot-btn" data-action="clear">Clear</button>' +
+                '<button type="button" class="cdt-foot-btn cdt-foot-primary" data-action="today">Today</button>' +
+                '</div>';
+        }
+
         function render() {
             var sel = selected();
             var today = startOfDay(new Date());
@@ -213,37 +251,93 @@
                 var anchor = sel || today;
                 view = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
             }
+            if (!mode) mode = (yearFirst && !sel) ? 'years' : 'days';
             var y = view.getFullYear(), m = view.getMonth();
-            var gridStart = new Date(y, m, 1 - new Date(y, m, 1).getDay());
+            var html = '';
 
-            var html = '<div class="cdt-cal-head">' +
-                '<button type="button" class="cdt-nav" data-nav="-1" aria-label="Previous month">' + CHEV_L + '</button>' +
-                '<span class="cdt-cal-title">' + MONTHS[m] + ' ' + y + '</span>' +
-                '<button type="button" class="cdt-nav" data-nav="1" aria-label="Next month">' + CHEV_R + '</button>' +
-                '</div><div class="cdt-cal-grid">';
-            for (var i = 0; i < 7; i++) html += '<span class="cdt-dow">' + WEEKDAYS[i] + '</span>';
-            for (var k = 0; k < 42; k++) {
-                var d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + k);
-                var cls = 'cdt-day';
-                if (d.getMonth() !== m) cls += ' is-outside';
-                if (sameDay(d, today)) cls += ' is-today';
-                if (sel && sameDay(d, sel)) cls += ' is-selected';
-                var off = !inRange(d);
-                if (off) cls += ' is-disabled';
-                html += '<button type="button" class="' + cls + '" data-date="' + toISO(d) + '"' +
-                    (off ? ' disabled' : '') + '>' + d.getDate() + '</button>';
+            if (mode === 'years') {
+                // Starts one year back, so this year and the next ten or so
+                // (where expiration dates land) are all on the first page.
+                if (yearPage === null) yearPage = y - 1;
+                var first = yearPage;
+                html += head(first + ' ' + String.fromCharCode(8211) + ' ' + (first + 11), 'Previous years', 'Next years', null);
+                html += '<div class="cdt-cal-grid cdt-grid-3">';
+                for (var yy = first; yy < first + 12; yy++) {
+                    var ycls = 'cdt-day cdt-cell';
+                    if (yy === today.getFullYear()) ycls += ' is-today';
+                    if (sel && yy === sel.getFullYear()) ycls += ' is-selected';
+                    var yoff = !yearInRange(yy);
+                    if (yoff) ycls += ' is-disabled';
+                    html += '<button type="button" class="' + ycls + '" data-year="' + yy + '"' + (yoff ? ' disabled' : '') + '>' + yy + '</button>';
+                }
+                html += '</div>';
+            } else if (mode === 'months') {
+                html += head(String(y), 'Previous year', 'Next year', 'Choose year');
+                html += '<div class="cdt-cal-grid cdt-grid-3">';
+                for (var mm = 0; mm < 12; mm++) {
+                    var mcls = 'cdt-day cdt-cell';
+                    if (y === today.getFullYear() && mm === today.getMonth()) mcls += ' is-today';
+                    if (sel && y === sel.getFullYear() && mm === sel.getMonth()) mcls += ' is-selected';
+                    var moff = !monthInRange(y, mm);
+                    if (moff) mcls += ' is-disabled';
+                    html += '<button type="button" class="' + mcls + '" data-month="' + mm + '"' + (moff ? ' disabled' : '') + '>' + MONTHS_SHORT[mm] + '</button>';
+                }
+                html += '</div>';
+            } else {
+                var gridStart = new Date(y, m, 1 - new Date(y, m, 1).getDay());
+                html += head(MONTHS[m] + ' ' + y, 'Previous month', 'Next month', 'Choose month and year');
+                html += '<div class="cdt-cal-grid">';
+                for (var i = 0; i < 7; i++) html += '<span class="cdt-dow">' + WEEKDAYS[i] + '</span>';
+                for (var k = 0; k < 42; k++) {
+                    var d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + k);
+                    var cls = 'cdt-day';
+                    if (d.getMonth() !== m) cls += ' is-outside';
+                    if (sameDay(d, today)) cls += ' is-today';
+                    if (sel && sameDay(d, sel)) cls += ' is-selected';
+                    var off = !inRange(d);
+                    if (off) cls += ' is-disabled';
+                    html += '<button type="button" class="' + cls + '" data-date="' + toISO(d) + '"' +
+                        (off ? ' disabled' : '') + '>' + d.getDate() + '</button>';
+                }
+                html += '</div>';
             }
-            html += '</div><div class="cdt-cal-foot">' +
-                '<button type="button" class="cdt-foot-btn" data-action="clear">Clear</button>' +
-                '<button type="button" class="cdt-foot-btn cdt-foot-primary" data-action="today">Today</button>' +
-                '</div>';
-            b.popup.innerHTML = html;
+            b.popup.innerHTML = html + foot();
+            reposition();
         }
         b.wrap._render = render;
 
         b.popup.addEventListener('click', function (e) {
             var nav = e.target.closest('[data-nav]');
-            if (nav) { view.setMonth(view.getMonth() + (+nav.dataset.nav)); render(); return; }
+            if (nav) {
+                var step = +nav.dataset.nav;
+                // Rebuild from year/month numbers instead of setMonth() on
+                // the existing date, so paging can never skip or bounce.
+                if (mode === 'years') yearPage += 12 * step;
+                else if (mode === 'months') view = new Date(view.getFullYear() + step, view.getMonth(), 1);
+                else view = new Date(view.getFullYear(), view.getMonth() + step, 1);
+                render();
+                return;
+            }
+            if (e.target.closest('[data-up]')) {
+                mode = mode === 'days' ? 'months' : 'years';
+                yearPage = null;
+                render();
+                return;
+            }
+            var yearBtn = e.target.closest('[data-year]');
+            if (yearBtn && !yearBtn.disabled) {
+                view = new Date(+yearBtn.dataset.year, view.getMonth(), 1);
+                mode = 'months';
+                render();
+                return;
+            }
+            var monthBtn = e.target.closest('[data-month]');
+            if (monthBtn && !monthBtn.disabled) {
+                view = new Date(view.getFullYear(), +monthBtn.dataset.month, 1);
+                mode = 'days';
+                render();
+                return;
+            }
 
             var day = e.target.closest('[data-date]');
             if (day && !day.disabled) {
@@ -259,7 +353,7 @@
             var act = e.target.closest('[data-action]');
             if (!act) return;
             if (act.dataset.action === 'clear') {
-                commit(input, ''); view = null; syncLabel(); render();
+                commit(input, ''); view = null; mode = null; syncLabel(); render();
             } else {
                 var t = new Date();
                 if (inRange(t)) {
@@ -270,7 +364,9 @@
             }
         });
 
-        input.addEventListener('change', function () { view = null; syncLabel(); });
+        // Each opening starts fresh at the right level for the field's value.
+        b.wrap._onOpen = function () { view = null; mode = null; yearPage = null; };
+        input.addEventListener('change', function () { view = null; mode = null; syncLabel(); });
         syncLabel();
     }
 
@@ -395,8 +491,18 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('input[type="date"], input[type="time"]').forEach(enhance);
     });
+    // Outside-click close. Checks the event's path as it was when the click
+    // happened, not e.target's current ancestors: clicking a calendar arrow
+    // re-renders the popup, which detaches the clicked button, so by the
+    // time the click reached here e.target.closest('.cdt-popup') was null
+    // and the calendar closed itself on every month change.
     document.addEventListener('click', function (e) {
-        if (e.target.closest('.cdt-wrap') || e.target.closest('.cdt-popup')) return;
+        var path = e.composedPath ? e.composedPath() : [];
+        for (var i = 0; i < path.length; i++) {
+            var el = path[i];
+            if (el.classList && (el.classList.contains('cdt-wrap') || el.classList.contains('cdt-popup'))) return;
+        }
+        if (e.target.closest && (e.target.closest('.cdt-wrap') || e.target.closest('.cdt-popup'))) return;
         document.querySelectorAll('.cdt-wrap.is-open').forEach(close);
     });
     document.addEventListener('keydown', function (e) {
