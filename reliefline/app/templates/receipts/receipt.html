@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, validation_attachments with context %}
+
+{% block title %}{{ ref }} Receipt - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution_detail.css') }}?v={{ asset_version('css/distribution_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/receipt.css') }}?v={{ asset_version('css/receipt.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'receipt' %}
+    {% if current_user.role == 'barangay_user' %}{% include "barangay/_sidebar.html" %}
+    {% elif current_user.role == 'cswdo_admin' %}{% include "cswdo/_sidebar.html" %}
+    {% else %}{% include "pswdo/_sidebar.html" %}{% endif %}
+
+    <main class="dashboard-main">
+
+        <div class="rc-topbar">
+            <a href="#" onclick="history.back(); return false;" class="rc-back">{{ icon('arrow-left', 14) }} Back</a>
+            <button type="button" class="btn-decision btn-approve-full" onclick="window.print()">{{ icon('list', 14, 'white') }} Print Receipt</button>
+        </div>
+
+        <article class="rc-doc">
+            <header class="rc-header">
+                <div>
+                    <span class="rc-eyebrow">RELIEFLINE &middot; FOOD PACK DELIVERY</span>
+                    <h2>{{ title }}</h2>
+                    <p class="rc-source">{{ source_line }}</p>
+                </div>
+                <div class="rc-refbox">
+                    <span>Reference</span>
+                    <strong>{{ ref }}</strong>
+                    {% if not received %}<em class="rc-badge rc-badge-pending">Awaiting receipt</em>
+                    {% elif condition == 'complete' %}<em class="rc-badge rc-badge-ok">Complete</em>
+                    {% elif condition == 'partial' %}<em class="rc-badge rc-badge-warn">Partial</em>
+                    {% else %}<em class="rc-badge rc-badge-bad">Damaged</em>{% endif %}
+                </div>
+            </header>
+
+            <section class="rc-parties">
+                <div>
+                    <span class="rc-label">From (sender)</span>
+                    <strong>{{ sender }}</strong>
+                    {% if dispatched_at %}<small>Dispatched {{ dispatched_at.strftime('%b %d, %Y %I:%M %p') }}{% if dispatched_by %} by {{ dispatched_by }}{% endif %}</small>{% endif %}
+                    {% if expected %}<small>Expected arrival {{ expected.strftime('%b %d, %Y') }}</small>{% endif %}
+                </div>
+                <div>
+                    <span class="rc-label">To (receiver)</span>
+                    <strong>{{ recipient }}</strong>
+                    {% if received %}
+                    <small>Received
+                        {% if received_at %}{{ received_at.strftime('%b %d, %Y %I:%M %p') }}
+                        {% elif received_on %}{{ received_on.strftime('%b %d, %Y') }}{% if received_time %} {{ received_time.strftime('%I:%M %p') }}{% endif %}{% endif %}
+                        {% if received_by %} by {{ received_by }}{% endif %}</small>
+                    {% else %}<small>Not yet confirmed by the receiver</small>{% endif %}
+                </div>
+            </section>
+
+            <section class="rc-section">
+                <h3>Quantities</h3>
+                <table class="rc-table">
+                    <tbody>
+                        <tr><th>Dispatched</th><td>{{ "{:,}".format(released) }} packs</td></tr>
+                        {% if received %}
+                        <tr><th>Received</th><td>{{ "{:,}".format(received_count) }} packs</td></tr>
+                        {% if short %}<tr class="rc-row-warn"><th>Short</th><td>{{ "{:,}".format(short) }} packs</td></tr>{% endif %}
+                        {% if damaged %}<tr class="rc-row-bad"><th>Damaged</th><td>{{ "{:,}".format(damaged) }} packs</td></tr>{% endif %}
+                        <tr class="rc-row-total"><th>Added to stock (usable)</th><td>{{ "{:,}".format(usable) }} packs</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+                {% if note %}<p class="rc-note"><strong>Receiver's note:</strong> {{ note }}</p>{% endif %}
+                {% if remarks %}<p class="rc-note"><strong>Dispatch remarks:</strong> {{ remarks }}</p>{% endif %}
+                {% if replaces %}<p class="rc-note">Replacement delivery for <strong>{{ replaces }}</strong>.</p>{% endif %}
+                {% for r in replacements %}<p class="rc-note">Replacement <strong>{{ r.ref }}</strong> dispatched for {{ "{:,}".format(r.qty) }} packs.</p>{% endfor %}
+            </section>
+
+            <section class="rc-section">
+                <h3>What was delivered</h3>
+                {% if lots %}
+                <p class="rc-hint">Taken from the sender's stock, nearest expiry first. Each item shows what one pack holds and its expiration date.</p>
+                {% for lot in lots %}
+                <div class="rc-lot">
+                    <div class="rc-lot-head">
+                        <strong>{{ "{:,}".format(lot.qty) }} packs</strong>
+                        <span>stocked {{ lot.received.strftime('%b %d, %Y') }}</span>
+                        {% if lot.earliest %}<span>earliest expiry {{ lot.earliest.strftime('%b %d, %Y') }}</span>
+                        <em class="rc-tag rc-tag-{{ lot.status }}">{{ {'fresh':'Fresh','near_expiry':'Near expiry','expired':'Expired'}.get(lot.status, lot.status) }}</em>{% endif %}
+                    </div>
+                    {% if lot['items'] %}
+                    <table class="rc-table rc-items">
+                        <thead><tr><th>Item</th><th>Per pack</th><th>Expires</th></tr></thead>
+                        <tbody>
+                        {% for i in lot['items'] %}
+                        <tr><td>{{ i.name }}</td><td>{{ i.qty_label or '-' }}</td><td>{{ i.expires.strftime('%b %d, %Y') }} <em class="rc-tag rc-tag-{{ i.status }}">{{ {'fresh':'Fresh','near_expiry':'Near expiry','expired':'Expired'}.get(i.status, i.status) }}</em></td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="rc-hint">No item-level details were tracked for this lot (older stock) - standard shelf life applies.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="rc-hint">Batch and expiration details weren't recorded for this delivery (it was dispatched before batch tracking was added).</p>
+                {% endif %}
+            </section>
+
+            {% if attachments %}
+            <section class="rc-section rc-noprint">
+                <h3>Photo proof</h3>
+                {{ validation_attachments(distribution_id, attachments) }}
+            </section>
+            {% endif %}
+
+            <footer class="rc-footer">
+                <span>Generated {{ generated_at.strftime('%b %d, %Y %I:%M %p') }} by {{ current_user.name }}</span>
+                <span>System-generated record - ReliefLine</span>
+            </footer>
+        </article>
+    </main>
+</div>
+{% endblock %}

@@ -10,9 +10,12 @@ Two funding sources delivered in lots between 19 Aug and 2 Sep 2026:
   * LGU  - 19 lots (Maticmatic appears twice; Maticmatic 20 and Minien West 17
            are evacuation-center packs)
 
-This is what was DISTRIBUTED (supply), not a measurement of what was needed,
-so the generator uses it to calibrate scale and shape only (see
-scripts/seed_monthly_history.py, calibration_report). Transcribed as printed;
+This is what was DISTRIBUTED (supply), not a measurement of what was needed.
+It is the only real Sta. Barbara record the team can get, so it is loaded as
+data_source='real' for Aug 2026 (it trains the model) and is also used to
+calibrate the generator's scale and shape (scripts/seed_monthly_history.py,
+calibration_report). Cross-checked against the CSVs the team supplied (DSWDO and
+LGU sheets, which add Date Received / RDS Submitted columns not loaded here). Transcribed as printed;
 names are matched to the barangays table accent-insensitively.
 """
 import unicodedata

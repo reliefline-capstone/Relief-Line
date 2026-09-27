@@ -20,6 +20,8 @@ What is verified vs. judged (kept explicit on purpose, for the panel):
       from NDRRMC/ReliefWeb/Wikipedia/PIA reports (per-event note below).
 
   MEASURED (real per-barangay records)
+    * Calasiao reports for Crising/Emong (Jul) and Nando/Opong (Sep) 2025 -
+      scripts/real_calasiao_reports_2025.py (Jul packs estimated, Sep measured).
     * Urdaneta City CSWDO reports for the four 2025 events (Dante/Emong+habagat
       Jul, Mirasol/Nando Sep, Paolo Oct, Uwan Nov) - scripts/real_urdaneta_
       reports_2025.py. They showed the impact of one storm differs a lot by
@@ -102,16 +104,24 @@ EVENTS = [
      "note": "Landfall Catanduanes then Aurora; Pangasinan among affected provinces; 4.24M affected nationally."},
     {"key": "crising_2025", "name": "Habagat + TS Wipha (Crising) + TS Dante + TS Co-may (Emong)", "start": date(2025, 7, 15), "end": date(2025, 7, 26), "severity": 5,
      "lgu_severity": {"Urdaneta City": 2},
-     "note": "Co-may made landfall over Pangasinan; Calasiao residents used rafts; 1,700+ homes damaged in Mangaldan. Urdaneta CSWDO report (as of Aug 1): only 2,704 families affected - a mild event there."},
-    {"key": "nando_2025", "name": "Habagat + TC Mirasol + Super Typhoon Ragasa (Nando)", "start": date(2025, 9, 20), "end": date(2025, 9, 26), "severity": 3,
-     "lgu_severity": {"Urdaneta City": 3},
-     "note": "Pangasinan/Ilocos/La Union under wind signals with enhanced habagat. Urdaneta CSWDO report (Sep 26): 8,938 families affected, 5,731 packs served."},
+     "note": "Co-may made landfall over Pangasinan; Calasiao residents used rafts; 1,700+ homes damaged in Mangaldan. Urdaneta CSWDO report (as of Aug 1): only 2,704 families affected - a mild event there. Calasiao report (Aug 2025): 29,356 families / 113,404 persons affected across all 24 barangays."},
+    {"key": "nando_2025", "name": "Habagat + TC Mirasol + Super Typhoon Ragasa (Nando) + Opong", "start": date(2025, 9, 20), "end": date(2025, 9, 26), "severity": 3,
+     "lgu_severity": {"Urdaneta City": 3, "Calasiao": 4},
+     "note": "Pangasinan/Ilocos/La Union under wind signals with enhanced habagat. Urdaneta CSWDO report (Sep 26): 8,938 families affected, 5,731 packs served. Calasiao Nando/Opong report: 20,008 families affected in 19 of 24 barangays, 17,140 packs served (DSWD 10,480, LGU 6,260, Province 400)."},
     {"key": "paolo_2025", "name": "Typhoon Matmo (Paolo)", "start": date(2025, 10, 1), "end": date(2025, 10, 4), "severity": 3,
      "lgu_severity": {"Urdaneta City": 4},
      "note": "Landfall Dinapigue, Isabela Oct 3; Pangasinan and Ilocos affected. Urdaneta CSWDO report (Oct 4): 14,012 families affected, 12,424 packs served - Urdaneta's worst event of 2025."},
     {"key": "uwan_2025", "name": "Super Typhoon Fung-wong (Uwan)", "start": date(2025, 11, 9), "end": date(2025, 11, 10), "severity": 2,
      "lgu_severity": {"Urdaneta City": 1},
      "note": "Landfall Dinalungan, Aurora Nov 9; Pangasinan placed under a state of calamity. Urdaneta CSWDO report (Nov 25): only 1,380 families affected, 950 packs served."},
+    # Dates are APPROXIMATE: the Sta. Barbara sheet shows deliveries from 19 Aug,
+    # and Pangasinan was placed under a state of calamity on 31 Aug 2026. Chosen
+    # so the delivery window (start+2d .. end+12d = 15-31 Aug) sits in August.
+    # Severity outside Sta. Barbara is a judgement (no report yet): Calasiao shares
+    # its floodplain, Urdaneta is less exposed.
+    {"key": "habagat_aug2026", "name": "Late-August 2026 habagat flooding", "start": date(2026, 8, 13), "end": date(2026, 8, 19), "severity": 5,
+     "lgu_severity": {"Urdaneta City": 3},
+     "note": "Sta. Barbara relief-distribution sheet: 14,071 packs to 29 barangays, delivered 19 Aug - 2 Sep 2026; Pangasinan under a state of calamity 31 Aug 2026."},
 ]
 
 def severity_for(event, lgu):
@@ -126,4 +136,4 @@ BASELINE_INCIDENT_PROB = 0.03
 BASELINE_INCIDENT_PACKS = (20, 80)
 
 HISTORY_START = date(2021, 1, 1)
-HISTORY_END = date(2025, 12, 1)   # last month of the synthetic history
+HISTORY_END = date(2026, 8, 1)   # last month of the history (the real Sta. Barbara Aug 2026 sheet)

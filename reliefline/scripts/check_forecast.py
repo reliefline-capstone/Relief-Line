@@ -16,6 +16,7 @@ from sqlalchemy import text
 
 from app import create_app
 from app.extensions import db
+from app.ml import climate_reference as ref
 from app.ml import predict as P
 from app.models.barangay import Barangay
 
@@ -34,17 +35,24 @@ with app.app_context():
     n_b = Barangay.query.count()
     counts = dict(db.session.execute(text(
         "SELECT data_source, COUNT(*) FROM barangay_monthly_history GROUP BY 1")).fetchall())
-    check("every barangay has 60 months of history (synthetic + real)",
-          counts.get("synthetic", 0) + counts.get("real", 0) == n_b * 60,
-          f"{counts.get('synthetic', 0)} synthetic + {counts.get('real', 0)} real vs {n_b * 60}")
-    real_months = dict(db.session.execute(text(
-        "SELECT DATE_FORMAT(month_start, '%Y-%m'), SUM(food_packs) FROM barangay_monthly_history "
-        "WHERE data_source = 'real' GROUP BY 1")).fetchall())
-    expected_real = {"2025-07": 2704, "2025-09": 5731, "2025-10": 12424, "2025-11": 950}
+    n_months = (ref.HISTORY_END.year - ref.HISTORY_START.year) * 12 + ref.HISTORY_END.month - ref.HISTORY_START.month + 1
+    check(f"every barangay has {n_months} months of history (synthetic + real)",
+          counts.get("synthetic", 0) + counts.get("real", 0) == n_b * n_months,
+          f"{counts.get('synthetic', 0)} synthetic + {counts.get('real', 0)} real vs {n_b * n_months}")
+    def real_by_month(lgu):
+        return {k: int(v) for k, v in db.session.execute(text(
+            "SELECT DATE_FORMAT(h.month_start, '%Y-%m'), SUM(h.food_packs) FROM barangay_monthly_history h "
+            "JOIN barangays b ON b.barangay_id = h.barangay_id "
+            "WHERE h.data_source = 'real' AND b.city_municipality = :lgu GROUP BY 1"), {"lgu": lgu}).fetchall()}
+    got = real_by_month("Urdaneta City")
     check("real Urdaneta 2025 reports loaded (Jul 2,704 / Sep 5,731 / Oct 12,424 / Nov 950 packs)",
-          {k: int(v) for k, v in real_months.items()} == expected_real, str(real_months))
+          got == {"2025-07": 2704, "2025-09": 5731, "2025-10": 12424, "2025-11": 950}, str(got))
+    got = real_by_month("Calasiao")
+    check("real Calasiao 2025 reports loaded (Jul 25,246 estimated / Sep 17,140 measured packs)",
+          got == {"2025-07": 25246, "2025-09": 17140}, str(got))
     real = db.session.execute(text(
-        "SELECT SUM(food_packs) FROM barangay_monthly_history WHERE data_source='real_sample'")).scalar()
+        "SELECT SUM(h.food_packs) FROM barangay_monthly_history h JOIN barangays b ON b.barangay_id = h.barangay_id "
+        "WHERE h.data_source='real' AND b.city_municipality='Santa Barbara' AND h.month_start='2026-08-01'")).scalar()
     check("real Aug 2026 Sta. Barbara sheet loaded (14,071 packs)", int(real or 0) == 14071, str(real))
     check("no negative packs", db.session.execute(text(
         "SELECT COUNT(*) FROM barangay_monthly_history WHERE food_packs < 0")).scalar() == 0)

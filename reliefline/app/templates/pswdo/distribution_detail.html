@@ -25,6 +25,7 @@
             <span class="rd-crumb-sep">/</span>
             <span>D-{{ rec.distribution_date.year }}-{{ '%03d'|format(rec.distribution_id) }}</span>
             <span class="badge-status badge-status-{{ rec.dispatch_status }}"><i class="priority-dot"></i> {{ dispatch_labels.get(rec.dispatch_status, rec.dispatch_status) }}</span>
+            <a href="{{ url_for('receipts.distribution_receipt', distribution_id=rec.distribution_id) }}" style="margin-left:auto; font-weight:600;">View Receipt</a>
         </div>
 
         <!-- Distribution status stepper -->

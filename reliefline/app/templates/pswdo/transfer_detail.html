@@ -27,6 +27,7 @@
                    · {{ "{:,}".format(t.quantity) }} food packs
                    · {{ t.from_office.office_name }} → {{ t.to_office.office_name }}</p>
             </div>
+            <a href="{{ url_for('receipts.transfer_receipt', transfer_id=t.transfer_id) }}" class="btn-decision btn-partial" style="text-decoration:none;">{{ icon('file-text', 14, 'white') }} View Receipt</a>
         </div>
 
         <section class="panel dd-stepper-panel">
@@ -51,6 +52,7 @@
                     {% if t.issued_at %}<div><span>Dispatched</span><strong>{{ t.issued_at.strftime('%b %d, %I:%M %p') }} by {{ t.issued_by_user.name if t.issued_by_user }}</strong></div>{% endif %}
                     {% if t.expected_arrival %}<div><span>Expected Arrival</span><strong>{{ t.expected_arrival.strftime('%b %d, %Y') }}</strong></div>{% endif %}
                     {% if t.received_at %}<div><span>Received</span><strong>{{ t.received_at.strftime('%b %d, %I:%M %p') }} by {{ t.received_by }}</strong></div>{% endif %}
+                    {% if t.has_receipt_issue %}<div><span>Verification</span><strong>{{ t.receipt_condition|capitalize }} - {{ '{:,}'.format(t.good_count) }} usable of {{ '{:,}'.format(t.quantity) }}{% if t.shortage_count %}, {{ '{:,}'.format(t.shortage_count) }} short{% endif %}{% if t.damaged_count %}, {{ '{:,}'.format(t.damaged_count) }} damaged{% endif %}{% if t.receipt_note %} ({{ t.receipt_note }}){% endif %}</strong></div>{% endif %}
                     {% if t.note %}<div><span>Note</span><strong>{{ t.note }}</strong></div>{% endif %}
                 </div>
             </section>

@@ -229,6 +229,7 @@ def create_app():
     from app.routes.prediction import prediction_bp
     from app.routes.reports import reports_bp
     from app.routes.admin import admin_bp
+    from app.routes.receipts import receipts_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(pswdo_bp, url_prefix="/pswdo")
@@ -237,5 +238,6 @@ def create_app():
     app.register_blueprint(prediction_bp, url_prefix="/prediction")
     app.register_blueprint(reports_bp, url_prefix="/pswdo/reports")
     app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(receipts_bp, url_prefix="/receipts")
 
     return app

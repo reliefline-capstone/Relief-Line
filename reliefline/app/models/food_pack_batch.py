@@ -64,13 +64,29 @@ class FoodPackBatchItem(db.Model):
 
     item_id = db.Column(db.Integer, primary_key=True)
     batch_id = db.Column(db.Integer, db.ForeignKey("food_pack_batches.batch_id"), nullable=False)
-    component_id = db.Column(db.Integer, db.ForeignKey("food_pack_components.component_id"), nullable=False)
+    # component_id is NULL for an "Others" item - something outside the
+    # standard pack contents that staff named by hand (custom_name).
+    component_id = db.Column(db.Integer, db.ForeignKey("food_pack_components.component_id"), nullable=True)
+    custom_name = db.Column(db.String(100), nullable=True)
+    # What one pack holds of this item in THIS batch (e.g. "3 pcs"); NULL means
+    # the catalog default (component.quantity_label).
+    quantity_label = db.Column(db.String(50), nullable=True)
     expiration_date = db.Column(db.Date, nullable=False)
 
     batch = db.relationship("FoodPackBatch", backref=db.backref(
         "items", order_by="FoodPackBatchItem.expiration_date"
     ))
     component = db.relationship("FoodPackComponent")
+
+    @property
+    def label(self):
+        """Display name: the catalog component's name, or the free-text name
+        for an "Others" item staff added to this batch."""
+        return self.component.name if self.component else self.custom_name
+
+    @property
+    def qty_label(self):
+        return self.quantity_label or (self.component.quantity_label if self.component else "")
 
 
 class BarangayFoodPackBatch(db.Model):
@@ -87,7 +103,7 @@ class BarangayFoodPackBatch(db.Model):
     Opened by app.routes.barangay._create_barangay_food_pack_batch, normally
     from _record_barangay_receipt FIFO-consuming the fulfilling CSWDO
     office's own FoodPackBatch rows (see app.routes.pswdo.
-    _consume_food_pack_batches_fifo) so the received_date - and therefore
+    _deduct_food_pack_batches at dispatch) so the received_date - and therefore
     the real remaining shelf life - carries forward instead of resetting to
     a fresh clock just because the stock changed tiers.
     """
@@ -115,10 +131,24 @@ class BarangayFoodPackBatchItem(db.Model):
 
     item_id = db.Column(db.Integer, primary_key=True)
     batch_id = db.Column(db.Integer, db.ForeignKey("barangay_food_pack_batches.batch_id"), nullable=False)
-    component_id = db.Column(db.Integer, db.ForeignKey("food_pack_components.component_id"), nullable=False)
+    component_id = db.Column(db.Integer, db.ForeignKey("food_pack_components.component_id"), nullable=True)
+    custom_name = db.Column(db.String(100), nullable=True)
+    # What one pack holds of this item in THIS batch (e.g. "3 pcs"); NULL means
+    # the catalog default (component.quantity_label).
+    quantity_label = db.Column(db.String(50), nullable=True)
     expiration_date = db.Column(db.Date, nullable=False)
 
     batch = db.relationship("BarangayFoodPackBatch", backref=db.backref(
         "items", order_by="BarangayFoodPackBatchItem.expiration_date"
     ))
     component = db.relationship("FoodPackComponent")
+
+    @property
+    def label(self):
+        """Display name: the catalog component's name, or the free-text name
+        for an "Others" item staff added to this batch."""
+        return self.component.name if self.component else self.custom_name
+
+    @property
+    def qty_label(self):
+        return self.quantity_label or (self.component.quantity_label if self.component else "")

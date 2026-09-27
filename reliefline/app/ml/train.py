@@ -88,10 +88,11 @@ pipeline does not change.
 Keeping the training set honest
 --------------------------------------------------------------------------
 Only barangay_monthly_history rows with data_source in ('synthetic',
-'real', 'system') train the model ('real' = the four Urdaneta 2025 CSWDO
-reports). 'real_sample' rows (a single month of one
-municipality) are held out and used only to sanity-check the forecast - see
-holdout_check().
+'real', 'system') train the model ('real' = the four Urdaneta and two
+Calasiao 2025 event reports and the Sta. Barbara Aug 2026 relief sheet, the
+only real record that LGU has). 'real_sample' is a legacy label for a real
+month kept OUT of training; none is loaded now, so holdout_check() is dormant
+and the rolling-origin backtest is the out-of-sample test.
 
 Run scripts/train_model.py to (re)fit this against the current database.
 """

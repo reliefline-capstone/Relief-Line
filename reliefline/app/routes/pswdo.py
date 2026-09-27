@@ -809,9 +809,7 @@ def _sync_food_pack_batches(office_id):
     fp = WarehouseInventory.query.filter_by(office_id=office_id, item_type="food_pack").first()
     on_hand = fp.quantity_available if fp else 0
 
-    active_batches = FoodPackBatch.query.filter_by(office_id=office_id, status="active").order_by(
-        FoodPackBatch.received_date, FoodPackBatch.batch_id
-    ).all()
+    active_batches = _batch_take_order(FoodPackBatch.query.filter_by(office_id=office_id, status="active").all())
 
     batch_total = sum(b.quantity_remaining for b in active_batches)
     excess = batch_total - on_hand
@@ -823,6 +821,10 @@ def _sync_food_pack_batches(office_id):
             b.quantity_remaining -= trim
             excess -= trim
         active_batches = [b for b in active_batches if b.quantity_remaining > 0]
+    elif excess < 0:
+        # Stock that entered without a batch (older code paths, manual DB
+        # edits) - give it one so the batch list always adds up to on hand.
+        active_batches.append(_create_food_pack_batch(office_id, -excess, ph_today()))
 
     today = ph_today()
     expired_batches = [b for b in active_batches if b.expiration_date < today and b.quantity_remaining > 0]
@@ -861,110 +863,254 @@ def _sync_food_pack_batches(office_id):
     db.session.commit()
 
 
-def _create_food_pack_batch(office_id, quantity, received_date, updated_by=None):
-    """Opens one FoodPackBatch for newly-received Food Packs stock, with a
-    FoodPackBatchItem per FoodPackComponent (rice, creamer, canned goods,
-    Ovaltine - see scripts/seed_food_pack_batches.py for the researched
-    shelf life behind each one). The batch's own expiration_date is cached
-    as the earliest of those - in practice always the rice, since it has by
-    far the shortest researched shelf life of the six components - because
-    the whole sealed pack gets pulled together once its most perishable
-    item expires, not unbundled to salvage the canned goods.
+def _parse_expiration_date(raw, label="This item"):
+    """Shared by the Add Stock Item routes at PSWDO and CSWDO: turns a date
+    input value into (date, error). Past dates are rejected since the stock
+    would already be expired."""
+    from datetime import datetime
+    try:
+        d = datetime.strptime((raw or "").strip(), "%Y-%m-%d").date()
+    except ValueError:
+        return None, f"Enter a valid expiration date for {label}."
+    if d < ph_today():
+        return None, f"The expiration date for {label} can't be in the past."
+    return d, None
 
-    No manual per-component date entry: shelf lives are researched
-    catalog defaults, not a printed date staff transcribe by hand, so
-    every date here is received_date + FoodPackComponent.shelf_life_days.
+
+def _parse_item_expiration(form, label="this item"):
+    """Reads the "Does this item expire?" answer from the Add Stock Item form
+    into (expiration_date_or_None, error). "No" (or absent) means no date."""
+    if form.get("expires", "no") != "yes":
+        return None, None
+    return _parse_expiration_date(form.get("expiration_date"), label)
+
+
+def _parse_food_pack_contents(form):
+    """Reads what's in the Food Packs batch being restocked, off the update
+    modal, into ([(component_id, custom_name, date_or_None, quantity_label), ...], error).
+
+    Each standard component has an "included" checkbox (inc_<component_id>)
+    and an optional date (exp_<component_id>) - a blank date falls back to
+    received_date + the component's researched shelf life. "Others" rows
+    (other_name[] / other_date[]) cover anything else that batch contains;
+    those need both a name and a date, since there's no catalog shelf life to
+    fall back on. A date in the past is rejected - it would expire the stock
+    the moment it's saved."""
+    from datetime import datetime
+    today = ph_today()
+    specs = []
+
+    def _date(raw, label):
+        try:
+            d = datetime.strptime(raw, "%Y-%m-%d").date()
+        except ValueError:
+            return None, f"Enter a valid expiration date for {label}."
+        if d < today:
+            return None, f"The expiration date for {label} can't be in the past."
+        return d, None
+
+    for c in FoodPackComponent.query.order_by(FoodPackComponent.sort_order).all():
+        if not form.get(f"inc_{c.component_id}"):
+            continue
+        raw = (form.get(f"exp_{c.component_id}") or "").strip()
+        d = None
+        if raw:
+            d, err = _date(raw, c.name)
+            if err:
+                return [], err
+        qty = (form.get(f"qty_{c.component_id}") or "").strip()[:50] or None
+        specs.append((c.component_id, None, d, qty if qty != c.quantity_label else None))
+
+    names = form.getlist("other_name")
+    dates = form.getlist("other_date")
+    qtys = form.getlist("other_qty")
+    for i, name in enumerate(names):
+        name = name.strip()
+        raw = (dates[i] if i < len(dates) else "").strip()
+        qty = (qtys[i] if i < len(qtys) else "").strip()[:50] or None
+        if not name and not raw:
+            continue
+        if not name:
+            return [], "Enter a name for each 'Others' item that has a date."
+        if len(name) > 100:
+            return [], "'Others' item names can be at most 100 characters."
+        d, err = _date(raw, name)
+        if err:
+            return [], err
+        specs.append((None, name, d, qty))
+
+    if not specs:
+        return [], "Select at least one item that's in this batch."
+    return specs, None
+
+
+def _resolve_batch_item_specs(received_date, item_specs):
+    """Turns item specs into concrete [(component_id, custom_name, date)]
+    rows. item_specs None means the standard full pack with researched
+    shelf lives; a spec with no date gets received_date + the component's
+    shelf life."""
+    from datetime import timedelta
+    components = {c.component_id: c for c in FoodPackComponent.query.all()}
+    if item_specs is None:
+        item_specs = [(cid, None, None, None) for cid in components]
+    rows = []
+    for component_id, custom_name, d, *rest in item_specs:
+        if d is None:
+            c = components.get(component_id)
+            d = received_date + timedelta(days=c.shelf_life_days if c else 180)
+        rows.append((component_id, custom_name, d, rest[0] if rest else None))
+    return rows
+
+
+def _create_food_pack_batch(office_id, quantity, received_date, updated_by=None, item_specs=None):
+    """Opens one FoodPackBatch for newly-received Food Packs stock, with a
+    FoodPackBatchItem for each item in it (rice, creamer, canned goods,
+    Ovaltine, plus any "Others" - see scripts/seed_food_pack_batches.py for
+    the researched shelf life behind each standard one). The batch's own
+    expiration_date is cached as the earliest of those - usually the rice -
+    because the whole sealed pack gets pulled together once its most
+    perishable item expires, not unbundled to salvage the rest.
+
+    item_specs ([(component_id, custom_name, date_or_None), ...]) is what
+    staff picked when restocking (see _parse_food_pack_contents) or the exact
+    contents/dates of the source batch on a transfer down the chain; None
+    means the standard full pack with default shelf lives.
     """
     from datetime import timedelta
-    components = FoodPackComponent.query.all()
-    shortest_shelf_life = min((c.shelf_life_days for c in components), default=180)
+    rows = _resolve_batch_item_specs(received_date, item_specs)
     batch = FoodPackBatch(
         office_id=office_id, quantity_remaining=quantity,
         received_date=received_date,
-        expiration_date=received_date + timedelta(days=shortest_shelf_life),
+        expiration_date=min((d for _, _, d, _ in rows), default=received_date + timedelta(days=180)),
         updated_by=updated_by,
     )
     db.session.add(batch)
     db.session.flush()
-    for c in components:
+    for component_id, custom_name, d, qty_label in rows:
         db.session.add(FoodPackBatchItem(
-            batch_id=batch.batch_id, component_id=c.component_id,
-            expiration_date=received_date + timedelta(days=c.shelf_life_days),
+            batch_id=batch.batch_id, component_id=component_id,
+            custom_name=custom_name, quantity_label=qty_label, expiration_date=d,
         ))
     return batch
 
 
-def _consume_food_pack_batches_fifo(office_id, quantity):
-    """FIFO-consumes `quantity` food packs from office_id's active FoodPackBatch
-    rows, oldest received_date first, decrementing quantity_remaining as it
-    goes and returning the [(received_date, qty_taken), ...] breakdown of what
-    was actually consumed.
+def _batch_take_order(batches):
+    """Nearest-expiry-first (FEFO) order for handing stock out: batches that
+    are still good, soonest expiration first, then - only as a last resort,
+    if good stock runs out - batches already past their date."""
+    today = ph_today()
+    return sorted(batches, key=lambda b: (b.expiration_date < today, b.expiration_date, b.received_date, b.batch_id))
 
-    Used when stock is transferred out to another office (see
-    cswdo.receive_transfer): the transfer should carry the *original*
-    received_date(s) forward so the receiving office's shelf-life clock
-    reflects how much life the stock actually has left, rather than resetting
-    to a fresh shelf life on arrival. Calls _sync_food_pack_batches first so
-    this office's batches are reconciled against its real on-hand count
-    before FIFO picks from them.
 
-    If tracked batches don't cover the full quantity (e.g. stock that
-    predates batch tracking), the remainder is attributed to today - the same
-    fallback _create_food_pack_batch's callers used before this existed.
-    """
-    _sync_food_pack_batches(office_id)
-    batches = FoodPackBatch.query.filter_by(office_id=office_id, status="active").filter(
-        FoodPackBatch.quantity_remaining > 0
-    ).order_by(FoodPackBatch.received_date, FoodPackBatch.batch_id).all()
-
-    consumed = []
+def _take_from_batches(batches, quantity):
+    """Deducts `quantity` packs from `batches` in FEFO order (see
+    _batch_take_order) and returns the JSON-ready lots that were taken:
+    [{"received": iso, "qty": n, "items": [[component_id, custom_name, iso, quantity_label], ...]}].
+    Shared by the office and barangay tiers - both batch models expose the
+    same fields. Any quantity the batches can't cover (stock that entered
+    without a batch) comes back as a lot with no items, dated today, which
+    receivers turn into a default-shelf-life batch."""
+    lots = []
     remaining = quantity
-    for b in batches:
+    for b in _batch_take_order([b for b in batches if b.quantity_remaining > 0]):
         if remaining <= 0:
             break
         take = min(b.quantity_remaining, remaining)
         b.quantity_remaining -= take
         remaining -= take
-        consumed.append((b.received_date, take))
+        lots.append({
+            "received": b.received_date.isoformat(), "qty": take,
+            "items": [[i.component_id, i.custom_name, i.expiration_date.isoformat(), i.quantity_label] for i in b.items],
+        })
     if remaining > 0:
-        consumed.append((ph_today(), remaining))
-    return consumed
+        lots.append({"received": ph_today().isoformat(), "qty": remaining, "items": None})
+    return lots
+
+
+def _deduct_food_pack_batches(office_id, quantity):
+    """Call wherever Food Packs leave an office's stock (dispatch to a
+    barangay, transfer to another office): takes `quantity` from the office's
+    active batches, nearest expiration first, so the Food Pack Batches panel
+    drops the moment stock goes out and always adds up to on-hand. Returns
+    the lots as a JSON string to store on the transfer/distribution record -
+    the receiving side rebuilds its batches from it (see _lots_from_json),
+    so shelf life travels with the stock. Does not commit."""
+    if not quantity or quantity <= 0:
+        return None
+    batches = FoodPackBatch.query.filter_by(office_id=office_id, status="active").filter(
+        FoodPackBatch.quantity_remaining > 0
+    ).all()
+    return json.dumps(_take_from_batches(batches, quantity))
+
+
+def _lots_from_json(raw, limit, fallback_date=None):
+    """Inverse of _deduct_food_pack_batches: turns a stored lots JSON into
+    [(received_date, qty, item_specs), ...] covering at most `limit` packs
+    (e.g. only the undamaged ones). With no stored lots (dispatched before
+    this tracking existed) the whole quantity is one lot dated
+    `fallback_date` with default shelf lives."""
+    from datetime import date as _date
+    out = []
+    remaining = limit
+    for lot in (json.loads(raw) if raw else []):
+        if remaining <= 0:
+            break
+        qty = min(int(lot["qty"]), remaining)
+        remaining -= qty
+        items = lot.get("items")
+        specs = [(cid, name, _date.fromisoformat(d), (rest[0] if rest else None)) for cid, name, d, *rest in items] if items else None
+        out.append((_date.fromisoformat(lot["received"]), qty, specs))
+    if remaining > 0:
+        out.append((fallback_date or ph_today(), remaining, None))
+    return out
 
 
 def _refreshed_batch_items(batch, refresh_date):
-    """Builds the component plan for the batch a "Fixed" resolution splits
-    off (see *_resolve_expired_batch at every tier): only the component(s)
-    that actually caused the expiry (rice, in practice - whichever item(s)
-    have their own expiration_date in the past) get treated as replaced with
-    fresh stock, dated from `refresh_date` (normally today); every other
-    component in the batch is still perfectly good and keeps its original
-    expiration_date untouched - a sealed pack doesn't get its canned goods
-    swapped out just because the rice inside it went bad.
+    """Builds the item plan for the batch a "Fixed" resolution splits
+    off (see *_resolve_expired_batch at every tier): only the standard
+    component(s) that actually caused the expiry (rice, in practice -
+    whichever item(s) have their own expiration_date in the past) get treated
+    as replaced with fresh stock, dated from `refresh_date` (normally today);
+    every other item in the batch is still perfectly good and keeps its
+    original expiration_date untouched - a sealed pack doesn't get its canned
+    goods swapped out just because the rice inside it went bad. An expired
+    "Others" item has no researched shelf life to refresh from, so it is
+    dropped from the split-off batch instead.
 
     Works against any batch/item pair with the same shape (FoodPackBatch/
     FoodPackBatchItem or BarangayFoodPackBatch/BarangayFoodPackBatchItem) -
-    it only reads batch.items, item.expiration_date and item.component, all
-    identical across tiers, so one shared implementation covers PSWDO,
-    CSWDO, and Barangay.
+    it only reads batch.items, item.expiration_date, item.component and
+    item.custom_name, all identical across tiers, so one shared
+    implementation covers PSWDO, CSWDO, and Barangay.
 
     Returns (plan, replaced_components):
-      plan               - [(component_id, expiration_date), ...] for every
-                            component currently in the batch.
-      replaced_components - the FoodPackComponent rows that got a fresh
-                            date, for the stock-log/flash wording naming
-                            what was actually replaced.
+      plan               - [(component_id, custom_name, expiration_date), ...]
+                            for every item that stays in the batch.
+      replaced_components - objects with a .name for the stock-log/flash
+                            wording naming what was actually replaced/removed.
     """
     from datetime import timedelta
+    from types import SimpleNamespace
     plan = []
     replaced_components = []
     for item in batch.items:
         component = item.component
         if _shelf_status(item.expiration_date) == "expired":
-            plan.append((component.component_id, refresh_date + timedelta(days=component.shelf_life_days)))
-            replaced_components.append(component)
+            if component:
+                plan.append((component.component_id, None, refresh_date + timedelta(days=component.shelf_life_days), item.quantity_label))
+                replaced_components.append(component)
+            else:
+                replaced_components.append(SimpleNamespace(name=f"{item.custom_name} (removed)"))
         else:
-            plan.append((component.component_id, item.expiration_date))
+            plan.append((item.component_id, item.custom_name, item.expiration_date, item.quantity_label))
     return plan, replaced_components
+
+
+def _plan_expiration(plan):
+    """Earliest date in a _refreshed_batch_items plan, for the cached
+    batch.expiration_date (a fallback if every item got dropped)."""
+    from datetime import timedelta
+    return min((exp for _, _, exp, _ in plan), default=ph_today() + timedelta(days=180))
 
 
 def _slugify(text):
@@ -1667,6 +1813,7 @@ def warehouse_inventory_items(office_id):
         "pswdo/warehouse_items.html",
         office=office, rows=rows, search_query=search_query,
         batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
+        food_pack_components=FoodPackComponent.query.order_by(FoodPackComponent.sort_order).all(),
     )
 
 
@@ -1677,7 +1824,7 @@ def warehouse_inventory_add(office_id):
     office = Office.query.get_or_404(office_id)
     _require_pswdo_managed_office(office)
     item_name = request.form.get("item_name", "").strip()
-    unit = request.form.get("unit", "").strip() or "units"
+    unit = "packs"
     quantity = request.form.get("quantity", type=int)
     min_stock_level = request.form.get("min_stock_level", type=int) or 0
 
@@ -1690,6 +1837,11 @@ def warehouse_inventory_add(office_id):
         flash(source_error, "error")
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
 
+    expiration_date, expiry_error = _parse_item_expiration(request.form, item_name)
+    if expiry_error:
+        flash(expiry_error, "error")
+        return redirect(url_for("pswdo.warehouse_inventory_items", office_id=office_id))
+
     item_type = _slugify(item_name)
     if WarehouseInventory.query.filter_by(office_id=office_id, item_type=item_type).first():
         flash(f"{item_name} already exists for this warehouse - use Update instead.", "error")
@@ -1698,7 +1850,7 @@ def warehouse_inventory_add(office_id):
     item = WarehouseInventory(
         office_id=office_id, item_type=item_type, item_name=item_name, unit=unit,
         quantity_available=quantity, min_stock_level=min_stock_level,
-        updated_by=current_user.user_id,
+        expiration_date=expiration_date, updated_by=current_user.user_id,
     )
     db.session.add(item)
 
@@ -1755,18 +1907,34 @@ def warehouse_inventory_update(inventory_id):
         flash("A donation adds stock - enter a positive quantity to record it.", "error")
         return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
 
+    expiry_specs = None
+    new_expiration = None
+    if item.item_type == "food_pack" and delta > 0:
+        expiry_specs, expiry_error = _parse_food_pack_contents(request.form)
+        if expiry_error:
+            flash(expiry_error, "error")
+            return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
+    elif item.expiration_date and delta > 0 and request.form.get("expiration_date", "").strip():
+        # Restocking a perishable item - the new stock's date replaces the old one.
+        new_expiration, expiry_error = _parse_expiration_date(request.form.get("expiration_date"), item.item_name)
+        if expiry_error:
+            flash(expiry_error, "error")
+            return redirect(url_for("pswdo.warehouse_inventory_items", office_id=item.office_id))
+
     item.quantity_available = new_quantity
     if unit:
         item.unit = unit
     if min_stock_level is not None:
         item.min_stock_level = min_stock_level
+    if new_expiration:
+        item.expiration_date = new_expiration
     item.updated_by = current_user.user_id
 
     # Food Packs is the only item type with shelf-life tracking - a positive
     # delta opens a FoodPackBatch (with a per-component expiration date each,
-    # auto-computed from the researched FoodPackComponent catalog).
+    # entered by staff, else auto-computed from the researched FoodPackComponent catalog).
     if item.item_type == "food_pack" and delta > 0:
-        _create_food_pack_batch(item.office_id, delta, ph_today(), current_user.user_id)
+        _create_food_pack_batch(item.office_id, delta, ph_today(), current_user.user_id, expiry_specs)
 
     if delta != 0:
         db.session.add(WarehouseStockLog(
@@ -1868,14 +2036,15 @@ def warehouse_inventory_resolve_expired_batch(batch_id):
         new_batch = FoodPackBatch(
             office_id=office_id, quantity_remaining=quantity,
             received_date=ph_today(),
-            expiration_date=min(exp for _, exp in plan),
+            expiration_date=_plan_expiration(plan),
             status="active", updated_by=current_user.user_id,
         )
         db.session.add(new_batch)
         db.session.flush()
-        for component_id, exp in plan:
+        for component_id, custom_name, exp, qty_label in plan:
             db.session.add(FoodPackBatchItem(
-                batch_id=new_batch.batch_id, component_id=component_id, expiration_date=exp,
+                batch_id=new_batch.batch_id, component_id=component_id,
+                custom_name=custom_name, quantity_label=qty_label, expiration_date=exp,
             ))
 
         flash(f"{quantity:,} expired packs marked fixed - {replaced_names} replaced, "
@@ -1982,6 +2151,11 @@ def warehouse_stock_transfer_page():
 
         source_inventory.quantity_available -= quantity
         dest_inventory.quantity_available += quantity
+        # Batches follow the stock: nearest-expiry packs leave the source depot
+        # and arrive at the destination with their own dates intact.
+        for received_date, qty, specs in _lots_from_json(
+                _deduct_food_pack_batches(from_office_id, quantity), quantity, ph_today()):
+            _create_food_pack_batch(to_office_id, qty, received_date, current_user.user_id, specs)
 
         db.session.add(WarehouseTransfer(
             from_office_id=from_office_id, to_office_id=to_office_id,
@@ -2840,6 +3014,7 @@ def approve_relief_request(batch_id):
         item_type="food_pack", quantity=quantity, batch_id=batch.batch_id,
         status="pending", dispatch_status="preparing",
         requested_by=current_user.user_id,
+        batch_lots=_deduct_food_pack_batches(depot.office_id, quantity),
     )
     db.session.add(transfer)
     db.session.add(WarehouseStockLog(
@@ -2931,6 +3106,7 @@ def direct_allocation():
         issued_by=current_user.user_id, issued_at=ph_now(),
         note=request.form.get("remarks", "").strip() or "Proactive pre-positioning",
         requested_by=current_user.user_id,
+        batch_lots=_deduct_food_pack_batches(depot.office_id, quantity),
     )
     db.session.add(transfer)
     db.session.add(WarehouseStockLog(

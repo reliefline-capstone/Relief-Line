@@ -35,14 +35,16 @@ from app.utils import weather as weather_service
 # Reused from the PSWDO route module so a status label, priority tier, or
 # notification icon never drifts between the PSWDO/CSWDO screens and this
 # barangay-facing one - see app/routes/pswdo.py for the source of truth.
-# _shelf_status/NEAR_EXPIRY_DAYS/_consume_food_pack_batches_fifo back the new
+# _shelf_status/NEAR_EXPIRY_DAYS/_lots_from_json/_take_from_batches back the new
 # barangay-tier Food Pack Batches panel below - _shelf_status is pure (no DB
 # writes) so it's reused as-is rather than duplicated, and
-# _consume_food_pack_batches_fifo is already office_id-generic so it's reused
-# unmodified to FIFO-drain the fulfilling CSWDO office's own batches.
+# _lots_from_json rebuilds the barangay's batches from what the fulfilling
+# CSWDO office deducted at dispatch, and _take_from_batches (model-agnostic)
+# deducts nearest-expiry-first when the barangay hands packs out.
 from app.routes.pswdo import (
     DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
-    _shelf_status, NEAR_EXPIRY_DAYS, _consume_food_pack_batches_fifo, _refreshed_batch_items,
+    _shelf_status, NEAR_EXPIRY_DAYS, _lots_from_json, _take_from_batches, _batch_take_order, _refreshed_batch_items,
+    _resolve_batch_item_specs, _plan_expiration,
 )
 
 barangay_bp = Blueprint("barangay", __name__)
@@ -1295,17 +1297,14 @@ def _record_barangay_receipt(rec):
     ))
 
     alloc = rec.allocation
-    # Carry the fulfilling CSWDO office's original received_date(s) forward
-    # (FIFO), same fix as cswdo.receive_transfer for PSWDO->CSWDO transfers -
+    # Rebuild the batches the fulfilling office deducted at dispatch (real
+    # remaining shelf life carries forward, same as cswdo.receive_transfer) -
     # only `usable` packs get a batch, matching what actually enters stock
     # above; damaged packs never enter BarangayInventory so they get no
-    # batch either. Skipped silently (barangay stock is still credited
-    # normally) when there's no fulfilling office on record - e.g. a
-    # legacy/malformed allocation.
-    fulfilling_office_id = alloc.fulfilling_office_id if alloc else None
-    if usable and fulfilling_office_id:
-        for received_date, qty in _consume_food_pack_batches_fifo(fulfilling_office_id, usable):
-            _create_barangay_food_pack_batch(rec.barangay_id, qty, received_date, current_user.user_id)
+    # batch either.
+    if usable:
+        for received_date, qty, item_specs in _lots_from_json(rec.batch_lots, usable, ph_today()):
+            _create_barangay_food_pack_batch(rec.barangay_id, qty, received_date, current_user.user_id, item_specs)
 
     if alloc and alloc.barangay_report_id:
         rep = BarangayReport.query.get(alloc.barangay_report_id)
@@ -1381,9 +1380,9 @@ def _sync_barangay_food_pack_batches(barangay_id):
     fp = BarangayInventory.query.filter_by(barangay_id=barangay_id, item_type="food_pack").first()
     on_hand = fp.quantity_available if fp else 0
 
-    active_batches = BarangayFoodPackBatch.query.filter_by(barangay_id=barangay_id, status="active").order_by(
-        BarangayFoodPackBatch.received_date, BarangayFoodPackBatch.batch_id
-    ).all()
+    active_batches = _batch_take_order(
+        BarangayFoodPackBatch.query.filter_by(barangay_id=barangay_id, status="active").all()
+    )
 
     batch_total = sum(b.quantity_remaining for b in active_batches)
     excess = batch_total - on_hand
@@ -1395,6 +1394,10 @@ def _sync_barangay_food_pack_batches(barangay_id):
             b.quantity_remaining -= trim
             excess -= trim
         active_batches = [b for b in active_batches if b.quantity_remaining > 0]
+    elif excess < 0:
+        # Stock that entered without a batch - give it one so the batch list
+        # always adds up to on hand.
+        active_batches.append(_create_barangay_food_pack_batch(barangay_id, -excess, ph_today()))
 
     today = ph_today()
     expired_batches = [b for b in active_batches if b.expiration_date < today and b.quantity_remaining > 0]
@@ -1433,26 +1436,28 @@ def _sync_barangay_food_pack_batches(barangay_id):
     db.session.commit()
 
 
-def _create_barangay_food_pack_batch(barangay_id, quantity, received_date, updated_by=None):
+def _create_barangay_food_pack_batch(barangay_id, quantity, received_date, updated_by=None, item_specs=None):
     """Barangay-tier mirror of pswdo._create_food_pack_batch: opens one
     BarangayFoodPackBatch for newly-received Food Packs stock, with a
-    BarangayFoodPackBatchItem per FoodPackComponent. Does not commit (caller
-    commits)."""
+    BarangayFoodPackBatchItem per item. item_specs
+    ([(component_id, custom_name, date_or_None), ...]) carries the source
+    batch's real contents and expiration dates down the chain; None means
+    the standard full pack with default shelf lives. Does not commit
+    (caller commits)."""
     from datetime import timedelta
-    components = FoodPackComponent.query.all()
-    shortest_shelf_life = min((c.shelf_life_days for c in components), default=180)
+    rows = _resolve_batch_item_specs(received_date, item_specs)
     batch = BarangayFoodPackBatch(
         barangay_id=barangay_id, quantity_remaining=quantity,
         received_date=received_date,
-        expiration_date=received_date + timedelta(days=shortest_shelf_life),
+        expiration_date=min((d for _, _, d, _ in rows), default=received_date + timedelta(days=180)),
         updated_by=updated_by,
     )
     db.session.add(batch)
     db.session.flush()
-    for c in components:
+    for component_id, custom_name, d, qty_label in rows:
         db.session.add(BarangayFoodPackBatchItem(
-            batch_id=batch.batch_id, component_id=c.component_id,
-            expiration_date=received_date + timedelta(days=c.shelf_life_days),
+            batch_id=batch.batch_id, component_id=component_id,
+            custom_name=custom_name, quantity_label=qty_label, expiration_date=d,
         ))
     return batch
 
@@ -1605,14 +1610,15 @@ def inventory_resolve_expired_batch(batch_id):
         new_batch = BarangayFoodPackBatch(
             barangay_id=barangay.barangay_id, quantity_remaining=quantity,
             received_date=ph_today(),
-            expiration_date=min(exp for _, exp in plan),
+            expiration_date=_plan_expiration(plan),
             status="active", updated_by=current_user.user_id,
         )
         db.session.add(new_batch)
         db.session.flush()
-        for component_id, exp in plan:
+        for component_id, custom_name, exp, qty_label in plan:
             db.session.add(BarangayFoodPackBatchItem(
-                batch_id=new_batch.batch_id, component_id=component_id, expiration_date=exp,
+                batch_id=new_batch.batch_id, component_id=component_id,
+                custom_name=custom_name, quantity_label=qty_label, expiration_date=exp,
             ))
 
         flash(f"{quantity:,} expired packs marked fixed - {replaced_names} replaced, "
@@ -1648,6 +1654,10 @@ def _record_barangay_distribution(barangay_id, amount, reason, family_id=None):
 
     inv.quantity_available = on_hand - amount
     inv.updated_by = current_user.user_id
+    # Nearest-expiry batches go out first, so the Food Pack Batches panel
+    # drops right away and keeps adding up to on hand.
+    _take_from_batches(BarangayFoodPackBatch.query.filter_by(
+        barangay_id=barangay_id, status="active").filter(BarangayFoodPackBatch.quantity_remaining > 0).all(), amount)
     db.session.add(BarangayStockLog(
         barangay_id=barangay_id, item_type="food_pack", item_name="Food Packs",
         delta=-amount, source_type="distribution", reason=reason, family_id=family_id,
@@ -1768,6 +1778,9 @@ def undo_family_received(report_id, raf_id):
     if inv:
         inv.quantity_available += raf.packs_given
         inv.updated_by = current_user.user_id
+        # The packs are back on the shelf - which batch they came from isn't
+        # recorded, so they re-enter as a new batch with default shelf lives.
+        _create_barangay_food_pack_batch(report.barangay_id, raf.packs_given, ph_today(), current_user.user_id)
         db.session.add(BarangayStockLog(
             barangay_id=report.barangay_id, item_type="food_pack", item_name="Food Packs",
             delta=raf.packs_given, source_type="adjustment",

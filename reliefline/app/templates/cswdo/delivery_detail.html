@@ -32,6 +32,7 @@
                     {%- elif alloc and alloc.source == 'cswdo_direct' %} · Proactive Allocation (no barangay request){% endif %}
                     · {{ "{:,}".format(rec.quantity_released) }} food packs</p>
             </div>
+            <a href="{{ url_for('receipts.distribution_receipt', distribution_id=rec.distribution_id) }}" class="btn-decision btn-partial" style="text-decoration:none;">{{ icon('file-text', 14, 'white') }} View Receipt</a>
         </div>
 
         {% if rec.replaces %}

@@ -471,3 +471,17 @@ html.rd-modal-open { overflow: hidden; }
     .rd-action-row { flex-direction: column; }
     .rd-form-row { flex-direction: column; }
 }
+
+/* Food Packs restock form - which items are in the batch + their dates */
+.fp-content-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-top: 10px; }
+.fp-content-row .fp-content-check { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 500; }
+.fp-content-row .fp-content-check input { width: auto; margin: 0; }
+.fp-content-row input[type="date"] { flex: 1 1 140px; margin: 0; }
+.fp-content-row input[data-fp-qty] { flex: 1 1 110px; min-width: 0; margin: 0; }
+.fp-others { margin-top: 8px; }
+.fp-other-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.fp-other-row input[name="other_name"] { flex: 1 1 100%; margin: 0; }
+.fp-other-row input[name="other_qty"] { flex: 1 1 110px; min-width: 0; margin: 0; }
+.fp-other-row input[type="date"] { flex: 1 1 140px; margin: 0; }
+.fp-other-remove { background: none; border: 0; font-size: 20px; line-height: 1; color: #c0392b; cursor: pointer; }
+.fp-other-add { margin-top: 2px; }

@@ -13,6 +13,9 @@ class WarehouseInventory(db.Model):
     unit = db.Column(db.String(20), nullable=False, default="packs")
     quantity_available = db.Column(db.Integer, default=0)
     min_stock_level = db.Column(db.Integer, default=0)
+    # Only set for non-Food-Pack items the user marked as perishable when adding
+    # them (Food Packs track expiry per batch/component instead).
+    expiration_date = db.Column(db.Date, nullable=True)
     updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
 
     office = db.relationship("Office", backref="inventory_items")

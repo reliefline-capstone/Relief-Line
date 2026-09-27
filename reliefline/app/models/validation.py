@@ -35,6 +35,11 @@ class DistributionRecord(db.Model):
         db.Integer, db.ForeignKey("distribution_records.distribution_id"), nullable=True
     )
 
+    # JSON breakdown of the Food Pack batches deducted from the fulfilling
+    # office at dispatch (see app.routes.pswdo._deduct_food_pack_batches) - the
+    # barangay's own batches are built from it when it confirms receipt.
+    batch_lots = db.Column(db.Text, nullable=True)
+
     # Dispatch/logistics lifecycle - tracks the trip itself, separate from proof-of-delivery above
     dispatch_status = db.Column(
         db.Enum("preparing", "loaded", "dispatched", "in_transit", "delivered", "delayed"),

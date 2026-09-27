@@ -1,12 +1,20 @@
 """
-Builds the monthly food-pack history (Jan 2021 - Dec 2025) that the SARIMAX
+Builds the monthly food-pack history (Jan 2021 - Aug 2026) that the SARIMAX
 forecaster trains on. It is a MIX of real and synthetic data, until real
 records cover everything:
 
   REAL       Urdaneta City, Jul / Sep / Oct / Nov 2025 - the four CSWDO event
-             reports (scripts/real_urdaneta_reports_2025.py), loaded per
-             barangay as data_source='real'.
-  SYNTHETIC  everything else, anchored to reality in three ways:
+             reports (scripts/real_urdaneta_reports_2025.py), and Calasiao,
+             Jul / Sep 2025 - the Crising/Emong and Nando/Opong reports
+             (scripts/real_calasiao_reports_2025.py; Jul packs are estimated,
+             Sep packs measured), loaded per barangay as data_source='real'.
+             Sta. Barbara, Aug 2026 - the DSWD + LGU relief-distribution sheet
+             (scripts/sample_sta_barbara_aug2026.py), also data_source='real'.
+             It is supply, not measured need; it is the only real Sta. Barbara
+             record, so it trains the model (the rolling backtest still scores
+             the forecast of that month before it is seen).
+  SYNTHETIC  everything else (incl. Jan-Jul 2026, baseline incidents only -
+             no verified 2026 storm calendar), anchored to reality in three ways:
 
   1. TIMING - demand spikes fall in the months of the real storms/monsoon
      floods that hit Pangasinan (app.ml.climate_reference.EVENTS), not
@@ -35,12 +43,10 @@ How a barangay-month is produced
 Also: assigns the barangay flood-hazard attributes (flood_susceptibility,
 river_proximity_km, elevation_m) - from the real reports for Urdaneta and the
 Sta. Barbara sheet for Sta. Barbara, synthetic for Calasiao - and loads the
-real Aug 2026 Sta. Barbara sheet as data_source='real_sample' (held out of
-training).
+real Aug 2026 Sta. Barbara sheet as data_source='real'.
 
 Deterministic (seeded per barangay+event) and idempotent: re-running replaces
-the 'synthetic' and 'real' rows from their sources and leaves any 'system' /
-'real_sample' rows alone.
+the 'synthetic' and 'real' rows from their sources and leaves any 'system' rows alone.
 
     .venv/Scripts/python.exe -m scripts.seed_monthly_history            # seed
     .venv/Scripts/python.exe -m scripts.seed_monthly_history --report   # calibration only
@@ -62,6 +68,7 @@ from app import create_app
 from app.extensions import db
 from app.ml import climate_reference as ref
 from app.models.barangay import Barangay
+from scripts import real_calasiao_reports_2025 as calasiao_real
 from scripts import real_urdaneta_reports_2025 as urdaneta_real
 from scripts import sample_sta_barbara_aug2026 as sample
 from scripts.apply_timeseries_schema import ensure_schema
@@ -77,6 +84,10 @@ PACKS_PER_FAMILY = 0.81
 SEV_REACH = {1: 0.80, 2: 0.85, 3: 0.88, 4: 0.91, 5: 0.87}
 # Packs per household when reached, before hazard / LGU multipliers.
 SEV_RATE = {1: 0.05, 2: 0.10, 3: 0.22, 4: 0.55, 5: 0.62}
+# LGU -> module holding its real event reports. generate_history skips these
+# LGU-events; load_real replaces them.
+REAL_REPORTS = {"Urdaneta City": urdaneta_real, "Calasiao": calasiao_real}
+SAMPLE_EVENT = "habagat_aug2026"   # the event the Sta. Barbara sheet records
 HAZARD_MULT = {1: 0.50, 2: 0.85, 3: 1.20, 4: 1.60}
 # Calasiao and Sta. Barbara sit on the Marusay/Sinocalan floodplain (both
 # flooded badly in Jul 2025 and Aug 2026); Urdaneta is less exposed.
@@ -182,15 +193,22 @@ def assign_hazard(barangays):
 
 # --- history generation ---------------------------------------------------------
 
+def history_months():
+    return [date(y, m, 1) for y in range(ref.HISTORY_START.year, ref.HISTORY_END.year + 1)
+            for m in range(1, 13) if ref.HISTORY_START <= date(y, m, 1) <= ref.HISTORY_END]
+
+
 def generate_history(barangays):
     """{(barangay_id, month_start): dict(packs, families, events, severity)}"""
     rows = defaultdict(lambda: {"packs": 0.0, "events": 0, "severity": 0})
-    real_keys = {r["key"] for r in urdaneta_real.REPORTS}
+    real_keys = {lgu: {r["key"] for r in mod.REPORTS} for lgu, mod in REAL_REPORTS.items()}
     for ev in ref.EVENTS:
         split = month_split(ev)
         for b in barangays:
-            if b.city_municipality == "Urdaneta City" and ev["key"] in real_keys:
-                continue  # a real report exists - loaded by load_real_urdaneta
+            if ev["key"] in real_keys.get(b.city_municipality, ()):
+                continue  # a real report exists - loaded by load_real
+            if ev["key"] == SAMPLE_EVENT and b.city_municipality == "Santa Barbara":
+                continue  # the real sheet exists - loaded by load_real_sample
             sev = ref.severity_for(ev, b.city_municipality)
             rng = random.Random(f"hist|{b.barangay_id}|{ev['key']}")
             packs = simulate_event_packs(
@@ -204,7 +222,7 @@ def generate_history(barangays):
                 cell["severity"] = max(cell["severity"], sev)
 
     # Baseline localized incidents in any month.
-    months = [date(y, m, 1) for y in range(2021, 2026) for m in range(1, 13)]
+    months = history_months()
     for b in barangays:
         for ms in months:
             rng = random.Random(f"base|{b.barangay_id}|{ms.isoformat()}")
@@ -299,7 +317,7 @@ def calibration_report(barangays, replications=300):
 def persist(barangays, history, months, climate):
     lo, hi = ref.HISTORY_START, ref.HISTORY_END
     db.session.execute(text(
-        "DELETE FROM barangay_monthly_history WHERE data_source IN ('synthetic', 'real') "
+        "DELETE FROM barangay_monthly_history WHERE data_source IN ('synthetic', 'real', 'real_sample') "
         "AND month_start BETWEEN :lo AND :hi"), {"lo": lo, "hi": hi})
     db.session.execute(text("DELETE FROM climate_monthly WHERE month_start BETWEEN :lo AND :hi"),
                        {"lo": lo, "hi": hi})
@@ -324,7 +342,7 @@ def persist(barangays, history, months, climate):
 
 
 def load_real_sample(barangays):
-    """The Aug 2026 Sta. Barbara sheet -> history rows (data_source='real_sample')."""
+    """The Aug 2026 Sta. Barbara sheet -> history rows (data_source='real')."""
     month = date(2026, 8, 1)
     totals = sample.combined_totals()
     sb = [b for b in barangays if b.city_municipality == "Santa Barbara"]
@@ -332,7 +350,8 @@ def load_real_sample(barangays):
     if unmatched:
         raise RuntimeError(f"Sheet barangays not found in the barangays table: {sorted(unmatched)}")
     db.session.execute(text(
-        "DELETE FROM barangay_monthly_history WHERE data_source='real_sample' AND month_start=:m"),
+        "DELETE FROM barangay_monthly_history WHERE data_source IN ('real', 'real_sample') AND month_start=:m "
+        "AND barangay_id IN (SELECT barangay_id FROM barangays WHERE city_municipality = 'Santa Barbara')"),
         {"m": month})
     batch = []
     for b in sb:
@@ -341,31 +360,31 @@ def load_real_sample(barangays):
     db.session.execute(text(
         "INSERT INTO barangay_monthly_history (barangay_id, month_start, food_packs, "
         "affected_families, event_count, max_event_severity, data_source) "
-        "VALUES (:b, :m, :p, :f, 1, 5, 'real_sample') "
+        "VALUES (:b, :m, :p, :f, 1, 5, 'real') "
         "ON DUPLICATE KEY UPDATE food_packs=VALUES(food_packs), "
-        "affected_families=VALUES(affected_families), data_source='real_sample'"), batch)
+        "affected_families=VALUES(affected_families), event_count=1, max_event_severity=5, data_source='real'"), batch)
     db.session.commit()
     return len(batch), sum(x["p"] for x in batch)
 
 
-def load_real_urdaneta(barangays):
-    """The four real Urdaneta 2025 CSWDO reports -> history rows
-    (data_source='real'). Every Urdaneta barangay gets a row per event month:
-    its reported packs / families, or 0 where the report has no entry."""
-    ur = [b for b in barangays if b.city_municipality == "Urdaneta City"]
-    known = {urdaneta_real.normalize(b.barangay_name) for b in ur}
+def load_real(barangays, lgu, module):
+    """An LGU's real event reports -> history rows (data_source='real').
+    Every barangay of the LGU gets a row per event month: its reported packs /
+    families, or 0 where the report has no entry (not reported)."""
+    own = [b for b in barangays if b.city_municipality == lgu]
+    known = {module.normalize(b.barangay_name) for b in own}
     total_packs = 0
-    for report in urdaneta_real.REPORTS:
-        rows = urdaneta_real.by_key(report)
+    for report in module.REPORTS:
+        rows = module.by_key(report)
         unmatched = set(rows) - known
         if unmatched:
             raise RuntimeError(f"Report '{report['short']}' has barangays not in the table: {sorted(unmatched)}")
         ev = next(e for e in ref.EVENTS if e["key"] == report["key"])
-        sev = ref.severity_for(ev, "Urdaneta City")
+        sev = ref.severity_for(ev, lgu)
         month = date.fromisoformat(report["month"])
         batch = []
-        for b in ur:
-            fam, _persons, packs = rows.get(urdaneta_real.normalize(b.barangay_name), (0, 0, 0))
+        for b in own:
+            fam, _persons, packs = rows.get(module.normalize(b.barangay_name), (0, 0, 0))
             batch.append({"b": b.barangay_id, "m": month, "p": packs, "f": fam, "s": sev})
             total_packs += packs
         db.session.execute(text(
@@ -375,7 +394,7 @@ def load_real_urdaneta(barangays):
             "ON DUPLICATE KEY UPDATE food_packs=VALUES(food_packs), affected_families=VALUES(affected_families), "
             "event_count=1, max_event_severity=VALUES(max_event_severity), data_source='real'"), batch)
     db.session.commit()
-    return len(urdaneta_real.REPORTS) * len(ur), total_packs
+    return len(module.REPORTS) * len(own), total_packs
 
 
 def calibration_urdaneta(barangays, replications=300):
@@ -416,7 +435,7 @@ def calibration_urdaneta(barangays, replications=300):
 
 
 def summary(barangays, history):
-    print("\nSynthetic history summary (packs per LGU; Urdaneta's real 2025 months are loaded separately and not counted here)")
+    print("\nSynthetic history summary (packs per LGU; the real 2025 months are loaded separately and not counted here)")
     lgu_of = {b.barangay_id: b.city_municipality for b in barangays}
     monthly = defaultdict(int)
     for (bid, ms), h in history.items():
@@ -427,7 +446,7 @@ def summary(barangays, history):
         for (l, ms), v in monthly.items():
             if l == lgu:
                 by_year[ms.year] += v
-        years = "  ".join(f"{y}: {by_year[y]:>7,}" for y in range(2021, 2026))
+        years = "  ".join(f"{y}: {by_year[y]:>7,}" for y in range(2021, 2027))
         print(f"  {lgu:<14}{years}   peak month {peak[1]:%b %Y} = {peak[0]:,}")
 
 
@@ -443,13 +462,14 @@ def main(report_only=False):
 
     history, months = generate_history(barangays)
     persist(barangays, history, months, climate_rows(months))
-    n_real, packs_real = load_real_urdaneta(barangays)
+    loaded = {lgu: load_real(barangays, lgu, mod) for lgu, mod in REAL_REPORTS.items()}
     n, total = load_real_sample(barangays)
     ok = calibration_report(barangays)
     ok &= calibration_urdaneta(barangays)
     summary(barangays, history)
-    print(f"\nLoaded real Urdaneta 2025 reports: {n_real} barangay-months, {packs_real:,} packs served (data_source='real')")
-    print(f"Loaded real Aug 2026 Sta. Barbara sample: {n} barangays, {total:,} packs (data_source='real_sample')")
+    for lgu, (n_real, packs_real) in loaded.items():
+        print(f"\nLoaded real {lgu} 2025 reports: {n_real} barangay-months, {packs_real:,} packs (data_source='real')")
+    print(f"Loaded real Aug 2026 Sta. Barbara sample: {n} barangays, {total:,} packs (data_source='real')")
     print("Calibration: " + ("all checks within tolerance" if ok else "some checks outside tolerance - see the CHECK lines above"))
 
 

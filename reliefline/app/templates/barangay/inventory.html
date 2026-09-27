@@ -150,8 +150,8 @@
                                     {% for bi in batch.items %}
                                     {% set item_status = shelf_status_fn(bi.expiration_date) %}
                                     <li>
-                                        <span class="wh-batch-item-name">{{ bi.component.name }}</span>
-                                        <span class="wh-batch-item-qty">{{ bi.component.quantity_label }}</span>
+                                        <span class="wh-batch-item-name">{{ bi.label }}</span>
+                                        <span class="wh-batch-item-qty">{{ bi.qty_label }}</span>
                                         <span class="wh-batch-item-expiry">Expires {{ bi.expiration_date.strftime('%b %d, %Y') }}</span>
                                         {% if item_status == 'expired' %}<span class="badge-health badge-low wh-batch-item-status">Expired</span>
                                         {% elif item_status == 'near_expiry' %}<span class="badge-health badge-moderate wh-batch-item-status">Near Expiry</span>

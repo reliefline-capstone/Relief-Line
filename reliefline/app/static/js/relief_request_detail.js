@@ -6,7 +6,11 @@ document.addEventListener('DOMContentLoaded', function () {
         var form = select.closest('form');
         if (!form) return;
         var value = select.value;
+        // A select and its fields only pair up when their optional
+        // data-toggle-scope matches, so one form can hold several toggles.
+        var scope = select.dataset.toggleScope || '';
         form.querySelectorAll('[data-toggle-field]').forEach(function (field) {
+            if ((field.dataset.toggleScope || '') !== scope) return;
             var values = field.dataset.toggleField.split(',');
             field.classList.toggle('is-visible', values.indexOf(value) !== -1);
         });
@@ -189,4 +193,45 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.querySelectorAll('form[data-transfer-calc]').forEach(initTransferCalc);
+});
+
+// Food Packs restock form: per-item "included" checkboxes reveal/hide each
+// item's expiration date, and "Others" reveals rows for anything else in the
+// batch (delegated, so it works for every modal on the page).
+document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.matches('[data-fp-include]')) {
+        var row = t.closest('.fp-content-row');
+        var date = row.querySelector('[data-fp-date]');
+        var qty = row.querySelector('[data-fp-qty]');
+        if (date) {
+            date.hidden = !t.checked;
+            if (!t.checked) date.value = '';
+        }
+        if (qty) qty.hidden = !t.checked;
+    } else if (t.matches('[data-fp-others-toggle]')) {
+        var wrap = t.closest('[data-fp-contents]').querySelector('[data-fp-others]');
+        wrap.hidden = !t.checked;
+        if (!t.checked) {
+            wrap.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+        }
+    }
+});
+
+document.addEventListener('click', function (e) {
+    var add = e.target.closest('[data-fp-other-add]');
+    if (add) {
+        var list = add.closest('[data-fp-others]').querySelector('[data-fp-others-list]');
+        var clone = list.querySelector('[data-fp-other-row]').cloneNode(true);
+        clone.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+        list.appendChild(clone);
+        return;
+    }
+    var rm = e.target.closest('[data-fp-other-remove]');
+    if (rm) {
+        var row = rm.closest('[data-fp-other-row]');
+        var rows = row.parentNode.querySelectorAll('[data-fp-other-row]');
+        if (rows.length > 1) row.remove();
+        else row.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+    }
 });

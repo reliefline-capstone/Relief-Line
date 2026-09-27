@@ -61,7 +61,7 @@
                     </div>
                     <p class="form-hint" style="margin-top:10px;">
                         {{ "{:,}".format(transfer.quantity) }} packs from {{ transfer.from_office.office_name }} → {{ transfer.to_office.office_name }}.
-                        {% if transfer.status == 'completed' %}Received {{ transfer.received_at.strftime('%b %d, %I:%M %p') if transfer.received_at }} by {{ transfer.received_by }}.
+                        <a href="{{ url_for('receipts.transfer_receipt', transfer_id=transfer.transfer_id) }}">View Receipt</a> &middot; {% if transfer.status == 'completed' %}Received {{ transfer.received_at.strftime('%b %d, %I:%M %p') if transfer.received_at }} by {{ transfer.received_by }}.{% if transfer.has_receipt_issue %} <strong>{{ transfer.receipt_condition|capitalize }}</strong>: {{ '{:,}'.format(transfer.good_count) }} usable of {{ '{:,}'.format(transfer.quantity) }} dispatched{% if transfer.shortage_count %}, {{ '{:,}'.format(transfer.shortage_count) }} short{% endif %}{% if transfer.damaged_count %}, {{ '{:,}'.format(transfer.damaged_count) }} damaged{% endif %}{% if transfer.receipt_note %} - {{ transfer.receipt_note }}{% endif %}.{% endif %}
                         {% elif transfer.dispatch_status == 'in_transit' %}In transit - awaiting CSWDO receipt confirmation.
                         {% else %}Awaiting dispatch.{% endif %}
                     </p>

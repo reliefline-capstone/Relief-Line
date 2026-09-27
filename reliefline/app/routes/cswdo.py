@@ -46,10 +46,11 @@ from app.routes.pswdo import (
     _gis_scope_lgus, _gis_config,
     _parse_stock_source, _slugify, _full_stock_movements,
     _shelf_status, _sync_food_pack_batches, NEAR_EXPIRY_DAYS,
-    _create_food_pack_batch, _consume_food_pack_batches_fifo, _refreshed_batch_items,
+    _create_food_pack_batch, _deduct_food_pack_batches, _lots_from_json, _refreshed_batch_items,
+    _parse_food_pack_contents, _parse_item_expiration, _parse_expiration_date, _plan_expiration,
 )
 from app.models.warehouse import WarehouseStockLog
-from app.models.food_pack_batch import FoodPackBatch, FoodPackBatchItem
+from app.models.food_pack_batch import FoodPackBatch, FoodPackBatchItem, FoodPackComponent
 
 # CSWDO's own link targets for notification "View" buttons - deliberately NOT
 # the pswdo.* links NOTIFICATION_LINK_BUILDERS (app/routes/pswdo.py) resolves
@@ -683,6 +684,7 @@ def _fulfil_barangay_request(report, quantity, office):
         barangay_id=report.barangay_id, allocation_id=alloc.allocation_id,
         quantity_released=quantity, distribution_date=ph_today(),
         dispatch_status="preparing", submitted_by=current_user.user_id,
+        batch_lots=_deduct_food_pack_batches(office.office_id, quantity),
     )
     db.session.add(dist)
 
@@ -733,6 +735,7 @@ def _push_proactive_allocation(barangay, quantity, office, event, remarks):
         barangay_id=barangay.barangay_id, allocation_id=alloc.allocation_id,
         quantity_released=quantity, distribution_date=ph_today(),
         dispatch_status="preparing", submitted_by=current_user.user_id,
+        batch_lots=_deduct_food_pack_batches(office.office_id, quantity),
     )
     db.session.add(dist)
 
@@ -1246,6 +1249,7 @@ def replace_delivery(distribution_id):
         quantity_released=quantity, distribution_date=ph_today(),
         dispatch_status="preparing", submitted_by=current_user.user_id,
         replacement_of_id=rec.distribution_id,
+        batch_lots=_deduct_food_pack_batches(office.office_id, quantity),
     )
     db.session.add(replacement)
 
@@ -1508,12 +1512,39 @@ def receive_transfer(transfer_id):
         flash("PSWDO has not dispatched this transfer yet.", "error")
         return redirect(request.referrer or url_for("cswdo.municipal_inventory"))
 
+    # Verification - same complete / partial / damaged check the barangays do
+    # on their deliveries. Only undamaged packs that actually arrived are
+    # credited; damaged ones go to the Damaged bucket (Disposed/Fixed), and a
+    # shortfall stays visible on the transfer for PSWDO.
+    condition = request.form.get("condition", "complete")
+    total = transfer.quantity or 0
+    if condition == "partial":
+        received = request.form.get("quantity_received", type=int)
+        damaged = 0
+        if received is None or received < 0 or received >= total:
+            flash(f"For a partial delivery, enter how many packs arrived (fewer than {total:,}).", "error")
+            return redirect(request.referrer or url_for("cswdo.municipal_inventory"))
+    elif condition == "damaged":
+        good = request.form.get("quantity_good", type=int) or 0
+        damaged = request.form.get("quantity_damaged", type=int) or 0
+        received = good + damaged
+        if good < 0 or damaged < 1 or received > total:
+            flash(f"Enter the good and damaged packs (at least 1 damaged, no more than {total:,} in all).", "error")
+            return redirect(request.referrer or url_for("cswdo.municipal_inventory"))
+    else:
+        condition, received, damaged = "complete", total, 0
+    receipt_note = request.form.get("receipt_note", "").strip()[:255] or None
+    if condition != "complete" and not receipt_note:
+        flash("Add a short note explaining what was short or damaged.", "error")
+        return redirect(request.referrer or url_for("cswdo.municipal_inventory"))
+    usable = received - damaged
+
     inv = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type=transfer.item_type).first()
     if inv is None:
         inv = WarehouseInventory(office_id=office.office_id, item_type=transfer.item_type,
                                  item_name="Food Packs", unit="packs", quantity_available=0)
         db.session.add(inv)
-    inv.quantity_available = (inv.quantity_available or 0) + transfer.quantity
+    inv.quantity_available = (inv.quantity_available or 0) + usable
     inv.updated_by = current_user.user_id
 
     transfer.status = "completed"
@@ -1521,31 +1552,60 @@ def receive_transfer(transfer_id):
     transfer.received_by = request.form.get("received_by", "").strip() or current_user.name
     transfer.received_at = ph_now()
     transfer.completed_at = ph_now()
+    transfer.receipt_condition = condition
+    transfer.quantity_received = received
+    transfer.quantity_damaged = damaged
+    transfer.receipt_note = receipt_note
     ref = transfer.batch.ref if transfer.batch else transfer.ref
     if transfer.batch:
         transfer.batch.status = "fulfilled"
 
-    if transfer.item_type == "food_pack":
-        # Carry the source depot's original received_date(s) forward (FIFO)
-        # instead of stamping today's date, so stock that already had e.g. 4
-        # months of shelf life left doesn't reset to a fresh clock just
-        # because it changed warehouses.
-        for received_date, qty in _consume_food_pack_batches_fifo(transfer.from_office_id, transfer.quantity):
-            _create_food_pack_batch(office.office_id, qty, received_date, current_user.user_id)
+    if transfer.item_type == "food_pack" and usable:
+        # Rebuild the batches the source depot deducted at dispatch (see
+        # pswdo._deduct_food_pack_batches) instead of stamping today's date, so
+        # stock keeps its real remaining shelf life. Only the usable packs get a
+        # batch, matching what enters stock above.
+        for received_date, qty, item_specs in _lots_from_json(transfer.batch_lots, usable, ph_today()):
+            _create_food_pack_batch(office.office_id, qty, received_date, current_user.user_id, item_specs)
 
+    detail = ""
+    if received != total:
+        detail += f", {received:,} of {total:,} dispatched received"
+    if damaged:
+        detail += f", {damaged:,} damaged"
     db.session.add(WarehouseStockLog(
         office_id=office.office_id, item_type=transfer.item_type, item_name=inv.item_name,
-        delta=transfer.quantity, reason=f"Received from {transfer.from_office.office_name} ({ref})",
+        delta=usable, reason=f"Received from {transfer.from_office.office_name} ({ref}){detail}",
         source_type="standard", updated_by=current_user.user_id,
     ))
+    if damaged:
+        dmg = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack_damaged").first()
+        if dmg is None:
+            dmg = WarehouseInventory(
+                office_id=office.office_id, item_type="food_pack_damaged",
+                item_name="Damaged Food Packs (Returned)", unit="packs", quantity_available=0,
+            )
+            db.session.add(dmg)
+        dmg.quantity_available = (dmg.quantity_available or 0) + damaged
+        dmg.updated_by = current_user.user_id
+        db.session.add(WarehouseStockLog(
+            office_id=office.office_id, item_type="food_pack_damaged", item_name="Damaged Food Packs (Returned)",
+            delta=damaged, source_type="returned_damaged",
+            reason=f"{damaged:,} packs arrived damaged in {ref} from {transfer.from_office.office_name} - for disposal/write-off",
+            updated_by=current_user.user_id,
+        ))
     db.session.add(ActivityLog(
         actor_id=current_user.user_id, action_type="warehouse_transfer_completed",
-        description=f"{office.office_name} received {transfer.quantity:,} food packs from "
-                    f"{transfer.from_office.office_name} ({ref})",
+        description=f"{office.office_name} received {usable:,} usable food packs from "
+                    f"{transfer.from_office.office_name} ({ref}) - {condition}{detail}"
+                    + (f" - {receipt_note}" if receipt_note else ""),
         office_id=office.office_id, batch_id=transfer.batch_id,
     ))
     db.session.commit()
-    flash(f"Received {transfer.quantity:,} food packs. Warehouse updated.", "success")
+    if condition == "complete":
+        flash(f"Received {usable:,} food packs. Warehouse updated.", "success")
+    else:
+        flash(f"Recorded as {condition}: {usable:,} usable food packs added to the warehouse.", "success")
     # Same request.referrer-first pattern as the two early-exit branches above -
     # "Confirm Receipt" is submitted from both this page's Municipal Warehouse
     # view and the Relief Requests tracking tab, so send the admin back to
@@ -2056,6 +2116,7 @@ def municipal_inventory():
         movements=movements, search_query=search_query, incoming_transfers=incoming,
         stock_in=stock_in, stock_out=stock_out, has_active_event=bool(active_events),
         batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
+        food_pack_components=FoodPackComponent.query.order_by(FoodPackComponent.sort_order).all(),
     )
 
 
@@ -2065,7 +2126,7 @@ def municipal_inventory():
 def municipal_inventory_add():
     office = _own_office_or_404()
     item_name = request.form.get("item_name", "").strip()
-    unit = request.form.get("unit", "").strip() or "units"
+    unit = "packs"
     quantity = request.form.get("quantity", type=int)
     min_stock_level = request.form.get("min_stock_level", type=int) or 0
 
@@ -2078,6 +2139,11 @@ def municipal_inventory_add():
         flash(source_error, "error")
         return redirect(url_for("cswdo.municipal_inventory"))
 
+    expiration_date, expiry_error = _parse_item_expiration(request.form, item_name)
+    if expiry_error:
+        flash(expiry_error, "error")
+        return redirect(url_for("cswdo.municipal_inventory"))
+
     item_type = _slugify(item_name)
     if WarehouseInventory.query.filter_by(office_id=office.office_id, item_type=item_type).first():
         flash(f"{item_name} already exists in this warehouse - use Update instead.", "error")
@@ -2086,7 +2152,7 @@ def municipal_inventory_add():
     db.session.add(WarehouseInventory(
         office_id=office.office_id, item_type=item_type, item_name=item_name, unit=unit,
         quantity_available=quantity, min_stock_level=min_stock_level,
-        updated_by=current_user.user_id,
+        expiration_date=expiration_date, updated_by=current_user.user_id,
     ))
     if quantity > 0:
         db.session.add(WarehouseStockLog(
@@ -2138,18 +2204,34 @@ def municipal_inventory_update(inventory_id):
         flash("A donation adds stock - enter a positive quantity to record it.", "error")
         return redirect(url_for("cswdo.municipal_inventory"))
 
+    expiry_specs = None
+    new_expiration = None
+    if item.item_type == "food_pack" and delta > 0:
+        expiry_specs, expiry_error = _parse_food_pack_contents(request.form)
+        if expiry_error:
+            flash(expiry_error, "error")
+            return redirect(url_for("cswdo.municipal_inventory"))
+    elif item.expiration_date and delta > 0 and request.form.get("expiration_date", "").strip():
+        # Restocking a perishable item - the new stock's date replaces the old one.
+        new_expiration, expiry_error = _parse_expiration_date(request.form.get("expiration_date"), item.item_name)
+        if expiry_error:
+            flash(expiry_error, "error")
+            return redirect(url_for("cswdo.municipal_inventory"))
+
     item.quantity_available = new_quantity
     if unit:
         item.unit = unit
     if min_stock_level is not None:
         item.min_stock_level = min_stock_level
+    if new_expiration:
+        item.expiration_date = new_expiration
     item.updated_by = current_user.user_id
 
     # Food Packs is the only item type with shelf-life tracking - a positive
     # delta opens a FoodPackBatch (with a per-component expiration date each,
-    # auto-computed from the researched FoodPackComponent catalog).
+    # entered by staff, else auto-computed from the researched FoodPackComponent catalog).
     if item.item_type == "food_pack" and delta > 0:
-        _create_food_pack_batch(item.office_id, delta, ph_today(), current_user.user_id)
+        _create_food_pack_batch(item.office_id, delta, ph_today(), current_user.user_id, expiry_specs)
 
     if delta != 0:
         db.session.add(WarehouseStockLog(
@@ -2306,14 +2388,15 @@ def municipal_inventory_resolve_expired_batch(batch_id):
         new_batch = FoodPackBatch(
             office_id=office.office_id, quantity_remaining=quantity,
             received_date=ph_today(),
-            expiration_date=min(exp for _, exp in plan),
+            expiration_date=_plan_expiration(plan),
             status="active", updated_by=current_user.user_id,
         )
         db.session.add(new_batch)
         db.session.flush()
-        for component_id, exp in plan:
+        for component_id, custom_name, exp, qty_label in plan:
             db.session.add(FoodPackBatchItem(
-                batch_id=new_batch.batch_id, component_id=component_id, expiration_date=exp,
+                batch_id=new_batch.batch_id, component_id=component_id,
+                custom_name=custom_name, quantity_label=qty_label, expiration_date=exp,
             ))
 
         flash(f"{quantity:,} expired packs marked fixed - {replaced_names} replaced, "

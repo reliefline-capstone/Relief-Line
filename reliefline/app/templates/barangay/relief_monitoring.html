@@ -126,6 +126,10 @@
                 {% endif %}
             </div>
 
+            <div style="margin-top:10px;">
+                <a href="{{ url_for('receipts.distribution_receipt', distribution_id=d.distribution_id) }}" style="font-weight:600;">{{ icon('file-text', 14) }} View Delivery Receipt</a>
+            </div>
+
             {% if confirmed and d.validation_file %}
             <div style="margin-top:10px;">
                 <span class="form-hint">Photo proof you submitted:</span>
