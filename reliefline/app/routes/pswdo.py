@@ -2279,7 +2279,7 @@ def warehouse_reports():
     # Every event, not just the currently-active one - a report is almost
     # always generated *after* a typhoon has ended, so scoping this filter to
     # status="active" would make every past event unselectable.
-    active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
+    active_events = DisasterEvent.query.filter_by(is_reference=False).order_by(DisasterEvent.start_date.desc()).all()
 
     barangay_ids = [b.barangay_id for b in Barangay.query.filter(
         Barangay.city_municipality.in_(filters["lgus"])
@@ -3248,8 +3248,9 @@ def transfer_issue(transfer_id):
 @role_required("pswdo_admin", "system_admin")
 def recommendations_page():
     # Province-wide page (all TARGET_LGUS) - shows PSWDO's own event only,
-    # for the banner display (the SARIMAX forecaster doesn't read it - it
-    # projects the seasonal pattern from monthly history, see app.ml.train).
+    # for the banner display (the forecaster doesn't read it - it projects
+    # the seasonal pattern from real relief records + climatology, see
+    # app.ml.train).
     active_event = blocking_event_for_province()
     _, warehouses, total_food_packs = _load_warehouses()
     depots = [w for w in warehouses if w["office"].office_type == "pswdo"]

@@ -32,3 +32,16 @@ class ModelMetrics(db.Model):
     total12_err = db.Column(db.Numeric(10, 4), nullable=True)
     naive_total12_err = db.Column(db.Numeric(10, 4), nullable=True)
     trained_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+    # Two-stage forecaster (v9+): leave-one-typhoon-out MAE for the share
+    # model's two baselines (equal 1/N split, each barangay's average
+    # historical share) - `mae` above is the model's own LOTO-CV MAE. All the
+    # SARIMAX-era columns above stay NULL for v9+ rows rather than forcing a
+    # fake mapping onto metrics that don't apply to an event-based model.
+    mae_baseline_equal_split = db.Column(db.Numeric(10, 4), nullable=True)
+    mae_baseline_avg_share = db.Column(db.Numeric(10, 4), nullable=True)
+    # Packs-unit LOTO-CV of the full pipeline (share x that fold's severity.expected
+    # vs. real food_packs_given), pooled across every (barangay, held-out typhoon)
+    # pair - the "worst LGU" figure, same convention as `mae` above. rmse/mape/
+    # r_squared (SARIMAX-era columns, above) are REUSED here rather than adding new
+    # ones, since they sat NULL and unused for every v9+ row until now.
+    mae_packs = db.Column(db.Numeric(10, 4), nullable=True)

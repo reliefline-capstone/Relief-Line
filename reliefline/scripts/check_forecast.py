@@ -1,7 +1,7 @@
 """
-Smoke checks for the SARIMAX forecaster and its data. This project has no
-test suite; run this after training / reseeding to catch a broken model
-before it reaches a page.
+Smoke checks for the two-stage forecaster and its real relief data. This
+project has no test suite; run this after loading new relief data / training
+to catch a broken model before it reaches a page.
 
     .venv/Scripts/python.exe -m scripts.check_forecast
 
@@ -16,7 +16,6 @@ from sqlalchemy import text
 
 from app import create_app
 from app.extensions import db
-from app.ml import climate_reference as ref
 from app.ml import predict as P
 from app.models.barangay import Barangay
 
@@ -32,76 +31,93 @@ def check(name, cond, detail=""):
 app = create_app()
 with app.app_context():
     print("Data")
-    n_b = Barangay.query.count()
-    counts = dict(db.session.execute(text(
-        "SELECT data_source, COUNT(*) FROM barangay_monthly_history GROUP BY 1")).fetchall())
-    n_months = (ref.HISTORY_END.year - ref.HISTORY_START.year) * 12 + ref.HISTORY_END.month - ref.HISTORY_START.month + 1
-    check(f"every barangay has {n_months} months of history (synthetic + real)",
-          counts.get("synthetic", 0) + counts.get("real", 0) == n_b * n_months,
-          f"{counts.get('synthetic', 0)} synthetic + {counts.get('real', 0)} real vs {n_b * n_months}")
-    def real_by_month(lgu):
-        return {k: int(v) for k, v in db.session.execute(text(
-            "SELECT DATE_FORMAT(h.month_start, '%Y-%m'), SUM(h.food_packs) FROM barangay_monthly_history h "
-            "JOIN barangays b ON b.barangay_id = h.barangay_id "
-            "WHERE h.data_source = 'real' AND b.city_municipality = :lgu GROUP BY 1"), {"lgu": lgu}).fetchall()}
-    got = real_by_month("Urdaneta City")
-    check("real Urdaneta 2025 reports loaded (Jul 2,704 / Sep 5,731 / Oct 12,424 / Nov 950 packs)",
-          got == {"2025-07": 2704, "2025-09": 5731, "2025-10": 12424, "2025-11": 950}, str(got))
-    got = real_by_month("Calasiao")
-    check("real Calasiao 2025 reports loaded (Jul 25,246 estimated / Sep 17,140 measured packs)",
-          got == {"2025-07": 25246, "2025-09": 17140}, str(got))
-    real = db.session.execute(text(
-        "SELECT SUM(h.food_packs) FROM barangay_monthly_history h JOIN barangays b ON b.barangay_id = h.barangay_id "
-        "WHERE h.data_source='real' AND b.city_municipality='Santa Barbara' AND h.month_start='2026-08-01'")).scalar()
-    check("real Aug 2026 Sta. Barbara sheet loaded (14,071 packs)", int(real or 0) == 14071, str(real))
-    check("no negative packs", db.session.execute(text(
-        "SELECT COUNT(*) FROM barangay_monthly_history WHERE food_packs < 0")).scalar() == 0)
-    check("Urdaneta uses real PSA population (145,935)", int(db.session.execute(text(
+    check("typhoon_calendar has 36 verified events",
+          db.session.execute(text("SELECT COUNT(*) FROM typhoon_calendar")).scalar() == 36)
+    n_ref_events = db.session.execute(text(
+        "SELECT COUNT(*) FROM disaster_events WHERE is_reference = 1")).scalar()
+    check("disaster_events has a matching is_reference row per calendar typhoon", n_ref_events == 36,
+          str(n_ref_events))
+    n_unlinked = db.session.execute(text(
+        "SELECT COUNT(*) FROM typhoon_calendar WHERE disaster_event_id IS NULL")).scalar()
+    check("every typhoon_calendar row resolves to a disaster_events row", n_unlinked == 0, str(n_unlinked))
+
+    per_lgu = dict(db.session.execute(text(
+        "SELECT city_municipality, COUNT(*) FROM relief_events GROUP BY 1")).fetchall())
+    check("Calasiao has real relief events on record", per_lgu.get("Calasiao", 0) >= 20, str(per_lgu))
+    check("Santa Barbara has real relief events on record", per_lgu.get("Santa Barbara", 0) >= 5, str(per_lgu))
+    check("Urdaneta City has real relief events on record", per_lgu.get("Urdaneta City", 0) >= 10, str(per_lgu))
+
+    n_neg = db.session.execute(text(
+        "SELECT COUNT(*) FROM barangay_relief_records WHERE food_packs_given < 0 "
+        "OR affected_families < 0 OR total_families_snapshot < 0")).scalar()
+    check("no negative values in barangay_relief_records", n_neg == 0, str(n_neg))
+
+    sb_aug2026 = db.session.execute(text(
+        "SELECT SUM(r.food_packs_given) FROM barangay_relief_records r "
+        "JOIN relief_events e ON e.relief_event_id = r.relief_event_id "
+        "WHERE e.city_municipality = 'Santa Barbara' AND e.label LIKE 'Aug 2026%'")).scalar()
+    check("real Aug 2026 Sta. Barbara sheet loaded (14,071 packs)", int(sb_aug2026 or 0) == 14071, str(sb_aug2026))
+
+    # All three LGUs now source population/num_households from the latest
+    # real relief record (not PSA, not synthetic) - see scripts/real_profiles.py.
+    check("Calasiao uses real relief-record population (not synthetic)", int(db.session.execute(text(
+        "SELECT SUM(population) FROM barangays WHERE city_municipality='Calasiao'")).scalar()) == 116239)
+    check("Santa Barbara uses real relief-record population (not synthetic)", int(db.session.execute(text(
+        "SELECT SUM(population) FROM barangays WHERE city_municipality='Santa Barbara'")).scalar()) == 87680)
+    check("Urdaneta uses real relief-record population (Maymay 2026, not PSA anymore)", int(db.session.execute(text(
         "SELECT SUM(population) FROM barangays WHERE city_municipality='Urdaneta City'")).scalar()) == 145935)
+    check("Urdaneta uses real relief-record family count (Maymay 2026, not PSA households)",
+          int(db.session.execute(text(
+              "SELECT SUM(num_households) FROM barangays WHERE city_municipality='Urdaneta City'")).scalar()) == 35594)
+
+    n_synthetic_tables = db.session.execute(text(
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() "
+        "AND table_name IN ('barangay_monthly_history', 'climate_monthly')")).scalar()
+    check("synthetic-history tables are gone", n_synthetic_tables == 0, f"{n_synthetic_tables} still present")
 
     print("Model")
-    from app.ml.train import load_lgu_series
-    series_by_lgu = load_lgu_series()
     check("artifact loads", P.is_model_available())
     for lgu in ("Urdaneta City", "Santa Barbara", "Calasiao"):
-        for h in (4, 6, 12):
+        for h in (3, 6, 12):
             f = P.forecast_lgu(lgu, h)
             ok = (f is not None and len(f["months"]) == h
                   and all(m["projected_packs"] >= 0 and m["p90_packs"] >= m["projected_packs"] for m in f["months"])
                   and f["horizon_p90"] >= f["horizon_total"]
                   and f["horizon_total"] == sum(m["projected_packs"] for m in f["months"]))
             check(f"{lgu} {h}-month forecast is non-negative, P90 >= expected", ok)
-        # Guard against the failure mode that once inflated expected demand 20x:
-        # the next-12-month expected total must sit near what the history shows.
-        annual = series_by_lgu[lgu].groupby(series_by_lgu[lgu].index.year).sum()
-        exp12 = P.forecast_lgu(lgu, 12)["horizon_total"]
-        check(f"{lgu}: 12-month expected is within 0.5x-2x of the average past year",
-              0.5 * annual.mean() <= exp12 <= 2.0 * annual.mean(),
-              f"{exp12:,} vs average year {annual.mean():,.0f} (largest {annual.max():,.0f})")
-        wet = [m["projected_packs"] for m in P.forecast_lgu(lgu, 12)["months"] if m["is_peak_season"]]
-        dry = [m["projected_packs"] for m in P.forecast_lgu(lgu, 12)["months"] if not m["is_wet_season"]]
-        check(f"{lgu}: peak-season months forecast well above dry months",
-              min(wet) > 3 * max(dry), f"min peak {min(wet):,} vs max dry {max(dry):,}")
 
         barangays = Barangay.query.filter_by(city_municipality=lgu).all()
         shares = P._lgu_shares(lgu)
-        check(f"{lgu}: barangay shares sum to 1", abs(sum(shares.values()) - 1) < 1e-6)
+        check(f"{lgu}: barangay shares sum to 1", abs(sum(shares.values()) - 1) < 1e-6,
+              f"{sum(shares.values()):.6f}")
         lgu_total = P.forecast_lgu(lgu, 12)["horizon_total"]
         b_total = sum(P.forecast_barangay(b, 12)["horizon_total"] for b in barangays)
         check(f"{lgu}: barangay forecasts add up to the LGU forecast (rounding only)",
               abs(b_total - lgu_total) <= len(barangays), f"{b_total:,} vs {lgu_total:,}")
 
+        bt = P.backtest_series(lgu)
+        check(f"{lgu}: leave-one-typhoon-out backtest series available", bt is not None and len(bt["points"]) > 0,
+              str(len(bt["points"])) if bt else "none")
+
+    print("Validation (leave-one-typhoon-out vs. baselines)")
+    from app.ml.train import load_relief_data, _share_training_rows, fit_share_model, leave_one_typhoon_out_cv
+    by_lgu = load_relief_data()
+    for lgu, events in by_lgu.items():
+        cv = leave_one_typhoon_out_cv(events)
+        if cv is None:
+            check(f"{lgu}: LOTO-CV ran", False, "not enough events to validate")
+            continue
+        # Wide/informational check on purpose: equal-split is a very weak
+        # baseline (see app.ml.train module doc), so this mainly guards
+        # against a badly broken fit, not a claim of beating every baseline.
+        check(f"{lgu}: share model beats equal-split baseline (MAE {cv['mae_model']:.4f} vs {cv['mae_equal_split']:.4f})",
+              cv["mae_model"] <= cv["mae_equal_split"])
+
     print("Metrics")
     m = db.session.execute(text(
-        "SELECT model_version, p90_coverage, total12_err, naive_total12_err "
+        "SELECT model_version, mae, mae_baseline_equal_split, mae_baseline_avg_share "
         "FROM model_metrics ORDER BY metric_id DESC LIMIT 1")).fetchone()
-    check("latest metrics row is from the SARIMAX model", m is not None and str(m[0]).startswith("v8"), str(m))
-    if m and m[1] is not None:
-        # Wide on purpose: this catches a broken interval, it is not a claim of accuracy.
-        check("P90 monthly coverage within 0.60-0.97", 0.60 <= float(m[1]) <= 0.97, f"{float(m[1]):.2f}")
-    if m and m[2] is not None:
-        check("12-month total error is not worse than 1.5x seasonal-naive", float(m[2]) <= 1.5 * float(m[3]),
-              f"{float(m[2]):.2f} vs {float(m[3]):.2f} (informational: the model does not currently beat it)")
+    check("latest metrics row is from the two-stage model", m is not None and str(m[0]).startswith("v9"), str(m))
 
 print("\nALL CHECKS PASSED" if not failures else f"\n{len(failures)} CHECK(S) FAILED: {failures}")
 sys.exit(1 if failures else 0)

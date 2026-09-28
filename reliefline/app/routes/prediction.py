@@ -79,7 +79,7 @@ def _resolve_event_map(explicit_event_id, lgus):
 
 
 def _stock_cover(stock, lgu_names, horizon_months):
-    """How well `stock` food packs covers what the SARIMAX forecaster says
+    """How well `stock` food packs covers what the forecaster says
     `lgu_names` will need. Returns None when there is no trained model.
 
     stockpile   - recommended stockpile for the horizon (the P90 total; for
@@ -289,7 +289,7 @@ def index():
     )[:8]
 
     # ---- Warehouse stock vs forecast - each warehouse's stock against the
-    # SARIMAX recommended stockpile (see _stock_cover). A CSWDO admin sees their
+    # recommended stockpile (see _stock_cover). A CSWDO admin sees their
     # own municipal warehouse vs their LGU's forecast; PSWDO/admin see the
     # province-wide depots vs the whole province's (sum of municipal
     # stockpiles), plus all warehouses combined. The health badge stays the
@@ -452,7 +452,8 @@ def index():
         cover_chart=cover_chart,
         backtest_chart=backtest_chart,
         show_breakdown=show_breakdown,
-        history_weight=ml_predict.HISTORY_WEIGHT,
+        loto_cv=ml_predict.loto_cv_summary(),
+        loto_packs_cv=ml_predict.loto_packs_cv_summary(),
     )
 
 

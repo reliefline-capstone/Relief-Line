@@ -42,8 +42,11 @@ def create_app():
     from app.models.allocation import AllocationRecord
     from app.models.validation import DistributionRecord
     from app.models.prediction import PredictionLog, ModelMetrics
-    from app.models.barangay_monthly_history import BarangayMonthlyHistory
-    from app.models.climate_monthly import ClimateMonthly
+    # typhoon_calendar / relief_events / relief_event_typhoons /
+    # barangay_relief_records have no ORM model - app.ml.train and
+    # scripts/load_relief_events.py read/write them directly via SQL (see
+    # scripts/apply_relief_schema.py for their schema). They replaced
+    # barangay_monthly_history / climate_monthly, which are dropped.
     from app.models.disaster_event import DisasterEvent
     from app.models.barangay_status import BarangayDisasterStatus
     from app.models.barangay_report import BarangayReport

@@ -19,3 +19,11 @@ class DisasterEvent(db.Model):
     scope = db.Column(db.Enum("province", "municipality"), nullable=False,
                        default="province", server_default="province")
     city_municipality = db.Column(db.String(100), nullable=True)
+
+    # True only for the 36 historical-calendar rows seeded by
+    # scripts/typhoon_calendar_2021_2026.py (status='ended', scope='province')
+    # - kept out of every staff-facing event picker (see the is_reference=False
+    # filters in cswdo.py/reports.py/barangay.py/pswdo.py) so 2021-2026
+    # calendar noise never shows up next to something a CSWDO/PSWDO admin
+    # actually declared.
+    is_reference = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("0"))

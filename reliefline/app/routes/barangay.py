@@ -1849,7 +1849,7 @@ def reports():
     # Every event, not just the currently-active one - a report is almost
     # always generated *after* a typhoon has ended, so scoping this filter to
     # status="active" would make every past event unselectable.
-    active_events = DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all()
+    active_events = DisasterEvent.query.filter_by(is_reference=False).order_by(DisasterEvent.start_date.desc()).all()
 
     my_reports = _own_submitted_reports(barangay.barangay_id)
     delivered = DistributionRecord.query.filter(

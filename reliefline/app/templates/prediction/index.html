@@ -163,7 +163,7 @@
                     <span class="rd-sub">packs (covers 9 scenarios in 10)</span>
                 </div>
             </div>
-            <p class="rd-sub" style="text-align:center;">SARIMAX time-series forecast with rainy-season and typhoon-climatology predictors, fitted on monthly history through {{ lgu_forecast.data_through }}. The dashed recommended-stockpile line is the level that covers 9 scenarios in 10; the stockpile total is computed for the whole period, not by adding the monthly points. See Model Performance below.</p>
+            <p class="rd-sub" style="text-align:center;">Two-stage forecast (barangay share regression + typhoon climatology) fit on real per-typhoon relief records through {{ lgu_forecast.data_through }}. The dashed recommended-stockpile line is the level that covers 9 scenarios in 10. See Model Performance below.</p>
             {% else %}
             <p class="empty-note">No model has been trained yet. Run <code>scripts/train_model.py</code> against the current database.</p>
             {% endif %}
@@ -276,7 +276,6 @@
         </div>
 
         {% if show_breakdown and lgu_forecast and barangay_breakdown %}
-        {% set flood_label = {1: 'Low', 2: 'Moderate', 3: 'High', 4: 'Very high'} %}
         {% set top = barangay_breakdown[0] %}
         <section class="panel" id="pa-barangay-breakdown" style="margin-top:16px;">
             <div class="panel-header">
@@ -285,15 +284,14 @@
                     <a href="?{% if municipality_filter != 'all' %}municipality={{ municipality_filter }}&amp;{% endif %}{% if event_id %}event_id={{ event_id }}&amp;{% endif %}forecast_lgu={{ lgu_forecast.lgu|urlencode }}&amp;forecast_months={{ forecast_months }}#pa-forecast-detail" class="link-manage">Hide</a></span>
             </div>
             <ol class="rd-sub" style="margin:0 0 12px 18px; line-height:1.6;">
-                <li><strong>The model forecasts the whole municipality</strong> ({{ "{:,}".format(lgu_forecast.horizon_total) }} packs expected, {{ "{:,}".format(lgu_forecast.horizon_p90) }} recommended stockpile) - a single barangay has too little history for its own time-series model.</li>
-                <li><strong>Each barangay gets a share</strong> of that total: <em>{{ (history_weight * 100)|round|int }}% its own history share</em> (packs it received in the recorded history &divide; the municipality's packs) + <em>{{ ((1 - history_weight) * 100)|round|int }}% its vulnerability share</em> (households &times; flood weight &divide; the municipality's total). Flood weight: Low 0.5 &middot; Moderate 0.85 &middot; High 1.2 &middot; Very high 1.6.</li>
+                <li><strong>The model forecasts the whole municipality</strong> ({{ "{:,}".format(lgu_forecast.horizon_total) }} packs expected, {{ "{:,}".format(lgu_forecast.horizon_p90) }} recommended stockpile) from real per-typhoon relief records - a single barangay has too few typhoons of its own to forecast independently.</li>
+                <li><strong>Each barangay gets a share</strong> of that total from a regression fit on every real relief event this municipality has on record: <em>share = family count &times; a fitted rate</em>, clipped so it can't go negative and rescaled so every barangay's share adds up to 100%.</li>
                 <li><strong>Barangay figure = share &times; municipal figure.</strong> Shares add up to 100%, so barangay numbers always add up to the municipality.</li>
             </ol>
             <p class="rd-sub" style="background:#f4f7fc; border-radius:8px; padding:10px 12px; margin:0 0 12px;">
                 <strong>Example - {{ top.name }}:</strong>
-                {{ (history_weight * 100)|round|int }}% &times; {{ '%.1f'|format((top.history_share or 0) * 100) }}% history
-                + {{ ((1 - history_weight) * 100)|round|int }}% &times; {{ '%.1f'|format(top.vulnerability_share * 100) }}% vulnerability
-                = <strong>{{ '%.1f'|format(top.share * 100) }}% share</strong>.
+                {{ "{:,}".format(top.total_families_used) }} families &rarr;
+                <strong>{{ '%.1f'|format(top.share * 100) }}% share</strong>.
                 {{ '%.1f'|format(top.share * 100) }}% &times; {{ "{:,}".format(lgu_forecast.horizon_total) }} expected
                 &asymp; <strong>{{ "{:,}".format(top.expected) }} packs</strong>;
                 {{ '%.1f'|format(top.share * 100) }}% &times; {{ "{:,}".format(lgu_forecast.horizon_p90) }} stockpile
@@ -302,8 +300,8 @@
             <div class="rr-table-wrap" style="max-height:460px; overflow:auto;">
                 <table class="rr-table">
                     <thead><tr>
-                        <th>Barangay</th><th>Households</th><th>Flood susceptibility</th><th>Packs on record</th>
-                        <th>History share</th><th>Vulnerability share</th><th>Final share</th>
+                        <th>Barangay</th><th>Households (current)</th><th>Family count used (share model)</th>
+                        <th>Final share</th>
                         <th>Expected ({{ forecast_months }} mo)</th><th>Recommended stockpile</th>
                     </tr></thead>
                     <tbody>
@@ -311,10 +309,7 @@
                         <tr>
                             <td><strong>{{ r.name }}</strong></td>
                             <td>{{ "{:,}".format(r.households) }}</td>
-                            <td>{{ flood_label[r.flood_susceptibility] }} <span class="rd-sub">(&times;{{ r.flood_weight }})</span></td>
-                            <td>{{ "{:,}".format(r.history_packs) }}</td>
-                            <td>{{ '%.1f'|format((r.history_share or 0) * 100) }}%</td>
-                            <td>{{ '%.1f'|format(r.vulnerability_share * 100) }}%</td>
+                            <td>{{ "{:,}".format(r.total_families_used) }}</td>
                             <td><strong>{{ '%.1f'|format(r.share * 100) }}%</strong></td>
                             <td>{{ "{:,}".format(r.expected) }}</td>
                             <td>{{ "{:,}".format(r.stockpile) }}</td>
@@ -323,15 +318,15 @@
                     </tbody>
                     <tfoot><tr>
                         <td><strong>{{ lgu_forecast.lgu }}</strong></td>
-                        <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='households')) }}</td><td></td>
-                        <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='history_packs')) }}</td>
-                        <td>100%</td><td>100%</td><td><strong>100%</strong></td>
+                        <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='households')) }}</td>
+                        <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='total_families_used')) }}</td>
+                        <td><strong>100%</strong></td>
                         <td><strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong></td>
                         <td><strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong></td>
                     </tr></tfoot>
                 </table>
             </div>
-            <p class="rd-sub" style="margin-top:8px;">Barangay totals can differ from the municipal total by a few packs because each month is rounded. Flood susceptibility is synthetic except for Sta. Barbara, where it is derived from the Aug 2026 relief-distribution sheet; replace with MGB/NOAH data when available.</p>
+            <p class="rd-sub" style="margin-top:8px;">Barangay totals can differ from the municipal total by a few packs because each month is rounded. "Family count used" is what the share model actually runs on - the barangay's most recent real relief-record family count, falling back to its current household count only if it has never appeared in a relief record. It can differ from the "Households (current)" column, which is just the barangay's latest on-file household count and isn't itself an input to the forecast.</p>
         </section>
         {% endif %}
 
@@ -407,25 +402,72 @@
         <section class="panel pa-model-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>{{ icon('activity', 18, '#0f2547') }} Model Performance</h3>
-                <span class="rd-sub">Time Forecasting Model (SARIMAX) · rolling-origin backtest</span>
+                <span class="rd-sub">Two-Stage Model (share regression + climatology) · leave-one-typhoon-out validation</span>
             </div>
             {% if latest_metrics %}
             <div class="pa-model-rows">
-                <div class="pa-decision-tile"><span class="rd-sub">MAE</span><strong>{{ "%.1f"|format(latest_metrics.mae) if latest_metrics.mae is not none else '-' }}</strong><span class="rd-sub">packs</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">RMSE</span><strong>{{ "%.1f"|format(latest_metrics.rmse) if latest_metrics.rmse is not none else '-' }}</strong><span class="rd-sub">packs</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">12-month total error</span><strong>{{ "%.0f"|format(latest_metrics.total12_err * 100) if latest_metrics.total12_err is not none else '-' }}%</strong><span class="rd-sub">vs {{ "%.0f"|format(latest_metrics.naive_total12_err * 100) if latest_metrics.naive_total12_err is not none else '-' }}% same-month-last-year</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">R²</span><strong>{{ "%.3f"|format(latest_metrics.r_squared) if latest_metrics.r_squared is not none else '-' }}</strong><span class="rd-sub">fit</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">WAPE</span><strong>{{ "%.2f"|format(latest_metrics.wape) if latest_metrics.wape is not none else '-' }}</strong><span class="rd-sub">vs {{ "%.2f"|format(latest_metrics.naive_wape) if latest_metrics.naive_wape is not none else '-' }} same-month-last-year</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">Stockpile line coverage</span><strong>{{ "%.0f"|format(latest_metrics.p90_coverage * 100) if latest_metrics.p90_coverage is not none else '-' }}%</strong><span class="rd-sub">target 90%</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">Share MAE (worst LGU)</span><strong>{{ "%.4f"|format(latest_metrics.mae) if latest_metrics.mae is not none else '-' }}</strong><span class="rd-sub">lower is better</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">vs. equal-split baseline</span><strong>{{ "%.4f"|format(latest_metrics.mae_baseline_equal_split) if latest_metrics.mae_baseline_equal_split is not none else '-' }}</strong><span class="rd-sub">worst LGU</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">vs. avg-share baseline</span><strong>{{ "%.4f"|format(latest_metrics.mae_baseline_avg_share) if latest_metrics.mae_baseline_avg_share is not none else '-' }}</strong><span class="rd-sub">worst LGU</span></div>
                 <div class="pa-decision-tile"><span class="rd-sub">Training rows</span><strong>{{ latest_metrics.training_samples or '-' }}</strong><span class="rd-sub">{{ latest_metrics.model_version }}</span></div>
             </div>
-            <p class="rd-sub" style="margin-top:10px;">Trained {{ latest_metrics.trained_at.strftime('%b %d, %Y') if latest_metrics.trained_at else '-' }}. The history is mostly synthetic; it includes real Urdaneta CSWDO reports for the four 2025 events (Jul, Sep, Oct, Nov), real Calasiao reports for Crising/Emong (Jul 2025, packs estimated from affected families) and Nando/Opong (Sep 2025), and the real Sta. Barbara relief sheet for Aug 2026 (supply, not measured need). Figures will change as more real PSWDO/CSWDO records are loaded.</p>
+            <div class="pa-model-rows" style="margin-top:8px;">
+                <div class="pa-decision-tile"><span class="rd-sub">Packs MAE (worst LGU)</span><strong>{{ "{:,.0f}".format(latest_metrics.mae_packs) if latest_metrics.mae_packs is not none else '-' }}</strong><span class="rd-sub">packs, lower is better</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">RMSE</span><strong>{{ "{:,.0f}".format(latest_metrics.rmse) if latest_metrics.rmse is not none else '-' }}</strong><span class="rd-sub">packs, worst LGU</span></div>
+            </div>
+            {% if loto_packs_cv %}
+            <h4 style="margin:14px 0 4px;">Per-municipality validation (packs)</h4>
+            <p class="rd-sub" style="margin:0 0 6px;">Same leave-one-typhoon-out setup as the share table below, but scoring the end-to-end forecast (share &times; that fold's expected severity) against real food packs given, per barangay per held-out typhoon. MAPE and R&sup2; were tried here and dropped: a single typhoon's severity isn't meant to be point-forecast exactly (that's what the P90 scenario range is for), so MAPE exploded past 1,000% on near-zero actuals and R&sup2; sat near or below 0 - both technically correct but not useful without a longer explanation than a table can carry.</p>
+            <div class="rr-table-wrap">
+                <table class="rr-table">
+                    <thead><tr>
+                        <th>Municipality</th><th>MAE (packs)</th><th>RMSE (packs)</th><th>Barangay-typhoon pairs</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for r in loto_packs_cv %}
+                        <tr>
+                            <td><strong>{{ r.lgu }}</strong></td>
+                            <td>{{ "{:,.0f}".format(r.mae_packs) }}</td>
+                            <td>{{ "{:,.0f}".format(r.rmse_packs) }}</td>
+                            <td>{{ r.n }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            {% if loto_cv %}
+            <h4 style="margin:14px 0 4px;">Per-municipality validation</h4>
+            <p class="rd-sub" style="margin:0 0 6px;">The tiles above show only the worst-performing LGU's MAE. Here's every LGU, so a strong or weak result in one municipality isn't hidden inside a single combined number.</p>
+            <div class="rr-table-wrap">
+                <table class="rr-table">
+                    <thead><tr>
+                        <th>Municipality</th><th>Model MAE</th><th>Equal-split MAE</th><th>Avg-share MAE</th>
+                        <th>Beats equal-split?</th><th>Beats avg-share?</th><th>Typhoons validated</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for r in loto_cv %}
+                        <tr>
+                            <td><strong>{{ r.lgu }}</strong></td>
+                            <td>{{ "%.4f"|format(r.mae_model) }}</td>
+                            <td>{{ "%.4f"|format(r.mae_equal_split) }}</td>
+                            <td>{{ "%.4f"|format(r.mae_avg_share) }}</td>
+                            <td>{{ "Yes" if r.beats_equal_split else "No" }}</td>
+                            <td>{{ "Yes" if r.beats_avg_share else "No" }}</td>
+                            <td>{{ r.n_folds }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            <p class="rd-sub" style="margin-top:10px;">Trained {{ latest_metrics.trained_at.strftime('%b %d, %Y') if latest_metrics.trained_at else '-' }} on real per-typhoon relief records for all three LGUs (2021-2026) - no synthetic/fabricated data. Figures will keep improving as more real PSWDO/CSWDO relief reports are added.</p>
             {% if backtest_chart %}
-            <h4 style="margin:18px 0 4px;">How did the model do? - {{ lgu_forecast.lgu }}, {{ backtest_chart.year }}</h4>
-            <p class="rd-sub" style="margin:0 0 6px;">The model was trained only on data through {{ backtest_chart.trained_through }}, then forecast the whole of {{ backtest_chart.year }}. This is what it predicted against what actually happened.</p>
+            <h4 style="margin:18px 0 4px;">How did the model do? - {{ lgu_forecast.lgu }}, {{ backtest_chart.date_range }}</h4>
+            <p class="rd-sub" style="margin:0 0 6px;">Each point is a real typhoon on record, held out and predicted from every OTHER typhoon (leave-one-typhoon-out) - so every point below is a fair, out-of-sample comparison, not a single train/test split by date.</p>
             <div class="pa-bar-chart">
                 <svg class="pa-bar-svg" viewBox="0 0 {{ backtest_chart.w }} {{ backtest_chart.h }}" role="img"
-                     aria-label="Actual versus forecast food packs per month, {{ lgu_forecast.lgu }}, {{ backtest_chart.year }}">
+                     aria-label="Actual versus forecast food packs per typhoon, {{ lgu_forecast.lgu }}, {{ backtest_chart.date_range }}">
                     {% for t in backtest_chart.y_ticks %}
                     <line class="pa-bar-grid" x1="{{ backtest_chart.left }}" x2="{{ backtest_chart.right }}" y1="{{ t.y }}" y2="{{ t.y }}"></line>
                     <text class="pa-axis" x="{{ backtest_chart.left - 8 }}" y="{{ t.y + 4 }}" text-anchor="end">{{ t.label }}</text>
@@ -447,12 +489,12 @@
                 <span><i class="lg-p90"></i>Recommended stockpile line (P90)</span>
                 <span><i class="lg-over"></i>Month that went above the P90 line</span>
             </div>
-            <p class="rd-sub" style="text-align:center; margin:6px 0 0;">Over {{ backtest_chart.year }}: actual {{ "{:,}".format(backtest_chart.total_actual) }} packs vs {{ "{:,}".format(backtest_chart.total_expected) }} forecast &middot; {{ backtest_chart.months_over }} of {{ backtest_chart.n }} months went above the P90 line. A model cannot know which week a storm arrives, so single months miss; the year's total and the P90 buffer are what it is built for.</p>
+            <p class="rd-sub" style="text-align:center; margin:6px 0 0;">Over {{ backtest_chart.date_range }}: actual {{ "{:,}".format(backtest_chart.total_actual) }} packs vs {{ "{:,}".format(backtest_chart.total_expected) }} forecast &middot; {{ backtest_chart.months_over }} of {{ backtest_chart.n }} typhoons went above the P90 line. A model cannot know a storm's exact severity in advance, so single events miss; the P90 buffer is what it is built for.</p>
             {% endif %}
             <details class="rd-sub" style="margin-top:8px;">
                 <summary>How to read these numbers</summary>
-                <p style="margin:6px 0 0;">Each figure compares forecasts with what actually happened in months the model had not seen (rolling-origin backtest). <strong>12-month total error</strong> is how far the full-year figure is off. <strong>Stockpile-line coverage</strong> is how often real demand stayed at or below the recommended-stockpile line (target 90%). <strong>MAE / RMSE / WAPE / R&sup2;</strong> judge each individual month, which is harsh: no model can know months ahead which week a typhoon will arrive.</p>
-                <p style="margin:6px 0 0;"><strong>Honest reading:</strong> on this history the model is about as accurate as the simple guess "same as last year" - it does not beat it. Each season in the history was bigger than the one before, and none of these methods can foresee a growing trend, so all of them under-forecast the newest seasons. What the model adds is the seasonal shape (which months to prepare for), a stockpile line that comes from the data's own spread rather than a guess, and figures that stay consistent with past seasons. Re-check once more real records are loaded.</p>
+                <p style="margin:6px 0 0;">Each figure compares the model against real typhoons it did not see when making that prediction (leave-one-typhoon-out validation). <strong>Share MAE</strong> is how far off the predicted split across barangays is, on average, from what actually happened - lower is better. It's compared against two simple baselines: splitting relief equally across every barangay, and just using each barangay's average historical share.</p>
+                <p style="margin:6px 0 0;"><strong>Honest reading:</strong> the model beats the equal-split baseline in every municipality, but in Calasiao - where there's the most real history per barangay - simply averaging each barangay's past share does about as well. That's expected: with enough history, a plain average becomes a strong predictor on its own. The model's real advantage is giving a sensible number to a barangay with little or no history of its own, which a plain average can't do. Re-check as more real records are loaded.</p>
             </details>
             {% elif model_available %}
             <p class="empty-note">A model is trained but no evaluation metrics were recorded. Re-run <code>scripts/train_model.py</code>.</p>

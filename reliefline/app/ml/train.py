@@ -1,138 +1,87 @@
 """
-Trains the food-pack TIME-SERIES FORECASTER: a SARIMAX model per LGU
-(Urdaneta City, Santa Barbara, Calasiao) that projects monthly food-pack
-demand for the coming 4 / 6 / 12 months, so PSWDO/CSWDO can answer "how many
-food packs should we hold in stock for the next months?" - with extra weight
-on the rainy / typhoon season.
+Trains the food-pack TWO-STAGE forecaster: per LGU (Urdaneta City, Santa
+Barbara, Calasiao), Stage 1 is a linear regression predicting each
+barangay's SHARE of its LGU's relief for a typhoon, and Stage 2 is computed
+statistics (not ML) giving how often typhoons happen and how big they are.
+Together they answer "how many food packs should this barangay hold in
+stock for the next N months?" for PSWDO/CSWDO.
 
 --------------------------------------------------------------------------
-The model
+Why this replaced the SARIMAX time-series model (v8.0)
 --------------------------------------------------------------------------
-  log(1 + packs_t) = c + b1*wet_season_m + b2*peak_typhoon_m
-                       + b3*log(tc_climatology_m) + u_t,   u_t ~ ARMA(1, 1)
+v8.0 trained on barangay_monthly_history, which was ~97% FABRICATED data
+(data_source='synthetic') padding out a monthly series long enough for a
+SARIMAX fit. The team paused model work suspecting that fabricated history
+was inflated, and gathered real per-typhoon relief records for all three
+target LGUs instead (see scripts/real_*.py, scripts/load_relief_events.py -
+49 real relief events, 1300+ barangay-level rows, 2021-2026). Real data is
+event-based and irregular (one row per typhoon, not one per month), which a
+monthly ARIMA-family model can't consume without re-inventing the padding
+problem it was already suspect for. Two-stage sidesteps this entirely:
 
-  * SARIMAX(1,0,1), constant trend, fitted per LGU on the monthly series
-    (app.models.barangay_monthly_history summed to LGU level).
-  * Exogenous predictors are all KNOWN IN ADVANCE for any future month, so
-    they can be used to forecast: the Type-I wet-season flag (Jun-Oct), the
-    peak-typhoon flag (Jul-Oct, ~70% of PAR tropical cyclones per PAGASA) and
-    the log of the monthly tropical-cyclone climatology (gives the Jun and
-    Nov "shoulder" months weight - Nov typhoons Pepito 2024 / Uwan 2025 hit
-    Pangasinan). This is where the "more weight on the rainy season" lives.
-    The PAGASA Dagupan rainfall normal is kept in climate_monthly and was
-    tested; it adds nothing once wet/peak/tc are in (all are seasonal).
-    Caveat: the monthly split of TC_CLIMO is approximate (annual total and
-    Jul-Oct share match PAGASA) - replace it with PAGASA's monthly table.
-  * log(1+y) because demand is heavy-tailed: a few typhoon months dwarf
-    ordinary ones. The forecast DISTRIBUTION is built from the model's own
-    errors (see _residual_pool), not a normal curve: whole past seasons are
-    resampled (recency-weighted), so a busy season lifts Jul-Oct together.
-    Expected demand is the mean of the simulated paths and the P90 stock level
-    their 90th percentile.
-  * Why LGU level: a single barangay has ~60 monthly points, mostly zeros -
-    too little for a time-series fit. app.ml.predict splits each LGU forecast
-    to barangays by their history and flood hazard.
+  Stage 1 (share, ML): what fraction of a typhoon's relief does barangay B
+  get? This is a STABLE, learnable quantity - it tracks population/exposure,
+  not any single storm's severity - and it never needs to know a future
+  typhoon's magnitude, so there's no leakage risk forecasting it months
+  ahead. Fit by pooling every (relief_event, barangay) row across an LGU's
+  whole real history: share = food_packs_given / that event's LGU total,
+  regressed on total_families_snapshot (the ONLY predictor - a barangay's
+  own affected_families/food_packs_given for a FUTURE typhoon obviously
+  can't be a predictor of themselves, and adding total_individuals_snapshot
+  alongside total_families_snapshot was tested informally and added nothing,
+  since the two are collinear).
 
-How the spec was chosen (rolling-origin backtest, honest and reproducible -
-run scripts/train_model.py): orders (0-2, 0, 0-1) x predictor sets were
-compared on 5 expanding-window origins x 3 LGUs x 12-month horizons.
-ARMA(1,1) + {wet, peak, tc} (or {rain, wet, peak}) had the lowest 12-month
-total error and a small bias, with near-nominal P90 coverage. Fourier (harmonic) seasonal
-terms were also tried: slightly better monthly R2 but they over-forecast by
-17-28%, the wrong way to fail for stock planning. ENSO (ONI) was tested as a
-predictor and REJECTED (it made forecasts far worse), so it is stored
-(climate_monthly) but not used. is mildly optimistic - re-check once real data lands.
+  Stage 2 (severity/frequency, computed): how bad is a typical typhoon for
+  this LGU, and how often does one hit? Both come straight from real
+  records/the verified calendar, not a fitted model - with 8-27 events per
+  LGU there isn't enough data to fit a distribution shape, so empirical
+  percentiles (25th/mean/90th of real per-typhoon LGU totals) and a simple
+  frequency count are the honest choice. Crucially, frequency is CLIMATOLOGICAL
+  (how many typhoons has this calendar month historically had, from
+  typhoon_calendar - a fact independent of any future storm's existence) so a
+  forecast for "next 3 months" run in December can climatologically show ~0
+  expected typhoons (Dec-May has none in the record) without needing to
+  predict an unknowable future event - see app.ml.predict._forecast_window.
 
-History of the forecast distribution (kept for the panel). Attempt 1 used the
-log-normal mean with the model's multi-step standard error: fine on the early
-synthetic history, but once Urdaneta's real 2025 reports were added two of the
-three fits went degenerate (MA coefficient ~90) and expected demand inflated 20x;
-stationarity/invertibility are now enforced. Attempt 2 replaced the normal curve
-with empirical errors plus a Gaussian "busy/quiet season" effect: its backtest
-looked best (bias -2%) but only because it over-forecast 3-4x the largest year
-in the history, which happened to offset the fact that each year in the history
-is bigger than the last. The final version bootstraps whole past seasons
-(see _simulate): the expected annual total stays consistent with the history
-and the P90 total is about a bad year like 2025.
+  P(relief) - the chance a typhoon on the calendar actually triggered a
+  relief operation for THIS LGU - is deliberately computed from real
+  relief-record coverage (p_relief below), NOT from typhoon_calendar's own
+  pangasinan_impact_confirmed column: that column is only research-search
+  confidence (did a news article name Pangasinan), and real records already
+  contradict it for many "not confirmed" storms (Kiko, Jolina, Fabian,
+  Karding... all have real Calasiao/Urdaneta relief despite being marked
+  "not confirmed in sources reviewed" - a desk search missing a source is not
+  the same as relief not happening).
 
-Honest limitation: every year in the history is larger than the one before (2022
-quiet, 2025 the worst), so any method that treats seasons as comparable
-under-forecasts the newest ones - seasonal-naive by -49%, this model by -51% in
-the backtest, and its P90 of a 12-month total covers only ~half of backtest
-years. Real data will show whether that growth is real.
+Formula (see app.ml.predict.forecast_lgu for the actual implementation):
+  stock(barangay, horizon, scenario) =
+      expected_typhoons(horizon) x P(relief) x total_packs(scenario)
+      x share(barangay) x (1 + BUFFER)
 
-Metrics reported (ModelMetrics + scripts/train_model.py), vs two baselines
-(seasonal-naive = same month last year; seasonal-mean = mean of that calendar
-month in all prior years):
-  * monthly MAE / RMSE / WAPE / R2 - harsh for spiky demand: it punishes the
-    exact timing of a storm, which no model can know months ahead. Here the
-    model ties the seasonal-mean baseline and beats seasonal-naive on WAPE, but
-    seasonal-naive has the better R2 (real storms landed in July in 4 of 5
-    years, so "same month last year" is a strong guess at timing).
-  * 6- and 12-month TOTAL error (pooled WAPE of window totals) - the number a
-    stockpile decision uses. On the current history the model is NOT better
-    than the simple baselines here (12-month: 0.51 vs 0.49; 6-month: 0.50 vs
-    0.58 naive / 0.44 seasonal-mean) - every season in the history is bigger
-    than the last, which none of these methods can foresee. Reported openly.
-  * P90 coverage - share of actual months at/below the P90 safety stock
-    (target ~0.90). Stored figure is calibrated ONLY on backtest windows that
-    had already ended (strictly-past); the looser leave-one-fold-out number
-    (a little higher) is also printed by scripts/train_model.py.
-
-Data reality: history is SYNTHETIC (anchored to the real 2021-2025 storm
-calendar, PAGASA climatology and the Aug 2026 Sta. Barbara sheet - see
-scripts/seed_monthly_history.py) until real records arrive. Retrain then; the
-pipeline does not change.
-
+Validation: leave-one-typhoon-out cross-validation (leave_one_typhoon_out_cv)
+against two baselines - equal 1/N split and each barangay's average
+historical share - refit on every OTHER event, scored on the held-out one.
+An informal check on a 14-typhoon Calasiao subset found LinReg MAE 0.0096 vs
+avg-share 0.0100 vs equal-split 0.0191: a real but modest edge over
+avg-share, kept because it also gives a sane number to a barangay with
+little/no history (avg-share can't).
 --------------------------------------------------------------------------
-Keeping the training set honest
---------------------------------------------------------------------------
-Only barangay_monthly_history rows with data_source in ('synthetic',
-'real', 'system') train the model ('real' = the four Urdaneta and two
-Calasiao 2025 event reports and the Sta. Barbara Aug 2026 relief sheet, the
-only real record that LGU has). 'real_sample' is a legacy label for a real
-month kept OUT of training; none is loaded now, so holdout_check() is dormant
-and the rolling-origin backtest is the out-of-sample test.
-
-Run scripts/train_model.py to (re)fit this against the current database.
 """
-import math
 import os
-import warnings
+import statistics
 from datetime import date
 
-from app.utils.timezone import ph_now
+from app.utils.timezone import ph_now, ph_today
 
 import numpy as np
 import joblib
 
-# Trusted historical events used by the older per-event allocation history
-# (historical_allocation_for below). Kept as the allow-list of events whose
-# AllocationRecords count as history; ad hoc test events must never leak in.
-CALIBRATION_EVENT_NAMES = {
-    "Typhoon Egay (2023)", "Typhoon Kabayan (2023)", "Typhoon Carina (2024)",
-    "Super Typhoon Julian (2024)", "Tropical Storm Dante (2025)", "Typhoon Ramil (2025)",
-    "Typhoon Inday", "Tropical Storm Basyang", "Tropical Storm Ada",
-    "Localized Flooding (Jan)", "Localized Flooding (Feb)", "Summer Heat Advisory (Mar)",
-    "Localized Flashflood (Apr)", "Pre-Monsoon Squall (May)", "Amihan Tail-end Flooding (Dec)",
-}
-
-MODEL_VERSION = "v8.0-sarimax-lgu"
+MODEL_VERSION = "v9.0-two-stage-lgu"
 ARTIFACT_PATH = os.path.join(os.path.dirname(__file__), "artifacts", "food_pack_demand.joblib")
 
-ORDER = (1, 0, 1)
-EXOG_FEATURES = ["wet", "peak", "tc"]
-FORECAST_MONTHS = 36          # how far ahead the artifact carries a forecast
-SIM_DRAWS = 2000              # simulated paths per LGU (monthly stats, horizon totals, running totals)
-BACKTEST_HORIZON = 12
-BACKTEST_STEP = 6             # an origin every 6 months (Dec and Jun)
-MIN_TRAIN_MONTHS = 24         # smallest training window in a backtest fold
-MIN_MONTHS = 36               # refuse to train on less history than this
-# Half-life, in years, of the weight given to past seasons when building the
-# forecast distribution: last season counts twice as much as the one two years
-# before. A judgement call for a series whose seasons keep getting bigger; the
-# backtest is insensitive to it (tried 1-3 years).
-RECENCY_HALF_LIFE_YEARS = 2.0
+# Safety margin added on top of the formula's raw output, applied uniformly
+# to both the expected and P90 totals.
+BUFFER = 0.15
 
 MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -164,10 +113,11 @@ def _realized_quantity(alloc):
 
 def historical_allocation_for(barangay_id, before_date=None):
     """One barangay's own historical allocation pattern - the median of its
-    realized per-event allocations (records collapsed to one figure per
-    event first, so a barangay with several rows for one typhoon isn't
-    over-weighted). Shown on the admin barangay views and stored on new
-    allocations for audit.
+    realized per-event allocations (records collapsed to one summed figure
+    per event first - see _median_event_allocation - so a barangay with
+    several installments for one typhoon is counted once per event, not once
+    per row). Shown on the admin barangay views and stored on new allocations
+    for audit.
 
     Only 'approved'/'released' records count. Returns 0 for a barangay with
     no realized allocation on record ("no prior allocation" is real
@@ -187,16 +137,22 @@ def historical_allocation_for(barangay_id, before_date=None):
 
 def _median_event_allocation(records):
     """The per-barangay figure historical_allocation_for describes, from
-    that barangay's already-loaded qualifying records."""
-    import statistics
+    that barangay's already-loaded qualifying records.
 
+    Multiple AllocationRecord rows can share one event_id - checked against
+    the real data before changing this (2026-09-28): they're genuinely
+    separate allocation batches spread over days/weeks with varying
+    quantities (e.g. barangay 43/event 1: 45 packs on 2026-08-28, another 120
+    on 2026-09-14), not same-day duplicates or corrections of one another, so
+    they're SUMMED per event. (Previously took the max of the group, which
+    silently dropped every installment but the largest one.)"""
     if not records:
         return 0
 
     per_event = {}
     for rec in records:
         key = rec.event_id if rec.event_id is not None else ("solo", rec.allocation_id)
-        per_event[key] = max(per_event.get(key, 0), _realized_quantity(rec))
+        per_event[key] = per_event.get(key, 0) + _realized_quantity(rec)
 
     return float(statistics.median(per_event.values()))
 
@@ -222,377 +178,413 @@ def historical_allocations_for_many(barangay_ids, before_date=None):
 
 
 # ---------------------------------------------------------------------------
-# Time-series data
+# Real relief data (Stage 1 + Stage 2 input)
 # ---------------------------------------------------------------------------
 
-def exog_frame(index):
-    """Predictors known in advance for any calendar month (see module doc)."""
-    import pandas as pd
-    from app.ml import climate_reference as ref
-
-    months = index.month
-    return pd.DataFrame({
-        "wet": [1.0 if m in ref.WET_SEASON_MONTHS else 0.0 for m in months],
-        "peak": [1.0 if m in ref.PEAK_MONTHS else 0.0 for m in months],
-        "tc": [math.log(ref.TC_CLIMO[m - 1]) for m in months],
-    }, index=index)[EXOG_FEATURES]
-
-
-def load_lgu_series():
-    """{lgu: monthly food-pack Series} from barangay_monthly_history, summed to
-    LGU level. Only 'synthetic'/'real'/'system' rows train the model (see module
-    doc). Months with no rows become NaN, which the state-space model treats
-    as missing rather than as zero demand."""
-    import pandas as pd
+def load_relief_data():
+    """{lgu: {relief_event_id: {report_date, typhoon_keys, records:[
+        {barangay_id, affected_families, affected_individuals,
+         food_packs_given, total_families_snapshot, total_individuals_snapshot}
+    ]}}} from relief_events / relief_event_typhoons / barangay_relief_records
+    (see scripts/apply_relief_schema.py, scripts/load_relief_events.py)."""
     from sqlalchemy import text
     from app.extensions import db
 
+    events = db.session.execute(text(
+        "SELECT relief_event_id, city_municipality, report_date FROM relief_events")).fetchall()
+    typhoons = db.session.execute(text(
+        "SELECT relief_event_id, typhoon_key FROM relief_event_typhoons")).fetchall()
+    keys_by_event = {}
+    for eid, key in typhoons:
+        keys_by_event.setdefault(eid, []).append(key)
+
+    by_lgu = {}
+    for eid, lgu, report_date in events:
+        by_lgu.setdefault(lgu, {})[eid] = {
+            "report_date": report_date, "typhoon_keys": keys_by_event.get(eid, []), "records": [],
+        }
+
     rows = db.session.execute(text(
-        "SELECT b.city_municipality, h.month_start, SUM(h.food_packs) "
-        "FROM barangay_monthly_history h JOIN barangays b ON b.barangay_id = h.barangay_id "
-        "WHERE h.data_source IN ('synthetic', 'real', 'system') "
-        "GROUP BY b.city_municipality, h.month_start")).fetchall()
-    if not rows:
-        return {}
-    df = pd.DataFrame(rows, columns=["lgu", "month", "packs"])
-    df["month"] = pd.to_datetime(df["month"])
-    df["packs"] = df["packs"].astype(float)
-    idx = pd.date_range(df["month"].min(), df["month"].max(), freq="MS")
-    return {
-        lgu: g.set_index("month")["packs"].reindex(idx)
-        for lgu, g in df.groupby("lgu")
-    }
+        "SELECT re.relief_event_id, re.city_municipality, r.barangay_id, r.affected_families, "
+        "r.affected_individuals, r.food_packs_given, r.total_families_snapshot, "
+        "r.total_individuals_snapshot "
+        "FROM barangay_relief_records r JOIN relief_events re ON re.relief_event_id = r.relief_event_id"
+    )).fetchall()
+    for eid, lgu, bid, fam, ind, packs, tf, ti in rows:
+        by_lgu[lgu][eid]["records"].append({
+            "barangay_id": bid, "affected_families": fam, "affected_individuals": ind,
+            "food_packs_given": packs, "total_families_snapshot": tf, "total_individuals_snapshot": ti,
+        })
+    return by_lgu
 
 
-def _fit(series):
-    """SARIMAX on log(1+packs). Stationarity and invertibility are ENFORCED:
-    left free, the optimiser can wander to a degenerate solution (an MA
-    coefficient of ~90 with zero variance) on a volatile series, which then
-    forecasts nonsense."""
-    from statsmodels.tsa.statespace.sarimax import SARIMAX
-
-    z = np.log1p(series)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        return SARIMAX(
-            z, exog=exog_frame(z.index), order=ORDER, trend="c",
-            enforce_stationarity=True, enforce_invertibility=True,
-        ).fit(disp=False, maxiter=500)
+def _as_date(value):
+    """Coerce a raw SQL date value to a date object. This project's PyMySQL
+    driver already returns datetime.date for DATE columns (verified against
+    the live DB), but a raw text() query's return type isn't part of any
+    contract - stay defensive rather than assume it holds under a different
+    driver/config."""
+    if value is None or isinstance(value, date):
+        return value
+    return date.fromisoformat(str(value)[:10])
 
 
-def _forecast(results, index):
-    """Mean forecast mu on the log(1+packs) scale for the given months."""
-    fc = results.get_forecast(len(index), exog=exog_frame(index))
-    return fc.predicted_mean.values
+def load_typhoon_calendar():
+    """[(typhoon_key, start_date, key_date, year)] - the verified 36-event
+    calendar (scripts/typhoon_calendar_2021_2026.py)."""
+    from sqlalchemy import text
+    from app.extensions import db
 
-
-def _residual_pool(results, series):
-    """What the fitted model does NOT explain, on the log scale, kept as REAL
-    numbers (not a normal curve) and grouped by season year, so the forecast
-    distribution is built from the history itself:
-
-      peak   - {year: errors of that year's peak-typhoon months (Jul-Oct)},
-               centred on the overall peak mean, so each year keeps its own
-               shape: 2022 = one small storm, 2025 = four big months.
-      w      - recency weight of each year (half-life RECENCY_HALF_LIFE_YEARS):
-               a recent season says more about next season than 2021 does.
-      other  - errors in all other months, centred.
-
-    Why not the usual log-normal formulas: demand is bimodal (a storm month is
-    ~100x an ordinary one) and far more variable in the peak season than in the
-    dry season, so a normal spread makes the expected value explode (tried: an
-    Aug forecast of 19,515 packs against a median of 824, and a 12-month total
-    3-4x the largest year in the history). Nothing here comes from outside the
-    data the model was fitted on, so nothing about the future leaks in."""
-    z = np.log1p(series)
-    X = exog_frame(z.index)
-    p = results.params
-    fitted = p["intercept"] + sum(p[c] * X[c] for c in EXOG_FEATURES)
-    u = (z - fitted).dropna()
-    is_peak = X.loc[u.index, "peak"].values == 1
-    up, uo = u[is_peak], u.values[~is_peak]
-
-    years = [y for y in sorted(up.index.year.unique()) if (up.index.year == y).sum() >= 3]
-    if not years:
-        years = sorted(up.index.year.unique())
-    if not years:
-        return {"years": [0], "w": np.ones(1), "peak": {0: np.zeros(1)},
-                "other": (uo - uo.mean()) if len(uo) else np.zeros(1)}
-    centre = up[up.index.year.isin(years)].values.mean()
-    last = max(years)
-    w = np.array([0.5 ** ((last - y) / RECENCY_HALF_LIFE_YEARS) for y in years])
-    return {
-        "years": years, "w": w / w.sum(),
-        "peak": {y: up[up.index.year == y].values - centre for y in years},
-        "other": (uo - uo.mean()) if len(uo) else np.zeros(1),
-    }
-
-
-def _simulate(mu, index, pool, draws=None, seed=20260926):
-    """Simulated demand paths (packs, shape (len(index), draws)). For each
-    calendar year in the horizon a draw picks ONE past season (recency-weighted)
-    and every peak-typhoon month in that year takes an error from THAT season,
-    so a busy season lifts Jul-Oct together and a quiet one lowers them
-    together - a block bootstrap by year. Other months take their own errors.
-    Expected demand, the median and the P90 - monthly, over a horizon, and as a
-    running total - are all read off these same paths, so they always agree."""
-    draws = draws or SIM_DRAWS
-    rng = np.random.default_rng(seed)
-    peak = exog_frame(index)["peak"].values == 1
-    pick = {y: rng.choice(len(pool["years"]), draws, p=pool["w"]) for y in sorted(set(index.year))}
-    paths = np.empty((len(index), draws))
-    for i, (m, is_peak) in enumerate(zip(mu, peak)):
-        if is_peak:
-            which, u = pick[index[i].year], np.empty(draws)
-            for j, y in enumerate(pool["years"]):
-                sel = which == j
-                u[sel] = rng.choice(pool["peak"][y], int(sel.sum()))
-            paths[i] = np.expm1(m + u)
-        else:
-            paths[i] = np.expm1(m + rng.choice(pool["other"], draws))
-    return np.clip(paths, 0, None)
-
-
-def _summarise(paths):
-    """(expected, median, p90) per month from simulated paths. The P90 is never
-    below the expected value: in a quiet month almost every path is small but a
-    rare storm path is huge, so the mean can sit above the 90th percentile - a
-    recommended stockpile under the average need would be meaningless."""
-    expected = paths.mean(axis=1)
-    return expected, np.median(paths, axis=1), np.maximum(np.quantile(paths, 0.9, axis=1), expected)
+    return db.session.execute(text(
+        "SELECT typhoon_key, start_date, key_date, year FROM typhoon_calendar")).fetchall()
 
 
 # ---------------------------------------------------------------------------
-# Rolling-origin backtest
+# Stage 1: barangay share of an LGU's relief for one typhoon
 # ---------------------------------------------------------------------------
 
-def _origins(series):
-    import pandas as pd
-
-    observed = series.dropna().index
-    first, last = observed.min(), observed.max()
-    origins, o = [], first + pd.DateOffset(months=MIN_TRAIN_MONTHS - 1)
-    while o + pd.DateOffset(months=BACKTEST_HORIZON) <= last:
-        origins.append(o)
-        o = o + pd.DateOffset(months=BACKTEST_STEP)
-    return origins
-
-
-def _baselines(series, origin, fidx):
-    import pandas as pd
-
-    train = series[:origin]
-    naive = series.reindex(fidx - pd.DateOffset(years=1)).values
-    seas = np.array([np.nanmean(train[train.index.month == t.month]) for t in fidx])
-    return naive, seas
+def _event_total_and_known(records):
+    """(LGU total packs for this event, [records with a known food_packs_given]) -
+    computed over only the barangays that reported a number; a barangay with
+    no report for this event is excluded from both the total and the share
+    fit, not silently counted as zero (see module doc - 'not reported' vs
+    'confirmed zero' is preserved all the way from the real intake scripts)."""
+    known = [r for r in records if r["food_packs_given"] is not None]
+    total = sum(r["food_packs_given"] for r in known)
+    return total, known
 
 
-def backtest(series_by_lgu):
-    """Expanding-window, rolling-origin evaluation. Returns the raw fold
-    records plus the summary dict used by train_and_persist / the CLI."""
-    import pandas as pd
-
-    recs = []
-    for lgu, series in series_by_lgu.items():
-        for fold, origin in enumerate(_origins(series)):
-            fidx = pd.date_range(origin + pd.offsets.MonthBegin(1), periods=BACKTEST_HORIZON, freq="MS")
-            actual = series.reindex(fidx).values
-            if np.isnan(actual).any():
-                continue
-            res = _fit(series[:origin])
-            mu = _forecast(res, fidx)
-            pool = _residual_pool(res, series[:origin])
-            paths = _simulate(mu, fidx, pool)
-            expected, _median, p90 = _summarise(paths)
-            naive, seas = _baselines(series, origin, fidx)
-            recs.append({
-                "lgu": lgu, "origin": origin, "fold": fold, "fidx": fidx, "actual": actual,
-                "mu": mu, "expected": expected, "p90": p90,
-                "naive": naive, "seasmean": seas, "paths": paths,
-            })
-    return recs
-
-
-def summarize_backtest(recs):
-    if not recs:
-        return None
-    a = np.concatenate([r["actual"] for r in recs])
-    mon = np.concatenate([r["fidx"].month for r in recs])
-    from app.ml import climate_reference as ref
-    wet = np.isin(mon, list(ref.WET_SEASON_MONTHS))
-
-    def metrics(key):
-        f = np.concatenate([r[key] for r in recs])
-        f = np.where(np.isnan(f), 0.0, f)
-        err = a - f
-        nz = a != 0
-        return {
-            "mae": float(np.abs(err).mean()),
-            "rmse": float(np.sqrt((err ** 2).mean())),
-            "wape": float(np.abs(err).sum() / a.sum()),
-            "wape_wet": float(np.abs(err[wet]).sum() / a[wet].sum()),
-            "mape": float(np.mean(np.abs(err[nz] / a[nz])) * 100) if nz.any() else float("nan"),
-            "r2": float(1 - (err ** 2).sum() / ((a - a.mean()) ** 2).sum()),
-            "bias_pct": float(f.sum() / a.sum() * 100 - 100),
-        }
-
-    def total_err(key, h):
-        """WAPE of the h-month window TOTALS (sum |forecast - actual| over
-        windows / sum actual). Pooled on purpose: a mean of per-window
-        percentages explodes on dry-season windows whose actual is near 0."""
-        actual = np.array([r["actual"][:h].sum() for r in recs])
-        fc = np.array([np.nan_to_num(r[key][:h]).sum() for r in recs])
-        return float(np.abs(actual - fc).sum() / actual.sum())
-
-    # Monthly P90 coverage. Each fit's P90 comes from ITS OWN training-window
-    # errors only, so this is out-of-sample by construction (no cross-fold
-    # calibration needed).
-    covered = sum(int((r["actual"] <= r["p90"]).sum()) for r in recs)
-    total = sum(len(r["actual"]) for r in recs)
-
-    # Horizon-total P90 from the simulated paths (H = 6, 12).
-    tot_cov = {}
-    for h in (6, 12):
-        hits = [r["actual"][:h].sum() <= np.quantile(r["paths"][:h].sum(axis=0), 0.9) for r in recs]
-        tot_cov[h] = float(np.mean(hits))
-
-    return {
-        "folds": len(recs),
-        "origins": sorted({r["origin"].strftime("%Y-%m") for r in recs}),
-        "sarimax": metrics("expected"),
-        "naive": metrics("naive"),
-        "seasmean": metrics("seasmean"),
-        "total_err": {
-            h: {"sarimax": total_err("expected", h), "naive": total_err("naive", h),
-                "seasmean": total_err("seasmean", h)} for h in (6, 12)
-        },
-        "p90_month_coverage": covered / total,
-        "p90_month_coverage_strict": covered / total,
-        "p90_strict_months": total,
-        "p90_total_coverage": tot_cov,
-    }
-
-
-def _latest_fold_series(recs):
-    """Actual vs forecast for the most recent backtest fold (train through
-    the last full year, forecast the next 12 months) - per LGU, for the
-    Model Performance chart. Its P90 comes only from that fit's training
-    window (no peeking)."""
-    if not recs:
-        return {}
-    last_origin = max(r["origin"] for r in recs)
-    out = {}
-    for r in recs:
-        if r["origin"] != last_origin:
+def _share_training_rows(events):
+    """[(total_families_snapshot, share)] pooled across every event with at
+    least 2 barangays reporting a known food_packs_given AND a known
+    total_families_snapshot - the (X, y) pairs Stage 1 fits on."""
+    rows = []
+    for ev in events.values():
+        total, known = _event_total_and_known(ev["records"])
+        if total <= 0 or len(known) < 2:
             continue
-        out[r["lgu"]] = {
-            "origin": last_origin.strftime("%Y-%m"),
-            "points": [
-                {"month": t.strftime("%Y-%m"), "actual": float(a), "expected": float(e), "p90": float(q)}
-                for t, a, e, q in zip(r["fidx"], r["actual"], r["expected"], r["p90"])
-            ],
-        }
-    return out
+        for r in known:
+            if r["total_families_snapshot"] is not None:
+                rows.append((r["total_families_snapshot"], r["food_packs_given"] / total))
+    return rows
+
+
+def fit_share_model(rows):
+    """OLS share ~ total_families_snapshot on pooled (x, y) pairs. None if
+    there isn't enough data to fit (fewer than 3 rows)."""
+    if len(rows) < 3:
+        return None
+    x = np.array([r[0] for r in rows], dtype=float)
+    y = np.array([r[1] for r in rows], dtype=float)
+    slope, intercept = np.polyfit(x, y, 1)
+    return {"slope": float(slope), "intercept": float(intercept), "n_rows": len(rows)}
+
+
+def predict_shares(model, total_families_by_barangay):
+    """{barangay_id: total_families} -> {barangay_id: share}, clipped >=0 and
+    renormalized to sum to 1 (or split evenly if every prediction is <=0)."""
+    raw = {bid: max(model["slope"] * tf + model["intercept"], 0.0)
+           for bid, tf in total_families_by_barangay.items()}
+    total = sum(raw.values())
+    if total <= 0:
+        n = len(raw) or 1
+        return {bid: 1.0 / n for bid in raw}
+    return {bid: v / total for bid, v in raw.items()}
+
+
+def leave_one_typhoon_out_cv(events):
+    """Refit Stage 1 excluding each event in turn, score the held-out event's
+    barangay shares against: the model, an equal 1/N split, and each
+    barangay's average share over the OTHER events. Returns per-baseline MAE,
+    or None if there's too little data to run a single fold."""
+    scoreable = [eid for eid, ev in events.items() if _event_total_and_known(ev["records"])[0] > 0
+                 and len(_event_total_and_known(ev["records"])[1]) >= 2]
+    if len(scoreable) < 2:
+        return None
+
+    err_model, err_equal, err_avg = [], [], []
+    for held_out in scoreable:
+        train_events = {eid: ev for eid, ev in events.items() if eid != held_out}
+        model = fit_share_model(_share_training_rows(train_events))
+        if model is None:
+            continue
+
+        total, known = _event_total_and_known(events[held_out]["records"])
+        actual_share = {r["barangay_id"]: r["food_packs_given"] / total for r in known}
+        tf_map = {r["barangay_id"]: r["total_families_snapshot"] for r in known
+                  if r["total_families_snapshot"] is not None}
+        if len(tf_map) < len(known):
+            continue  # can't fairly score a barangay the model has no predictor for
+        pred_share = predict_shares(model, tf_map)
+
+        hist_sum, hist_n = {}, {}
+        for ev in train_events.values():
+            t, k = _event_total_and_known(ev["records"])
+            if t <= 0:
+                continue
+            for r in k:
+                bid = r["barangay_id"]
+                hist_sum[bid] = hist_sum.get(bid, 0.0) + r["food_packs_given"] / t
+                hist_n[bid] = hist_n.get(bid, 0) + 1
+        avg_raw = {bid: hist_sum[bid] / hist_n[bid] for bid in hist_sum}
+        avg_total = sum(avg_raw.get(bid, 0.0) for bid in actual_share) or 1.0
+        avg_share = {bid: avg_raw.get(bid, 0.0) / avg_total for bid in actual_share}
+
+        n = len(actual_share)
+        equal_share = {bid: 1.0 / n for bid in actual_share}
+
+        for bid, a in actual_share.items():
+            err_model.append(abs(a - pred_share.get(bid, 0.0)))
+            err_equal.append(abs(a - equal_share[bid]))
+            err_avg.append(abs(a - avg_share.get(bid, 0.0)))
+
+    if not err_model:
+        return None
+    return {
+        "mae_model": float(np.mean(err_model)),
+        "mae_equal_split": float(np.mean(err_equal)),
+        "mae_avg_share": float(np.mean(err_avg)),
+        "n_folds": len(scoreable),
+        "n_rows": len(err_model),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Stage 2: climatological frequency, P(relief), severity scenarios
+# ---------------------------------------------------------------------------
+
+def climatology_by_month(calendar_rows, today):
+    """{month(1-12): expected typhoons in that calendar month} = (count of
+    historical typhoons in that month) / (complete years observed for that
+    month). A (year, month) is 'complete' only once that month has fully
+    ended relative to `today` - e.g. run in Sep 2026, Jan-Aug 2026 count but
+    Sep-Dec 2026 don't yet, so those months fall back to 2021-2025 only."""
+    from collections import defaultdict
+
+    counts = defaultdict(int)
+    for _key, start, key_date, _year in calendar_rows:
+        d = _as_date(key_date) or _as_date(start)
+        counts[d.month] += 1
+    years = sorted({row[3] for row in calendar_rows})
+    if not years:
+        return {m: 0.0 for m in range(1, 13)}
+    min_year, max_year = years[0], years[-1]
+
+    rate = {}
+    for m in range(1, 13):
+        complete = sum(1 for y in range(min_year, max_year + 1)
+                        if y < today.year or (y == today.year and m < today.month))
+        rate[m] = counts[m] / complete if complete > 0 else 0.0
+    return rate
+
+
+def p_relief(events, all_typhoon_keys):
+    """Fraction of the calendar's 36 typhoons that have at least one real
+    relief record for this LGU - deliberately NOT typhoon_calendar's
+    pangasinan_impact_confirmed column (see module doc)."""
+    covered = set()
+    for ev in events.values():
+        covered.update(ev["typhoon_keys"])
+    universe = set(all_typhoon_keys)
+    return len(covered & universe) / len(universe) if universe else 0.0
+
+
+def severity_scenarios(events):
+    """25th percentile (low) / mean (expected) / 90th percentile (high) of
+    this LGU's real per-typhoon totals (only events with >=1 barangay
+    reporting a known food_packs_given)."""
+    totals = [t for ev in events.values() if (t := _event_total_and_known(ev["records"])[0]) > 0]
+    if not totals:
+        return {"low": 0.0, "expected": 0.0, "high": 0.0, "n": 0}
+    arr = np.array(totals, dtype=float)
+    return {
+        "low": float(np.percentile(arr, 25)),
+        "expected": float(arr.mean()),
+        "high": float(np.percentile(arr, 90)),
+        "n": len(totals),
+    }
+
+
+def _loto_severity_excluding(events, exclude_eid):
+    """severity_scenarios computed with one event left out - used only to
+    build an honest (non-leaking) backtest point for that event."""
+    totals = [t for eid, ev in events.items() if eid != exclude_eid
+              and (t := _event_total_and_known(ev["records"])[0]) > 0]
+    if not totals:
+        return None
+    arr = np.array(totals, dtype=float)
+    return {"expected": float(arr.mean()), "high": float(np.percentile(arr, 90))}
+
+
+def _backtest_points(events, calendar_by_key):
+    """One point per event with a known LGU total: the real total vs. what
+    the severity scenarios would have said with that event excluded (the
+    leave-one-typhoon-out analogue of the old rolling-origin backtest chart -
+    see app.ml.predict.backtest_series and app.ml.charts.backtest_chart)."""
+    points = []
+    for eid, ev in events.items():
+        total, known = _event_total_and_known(ev["records"])
+        if total <= 0 or not known:
+            continue
+        sev = _loto_severity_excluding(events, eid)
+        if sev is None:
+            continue
+        month = _as_date(ev["report_date"])
+        if month is None and ev["typhoon_keys"]:
+            cal = calendar_by_key.get(ev["typhoon_keys"][0])
+            month = _as_date(cal[0]) if cal else None
+        if month is None:
+            continue
+        points.append({"date": month, "actual": total, "expected": sev["expected"], "p90": sev["high"]})
+    points.sort(key=lambda p: p["date"])
+    return points
+
+
+def leave_one_typhoon_out_packs_cv(events):
+    """Leave-one-typhoon-out validation of the FULL pipeline's pack-count
+    predictions - predicted_packs(barangay) = that fold's LOTO severity.expected
+    x that fold's LOTO share (both refit excluding the held-out event) -
+    against real food_packs_given, pooled over every (barangay, held-out
+    typhoon) pair. Unlike leave_one_typhoon_out_cv (which scores the share
+    model alone, in proportions), this scores the end-to-end forecast a user
+    actually sees, in packs. None if there isn't enough data to run a single
+    fold.
+
+    MAE/RMSE only (no MAPE/R2, tried and dropped 2026-09-28): a single
+    typhoon's severity is inherently volatile and not meant to be point-
+    forecast exactly (that's what the P90 scenario range is for, not a single
+    number) - MAPE exploded past 1,000% on intermittent near-zero actuals and
+    R2 sat near/below 0, both technically correct but not informative without
+    a longer explanation than a dashboard tile can carry. MAE/RMSE in packs
+    still say something useful (typical/worst-case miss size) without that
+    baggage."""
+    scoreable = [eid for eid, ev in events.items() if _event_total_and_known(ev["records"])[0] > 0
+                 and len(_event_total_and_known(ev["records"])[1]) >= 2]
+    if len(scoreable) < 2:
+        return None
+
+    actual, predicted = [], []
+    for held_out in scoreable:
+        train_events = {eid: ev for eid, ev in events.items() if eid != held_out}
+        model = fit_share_model(_share_training_rows(train_events))
+        sev = _loto_severity_excluding(events, held_out)
+        if model is None or sev is None:
+            continue
+
+        _total, known = _event_total_and_known(events[held_out]["records"])
+        tf_map = {r["barangay_id"]: r["total_families_snapshot"] for r in known
+                  if r["total_families_snapshot"] is not None}
+        if len(tf_map) < len(known):
+            continue
+        pred_share = predict_shares(model, tf_map)
+
+        for r in known:
+            actual.append(r["food_packs_given"])
+            predicted.append(sev["expected"] * pred_share.get(r["barangay_id"], 0.0))
+
+    if not actual:
+        return None
+
+    a, p = np.array(actual, dtype=float), np.array(predicted, dtype=float)
+    err = a - p
+    return {
+        "mae_packs": float(np.abs(err).mean()),
+        "rmse_packs": float(np.sqrt((err ** 2).mean())),
+        "n": len(a),
+    }
 
 
 # ---------------------------------------------------------------------------
 # Train + persist
 # ---------------------------------------------------------------------------
 
-def holdout_check(forecasts):
-    """Compare the forecast with the real Aug 2026 Sta. Barbara relief sheet
-    (data_source='real_sample'). It is supply, not measured need, so this is
-    an order-of-magnitude sanity check - not a scored metric."""
-    from sqlalchemy import text
-    from app.extensions import db
-
-    rows = db.session.execute(text(
-        "SELECT b.city_municipality, h.month_start, SUM(h.food_packs) "
-        "FROM barangay_monthly_history h JOIN barangays b ON b.barangay_id = h.barangay_id "
-        "WHERE h.data_source = 'real_sample' GROUP BY 1, 2")).fetchall()
-    out = []
-    for lgu, month, actual in rows:
-        f = forecasts.get(lgu, {}).get(month.strftime("%Y-%m"))
-        if f:
-            out.append({"lgu": lgu, "month": month.strftime("%Y-%m"), "actual": int(actual),
-                        "expected": f["expected"], "p90": f["p90"]})
-    return out
-
-
 def train_and_persist():
-    """Fits one SARIMAX per LGU on all trusted monthly history, runs the
-    rolling-origin backtest, saves the artifact (a 36-month forecast table +
-    simulated paths) for app.ml.predict, and records ModelMetrics."""
-    import pandas as pd
+    """Fits Stage 1 (share regression) and computes Stage 2 (climatology,
+    P(relief), severity scenarios) for every LGU with real relief data, runs
+    leave-one-typhoon-out validation, saves the artifact for app.ml.predict,
+    and records ModelMetrics."""
     from app.extensions import db
     from app.models.prediction import ModelMetrics
 
-    series_by_lgu = load_lgu_series()
-    if not series_by_lgu or min(int(s.notna().sum()) for s in series_by_lgu.values()) < MIN_MONTHS:
+    by_lgu = load_relief_data()
+    if not by_lgu:
         raise RuntimeError(
-            f"Need at least {MIN_MONTHS} months of history per LGU in barangay_monthly_history. "
-            f"Run scripts/apply_timeseries_schema.py then scripts/seed_monthly_history.py first."
+            "No relief_events found. Run scripts/apply_relief_schema.py, "
+            "scripts/typhoon_calendar_2021_2026.py then scripts/load_relief_events.py first."
         )
 
-    recs = backtest(series_by_lgu)
-    summary = summarize_backtest(recs)
+    calendar_rows = load_typhoon_calendar()
+    all_keys = [r[0] for r in calendar_rows]
+    calendar_by_key = {r[0]: (r[1], r[2], r[3]) for r in calendar_rows}
+    climatology = climatology_by_month(calendar_rows, ph_today())
 
-    forecasts, paths = {}, {}
-    data_through = max(s.dropna().index.max() for s in series_by_lgu.values())
-    for lgu, series in series_by_lgu.items():
-        res = _fit(series)
-        last = series.dropna().index.max()
-        fidx = pd.date_range(last + pd.offsets.MonthBegin(1), periods=FORECAST_MONTHS, freq="MS")
-        mu = _forecast(res, fidx)
-        pool = _residual_pool(res, series)
-        sim_paths = _simulate(mu, fidx, pool)
-        expected, median, p90 = _summarise(sim_paths)
-        forecasts[lgu] = {
-            t.strftime("%Y-%m"): {
-                "expected": float(expected[i]), "median": float(median[i]), "p90": float(p90[i]),
-            } for i, t in enumerate(fidx)
+    lgu_artifact, loto_cv, loto_packs_cv, backtest_series = {}, {}, {}, {}
+    for lgu, events in by_lgu.items():
+        rows = _share_training_rows(events)
+        model = fit_share_model(rows)
+        if model is None:
+            continue
+
+        # Sort events chronologically first so the LAST write per barangay is
+        # actually the most recent snapshot - load_relief_data()'s query has
+        # no ORDER BY, so events.values() iterates in whatever order the DB
+        # happened to return rows, not report_date order (found in review,
+        # 2026-09-28: this directly fed share_breakdown()'s "family count
+        # used" for current forecasting, so a wrong "latest" silently skewed
+        # shares).
+        latest_tf = {}
+        for ev in sorted(events.values(), key=lambda e: _as_date(e["report_date"]) or date.min):
+            for r in ev["records"]:
+                if r["total_families_snapshot"] is not None:
+                    latest_tf[r["barangay_id"]] = r["total_families_snapshot"]
+
+        lgu_artifact[lgu] = {
+            "share_model": model,
+            "p_relief": p_relief(events, all_keys),
+            "severity": severity_scenarios(events),
+            "barangays": {bid: {"latest_total_families": tf} for bid, tf in latest_tf.items()},
         }
-        paths[lgu] = sim_paths.astype(np.float32)
+        loto_cv[lgu] = leave_one_typhoon_out_cv(events)
+        loto_packs_cv[lgu] = leave_one_typhoon_out_packs_cv(events)
+        backtest_series[lgu] = {
+            "origin": "leave-one-typhoon-out",
+            "points": [
+                {"month": p["date"].strftime("%Y-%m"),  # _backtest_points guarantees a real date via _as_date
+                 "actual": p["actual"], "expected": p["expected"], "p90": p["p90"]}
+                for p in _backtest_points(events, calendar_by_key)
+            ],
+        }
 
-    holdout = holdout_check(forecasts)
-    backtest_series = _latest_fold_series(recs)
+    if not lgu_artifact:
+        raise RuntimeError("Not enough real relief data to fit a share model for any LGU.")
 
+    data_through = ph_today().isoformat()
     os.makedirs(os.path.dirname(ARTIFACT_PATH), exist_ok=True)
     joblib.dump({
         "version": MODEL_VERSION,
         "trained_at": ph_now().isoformat(),
-        "data_through": data_through.strftime("%Y-%m"),
-        "order": ORDER,
-        "exog": EXOG_FEATURES,
-        "forecasts": forecasts,
-        "paths": paths,
-        "months": [t.strftime("%Y-%m") for t in pd.date_range(
-            data_through + pd.offsets.MonthBegin(1), periods=FORECAST_MONTHS, freq="MS")],
-        "backtest": summary,
+        "data_through": data_through,
+        "buffer": BUFFER,
+        "climatology": climatology,
+        "lgu": lgu_artifact,
+        "loto_cv": loto_cv,
+        "loto_packs_cv": loto_packs_cv,
         "backtest_series": backtest_series,
-        "holdout": holdout,
     }, ARTIFACT_PATH)
 
-    if summary:
-        s = summary["sarimax"]
+    scored = {lgu: cv for lgu, cv in loto_cv.items() if cv}
+    packs_scored = {lgu: cv for lgu, cv in loto_packs_cv.items() if cv}
+    if scored:
         db.session.add(ModelMetrics(
             model_version=MODEL_VERSION,
-            mae=round(s["mae"], 4), rmse=round(s["rmse"], 4),
-            mape=round(s["mape"], 4) if s["mape"] == s["mape"] else None,
-            r_squared=round(s["r2"], 4),
-            wape=round(s["wape"], 4),
-            # The stricter figure (calibrated only on windows that had already
-            # ended) when there is enough history, else leave-one-fold-out.
-            p90_coverage=round(
-                summary["p90_month_coverage_strict"]
-                if summary.get("p90_month_coverage_strict") is not None
-                else summary["p90_month_coverage"], 4),
-            naive_wape=round(summary["naive"]["wape"], 4),
-            total12_err=round(summary["total_err"][12]["sarimax"], 4),
-            naive_total12_err=round(summary["total_err"][12]["naive"], 4),
-            training_samples=int(sum(s_.notna().sum() for s_ in series_by_lgu.values())),
+            mae=round(max(cv["mae_model"] for cv in scored.values()), 4),
+            mae_baseline_equal_split=round(max(cv["mae_equal_split"] for cv in scored.values()), 4),
+            mae_baseline_avg_share=round(max(cv["mae_avg_share"] for cv in scored.values()), 4),
+            mae_packs=round(max(cv["mae_packs"] for cv in packs_scored.values()), 4) if packs_scored else None,
+            rmse=round(max(cv["rmse_packs"] for cv in packs_scored.values()), 4) if packs_scored else None,
+            training_samples=sum(len(ev["records"]) for events in by_lgu.values() for ev in events.values()),
         ))
         db.session.commit()
 
-    return {"summary": summary, "holdout": holdout, "data_through": data_through.strftime("%Y-%m"),
-            "lgus": list(series_by_lgu)}
+    return {"lgus": list(lgu_artifact), "loto_cv": loto_cv, "loto_packs_cv": loto_packs_cv,
+            "data_through": data_through}

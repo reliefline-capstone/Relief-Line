@@ -107,10 +107,17 @@ def cover_chart(months, stock):
 
 
 def backtest_chart(series):
-    """series: {"origin": "2024-12", "points": [{month, actual, expected, p90}]}"""
+    """series: {"origin": "leave-one-typhoon-out", "points": [{month, actual,
+    expected, p90}]} - one point per real relief event on record, sorted
+    chronologically (app.ml.train._backtest_points), NOT one calendar year of
+    monthly points like the old rolling-origin chart. `expected`/`p90` for
+    each point come from a fit that excluded that point's own event, so this
+    is an honest out-of-sample comparison even though there's no single
+    "trained through" date - see app.ml.predict.backtest_series."""
     pts = series["points"]
     n = len(pts)
     first_year = int(pts[0]["month"][:4])
+    last_year = int(pts[-1]["month"][:4])
     top, ticks = _nice_ticks(max(max(p["actual"], p["p90"]) for p in pts) * 1.05)
     step_x = PLOT_W / n
 
@@ -132,8 +139,7 @@ def backtest_chart(series):
                   "tip": f"{_month_label(p['month'], first_year)}: actual {_fmt(p['actual'])}, "
                          f"forecast {_fmt(p['expected'])}, P90 {_fmt(p['p90'])}"}
                  for i, p in enumerate(pts)],
-        "trained_through": _month_label(series["origin"] + "-01", None) + " " + series["origin"][:4],
-        "year": pts[0]["month"][:4],
+        "date_range": f"{first_year}" if first_year == last_year else f"{first_year}-{last_year}",
         "total_actual": int(sum(p["actual"] for p in pts)),
         "total_expected": int(sum(p["expected"] for p in pts)),
         "months_over": len(over), "n": n,

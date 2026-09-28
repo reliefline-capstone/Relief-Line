@@ -1,24 +1,30 @@
 """
-Loads the SARIMAX time-series forecaster trained by app.ml.train and projects
-monthly food-pack demand for an LGU (forecast_lgu) or, via a top-down split,
-for a single barangay (forecast_barangay).
+Loads the two-stage forecaster trained by app.ml.train and projects food-pack
+demand for an LGU (forecast_lgu) or, via a barangay-share split, for a single
+barangay (forecast_barangay).
 
 Every forecast month carries two numbers:
-  projected_packs - EXPECTED demand (log-normal mean of the forecast)
-  p90_packs       - SAFETY-STOCK level: demand stays at or below it 9 months
-                    out of 10. Pre-positioning is about not running out, so
-                    stock toward P90, not the average.
-The horizon has the same pair (horizon_total, horizon_p90). horizon_p90 is
-NOT the sum of monthly P90s - storms hit a whole LGU at once, so summing
-would overstate it; it is the 90th percentile of the simulated 'total over
-these months' (see app.ml.train.SIM_DRAWS).
+  projected_packs - EXPECTED demand (Stage 2's severity.expected scenario)
+  p90_packs       - SAFETY-STOCK level (Stage 2's severity.high / 90th
+                     percentile scenario). Pre-positioning is about not
+                     running out, so stock toward P90, not the average.
+The horizon has the same pair (horizon_total, horizon_p90).
 
-Barangay split: an LGU forecast is shared out by
-    0.6 x (barangay's share of the LGU's recorded history)
-  + 0.4 x (households x flood-susceptibility weight)
-so a barangay with a track record and/or high flood hazard carries more of
-the projected need. Shares sum to 1, so barangay forecasts always add up to
-the LGU forecast.
+Formula (see app.ml.train module doc for the full rationale):
+  stock = expected_typhoons(horizon) x P(relief) x total_packs(scenario)
+          x barangay_share x (1 + buffer)
+
+expected_typhoons(horizon) is CLIMATOLOGICAL (Stage 2's per-calendar-month
+typhoon rate, summed over the horizon's months - see _forecast_window) and
+anchored to the real current date: a horizon run in December over Jan-Mar can
+climatologically total ~0 expected typhoons (no historical Dec-May storms),
+which is correct behavior, not a bug - see app.ml.train.climatology_by_month.
+
+Barangay split: forecast_lgu's total is shared out by Stage 1's regression
+share (barangay_share = clip(slope x total_families + intercept, 0),
+renormalized to sum to 1 across the LGU) - see app.ml.train.predict_shares.
+Shares always sum to 1, so barangay forecasts always add up to the LGU
+forecast.
 
 predict_quantity(barangay) is kept as a thin, backward-compatible wrapper -
 "this month's" expected demand from forecast_barangay(barangay, 1) - so every
@@ -31,17 +37,12 @@ from datetime import date
 from app.utils.timezone import ph_today
 
 import joblib
-import numpy as np
 
 from app.ml.train import (
     ARTIFACT_PATH, MONTH_LABELS, historical_allocation_for,
-    historical_allocations_for_many, _to_number,
+    historical_allocations_for_many, _to_number, predict_shares,
 )
 from app.ml import climate_reference as ref
-
-HISTORY_WEIGHT = 0.6
-# Relative vulnerability by flood-susceptibility class (1 low .. 4 very high).
-VULNERABILITY_WEIGHT = {1: 0.50, 2: 0.85, 3: 1.20, 4: 1.60}
 
 _cached_artifact = None
 _load_attempted = False
@@ -56,9 +57,9 @@ def _load_artifact():
         except FileNotFoundError:
             _cached_artifact = None
         else:
-            # An artifact from the old regression model has no time-series
-            # forecasts - treat it as "not trained" rather than crash.
-            if "forecasts" not in _cached_artifact:
+            # An artifact from an older model version has no "lgu"/"climatology"
+            # keys - treat it as "not trained" rather than crash.
+            if "lgu" not in _cached_artifact or "climatology" not in _cached_artifact:
                 _cached_artifact = None
     return _cached_artifact
 
@@ -67,81 +68,130 @@ def is_model_available():
     return _load_artifact() is not None
 
 
-def _start_date(start_month):
-    """First day of the first forecast month: the current Philippine month by
-    default; a given calendar month (1-12) resolves to its next occurrence
-    on/after the current month."""
-    today = ph_today()
-    if not start_month or start_month == today.month:
-        return date(today.year, today.month, 1)
-    year = today.year if start_month > today.month else today.year + 1
-    return date(year, start_month, 1)
-
-
 def _add_months(d, n):
     total = d.year * 12 + (d.month - 1) + n
     return date(total // 12, total % 12 + 1, 1)
 
 
-def forecast_lgu(lgu, months_ahead, start_month=None):
-    """Monthly demand projection for `lgu` (a Barangay.city_municipality /
-    Office.area_covered value) over the next `months_ahead` months. Returns
-    None if no model is trained, the LGU is unknown, or the requested window
-    runs past the forecast the artifact carries (retrain to extend it)."""
-    artifact = _load_artifact()
-    if artifact is None or lgu not in artifact["forecasts"]:
-        return None
-    table = artifact["forecasts"][lgu]
-    keys = artifact["months"]
-    start = _start_date(start_month)
+def _forecast_window(months_ahead, start_month=None):
+    """The ordered list of calendar months this forecast covers, as date
+    objects (first of month). THIS is the single place "how does a horizon
+    anchor to today" lives - confirmed: start from the NEXT FULL calendar
+    month (no prorating the remainder of the current month - stock lead time
+    makes a partial current month not actionable). A specific `start_month`
+    (1-12) resolves to its next occurrence on/after next month."""
+    today = ph_today()
+    base = _add_months(date(today.year, today.month, 1), 1)
+    if start_month and start_month != base.month:
+        year = base.year if start_month > base.month else base.year + 1
+        base = date(year, start_month, 1)
+    return [_add_months(base, i) for i in range(months_ahead)]
 
-    months, positions = [], []
-    for i in range(months_ahead):
-        d = _add_months(start, i)
-        key = d.strftime("%Y-%m")
-        row = table.get(key)
-        if row is None:
-            return None
-        positions.append(keys.index(key))
+
+def forecast_lgu(lgu, months_ahead, start_month=None):
+    """Food-pack demand projection for `lgu` (a Barangay.city_municipality /
+    Office.area_covered value) over the next `months_ahead` months, starting
+    from the next full calendar month. Returns None if no model is trained or
+    the LGU has no fitted share model."""
+    artifact = _load_artifact()
+    if artifact is None or lgu not in artifact["lgu"]:
+        return None
+    L = artifact["lgu"][lgu]
+    climatology = artifact["climatology"]
+    buffer = artifact["buffer"]
+    window = _forecast_window(months_ahead, start_month)
+
+    monthly_rate = [climatology.get(d.month, 0.0) for d in window]
+    expected_typhoons = sum(monthly_rate)
+    lgu_expected_total = expected_typhoons * L["p_relief"] * L["severity"]["expected"] * (1 + buffer)
+    lgu_p90_total = expected_typhoons * L["p_relief"] * L["severity"]["high"] * (1 + buffer)
+
+    months = []
+    running_e = running_p = 0
+    for d, rate in zip(window, monthly_rate):
+        # No signal exists within the horizon beyond the climatological rate
+        # itself, so each month's share of the horizon total is its own
+        # share of the horizon's summed rate (0 for every month if the whole
+        # horizon has 0 expected typhoons - climatologically correct, see
+        # module doc).
+        frac = (rate / expected_typhoons) if expected_typhoons > 0 else 0.0
+        proj = max(int(round(lgu_expected_total * frac)), 0)
+        p90 = max(int(round(lgu_p90_total * frac)), proj)
+        running_e += proj
+        running_p = max(running_p + p90, running_e)
         months.append({
-            "month": d.month, "year": d.year,
-            "label": MONTH_LABELS[d.month - 1],
-            "date": key,
-            "projected_packs": max(int(round(row["expected"])), 0),
-            "p90_packs": max(int(round(row["p90"])), 0),
+            "month": d.month, "year": d.year, "label": MONTH_LABELS[d.month - 1],
+            "date": d.strftime("%Y-%m"),
+            "projected_packs": proj, "p90_packs": p90,
             "is_wet_season": d.month in ref.WET_SEASON_MONTHS,
             "is_peak_season": d.month in ref.PEAK_MONTHS,
+            "cum_expected": running_e, "cum_p90": running_p,
         })
 
     total = sum(m["projected_packs"] for m in months)
-    paths = artifact["paths"][lgu][positions, :]
-    sims = paths.sum(axis=0)
-    horizon_p90 = max(int(round(float(np.quantile(sims, 0.9)))), total)
-
-    # Running totals for the "will the stock last?" chart: cumulative expected
-    # demand, and the 90th percentile of the cumulative simulated demand at
-    # each month (a true percentile of the running total - not a sum of
-    # monthly P90s).
-    cum_p90 = np.quantile(np.cumsum(paths, axis=0), 0.9, axis=1)
-    running = 0
-    for m, cp in zip(months, cum_p90):
-        running += m["projected_packs"]
-        m["cum_expected"] = running
-        m["cum_p90"] = max(int(round(float(cp))), running)
-    months[-1]["cum_p90"] = horizon_p90
+    horizon_p90 = max(int(round(lgu_p90_total)), total)
+    if months:
+        months[-1]["cum_p90"] = horizon_p90
     return {
-        "lgu": lgu,
-        "months": months,
-        "horizon_total": total,
-        "horizon_p90": horizon_p90,
-        "model_version": artifact.get("version"),
-        "data_through": artifact.get("data_through"),
+        "lgu": lgu, "months": months,
+        "horizon_total": total, "horizon_p90": horizon_p90,
+        "model_version": artifact.get("version"), "data_through": artifact.get("data_through"),
     }
 
 
+def loto_cv_summary():
+    """Per-LGU leave-one-typhoon-out validation: the share model's own MAE
+    against the equal-split and average-share baselines (see
+    app.ml.train.leave_one_typhoon_out_cv), sorted by LGU name. ModelMetrics.mae
+    only stores the single worst-LGU value (one row, one column can't hold
+    three); this is the full per-LGU picture for the dashboard. [] if no
+    model is trained or no LGU had enough events to validate."""
+    artifact = _load_artifact()
+    if artifact is None:
+        return []
+    rows = []
+    for lgu, cv in (artifact.get("loto_cv") or {}).items():
+        if not cv:
+            continue
+        rows.append({
+            "lgu": lgu,
+            "mae_model": cv["mae_model"],
+            "mae_equal_split": cv["mae_equal_split"],
+            "mae_avg_share": cv["mae_avg_share"],
+            "n_folds": cv["n_folds"],
+            "beats_equal_split": cv["mae_model"] <= cv["mae_equal_split"],
+            "beats_avg_share": cv["mae_model"] <= cv["mae_avg_share"],
+        })
+    rows.sort(key=lambda r: r["lgu"])
+    return rows
+
+
+def loto_packs_cv_summary():
+    """Per-LGU leave-one-typhoon-out validation of the full pipeline's
+    pack-count predictions (see app.ml.train.leave_one_typhoon_out_packs_cv) -
+    MAE/RMSE in packs. [] if no model is trained or no LGU had enough events."""
+    artifact = _load_artifact()
+    if artifact is None:
+        return []
+    rows = []
+    for lgu, cv in (artifact.get("loto_packs_cv") or {}).items():
+        if not cv:
+            continue
+        rows.append({
+            "lgu": lgu,
+            "mae_packs": cv["mae_packs"],
+            "rmse_packs": cv["rmse_packs"],
+            "n": cv["n"],
+        })
+    rows.sort(key=lambda r: r["lgu"])
+    return rows
+
+
 def backtest_series(lgu):
-    """Actual vs forecast for the latest backtest year (see
-    app.ml.train._latest_fold_series), or None if unavailable."""
+    """Actual vs. leave-one-typhoon-out prediction for every real relief
+    event this LGU has on record (see app.ml.train._backtest_points) - the
+    event-based analogue of the old rolling-origin monthly backtest. None if
+    unavailable."""
     artifact = _load_artifact()
     if artifact is None:
         return None
@@ -159,19 +209,17 @@ def _lgu_shares(lgu):
 
 
 def share_breakdown(lgu):
-    """Every barangay's share of its LGU's forecast AND the pieces it is
-    built from, so the split can be shown and explained on screen:
-
-        share = 0.6 x history_share + 0.4 x vulnerability_share
-        history_share       = barangay's packs on record / LGU's packs on record
-        vulnerability_share = (households x flood weight) / sum over the LGU
+    """Every barangay's share of its LGU's forecast, from Stage 1's
+    regression: share = clip(slope x total_families + intercept, 0),
+    renormalized so the LGU's barangays sum to 1 (app.ml.train.predict_shares).
+    `total_families` is each barangay's most recent known family-count
+    snapshot from a real relief record, falling back to its current
+    num_households if it has never appeared in one.
 
     Cached on flask.g for the length of the current request only, so the map
     endpoint - which forecasts every barangay - computes it once per LGU, and
     it can never go stale across requests. Returns a list of dicts."""
     from flask import g, has_app_context
-    from sqlalchemy import bindparam, text
-    from app.extensions import db
     from app.models.barangay import Barangay
 
     cache = None
@@ -180,42 +228,37 @@ def share_breakdown(lgu):
         if lgu in cache:
             return cache[lgu]
 
+    artifact = _load_artifact()
     barangays = Barangay.query.filter_by(city_municipality=lgu).all()
-    if not barangays:
+    if not barangays or artifact is None or lgu not in artifact["lgu"]:
         return []
-    ids = [b.barangay_id for b in barangays]
-    hist = {bid: 0.0 for bid in ids}
-    history = text(
-        "SELECT barangay_id, SUM(food_packs) FROM barangay_monthly_history "
-        "WHERE barangay_id IN :ids GROUP BY barangay_id"
-    ).bindparams(bindparam("ids", expanding=True))
-    for bid, packs in db.session.execute(history, {"ids": ids}).fetchall():
-        hist[bid] = float(packs or 0)
 
-    weight = {
-        b.barangay_id: VULNERABILITY_WEIGHT.get(int(b.flood_susceptibility or 2), 0.85)
-        for b in barangays
-    }
-    vuln = {b.barangay_id: (_to_number(b.num_households) or 0) * weight[b.barangay_id] for b in barangays}
-    h_total, v_total = sum(hist.values()), sum(vuln.values())
-    even = 1.0 / len(ids)
+    L = artifact["lgu"][lgu]
+    model = L["share_model"]
+    known = L["barangays"]
+    total_families = {}
+    for b in barangays:
+        snap = known.get(b.barangay_id, {}).get("latest_total_families")
+        total_families[b.barangay_id] = snap if snap is not None else (_to_number(b.num_households) or 0)
+
+    shares = predict_shares(model, total_families)
+    history_packs = {b.barangay_id: 0 for b in barangays}  # informational only, see below
 
     rows = []
     for b in barangays:
         bid = b.barangay_id
-        h = hist[bid] / h_total if h_total > 0 else None
-        v = vuln[bid] / v_total if v_total > 0 else even
         rows.append({
             "barangay_id": bid,
             "name": b.barangay_name,
             "households": int(_to_number(b.num_households) or 0),
-            "flood_susceptibility": int(b.flood_susceptibility or 2),
-            "hazard_source": b.hazard_source,
-            "flood_weight": weight[bid],
-            "history_packs": int(hist[bid]),
-            "history_share": h,
-            "vulnerability_share": v,
-            "share": v if h is None else HISTORY_WEIGHT * h + (1 - HISTORY_WEIGHT) * v,
+            "total_families_used": int(total_families[bid]),
+            "flood_susceptibility": None,   # vulnerability blending dropped, see share_breakdown doc
+            "hazard_source": None,
+            "flood_weight": None,
+            "history_packs": history_packs[bid],
+            "history_share": None,
+            "vulnerability_share": None,
+            "share": shares.get(bid, 0.0),
         })
 
     if cache is not None:
@@ -292,7 +335,7 @@ def log_prediction_once_per_day(barangay, predicted_quantity):
     row = lgu_month["months"][0] if lgu_month else None
     snapshot = {
         "lgu": barangay.city_municipality,
-        "month": _start_date(None).strftime("%Y-%m"),
+        "month": _forecast_window(1)[0].strftime("%Y-%m"),
         "lgu_expected": row["projected_packs"] if row else None,
         "lgu_p90": row["p90_packs"] if row else None,
         "barangay_share": round(_barangay_share(barangay), 4),
