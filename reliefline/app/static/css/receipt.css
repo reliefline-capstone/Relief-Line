@@ -11,7 +11,6 @@
     border-radius: 14px;
     padding: 32px 36px 28px;
     box-shadow: 0 2px 12px rgba(20, 30, 60, .06);
-    max-width: 860px;
     overflow: hidden;
 }
 /* brand accent bar along the top edge, like a letterhead */
@@ -85,8 +84,14 @@
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
+/* Quantities: a compact label/value table, not stretched across the whole
+   (full-width) receipt with the numbers a screen away from their labels. */
+.rc-section > .rc-table:not(.rc-items) { max-width: 520px; }
+
+/* Item table: every column left-aligned so each value sits under its own
+   header; fixed column widths via the <colgroup> in receipt.html. */
+.rc-items { table-layout: fixed; }
 .rc-items th, .rc-items td { text-align: left; }
-.rc-items td:nth-child(2), .rc-items td:nth-child(3) { text-align: right; }
 .rc-items thead th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: #8a94a6; border-bottom: 2px solid #d8dee9; }
 .rc-row-warn td, .rc-row-warn th { color: #b9770e; }
 .rc-row-bad td, .rc-row-bad th { color: #c0392b; }

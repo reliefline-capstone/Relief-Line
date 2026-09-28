@@ -21,7 +21,7 @@ from app.models.warehouse import WarehouseInventory, WarehouseStockLog
 from app.models.food_pack_batch import FoodPackBatch, FoodPackComponent, FoodPackBatchItem
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
-from app.models.disaster_event import DisasterEvent
+from app.models.disaster_event import DisasterEvent, event_categories_from_form
 from app.models.event_barangay import EventBarangay
 from app.models.barangay_status import BarangayDisasterStatus
 from app.utils.disaster_events import (
@@ -1589,7 +1589,8 @@ def declare_disaster_event():
     except ValueError:
         start_date = ph_today()
 
-    weather_condition = request.form.get("weather_condition", "").strip() or None
+    # "Event Category" on the form - one or more ticked chips, comma-joined.
+    weather_condition = event_categories_from_form(request.form)
 
     event = DisasterEvent(
         event_name=event_name, event_type=event_type, status="active",

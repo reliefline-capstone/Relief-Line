@@ -21,7 +21,7 @@
 
         <div class="rc-topbar">
             <a href="#" onclick="history.back(); return false;" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
-            <button type="button" class="btn-decision btn-approve-full" onclick="window.print()">{{ icon('list', 14, 'white') }} Print Receipt</button>
+            <button type="button" class="btn-outline btn-outline-accent" onclick="window.print()">{{ icon('printer', 15) }} Print Receipt</button>
         </div>
 
         <article class="rc-doc">
@@ -92,6 +92,7 @@
                     </div>
                     {% if lot['items'] %}
                     <table class="rc-table rc-items">
+                        <colgroup><col style="width:45%"><col style="width:20%"><col style="width:35%"></colgroup>
                         <thead><tr><th>Item</th><th>Per pack</th><th>Expires</th></tr></thead>
                         <tbody>
                         {% for i in lot['items'] %}

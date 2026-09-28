@@ -55,12 +55,12 @@
                     </div>
                 </div>
                 <p class="lp-hero-desc">
-                    A centralized platform for predicting food pack demand, monitoring provincial
-                    warehouse stocks, and supporting evidence-based relief allocation across Pangasinan.
+                    A centralized platform for forecasting food pack demand and tracking warehouse
+                    stocks to guide relief allocation in Pangasinan.
                 </p>
                 <div class="lp-hero-actions">
-                    <a href="{{ url_for('auth.login') }}" class="lp-btn lp-btn-primary">Access ReliefLine {{ icon('arrow-right', 14) }}</a>
-                    <a href="#services" class="lp-btn lp-btn-secondary">Explore the System {{ icon('chevron-down', 14) }}</a>
+                    <a href="{{ url_for('auth.login') }}" class="lp-btn lp-btn-primary">Get Started {{ icon('arrow-right', 14) }}</a>
+                    <a href="#services" class="lp-btn lp-btn-secondary">Explore</a>
                 </div>
             </div>
 
@@ -201,7 +201,6 @@
             <div class="lp-section-head lp-reveal">
                 <span class="lp-eyebrow lp-eyebrow-blue">System Capabilities</span>
                 <h2>What ReliefLine Does</h2>
-                <p>A structured pipeline connecting prediction, pre-positioning, monitoring, and validation - end to end.</p>
             </div>
 
             <div class="lp-card-grid">
@@ -245,7 +244,8 @@
             <div class="lp-about-copy lp-reveal">
                 <span class="lp-eyebrow lp-eyebrow-green">About ReliefLine</span>
                 <h2>From Fragmented to <span class="lp-accent">Data-Driven</span></h2>
-                <p>ReliefLine transforms fragmented relief planning into a centralized, data-driven workflow &mdash; from barangay-level reporting to provincial warehouse management.</p>
+                <p>ReliefLine transforms fragmented relief planning into a centralized, data-driven workflow, from barangay-level reporting to provincial warehouse management.</p>
+                {# TODO: rewrite this whole description once the forecasting model is finalized. #}
                 <p>Built as a capstone research project aligned with the Province of Pangasinan's disaster preparedness goals, it projects food pack demand per municipality over the coming 3, 6 or 12 months from real per-typhoon relief records and typhoon-season climatology, and reports a safety-stock level (P90) for pre-positioning.</p>
 
                 <ul class="lp-check-list">
@@ -253,8 +253,6 @@
                     <li>{{ icon('check-circle', 16, '#1e8449') }} Centralized warehouse stock visibility for PSWDO</li>
                     <li>{{ icon('check-circle', 16, '#1e8449') }} Photo or signature-based distribution validation records</li>
                 </ul>
-
-                <a href="#architecture" class="lp-btn lp-btn-primary lp-about-cta">Learn More {{ icon('arrow-right', 14) }}</a>
             </div>
 
             <div class="lp-about-showcase lp-reveal">
@@ -284,7 +282,7 @@
     </section>
 
     <!-- Three-Level Architecture -->
-    <section class="lp-section" id="architecture">
+    <section class="lp-section lp-section-arch" id="architecture">
         <div class="lp-section-inner">
             <div class="lp-section-head lp-reveal">
                 <span class="lp-eyebrow lp-eyebrow-blue">How It Works</span>
@@ -329,9 +327,9 @@
                     </div>
                     <h4>PSWDO</h4>
                     <ul>
-                        <li>{{ icon('check-circle', 13, '#1e8449') }} Warehouse stock visibility and pre-positioning</li>
-                        <li>{{ icon('check-circle', 13, '#1e8449') }} Allocation request review and approval</li>
-                        <li>{{ icon('check-circle', 13, '#1e8449') }} Stock transfer and delivery monitoring</li>
+                        <li>{{ icon('check-circle', 13, '#7c4fd6') }} Warehouse stock visibility and pre-positioning</li>
+                        <li>{{ icon('check-circle', 13, '#7c4fd6') }} Allocation request review and approval</li>
+                        <li>{{ icon('check-circle', 13, '#7c4fd6') }} Stock transfer and delivery monitoring</li>
                     </ul>
                 </div>
             </div>
@@ -378,8 +376,6 @@
                 <p>Province of Pangasinan · Provincial Social Welfare and Development Office</p>
             </div>
 
-            <p class="lp-contact-intro lp-reveal">For system-related concerns &mdash; account access, technical support, or general questions about ReliefLine.</p>
-
             <div class="lp-contact-grid">
                 <div class="lp-contact-card lp-reveal">
                     <div class="lp-feature-icon">{{ icon('mail', 18, '#5347ce') }}</div>
@@ -402,6 +398,8 @@
                     <span>Monday – Friday, 8:00 AM – 5:00 PM</span>
                 </div>
             </div>
+
+            <p class="lp-contact-intro lp-reveal">For system-related concerns: account access, technical support, or general questions about ReliefLine.</p>
 
             <div class="lp-emergency-note lp-reveal">
                 <div class="lp-emergency-icon">{{ icon('alert-triangle', 18, 'white') }}</div>
@@ -444,7 +442,6 @@
 
         <div class="lp-footer-bottom">
             <span>© 2026 Province of Pangasinan. All rights reserved.</span>
-            <span class="lp-status"><span class="lp-status-dot"></span> System Operational</span>
         </div>
     </footer>
 

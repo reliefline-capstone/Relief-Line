@@ -80,7 +80,7 @@
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
                 <span class="stat-value">-{{ "{:,}".format(given_out) }}</span>
-                <span class="stat-label">Given Out</span>
+                <span class="stat-label">Distributed</span>
                 <span class="stat-sub">distributed to residents</span>
             </div>
         </section>
@@ -92,7 +92,7 @@
                     <select name="type" onchange="this.form.submit()">
                         <option value="all" {{ 'selected' if type_filter == 'all' }}>All Types</option>
                         <option value="delivery" {{ 'selected' if type_filter == 'delivery' }}>Received</option>
-                        <option value="distribution" {{ 'selected' if type_filter == 'distribution' }}>Given Out</option>
+                        <option value="distribution" {{ 'selected' if type_filter == 'distribution' }}>Distributed</option>
                         <option value="damaged_return" {{ 'selected' if type_filter == 'damaged_return' }}>Returned - Damaged</option>
                         <option value="expired" {{ 'selected' if type_filter == 'expired' }}>Expired</option>
                     </select>
@@ -236,7 +236,7 @@
                 <option value="disposed">Disposed - written off</option>
                 <option value="fixed">Fixed - replace spoiled item and return to stock</option>
             </select>
-            <p class="form-hint">Disposed removes these expired packs from the record for good. Fixed replaces whichever component actually spoiled (usually the rice) with fresh stock and returns the pack(s) to the barangay's usable Food Packs stock - the still-good contents keep their original dates.</p>
+            <p class="form-hint">Disposed permanently removes these packs from the record. Fixed replaces the spoiled item with fresh stock and returns the pack to usable Food Packs stock. Other contents keep their original dates.</p>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">Resolve</button>
                 <button type="button" class="btn-cancel" data-close-modal>Cancel</button>

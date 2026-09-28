@@ -319,7 +319,7 @@
             <p class="rd-sub rd-stock-preview" id="mi-preview-{{ item.inventory_id }}">Current: <strong>{{ "{:,}".format(item.quantity_available) }}</strong> {{ item.unit }} &rarr; New total: <strong>{{ "{:,}".format(item.quantity_available) }}</strong> {{ item.unit }}</p>
             {% if item.item_type == 'food_pack' %}
             <div class="fp-contents" data-fp-contents>
-                <p class="form-hint">What's in this batch? Untick anything that isn't included, set how many of each item are in one pack, and enter the expiration date printed on each item. A blank date uses the standard shelf life. These dates carry down to CSWDO and the barangays when the stock is transferred. Only applies when adding stock.</p>
+                <p class="form-hint">Select the items in this batch, set the quantity per pack, and enter expiration dates. Blank dates use the standard shelf life and carry over on transfer. Adding stock only.</p>
                 {% for c in food_pack_components %}
                 <div class="fp-content-row">
                     <label class="fp-content-check">
@@ -412,7 +412,7 @@
                 <option value="disposed">Disposed - written off</option>
                 <option value="fixed">Fixed - replace spoiled item and return to stock</option>
             </select>
-            <p class="form-hint">Disposed removes these expired packs from the record for good. Fixed replaces whichever component actually spoiled (usually the rice) with fresh stock and returns the pack(s) to the office's usable Food Packs stock - the still-good contents keep their original dates.</p>
+            <p class="form-hint">Disposed permanently removes these packs from the record. Fixed replaces the spoiled item with fresh stock and returns the pack to usable Food Packs stock. Other contents keep their original dates.</p>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">Resolve</button>
                 <button type="button" class="btn-cancel" data-close-modal>Cancel</button>

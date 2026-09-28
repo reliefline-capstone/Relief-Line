@@ -5,7 +5,11 @@ report numbers) and returns a plain {columns, rows, ...} dict, so a single
 generic template/PDF/Excel renderer can present any of the 7 report types
 without a per-type template.
 """
+import os
+import re
 from datetime import date, datetime, timedelta
+
+from flask import current_app
 
 from app.utils.timezone import ph_now, ph_today
 
@@ -66,6 +70,26 @@ def _seals(lgu=None):
     return {"logo_left": PROVINCE_SEAL, "logo_right": None}
 
 
+def _slug(text):
+    return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
+
+
+def barangay_logo(barangay):
+    """Static path of the barangay's own seal - img/barangay/<lgu>/<name>.png
+    (e.g. img/barangay/urdaneta-city/anonas.png) - or None if there isn't one."""
+    rel = f"img/barangay/{_slug(barangay.city_municipality)}/{_slug(barangay.barangay_name)}.png"
+    return rel if os.path.exists(os.path.join(current_app.static_folder, *rel.split("/"))) else None
+
+
+def _barangay_seals(barangay):
+    """Barangay letterhead: its own seal left, its city/municipality's right.
+    Without a barangay seal on file it falls back to the LGU layout."""
+    logo = barangay_logo(barangay)
+    if logo:
+        return {"logo_left": logo, "logo_right": LGU_LOGOS.get(barangay.city_municipality) or PROVINCE_SEAL}
+    return _seals(barangay.city_municipality)
+
+
 def _preparer(user, fallback_position):
     if not user:
         return {"label": "Prepared By", "name": "", "position": fallback_position}
@@ -84,7 +108,7 @@ def build_letterhead(user=None, barangay=None):
             "lines": lines,
             "office": "Office of the Punong Barangay",
             "place": f"Brgy. {barangay.barangay_name}, {barangay.city_municipality}",
-            **_seals(barangay.city_municipality),
+            **_barangay_seals(barangay),
             "signatories": [
                 _preparer(user, "Barangay Secretary"),
                 {"label": "Approved By", "name": "", "position": "Punong Barangay"},

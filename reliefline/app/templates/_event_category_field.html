@@ -1,0 +1,17 @@
+{% from "_macros.html" import icon with context %}
+{# Event Category on the Declare Disaster Event form (PSWDO + CSWDO/MSWDO):
+   pick one or more of EVENT_CATEGORIES (app/models/disaster_event.py).
+   Same selectable chips as the Barangays Covered checklist. #}
+<div class="form-row">
+    <label>Event Category</label>
+    <p class="form-hint">Select all that apply.</p>
+    <div class="declare-barangay-checklist event-category-list">
+        {% for cat in EVENT_CATEGORIES %}
+        <label class="declare-barangay-item">
+            <input type="checkbox" name="event_category" value="{{ cat }}">
+            <span class="declare-barangay-check">{{ icon('check', 13, 'white') }}</span>
+            <span class="declare-barangay-name">{{ cat }}</span>
+        </label>
+        {% endfor %}
+    </div>
+</div>

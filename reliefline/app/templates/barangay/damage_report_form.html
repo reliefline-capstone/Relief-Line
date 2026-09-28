@@ -276,9 +276,7 @@
                 {% endif %}
                 <div class="form-row" style="margin-top:16px;">
                     <label for="remarks">Remarks &amp; Observations</label>
-                    <textarea id="remarks" name="remarks" rows="4" placeholder="Describe the current situation in your barangay. Include road access status, ongoing rescue operations, urgent needs, special observations, etc.
-
-Example: Flood water reached approximately 1.5 meters. Several roads are not passable. Immediate food assistance is needed for evacuees.">{{ report.remarks if report else '' }}</textarea>
+                    <textarea id="remarks" name="remarks" rows="4" placeholder="Describe the current situation in your barangay. Eg. Flood water reached 1.5 meters. Immediate food assistance for evacuees.">{{ report.remarks if report else '' }}</textarea>
                 </div>
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>

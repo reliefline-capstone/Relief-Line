@@ -154,10 +154,7 @@
                         <label for="declare-start-date">Start Date *</label>
                         <input type="date" name="start_date" id="declare-start-date" value="{{ now.strftime('%Y-%m-%d') }}" required>
                     </div>
-                    <div class="form-row">
-                        <label for="declare-weather-condition">Weather Condition</label>
-                        <input type="text" name="weather_condition" id="declare-weather-condition" placeholder="e.g. Super Typhoon">
-                    </div>
+                    {% include "_event_category_field.html" %}
                     <div class="rd-modal-actions">
                         <button type="submit" class="btn-decision btn-partial">{{ icon('cloud-lightning', 16, 'white') }} Declare Event</button>
                         <button type="button" class="btn-cancel" data-close-modal>Cancel</button>

@@ -328,6 +328,15 @@ html { scroll-behavior: smooth; }
 .lp-section { padding: 80px 28px; }
 .lp-section-alt { background: var(--lp-bg-alt); }
 
+/* Three-Level Architecture: a relief-operations photo behind the cards,
+   washed out under a white-to-violet veil so the cards and copy stay easy
+   to read. */
+.lp-section-arch {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.93) 0%, rgba(247, 245, 255, 0.86) 50%, rgba(255, 255, 255, 0.93) 100%),
+        url('/static/img/relief-operations.jpg') center / cover no-repeat;
+}
+
 .lp-section-inner { max-width: 1200px; margin: 0 auto; }
 
 .lp-section-head { text-align: center; max-width: 620px; margin: 0 auto 48px; }
@@ -619,9 +628,10 @@ html { scroll-behavior: smooth; }
 .lp-arch-city .lp-arch-num,
 .lp-arch-city .lp-arch-ic { background-image: linear-gradient(150deg, #6f74f2, #4133c0); }
 
-.lp-arch-provincial { background: #f5fcf8; border-color: #dbf0e4; }
+/* Same violet as the Barangay card. */
+.lp-arch-provincial { background: #fcfbff; }
 .lp-arch-provincial .lp-arch-num,
-.lp-arch-provincial .lp-arch-ic { background-image: linear-gradient(150deg, #17b6a3, #0a8f56); }
+.lp-arch-provincial .lp-arch-ic { background-image: linear-gradient(150deg, #9a6ff0, #6d3fc4); }
 
 /* ---- More Features (marquee) ---- */
 .lp-more {
@@ -691,7 +701,7 @@ html { scroll-behavior: smooth; }
 .lp-contact-intro {
     text-align: center;
     max-width: 620px;
-    margin: -12px auto 26px;
+    margin: 20px auto 0;
     font-size: 13.5px;
     color: var(--lp-text-muted);
     line-height: 1.6;
@@ -731,9 +741,8 @@ html { scroll-behavior: smooth; }
     display: flex;
     align-items: flex-start;
     gap: 14px;
-    max-width: 720px;
-    margin-left: auto;
-    margin-right: auto;
+    /* Full width of the contact cards row above it. */
+    max-width: none;
     text-align: left;
 }
 
