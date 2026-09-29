@@ -130,15 +130,9 @@ def profile_for(name, lgu):
     avg_household_size = rng.uniform(3.8, 5.6)
     independent_factor = rng.uniform(0.80, 1.22)
     num_households = max(int(round(population / avg_household_size * independent_factor)), 60)
-    poverty_incidence = round(rng.uniform(12.0, 47.0), 2)
-    disaster_risk_index = round(rng.uniform(3.6, 9.1), 2)
-    past_calamity_freq = rng.randint(1, 9)
     profile = {
         "population": population,
         "num_households": num_households,
-        "poverty_incidence": poverty_incidence,
-        "disaster_risk_index": disaster_risk_index,
-        "past_calamity_freq": past_calamity_freq,
     }
     # Overlay any official figure on record (see scripts/real_profiles.py).
     # Synthetic values survive only for fields with no real dataset yet.
@@ -146,14 +140,23 @@ def profile_for(name, lgu):
     return profile
 
 
+def _legacy_vulnerability_factor(b):
+    """Deterministic per-barangay pseudo-risk factor in [0, 1], standing in
+    for the poverty_incidence/disaster_risk_index/past_calamity_freq columns
+    dropped from the Barangay model 2026-09-29 - they were display-only,
+    never an actual input to the real demand model (see
+    app.ml.predict.share_breakdown: "vulnerability blending dropped").
+    Kept only so this legacy synthetic-event generator still has some
+    per-barangay variance; unrelated to anything the live model uses."""
+    rng = random.Random(f"vuln|{b.city_municipality}|{b.barangay_name}")
+    return rng.uniform(0.0, 1.0)
+
+
 def _affected_rate(b, severity):
     """Fraction of a barangay's households actually affected in an event.
     Driven by exposure/vulnerability, lifted by event severity. Clipped to a
     realistic 5%-60% - a whole barangay is very rarely 100% affected."""
-    base = (0.055
-            + 0.026 * float(b.disaster_risk_index)
-            + 0.0016 * float(b.poverty_incidence)
-            + 0.011 * b.past_calamity_freq)
+    base = 0.18 + 0.29 * _legacy_vulnerability_factor(b)
     return max(0.05, min(base * (0.75 + 0.35 * severity), 0.60))
 
 
@@ -161,8 +164,7 @@ def _pack_need_rate(b):
     """Of the AFFECTED households, the share that actually needs a food pack -
     displaced, house damaged, or no means to cook. Not every affected family
     needs relief goods; higher-risk barangays see more displacement."""
-    return max(0.20, min(0.24 + 0.028 * float(b.disaster_risk_index)
-                         + 0.001 * float(b.poverty_incidence), 0.68))
+    return max(0.20, min(0.35 + 0.19 * _legacy_vulnerability_factor(b), 0.68))
 
 
 PACKS_PER_FAMILY = 1.1  # ~one food pack per family, small operational buffer

@@ -494,6 +494,63 @@ def leave_one_typhoon_out_packs_cv(events):
     }
 
 
+def leave_one_typhoon_out_p90_coverage(events):
+    """Leave-one-typhoon-out check of the P90 promise itself: does the
+    recommended stockpile (that fold's LOTO severity.high) actually cover
+    what really happened, at the rate it's supposed to (~90%)? Unlike
+    MAE/RMSE (how far off a point estimate is), this scores the thing the
+    P90 level is actually FOR - not running out - so it's meaningful even
+    though a single typhoon's exact size can't be point-forecast (see
+    leave_one_typhoon_out_packs_cv's docstring).
+
+    Two levels, both leave-one-typhoon-out, no (1 + BUFFER) applied (that's
+    a deployment-time safety margin on top of raw P90, so live coverage
+    should run a bit higher than what's reported here):
+      lgu_coverage     - held-out event's real LGU total <= that fold's P90
+                          LGU total.
+      barangay_coverage - same check per barangay (share x P90 total vs
+                          real food_packs_given), pooled across all
+                          (barangay, held-out typhoon) pairs.
+    None if there isn't enough data to run a single fold."""
+    scoreable = [eid for eid, ev in events.items() if _event_total_and_known(ev["records"])[0] > 0
+                 and len(_event_total_and_known(ev["records"])[1]) >= 2]
+    if len(scoreable) < 2:
+        return None
+
+    lgu_hits = lgu_n = brgy_hits = brgy_n = 0
+    for held_out in scoreable:
+        sev = _loto_severity_excluding(events, held_out)
+        if sev is None:
+            continue
+        total, known = _event_total_and_known(events[held_out]["records"])
+
+        lgu_hits += int(total <= sev["high"])
+        lgu_n += 1
+
+        train_events = {eid: ev for eid, ev in events.items() if eid != held_out}
+        model = fit_share_model(_share_training_rows(train_events))
+        if model is None:
+            continue
+        tf_map = {r["barangay_id"]: r["total_families_snapshot"] for r in known
+                  if r["total_families_snapshot"] is not None}
+        if len(tf_map) < len(known):
+            continue
+        pred_share = predict_shares(model, tf_map)
+        for r in known:
+            p90_packs = sev["high"] * pred_share.get(r["barangay_id"], 0.0)
+            brgy_hits += int(r["food_packs_given"] <= p90_packs)
+            brgy_n += 1
+
+    if lgu_n == 0 or brgy_n == 0:
+        return None
+    return {
+        "lgu_coverage": lgu_hits / lgu_n,
+        "barangay_coverage": brgy_hits / brgy_n,
+        "lgu_n": lgu_n,
+        "barangay_n": brgy_n,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Train + persist
 # ---------------------------------------------------------------------------
@@ -518,7 +575,7 @@ def train_and_persist():
     calendar_by_key = {r[0]: (r[1], r[2], r[3]) for r in calendar_rows}
     climatology = climatology_by_month(calendar_rows, ph_today())
 
-    lgu_artifact, loto_cv, loto_packs_cv, backtest_series = {}, {}, {}, {}
+    lgu_artifact, loto_cv, loto_packs_cv, loto_p90, backtest_series = {}, {}, {}, {}, {}
     for lgu, events in by_lgu.items():
         rows = _share_training_rows(events)
         model = fit_share_model(rows)
@@ -546,6 +603,7 @@ def train_and_persist():
         }
         loto_cv[lgu] = leave_one_typhoon_out_cv(events)
         loto_packs_cv[lgu] = leave_one_typhoon_out_packs_cv(events)
+        loto_p90[lgu] = leave_one_typhoon_out_p90_coverage(events)
         backtest_series[lgu] = {
             "origin": "leave-one-typhoon-out",
             "points": [
@@ -569,12 +627,17 @@ def train_and_persist():
         "lgu": lgu_artifact,
         "loto_cv": loto_cv,
         "loto_packs_cv": loto_packs_cv,
+        "loto_p90": loto_p90,
         "backtest_series": backtest_series,
     }, ARTIFACT_PATH)
 
     scored = {lgu: cv for lgu, cv in loto_cv.items() if cv}
     packs_scored = {lgu: cv for lgu, cv in loto_packs_cv.items() if cv}
+    p90_scored = {lgu: cv for lgu, cv in loto_p90.items() if cv}
     if scored:
+        # p90_coverage "worst LGU" = LOWEST coverage (min), unlike the error
+        # metrics above where worst = highest (max) - a lower coverage rate
+        # is the bad direction here, not a higher one.
         db.session.add(ModelMetrics(
             model_version=MODEL_VERSION,
             mae=round(max(cv["mae_model"] for cv in scored.values()), 4),
@@ -582,9 +645,10 @@ def train_and_persist():
             mae_baseline_avg_share=round(max(cv["mae_avg_share"] for cv in scored.values()), 4),
             mae_packs=round(max(cv["mae_packs"] for cv in packs_scored.values()), 4) if packs_scored else None,
             rmse=round(max(cv["rmse_packs"] for cv in packs_scored.values()), 4) if packs_scored else None,
+            p90_coverage=round(min(cv["barangay_coverage"] for cv in p90_scored.values()), 4) if p90_scored else None,
             training_samples=sum(len(ev["records"]) for events in by_lgu.values() for ev in events.values()),
         ))
         db.session.commit()
 
     return {"lgus": list(lgu_artifact), "loto_cv": loto_cv, "loto_packs_cv": loto_packs_cv,
-            "data_through": data_through}
+            "loto_p90": loto_p90, "data_through": data_through}

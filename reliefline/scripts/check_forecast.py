@@ -113,6 +113,20 @@ with app.app_context():
         check(f"{lgu}: share model beats equal-split baseline (MAE {cv['mae_model']:.4f} vs {cv['mae_equal_split']:.4f})",
               cv["mae_model"] <= cv["mae_equal_split"])
 
+    print("Validation (leave-one-typhoon-out P90 coverage, target ~90%)")
+    from app.ml.train import leave_one_typhoon_out_p90_coverage
+    for lgu, events in by_lgu.items():
+        p90 = leave_one_typhoon_out_p90_coverage(events)
+        if p90 is None:
+            check(f"{lgu}: P90 coverage check ran", False, "not enough events to validate")
+            continue
+        # Wide on purpose - this catches a badly broken P90 (e.g. barely
+        # above 0 or always 100%), not a precise claim of hitting 90% with
+        # this few events per LGU (see the module's own caveat on n).
+        check(f"{lgu}: barangay-level P90 coverage within 0.60-1.00 "
+              f"({p90['barangay_coverage']*100:.1f}%, {p90['barangay_n']} pairs)",
+              0.60 <= p90["barangay_coverage"] <= 1.00)
+
     print("Metrics")
     m = db.session.execute(text(
         "SELECT model_version, mae, mae_baseline_equal_split, mae_baseline_avg_share "

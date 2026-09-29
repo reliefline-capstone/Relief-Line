@@ -4,15 +4,15 @@ Real per-barangay reference data that replaces synthetic seed values.
 This is the single source of truth for any barangay profile figure we have an
 official record for. `seed_training_data.profile_for()` generates a synthetic
 profile for every barangay, then overlays whatever real values live here on
-top - so a field we have is real, and a field we don't yet have (e.g. poverty
-incidence, disaster risk index) stays synthetic until its own official
-dataset is added here.
+top - so a field we have is real, and a field we don't yet have stays
+synthetic until its own official dataset is added here.
 
 Add a municipality by dropping its dict into REAL_PROFILES keyed by the exact
 `(city_municipality, barangay_name)` used in the database. Every inner dict may
-carry any subset of the model's column-backed predictors:
-    population, num_households, poverty_incidence,
-    disaster_risk_index, past_calamity_freq
+carry any subset of the model's column-backed predictors: population,
+num_households. (poverty_incidence, disaster_risk_index and
+past_calamity_freq were dropped from the Barangay model 2026-09-29 - display
+-only fields the demand model never actually used.)
 Missing keys simply fall through to the synthetic value.
 
 ----------------------------------------------------------------------------

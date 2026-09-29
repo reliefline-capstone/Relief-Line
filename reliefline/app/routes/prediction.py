@@ -295,7 +295,7 @@ def index():
     # stockpiles), plus all warehouses combined. The health badge stays the
     # capacity-fill rating (_food_pack_health) - a separate, deliberate lens. ----
     cover_horizon = request.args.get("forecast_months", 6, type=int)
-    if cover_horizon not in (4, 6, 12):
+    if cover_horizon not in (3, 6, 9, 12):
         cover_horizon = 6
     warehouse_cards = []
     for w in warehouses:
@@ -323,7 +323,7 @@ def index():
     # municipality_filter/days_filter above - stays on this page rather than
     # a separate route. ----
     forecast_months = request.args.get("forecast_months", 6, type=int)
-    if forecast_months not in (4, 6, 12):
+    if forecast_months not in (3, 6, 9, 12):
         forecast_months = 6
     forecast_lgu_choice = request.args.get("forecast_lgu", "")
     if forecast_lgu_choice not in scope_lgus:
@@ -454,6 +454,7 @@ def index():
         show_breakdown=show_breakdown,
         loto_cv=ml_predict.loto_cv_summary(),
         loto_packs_cv=ml_predict.loto_packs_cv_summary(),
+        loto_p90=ml_predict.p90_coverage_summary(),
     )
 
 

@@ -31,21 +31,11 @@
             </div>
         </section>
 
-        <section class="stat-cards stat-cards-3">
+        <section class="stat-cards stat-cards-1">
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('map-pin', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ total_barangays }}</span>
                 <span class="stat-label">Total Barangays</span>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
-                <span class="stat-value">{{ high_risk_count }}</span>
-                <span class="stat-label">High Risk</span>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon amber">{{ icon('trending-up', 18, '#f39c12') }}</div>
-                <span class="stat-value">{{ "%.1f"|format(avg_poverty) }}%</span>
-                <span class="stat-label">Average Poverty Incidence</span>
             </div>
         </section>
 
@@ -66,9 +56,6 @@
                         <th>MUNICIPALITY</th>
                         <th>POPULATION</th>
                         <th>HOUSEHOLDS</th>
-                        <th>RISK LEVEL</th>
-                        <th>POVERTY INCIDENCE</th>
-                        <th>RISK INDEX</th>
                         <th>HISTORICAL ALLOC.</th>
                         <th>ACTIONS</th>
                     </tr>
@@ -81,14 +68,11 @@
                         <td>{{ barangay.city_municipality }}</td>
                         <td>{{ "{:,}".format(barangay.population) }}</td>
                         <td>{{ "{:,}".format(barangay.num_households) }}</td>
-                        <td><span class="badge-risk risk-{{ row.risk_level|lower }}">{{ row.risk_level }}</span></td>
-                        <td>{{ "%.1f"|format(barangay.poverty_incidence|float) }}%</td>
-                        <td>{{ "%.2f"|format(barangay.disaster_risk_index|float) }}</td>
                         <td>{{ "{:,}".format(row.historical_allocation) }}</td>
                         <td><button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-barangay-modal-{{ barangay.barangay_id }}">Edit</button></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="9" class="empty-note" style="text-align:center; padding:30px;">No barangays match your search.</td></tr>
+                    <tr><td colspan="6" class="empty-note" style="text-align:center; padding:30px;">No barangays match your search.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -128,20 +112,6 @@
                     <label for="add-brgy-households">Number of Households</label>
                     <input type="number" name="num_households" id="add-brgy-households" min="0" value="0">
                 </div>
-            </div>
-            <div class="rd-form-row">
-                <div>
-                    <label for="add-brgy-poverty">Poverty Incidence (%)</label>
-                    <input type="number" name="poverty_incidence" id="add-brgy-poverty" min="0" max="100" step="0.01" value="0">
-                </div>
-                <div>
-                    <label for="add-brgy-risk">Disaster Risk Index (0–10)</label>
-                    <input type="number" name="disaster_risk_index" id="add-brgy-risk" min="0" max="10" step="0.01" value="0">
-                </div>
-            </div>
-            <div class="form-row">
-                <label for="add-brgy-calamity">Past Calamity Frequency</label>
-                <input type="number" name="past_calamity_freq" id="add-brgy-calamity" min="0" value="0">
             </div>
             <span class="form-hint">Historical Allocation is calculated automatically from past relief allocation records.</span>
             <div class="rd-modal-actions">
@@ -185,20 +155,6 @@
                     <label for="edit-brgy-households-{{ barangay.barangay_id }}">Number of Households</label>
                     <input type="number" name="num_households" id="edit-brgy-households-{{ barangay.barangay_id }}" min="0" value="{{ barangay.num_households }}">
                 </div>
-            </div>
-            <div class="rd-form-row">
-                <div>
-                    <label for="edit-brgy-poverty-{{ barangay.barangay_id }}">Poverty Incidence (%)</label>
-                    <input type="number" name="poverty_incidence" id="edit-brgy-poverty-{{ barangay.barangay_id }}" min="0" max="100" step="0.01" value="{{ barangay.poverty_incidence }}">
-                </div>
-                <div>
-                    <label for="edit-brgy-risk-{{ barangay.barangay_id }}">Disaster Risk Index (0–10)</label>
-                    <input type="number" name="disaster_risk_index" id="edit-brgy-risk-{{ barangay.barangay_id }}" min="0" max="10" step="0.01" value="{{ barangay.disaster_risk_index }}">
-                </div>
-            </div>
-            <div class="form-row">
-                <label for="edit-brgy-calamity-{{ barangay.barangay_id }}">Past Calamity Frequency</label>
-                <input type="number" name="past_calamity_freq" id="edit-brgy-calamity-{{ barangay.barangay_id }}" min="0" value="{{ barangay.past_calamity_freq }}">
             </div>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">Save Changes</button>

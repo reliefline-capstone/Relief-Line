@@ -187,6 +187,29 @@ def loto_packs_cv_summary():
     return rows
 
 
+def p90_coverage_summary():
+    """Per-LGU leave-one-typhoon-out check of the P90 promise itself: how
+    often did the real outcome actually stay at/below the recommended P90
+    stockpile (see app.ml.train.leave_one_typhoon_out_p90_coverage)? Target
+    ~90%. [] if no model is trained or no LGU had enough events."""
+    artifact = _load_artifact()
+    if artifact is None:
+        return []
+    rows = []
+    for lgu, cv in (artifact.get("loto_p90") or {}).items():
+        if not cv:
+            continue
+        rows.append({
+            "lgu": lgu,
+            "lgu_coverage": cv["lgu_coverage"],
+            "barangay_coverage": cv["barangay_coverage"],
+            "lgu_n": cv["lgu_n"],
+            "barangay_n": cv["barangay_n"],
+        })
+    rows.sort(key=lambda r: r["lgu"])
+    return rows
+
+
 def backtest_series(lgu):
     """Actual vs. leave-one-typhoon-out prediction for every real relief
     event this LGU has on record (see app.ml.train._backtest_points) - the

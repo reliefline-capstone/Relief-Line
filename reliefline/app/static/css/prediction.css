@@ -80,6 +80,90 @@
     margin-top: 4px;
 }
 
+/* Per-Municipality Breakdown (pswdo/recommendations.html) - Stockpile column.
+   Overrides relief_requests.css's generic .rr-table td:last-child rule
+   (right-align + nowrap, meant for that other table's Actions column), since
+   this column landed last here too but needs the expected-value line to wrap
+   onto its own row instead of being squeezed onto one line. */
+.rr-table-wrap .rr-table td.pmb-stockpile {
+    text-align: left;
+    white-space: normal;
+}
+.pmb-stockpile strong {
+    display: block;
+    font-size: 15px;
+    color: #1a1a1a;
+}
+.pmb-stockpile .rd-sub {
+    display: block;
+    margin-top: 2px;
+}
+
+/* Per-Municipality Breakdown - expandable barangay detail row. The detail
+   row's single <td> is both the row's first AND last child, so it inherits
+   BOTH relief_requests.css's first-child (bold/dark) and last-child
+   (right-align/nowrap) rules meant for normal data cells - neutralize both,
+   this cell just wraps a nested table. */
+.pmb-row { cursor: pointer; }
+.pmb-row-arrow {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-right: 6px;
+    transition: transform 0.15s ease;
+}
+.pmb-row[aria-expanded="true"] .pmb-row-arrow { transform: rotate(90deg); }
+
+.pmb-detail-row { display: none; }
+.pmb-detail-row.pmb-detail-open { display: table-row; }
+.rr-table-wrap .rr-table td.pmb-detail-cell {
+    text-align: left;
+    white-space: normal;
+    color: inherit;
+    font-weight: normal;
+    background: #f8f9fc;
+    padding: 4px 16px 16px !important;
+}
+
+/* table-layout: fixed + explicit column widths (via <colgroup> in the
+   template) - "auto" layout let the long "N-MONTH STOCKPILE" header text
+   claim a disproportionate share of the row's width, stranding it far to
+   the right of its own column's actual (left-aligned) data. Fixed layout
+   makes header and data always share the same column boundary. */
+.pmb-barangay-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.pmb-barangay-table th {
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: #8a94a6;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e6e7ef;
+}
+.pmb-barangay-table td {
+    padding: 7px 12px;
+    font-size: 12.5px;
+    border-bottom: 1px solid #eef0f5;
+}
+.pmb-barangay-table tbody tr:last-child td { border-bottom: none; }
+.pmb-barangay-table td:nth-child(2),
+.pmb-barangay-table td:nth-child(3) {
+    font-variant-numeric: tabular-nums;
+}
+/* This nested table's <td>s are still descendants of the outer .rr-table,
+   so relief_requests.css's positional rules (first-child bold/dark,
+   nth-child(3) purple, last-child right-align/nowrap - all meant for the
+   outer table's own columns) match here too, at equal specificity, and
+   relief_requests.css loads AFTER this file - so a same-specificity reset
+   here would lose the cascade. One extra class (.pmb-detail-cell, the
+   nested table's own ancestor) makes this strictly more specific instead
+   of relying on load order. */
+.rr-table-wrap .rr-table .pmb-detail-cell .pmb-barangay-table td {
+    text-align: left;
+    white-space: normal;
+    color: #333;
+    font-weight: 400;
+}
+
 /* Historical trend - line chart (inline SVG, no chart library) */
 .pa-line-chart {
     width: 100%;

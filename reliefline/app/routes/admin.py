@@ -77,15 +77,6 @@ def _office_code(office):
     return f"MSWDO-{abbrev}"
 
 
-def _risk_level(disaster_risk_index):
-    value = float(disaster_risk_index or 0)
-    if value >= 7.0:
-        return "High"
-    if value >= 5.0:
-        return "Moderate"
-    return "Low"
-
-
 # ---------------------------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------------------------
@@ -517,21 +508,15 @@ def barangays():
     barangay_list = barangays_q.order_by(Barangay.city_municipality, Barangay.barangay_name).all()
 
     rows = [{
-        "barangay": b, "risk_level": _risk_level(b.disaster_risk_index),
+        "barangay": b,
         "historical_allocation": historical_allocation_for(b.barangay_id),
     } for b in barangay_list]
 
     total_barangays = len(barangay_list)
-    high_risk_count = sum(1 for r in rows if r["risk_level"] == "High")
-    avg_poverty = (
-        sum(float(b.poverty_incidence or 0) for b in barangay_list) / total_barangays
-        if total_barangays else 0
-    )
 
     return render_template(
         "admin/barangays.html", rows=rows, search_query=search_query,
-        total_barangays=total_barangays, high_risk_count=high_risk_count,
-        avg_poverty=avg_poverty, target_lgus=TARGET_LGUS,
+        total_barangays=total_barangays, target_lgus=TARGET_LGUS,
     )
 
 
@@ -540,9 +525,6 @@ def _apply_barangay_form(barangay):
     barangay.city_municipality = request.form.get("city_municipality", "")
     barangay.population = request.form.get("population", type=int) or 0
     barangay.num_households = request.form.get("num_households", type=int) or 0
-    barangay.poverty_incidence = request.form.get("poverty_incidence", type=float) or 0
-    barangay.disaster_risk_index = request.form.get("disaster_risk_index", type=float) or 0
-    barangay.past_calamity_freq = request.form.get("past_calamity_freq", type=int) or 0
 
 
 @admin_bp.route("/barangays/add", methods=["POST"])
@@ -592,14 +574,12 @@ def export_barangays():
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow([
-        "Barangay", "Municipality", "Population", "Households", "Poverty Incidence (%)",
-        "Disaster Risk Index", "Past Calamity Freq.", "Historical Allocation", "Risk Level",
+        "Barangay", "Municipality", "Population", "Households", "Historical Allocation",
     ])
     for b in barangay_list:
         writer.writerow([
             b.barangay_name, b.city_municipality, b.population, b.num_households,
-            b.poverty_incidence, b.disaster_risk_index, b.past_calamity_freq,
-            historical_allocation_for(b.barangay_id), _risk_level(b.disaster_risk_index),
+            historical_allocation_for(b.barangay_id),
         ])
 
     return Response(

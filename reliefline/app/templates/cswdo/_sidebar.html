@@ -12,9 +12,9 @@
         <a href="{{ url_for('cswdo.damage_assessment') }}" class="{{ 'active' if active_page == 'damage_assessment' }}">{{ icon('clipboard', 18) }} <span class="sidebar-label">Barangay Reports</span> {% if pending_barangay_reports %}<span class="nav-badge">{{ pending_barangay_reports }}</span>{% endif %}</a>
         <a href="{{ url_for('cswdo.deliveries') }}" class="{{ 'active' if active_page == 'deliveries' }}">{{ icon('truck', 18) }} <span class="sidebar-label">Deliveries</span></a>
         <a href="{{ url_for('cswdo.relief_requests') }}" class="{{ 'active' if active_page == 'relief_requests' }}">{{ icon('download', 18) }} <span class="sidebar-label">Stock Requests</span></a>
-        <a href="{{ url_for('prediction.index') }}" class="{{ 'active' if active_page == 'predictive_analytics' }}">{{ icon('trending-up', 18) }} <span class="sidebar-label">Predictive Analytics</span></a>
         <a href="{{ url_for('cswdo.municipal_inventory') }}" class="{{ 'active' if active_page == 'municipal_inventory' }}">{{ icon('building', 18) }} <span class="sidebar-label">Municipal Warehouse</span></a>
         <a href="{{ url_for('cswdo.gis_map') }}" class="{{ 'active' if active_page == 'gis_map' }}">{{ icon('map', 18) }} <span class="sidebar-label">GIS Map</span></a>
+        <a href="{{ url_for('prediction.index') }}" class="{{ 'active' if active_page == 'predictive_analytics' }}">{{ icon('trending-up', 18) }} <span class="sidebar-label">Predictive Analytics</span></a>
         <a href="{{ url_for('cswdo.reports') }}" class="{{ 'active' if active_page == 'reports' }}">{{ icon('bar-chart', 18) }} <span class="sidebar-label">Reports</span></a>
         <a href="{{ url_for('cswdo.notifications') }}" class="{{ 'active' if active_page == 'notifications' }}">{{ icon('bell', 18) }} <span class="sidebar-label">Notifications</span> {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}</a>
     </nav>

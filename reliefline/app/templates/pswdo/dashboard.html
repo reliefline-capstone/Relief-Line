@@ -322,52 +322,8 @@
 
         </div>
 
-        <!-- Distribution Progress + Recent Activities -->
-        <div class="main-grid dash-grid-even" style="margin-top: 16px;">
-
-            <section class="panel distribution-progress-panel">
-                <div class="panel-header">
-                    <h3>Today's Distribution Progress</h3>
-                    <a href="{{ url_for('pswdo.transfers') }}" class="link-manage">Transfers →</a>
-                </div>
-
-                <div class="progress-summary">
-                    <div class="progress-ring-wrapper">
-                        <svg width="90" height="90" viewBox="0 0 90 90">
-                            <circle cx="45" cy="45" r="38" fill="none" stroke="#eee" stroke-width="8"/>
-                            <circle cx="45" cy="45" r="38" fill="none" stroke="#0f2547" stroke-width="8"
-                                stroke-dasharray="{{ (completion_pct / 100 * 238.76)|round(1) }} 238.76"
-                                stroke-linecap="round" transform="rotate(-90 45 45)"/>
-                        </svg>
-                        <div class="progress-ring-text">
-                            <strong>{{ completion_pct|int }}%</strong>
-                            <span>Complete</span>
-                        </div>
-                    </div>
-                    <div class="progress-stats-grid">
-                        <div><strong>{{ municipalities_served }}</strong><span>Municipalities Served</span></div>
-                        <div><strong class="text-green">{{ "{:,}".format(total_released_today) }}</strong><span>Food Packs Released</span></div>
-                        <div><strong class="text-amber">{{ vehicles_active }}</strong><span>Vehicles Active</span></div>
-                        <div><strong>{{ "{:,}".format(packs_remaining) }}</strong><span>Packs Remaining</span></div>
-                    </div>
-                </div>
-
-                <h4 class="pa-rec-title">BY MUNICIPALITY</h4>
-                {% for m in by_municipality %}
-                {% set pct = (m.released / m.allocated * 100) if m.allocated > 0 else 0 %}
-                <div class="municipality-row">
-                    <div class="municipality-row-top">
-                        <span>{{ m.lgu }}</span>
-                        <span>{{ "{:,}".format(m.released) }} / {{ "{:,}".format(m.allocated) }} <strong class="municipality-pct">({{ pct|round|int }}%)</strong></span>
-                    </div>
-                    <div class="municipality-bar">
-                        <div class="municipality-bar-fill {{ 'bar-low' if pct < 30 else ('bar-mid' if pct < 70 else 'bar-high') }}" style="width: {{ pct }}%;"></div>
-                    </div>
-                </div>
-                {% else %}
-                <p class="empty-note">No distribution data yet.</p>
-                {% endfor %}
-            </section>
+        <!-- Recent Activities -->
+        <div class="main-grid" style="margin-top: 16px; grid-template-columns: 1fr;">
 
             <section class="panel">
                 <div class="panel-header">

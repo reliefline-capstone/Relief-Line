@@ -131,19 +131,6 @@
 .badge-status-pill.is-inactive { background: #fdecea; color: #c0392b; }
 .badge-status-pill.is-pending { background: #fef5e7; color: #b7791f; }
 
-/* Risk level badges (Barangay Management) */
-.badge-risk {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 10px;
-    white-space: nowrap;
-}
-
-.badge-risk.risk-high { background: #fdecea; color: #c0392b; }
-.badge-risk.risk-moderate { background: #fef5e3; color: #d68910; }
-.badge-risk.risk-low { background: #e8faf0; color: #1e8449; }
-
 /* Module badges (System Activity / Audit Logs) */
 .badge-module {
     display: inline-block;

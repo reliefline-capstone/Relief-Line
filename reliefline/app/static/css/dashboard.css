@@ -1744,89 +1744,9 @@ html.sidebar-collapsed .dashboard-main {
 .rec-warning { background: #fef5e3; color: #b7791f; }
 .rec-critical { background: #fdecea; color: #c0392b; }
 
-/* Distribution progress - inside a .main-grid (a CSS grid with the default
-   align-items: stretch) this panel would stretch to match a much taller
-   sibling, leaving a large empty gap below the municipality list. Scoped to
-   .main-grid so it stays a no-op in the pswdo dashboard's .dash-columns
-   flex layout, where a column child already sizes to its own content. */
-.main-grid:not(.dash-grid-even) .distribution-progress-panel {
-    align-self: start;
-}
-
-.progress-summary {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    margin-bottom: 20px;
-}
-
-.progress-ring-wrapper {
-    position: relative;
-    flex-shrink: 0;
-}
-
-.progress-ring-text {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.progress-ring-text strong { font-size: 18px; color: #5347ce; }
-.progress-ring-text span { font-size: 10px; color: #8a94a6; }
-
-.progress-stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    flex: 1;
-}
-
-.progress-stats-grid div {
-    background: #f4f4fb;
-    border-radius: 8px;
-    padding: 10px 12px;
-}
-
-.progress-stats-grid strong { display: block; font-size: 16px; }
-.progress-stats-grid span { font-size: 11px; color: #8a94a6; }
-
 .text-green { color: #27ae60; }
 .text-amber { color: #f39c12; }
 .text-red { color: #c0392b; }
-
-.municipality-row { margin-bottom: 10px; }
-
-.municipality-row-top {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    margin-bottom: 4px;
-}
-
-.municipality-bar {
-    height: 6px;
-    background: #f0f2f6;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.municipality-bar-fill {
-    height: 100%;
-    background: #5347ce;
-    transition: width 0.4s ease;
-}
-
-/* Color reads as "how much is left to do", same red/amber/green language as
-   demand-tier colors elsewhere in the system - low completion (more work
-   remaining) is the one that should catch the eye first. */
-.municipality-bar-fill.bar-low { background: #e74c3c; }
-.municipality-bar-fill.bar-mid { background: #f1c40f; }
-.municipality-bar-fill.bar-high { background: #27ae60; }
-
-.municipality-pct { color: #8a94a6; font-weight: 500; }
 
 /* Recent activities + notifications */
 .panel-date { font-size: 11px; color: #8a94a6; }
@@ -2047,6 +1967,9 @@ html.sidebar-collapsed .dashboard-main {
 .page-tab:hover .page-tab-badge { transform: translateY(-1px); }
 .page-tab.active .page-tab-badge { background: #5347ce; color: white; }
 
+/* A lone stat card (e.g. Barangay Management after dropping the risk/poverty
+   cards) keeps its normal compact width instead of stretching full-bleed. */
+.stat-cards-1 { grid-template-columns: minmax(0, 320px); }
 .stat-cards-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .stat-cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stat-cards-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }

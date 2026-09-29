@@ -21,13 +21,14 @@
         <section class="page-header">
             <div>
                 <h2>Recommendations</h2>
-                <p>Demand-vs-stock across the target municipalities, from the time-forecasting model's LGU-level projections.
+                <p>Demand-vs-stock across the target municipalities, from the forecaster's LGU-level projections.
                     {%- if active_event %} · {{ active_event.event_name }}{% endif %}</p>
             </div>
             <form method="GET" class="wh-movement-filters">
                 <select name="months" onchange="this.form.submit()">
-                    <option value="4" {{ 'selected' if horizon_months == 4 }}>4-month stockpile</option>
+                    <option value="3" {{ 'selected' if horizon_months == 3 }}>3-month stockpile</option>
                     <option value="6" {{ 'selected' if horizon_months == 6 }}>6-month stockpile</option>
+                    <option value="9" {{ 'selected' if horizon_months == 9 }}>9-month stockpile</option>
                     <option value="12" {{ 'selected' if horizon_months == 12 }}>12-month stockpile</option>
                 </select>
             </form>
@@ -39,11 +40,11 @@
 
         <section class="stat-cards stat-cards-4">
             <div class="stat-card"><div class="stat-icon blue">{{ icon('trending-up', 18, '#3867d6') }}</div>
-                <span class="stat-value">{{ "{:,}".format(total_demand) }}</span><span class="stat-label">Projected Demand This Month (all target LGUs)</span></div>
+                <span class="stat-value">{{ "{:,}".format(total_demand) }}</span><span class="stat-label">Projected Demand This Month</span></div>
             <div class="stat-card"><div class="stat-icon {{ 'red' if total_shortage else 'green' }}">{{ icon('alert-triangle', 18, '#c0392b') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_shortage) }}</span><span class="stat-label">This Month's Shortage</span></div>
             <div class="stat-card"><div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
-                <span class="stat-value">{{ "{:,}".format(total_stockpile) }}</span><span class="stat-label">Recommended {{ horizon_months }}-Month Stockpile (safety stock, sum of municipalities)</span></div>
+                <span class="stat-value">{{ "{:,}".format(total_stockpile) }}</span><span class="stat-label">Recommended {{ horizon_months }}-Month Stockpile</span></div>
             <div class="stat-card"><div class="stat-icon green">{{ icon('building', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span><span class="stat-label">Provincial Stock (all warehouses)</span></div>
         </section>
@@ -74,26 +75,48 @@
         </section>
 
         <section class="panel" style="margin-top:16px;">
-            <div class="panel-header"><h3>Per-Municipality Breakdown</h3><span class="rd-sub">from app.ml.predict.forecast_lgu - the time-forecasting model's own LGU-level projections</span></div>
+            <div class="panel-header"><h3>Per-Municipality Breakdown</h3></div>
             <div class="rr-table-wrap">
             <table class="rr-table">
-                <thead><tr><th>Municipality</th><th>Barangays</th><th>This Month</th><th>{{ horizon_months }}-Month Stockpile</th><th>Warehouse On Hand</th><th>Coverage</th><th>Shortage</th><th></th></tr></thead>
+                <thead><tr><th>Municipality</th><th>Barangays</th><th>This Month</th><th>Warehouse On Hand</th><th>Coverage</th><th>Shortage</th><th>{{ horizon_months }}-Month Stockpile</th></tr></thead>
                 <tbody>
                     {% for m in municipalities %}
-                    <tr>
-                        <td><strong>{{ m.lgu }}</strong></td>
+                    <tr class="pmb-row" data-pmb-toggle aria-expanded="false">
+                        <td><span class="pmb-row-arrow">{{ icon('chevron-right', 12) }}</span><strong>{{ m.lgu }}</strong></td>
                         <td>{{ m.barangay_count }}</td>
                         <td>{{ "{:,}".format(m.demand) }}</td>
-                        <td>{{ "{:,}".format(m.stockpile_total) }}<br><span class="rd-sub">expected {{ "{:,}".format(m.expected_total) }}</span></td>
                         <td>{{ "{:,}".format(m.on_hand) }}</td>
                         <td>
                             <div class="warehouse-bar" style="width:110px;"><div class="warehouse-bar-fill {{ 'fill-low' if m.coverage_pct < 50 else ('fill-moderate' if m.coverage_pct < 100 else 'fill-healthy') }}" style="width: {{ m.coverage_pct }}%;"></div></div>
                             <span class="rd-sub">{{ m.coverage_pct }}%</span>
                         </td>
                         <td>{% if m.shortage %}<strong class="text-red">{{ "{:,}".format(m.shortage) }}</strong>{% else %}<span class="text-green">covered</span>{% endif %}</td>
-                        <td>
-                            {% if m.open_request %}<a href="{{ url_for('pswdo.relief_request_detail', batch_id=m.open_request.batch_id) }}" class="btn-view-sm">{{ m.open_request.ref }}</a>
-                            {% else %}<span class="rd-sub">no request</span>{% endif %}
+                        <td class="pmb-stockpile">
+                            <strong>{{ "{:,}".format(m.stockpile_total) }}</strong>
+                            <span class="rd-sub">expected {{ "{:,}".format(m.expected_total) }}</span>
+                        </td>
+                    </tr>
+                    <tr class="pmb-detail-row">
+                        <td colspan="7" class="pmb-detail-cell">
+                            <div class="pmb-detail-inner">
+                            <table class="pmb-barangay-table">
+                                <colgroup>
+                                    <col style="width:50%"><col style="width:25%"><col style="width:25%">
+                                </colgroup>
+                                <thead><tr><th>Barangay</th><th>This Month</th><th>{{ horizon_months }}-Month Stockpile</th></tr></thead>
+                                <tbody>
+                                    {% for b in m.barangays %}
+                                    <tr>
+                                        <td><strong>{{ b.name }}</strong></td>
+                                        <td>{{ "{:,}".format(b.this_month) }}</td>
+                                        <td>{{ "{:,}".format(b.stockpile) }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr><td colspan="3" class="rd-sub">No barangay data.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -104,4 +127,17 @@
 
     </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('[data-pmb-toggle]').forEach(function (row) {
+    row.addEventListener('click', function () {
+        var detail = row.nextElementSibling;
+        var open = row.getAttribute('aria-expanded') === 'true';
+        row.setAttribute('aria-expanded', open ? 'false' : 'true');
+        detail.classList.toggle('pmb-detail-open', !open);
+    });
+});
+</script>
 {% endblock %}

@@ -42,3 +42,10 @@ with app.app_context():
             print(f"{lgu:<20}{'not enough events to validate':>38}")
             continue
         print(f"{lgu:<20}{cv['mae_packs']:>10.1f}{cv['rmse_packs']:>10.1f}{cv['n']:>8}")
+
+    print(f"\n{'leave-one-typhoon-out P90 coverage (target ~90%)':<20}{'LGU-level':>14}{'barangay-level':>18}{'folds':>8}")
+    for lgu, cv in out["loto_p90"].items():
+        if not cv:
+            print(f"{lgu:<20}{'not enough events to validate':>40}")
+            continue
+        print(f"{lgu:<20}{cv['lgu_coverage']*100:>13.1f}%{cv['barangay_coverage']*100:>17.1f}%{cv['lgu_n']:>8}")

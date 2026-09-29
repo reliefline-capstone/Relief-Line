@@ -1035,9 +1035,6 @@ document.addEventListener('DOMContentLoaded', function () {
             '</strong></div>';
         html += '<div><span>Population</span><strong>' + fmt(b.population) + '</strong></div>';
         html += '<div><span>Households</span><strong>' + fmt(b.num_households) + '</strong></div>';
-        html += '<div><span>Poverty Incidence</span><strong>' + (b.poverty_incidence != null ? b.poverty_incidence + '%' : '-') + '</strong></div>';
-        html += '<div><span>Disaster Risk Index</span><strong>' + (b.disaster_risk_index != null ? b.disaster_risk_index : '-') + '</strong></div>';
-        html += '<div><span>Past Calamity Frequency</span><strong>' + fmt(b.past_calamity_freq) + '</strong></div>';
         html += '</div></section>';
 
         html += '<section class="panel"><div class="panel-header"><h3>Relief Statistics</h3></div>' + reliefRows(b.relief) + '</section>';

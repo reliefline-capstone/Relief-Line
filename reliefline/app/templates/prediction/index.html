@@ -92,8 +92,9 @@
                     </select>
                     {% endif %}
                     <select name="forecast_months" onchange="this.form.submit()">
-                        <option value="4" {{ 'selected' if forecast_months == 4 }}>Next 4 months</option>
+                        <option value="3" {{ 'selected' if forecast_months == 3 }}>Next 3 months</option>
                         <option value="6" {{ 'selected' if forecast_months == 6 }}>Next 6 months</option>
+                        <option value="9" {{ 'selected' if forecast_months == 9 }}>Next 9 months</option>
                         <option value="12" {{ 'selected' if forecast_months == 12 }}>Next 12 months</option>
                     </select>
                 </form>
@@ -403,7 +404,29 @@
             <div class="pa-model-rows" style="margin-top:8px;">
                 <div class="pa-decision-tile"><span class="rd-sub">Packs MAE (worst LGU)</span><strong>{{ "{:,.0f}".format(latest_metrics.mae_packs) if latest_metrics.mae_packs is not none else '-' }}</strong><span class="rd-sub">packs, lower is better</span></div>
                 <div class="pa-decision-tile"><span class="rd-sub">RMSE</span><strong>{{ "{:,.0f}".format(latest_metrics.rmse) if latest_metrics.rmse is not none else '-' }}</strong><span class="rd-sub">packs, worst LGU</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">P90 stockpile coverage (worst LGU)</span><strong>{{ "%.0f"|format(latest_metrics.p90_coverage * 100) if latest_metrics.p90_coverage is not none else '-' }}{{ '%' if latest_metrics.p90_coverage is not none }}</strong><span class="rd-sub">target ~90%</span></div>
             </div>
+            {% if loto_p90 %}
+            <h4 style="margin:14px 0 4px;">Per-municipality validation (P90 coverage)</h4>
+            <p class="rd-sub" style="margin:0 0 6px;">Also leave-one-typhoon-out: of the real typhoons held out, how often did what actually happened stay at or below the recommended P90 stockpile? Target ~90% - this doesn't use the (1 + buffer) safety margin the live forecast adds on top, so real coverage should run a bit higher than shown here.</p>
+            <div class="rr-table-wrap">
+                <table class="rr-table">
+                    <thead><tr>
+                        <th>Municipality</th><th>Municipality-level coverage</th><th>Barangay-level coverage</th><th>Typhoons validated</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for r in loto_p90 %}
+                        <tr>
+                            <td><strong>{{ r.lgu }}</strong></td>
+                            <td>{{ "%.1f%%"|format(r.lgu_coverage * 100) }}</td>
+                            <td>{{ "%.1f%%"|format(r.barangay_coverage * 100) }}</td>
+                            <td>{{ r.lgu_n }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
             {% if loto_packs_cv %}
             <h4 style="margin:14px 0 4px;">Per-municipality validation (packs)</h4>
             <p class="rd-sub" style="margin:0 0 6px;">Same leave-one-typhoon-out setup as the share table below, but scoring the end-to-end forecast (share &times; that fold's expected severity) against real food packs given, per barangay per held-out typhoon. MAPE and R&sup2; were tried here and dropped: a single typhoon's severity isn't meant to be point-forecast exactly (that's what the P90 scenario range is for), so MAPE exploded past 1,000% on near-zero actuals and R&sup2; sat near or below 0 - both technically correct but not useful without a longer explanation than a table can carry.</p>

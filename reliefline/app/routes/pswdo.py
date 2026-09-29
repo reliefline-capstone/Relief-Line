@@ -28,7 +28,7 @@ from app.utils.disaster_events import (
     resolve_effective_event, event_covers_barangay,
     blocking_event_for_province, relevant_active_events_query,
 )
-from app.models.activity_log import ActivityLog, DailyOpsStat
+from app.models.activity_log import ActivityLog
 from app.models.logistics import WarehouseTransfer
 from app.models.relief_request_batch import ReliefRequestBatch
 from app.models.barangay_report import BarangayReport
@@ -556,9 +556,6 @@ def _target_barangay_geojson(lgu, event_id):
                 "affected_individuals": (report_row.affected_individuals or 0) if report_row else 0,
                 "population": barangay.population,
                 "num_households": barangay.num_households,
-                "poverty_incidence": float(barangay.poverty_incidence) if barangay.poverty_incidence is not None else None,
-                "disaster_risk_index": float(barangay.disaster_risk_index) if barangay.disaster_risk_index is not None else None,
-                "past_calamity_freq": barangay.past_calamity_freq,
                 # Barangay's own current food-pack stock - read-only context for
                 # whoever's weighing an allocation. None = never reported.
                 "barangay_on_hand": on_hand,
@@ -1325,7 +1322,6 @@ def _dashboard_period_years():
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def dashboard():
-    today = ph_today()
     now = ph_now()
 
     period, period_start, period_end = _resolve_dashboard_period()
@@ -1359,10 +1355,6 @@ def dashboard():
     # lowest (i.e. the warehouses most in need of attention) at the bottom,
     # per how the widget is meant to read top-to-bottom.
     warehouses.sort(key=lambda w: w["pct"], reverse=True)
-
-    # CSWDO offices only - scope for relief operations (3 target LGUs)
-    cswdo_offices = [o for o in all_offices if o.office_type == "cswdo"]
-    office_ids = [o.office_id for o in cswdo_offices]
 
     # Pending Stock Requests - the municipal-warehouse replenishment requests
     # PSWDO decides on (the ONLY request type it acts on).
@@ -1407,9 +1399,20 @@ def dashboard():
             r.barangay.city_municipality for r in latest_by_barangay.values()
         }
 
-    # Burn rate - based on affected families in the 3 target LGUs,
-    # against TOTAL province-wide food pack stock (PSWDO can redistribute)
-    burn_rate = round(total_affected_families / 3, 0) if total_affected_families > 0 else 0
+    # Burn rate - derived from the same per-LGU SARIMAX forecast the full
+    # Recommendations page uses (ml_predict.forecast_lgu), instead of live
+    # active-event reports, so this preview can never read "all healthy"
+    # while the full page (Full view ->) shows real projected shortages.
+    # The model projects off historical seasonality regardless of whether an
+    # event is currently declared - see app.ml.predict module doc.
+    monthly_demand = sum(
+        (forecast["months"][0]["projected_packs"] if forecast and forecast["months"] else 0)
+        for forecast in (ml_predict.forecast_lgu(lgu, 1) for lgu in TARGET_LGUS)
+    )
+    next_month = now.month + 1 if now.month < 12 else 1
+    next_year = now.year if now.month < 12 else now.year + 1
+    days_in_next_month = calendar.monthrange(next_year, next_month)[1]
+    burn_rate = round(monthly_demand / days_in_next_month, 0) if monthly_demand > 0 else 0
     days_remaining = round(total_food_packs / burn_rate, 1) if burn_rate > 0 else None
     estimated_need = int(burn_rate * 3) if burn_rate > 0 else 0  # 3-day estimated need
     remaining_after_3days = max(total_food_packs - estimated_need, 0)
@@ -1424,51 +1427,6 @@ def dashboard():
 
     # System Recommendations - simple threshold-based logic, food_pack only
     recommendations = _stock_recommendations(warehouses)
-
-    # Today's Distribution Progress (3 target LGUs, TODAY's actual active event -
-    # deliberately independent of the month/year filter above, which only
-    # scopes the historical KPI cards, never this always-live "today" panel).
-    today_active_event = DisasterEvent.query.filter_by(status="active", scope="province").order_by(
-        DisasterEvent.start_date.desc()
-    ).first()
-    # Scoped to the active event when one exists; otherwise every approved/
-    # released allocation counts (direct allocations and standing requests
-    # can both happen with no declared event - see direct_allocation).
-    # Excludes both barangay_request and cswdo_direct - municipal-to-barangay
-    # tiers CSWDO handles and fulfils entirely on its own; PSWDO's own "today"
-    # panel is about its own warehouse/dispatch activity only.
-    today_query = AllocationRecord.query.join(Barangay).filter(
-        Barangay.city_municipality.in_(TARGET_LGUS),
-        AllocationRecord.status.in_(["approved", "released"]),
-        AllocationRecord.source.notin_(("barangay_request", "cswdo_direct")),
-    )
-    if today_active_event:
-        today_query = today_query.filter(AllocationRecord.event_id == today_active_event.event_id)
-    today_allocations = today_query.all()
-
-    total_allocated_today = sum(a.allocated_quantity for a in today_allocations)
-
-    today_distributions = DistributionRecord.query.filter_by(distribution_date=today).all()
-    total_released_today = sum(d.quantity_released for d in today_distributions)
-    packs_remaining = max(total_allocated_today - total_released_today, 0)
-    completion_pct = round((total_released_today / total_allocated_today) * 100, 0) if total_allocated_today > 0 else 0
-
-    municipalities_served = len(set(
-        d.barangay.city_municipality for d in today_distributions if d.barangay
-    ))
-
-    vehicle_stats = DailyOpsStat.query.filter(
-        DailyOpsStat.office_id.in_(office_ids),
-        DailyOpsStat.stat_date == today
-    ).all()
-    vehicles_active = sum(v.vehicles_active for v in vehicle_stats)
-
-    by_municipality = []
-    for lgu in TARGET_LGUS:
-        lgu_allocated = sum(a.allocated_quantity for a in today_allocations if a.barangay.city_municipality == lgu)
-        lgu_released = sum(d.quantity_released for d in today_distributions if d.barangay and d.barangay.city_municipality == lgu)
-        if lgu_allocated > 0:
-            by_municipality.append({"lgu": lgu, "released": lgu_released, "allocated": lgu_allocated})
 
     # Recent activity feed - the general audit trail. Restricted to
     # NOTIFICATION_META's known operational action_types - System
@@ -1485,7 +1443,6 @@ def dashboard():
         "pswdo/dashboard.html",
         active_events=active_events,
         primary_event=primary_event,
-        today_active_event=today_active_event,
         period=period,
         is_filtered=is_filtered,
         selected_month=selected_month,
@@ -1507,12 +1464,6 @@ def dashboard():
         estimated_need=estimated_need,
         remaining_after_3days=remaining_after_3days,
         recommendations=recommendations,
-        completion_pct=completion_pct,
-        municipalities_served=municipalities_served,
-        total_released_today=total_released_today,
-        packs_remaining=packs_remaining,
-        vehicles_active=vehicles_active,
-        by_municipality=by_municipality,
         recent_activities=recent_activities,
         weather_cities=TARGET_LGUS,
         now=now
@@ -2798,9 +2749,6 @@ def gis_map_barangay_detail(barangay_id):
         "lgu": barangay.city_municipality,
         "population": barangay.population,
         "num_households": barangay.num_households,
-        "poverty_incidence": float(barangay.poverty_incidence) if barangay.poverty_incidence is not None else None,
-        "disaster_risk_index": float(barangay.disaster_risk_index) if barangay.disaster_risk_index is not None else None,
-        "past_calamity_freq": barangay.past_calamity_freq,
         "status": status_key,
         "priority_label": adeq["label"],
         "priority_tier": adeq["tier"],
@@ -2830,13 +2778,12 @@ def gis_map_municipality_report(lgu):
     writer.writerow([
         "Barangay", "Stock Adequacy", "Need (families)", "Barangay Stock",
         "Need/Stock %", "Affected Families", "Population", "Households",
-        "Poverty Incidence (%)", "Disaster Risk Index",
         "Food Packs Requested", "Food Packs Approved", "Food Packs Released",
     ])
     for feature in fc["features"]:
         p = feature["properties"]
         if not p["has_data"]:
-            writer.writerow([p["name"], "No stock on record"] + [""] * 11)
+            writer.writerow([p["name"], "No stock on record"] + [""] * 9)
             continue
         relief = _relief_summary([p["barangay_id"]], event_id)
         writer.writerow([
@@ -2844,7 +2791,7 @@ def gis_map_municipality_report(lgu):
             "" if p["barangay_on_hand"] is None else p["barangay_on_hand"],
             "" if p["stock_ratio_pct"] is None else p["stock_ratio_pct"],
             p["affected_families"], p["population"],
-            p["num_households"], p["poverty_incidence"], p["disaster_risk_index"],
+            p["num_households"],
             relief["requested"], relief["approved"], relief["released"],
         ])
 
@@ -3252,7 +3199,7 @@ def recommendations_page():
     # now); "stockpile_total" is the full horizon, PSWDO's actual
     # pre-positioning target.
     horizon_months = request.args.get("months", 6, type=int)
-    if horizon_months not in (4, 6, 12):
+    if horizon_months not in (3, 6, 9, 12):
         horizon_months = 6
 
     municipalities = []
@@ -3265,7 +3212,8 @@ def recommendations_page():
         # (enough 9 scenarios in 10); expected_total is the average scenario.
         stockpile_total = forecast["horizon_p90"] if forecast else 0
         expected_total = forecast["horizon_total"] if forecast else 0
-        barangay_count = Barangay.query.filter_by(city_municipality=lgu).count()
+        lgu_barangays = Barangay.query.filter_by(city_municipality=lgu).all()
+        barangay_count = len(lgu_barangays)
         fp = WarehouseInventory.query.filter_by(office_id=office.office_id, item_type="food_pack").first() if office else None
         on_hand = fp.quantity_available if fp else 0
         shortage = max(demand - on_hand, 0)
@@ -3277,12 +3225,27 @@ def recommendations_page():
             ReliefRequestBatch.office_id == (office.office_id if office else 0),
             ReliefRequestBatch.status.in_(("pending", "approved", "partially_approved")),
         ).order_by(ReliefRequestBatch.submitted_at.desc()).first() if office else None
+
+        # Per-barangay split of this same forecast (top-down: each barangay's
+        # share of the LGU total - see app.ml.predict.forecast_barangay), for
+        # the row's expandable detail. Highest-need barangay first.
+        barangay_rows = []
+        for b in lgu_barangays:
+            bf = ml_predict.forecast_barangay(b, horizon_months)
+            barangay_rows.append({
+                "name": b.barangay_name,
+                "this_month": bf["months"][0]["projected_packs"] if bf and bf["months"] else 0,
+                "stockpile": bf["horizon_p90"] if bf else 0,
+            })
+        barangay_rows.sort(key=lambda r: r["this_month"], reverse=True)
+
         municipalities.append({
             "lgu": lgu, "office": office, "demand": demand, "on_hand": on_hand,
             "shortage": shortage, "coverage_pct": round(min(on_hand / demand * 100, 100)) if demand else 100,
             "barangay_count": barangay_count, "open_request": open_req,
             "stockpile_total": stockpile_total, "expected_total": expected_total,
             "forecast_months": forecast["months"] if forecast else [],
+            "barangays": barangay_rows,
         })
 
     recs = []
