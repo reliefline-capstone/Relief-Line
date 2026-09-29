@@ -22,11 +22,9 @@
     <main class="dashboard-main">
 
 
-        {% set crumbs = [
-            {"label": "Reports", "url": url_for('cswdo.reports')}
-        ] %}
-        {% include "pswdo/_warehouse_subnav.html" %}
-
+        {# Back button and filters share one row. #}
+        <div class="rpt-topbar">
+            <a href="{{ url_for('cswdo.reports') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
         <section class="rpt-filterbar">
             <div class="rpt-filter-chips">
                 {{ icon('list', 14, '#2c5aa0') }}
@@ -37,6 +35,7 @@
             </div>
             <a href="{{ url_for('cswdo.reports') }}" class="rpt-edit-filters">Edit Filters</a>
         </section>
+        </div>
 
         {% set pdf_url = url_for('cswdo.report_export_pdf', report_type=report.report_type, event_id=filters.event_id or '', days=filters.days) %}
         {% set excel_url = url_for('cswdo.report_export_excel', report_type=report.report_type, event_id=filters.event_id or '', days=filters.days) %}
@@ -93,12 +92,6 @@
             {% endif %}
 
             {% include "_report_signatures.html" %}
-        </section>
-
-        <section class="rpt-export-row rpt-export-row-bottom">
-            <a href="{{ pdf_url }}" class="btn-export btn-export-pdf">{{ icon('file-text', 14, 'white') }} Export PDF</a>
-            <a href="{{ excel_url }}" class="btn-export btn-export-excel">{{ icon('download', 14, 'white') }} Export Excel</a>
-            <button type="button" class="btn-export btn-export-print" data-print-pdf="{{ pdf_url }}&inline=1">{{ icon('list', 14, 'white') }} Print</button>
         </section>
 
     </main>

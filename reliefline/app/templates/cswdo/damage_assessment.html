@@ -152,7 +152,6 @@
                 <div class="stat-icon amber">{{ icon('clock', 18, '#d68910') }}</div>
                 <span class="stat-value">{{ pending_rows|length }}</span>
                 <span class="stat-label">Awaiting Decision</span>
-                <span class="stat-sub">{{ "{:,}".format(suggested_pending) }} packs suggested (model)</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('check-circle', 18, '#3867d6') }}</div>
@@ -163,13 +162,11 @@
                 <div class="stat-icon green">{{ icon('package', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ fulfilled_rows|length }}</span>
                 <span class="stat-label">Fulfilled</span>
-                <span class="stat-sub">{{ "{:,}".format(approved_packs) }} packs allocated</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon {{ 'red' if on_hand < suggested_pending else 'purple' }}">{{ icon('building', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(on_hand) }}</span>
                 <span class="stat-label">Warehouse On Hand</span>
-                <span class="stat-sub"><a href="{{ url_for('cswdo.municipal_inventory') }}">manage stock →</a></span>
             </div>
         </section>
 

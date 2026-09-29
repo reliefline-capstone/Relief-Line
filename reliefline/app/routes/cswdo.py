@@ -40,7 +40,7 @@ from app.ml import predict as ml_predict
 from app.routes.pswdo import (
     DISPATCH_STATUS_LABELS,
     ROUTE_PROGRESS_BY_STATUS, DISPATCH_STEPS, STEP_LABELS,
-    NOTIFICATION_META, DEFAULT_NOTIFICATION_META, _notification_category_counts,
+    NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
     _item_status, _food_pack_health, _priority_info,
     _lgu_burn_rate, _recent_stock_movements,
     _gis_scope_lgus, _gis_config,
@@ -1659,7 +1659,7 @@ def notifications():
         return render_template(
             "cswdo/notifications.html", items=[], unread_count=0, total_count=0,
             total_filtered=0, category_filter=category_filter,
-            categories=CSWDO_NOTIFICATION_CATEGORIES, category_counts={}, page=1, total_pages=1, lgu=lgu,
+            categories=CSWDO_NOTIFICATION_CATEGORIES, page=1, total_pages=1, lgu=lgu,
         )
 
     # Same NOTIFICATION_META allowlist as pswdo.notifications - the office/
@@ -1675,7 +1675,6 @@ def notifications():
 
     unread_count = ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(scope).count()
-    category_counts = _notification_category_counts(scope)
 
     per_page = 10
     all_matching = query.order_by(ActivityLog.created_at.desc()).all()
@@ -1704,7 +1703,7 @@ def notifications():
         "cswdo/notifications.html",
         items=page_items, unread_count=unread_count, total_count=total_count,
         total_filtered=total_filtered, category_filter=category_filter,
-        categories=CSWDO_NOTIFICATION_CATEGORIES, category_counts=category_counts,
+        categories=CSWDO_NOTIFICATION_CATEGORIES,
         page=page, total_pages=total_pages, per_page=per_page, lgu=lgu,
     )
 

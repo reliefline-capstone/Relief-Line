@@ -91,10 +91,10 @@ def _barangay_seals(barangay):
 
 
 def _preparer(user, fallback_position):
-    if not user:
-        return {"label": "Prepared By", "name": "", "position": fallback_position}
-    position = getattr(user, "designation", None) or ROLE_LABELS.get(user.role, user.role)
-    return {"label": "Prepared By", "name": user.name, "position": position}
+    # Left blank on purpose - whoever prepares the printed copy writes their
+    # own name and position on the line, rather than it being prefilled with
+    # the account that happened to generate the file.
+    return {"label": "Prepared By", "name": "", "position": "Signature over Printed Name"}
 
 
 def build_letterhead(user=None, barangay=None):

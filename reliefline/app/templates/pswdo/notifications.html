@@ -29,7 +29,7 @@
             {% for cat in categories %}
             <a href="{{ url_for('pswdo.notifications', category=cat.value) }}"
                class="page-tab {{ 'active' if category_filter == cat.value }}">
-                {{ cat.label }} <span class="page-tab-badge">{{ category_counts.get(cat.value, 0) }}</span>
+                {{ cat.label }}
             </a>
             {% endfor %}
         </nav>

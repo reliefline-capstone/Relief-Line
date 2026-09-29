@@ -40,25 +40,21 @@
                 <div class="stat-icon blue">{{ icon('building', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ warehouses|length }}</span>
                 <span class="stat-label">Total Warehouses</span>
-                <span class="stat-sub">Province of Pangasinan</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span>
                 <span class="stat-label">Total Food Packs</span>
-                <span class="stat-sub">Across all warehouses</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
                 <span class="stat-value">{{ low_stock_count }}</span>
                 <span class="stat-label">Low Stock</span>
-                <span class="stat-sub">Needs replenishment</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('truck', 18, '#f39c12') }}</div>
                 <span class="stat-value">{{ transfers_today_count }}</span>
                 <span class="stat-label">Transfers Today</span>
-                <span class="stat-sub">Completed redistributions</span>
             </div>
         </section>
 

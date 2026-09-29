@@ -42,7 +42,7 @@
                 {% for key, label, n in pill_defs %}
                 <a href="{{ url_for('pswdo.relief_requests', status=key, municipality=municipality_filter, q=search_query) }}"
                    class="page-tab {{ 'active' if status_filter == key }}">
-                    {{ label }} <span class="page-tab-badge">{{ n }}</span>
+                    {{ label }}
                 </a>
                 {% endfor %}
             </nav>

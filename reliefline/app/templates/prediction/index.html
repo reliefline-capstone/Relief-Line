@@ -59,32 +59,21 @@
                 <div class="stat-icon orange">{{ icon('package', 18, '#e67e22') }}</div>
                 <span class="stat-value">{{ "{:,}".format(estimated_need) }} Packs</span>
                 <span class="stat-label">Estimated Need</span>
-                <span class="stat-sub">
-                    {%- if burn_rate %}Undelivered + model forecast · 3-day need ≈ {{ "{:,}".format(estimated_three_day_need) }}
-                    {%- else %}Undelivered requests + model forecast{% endif -%}
-                </span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('building', 18, '#2c5aa0') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_food_packs) }} Packs</span>
                 <span class="stat-label">{{ 'Municipal Stock' if is_cswdo else 'Provincial Stock' }}</span>
-                <span class="stat-sub">{{ 'Your warehouse on hand' if is_cswdo else 'All warehouses combined' }}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('clock', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ days_remaining|int if days_remaining is not none else '-' }} Days</span>
                 <span class="stat-label">Days of Supply</span>
-                <span class="stat-sub">
-                    {%- if burn_rate %}Burn rate ~{{ burn_rate|int }} packs/day ({{ "{:,}".format(total_affected_families) }} families ÷ 3)
-                    {%- elif event %}No affected-families data yet - burn rate not computed
-                    {%- else %}No active event - burn rate not computed{% endif -%}
-                </span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon purple">{{ icon('trending-up', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ recommendations|length }}</span>
                 <span class="stat-label">Active Recommendations</span>
-                <span class="stat-sub">Rule-based + model-driven</span>
             </div>
         </section>
 

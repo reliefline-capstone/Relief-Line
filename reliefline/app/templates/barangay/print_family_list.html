@@ -28,7 +28,6 @@
             {% set lh = letterhead %}
             {% set doc_title = title %}
             {% set doc_meta = [
-                ("Reference", subtitle),
                 ("Barangay", barangay.barangay_name),
                 ("No. of Families", rows|length),
                 ("Total Food Packs", "{:,}".format(rows|sum(attribute='packs'))),
@@ -37,7 +36,6 @@
             {% include "_report_letterhead.html" %}
 
             <h3 class="rpt-doc-title">FAMILIES TO RECEIVE FOOD PACKS</h3>
-            <p class="form-hint" style="margin:-8px 0 12px;">Post this list publicly, or read it aloud at the distribution site, so residents can verify who is included.</p>
 
             {% if rows %}
             <div class="rpt-table-wrap">

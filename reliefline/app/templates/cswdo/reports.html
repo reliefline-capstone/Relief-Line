@@ -46,25 +46,21 @@
                 <div class="stat-icon blue">{{ icon('file-text', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ reports_generated }}</span>
                 <span class="stat-label">Reports Generated</span>
-                <span class="stat-sub">Coverage: {{ coverage_range }}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ approved_requests }}</span>
                 <span class="stat-label">Approved Requests</span>
-                <span class="stat-sub">Coverage: {{ coverage_range }}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('package', 18, '#d68910') }}</div>
                 <span class="stat-value">{{ "{:,}".format(packs_distributed) }}</span>
                 <span class="stat-label">Packs Distributed</span>
-                <span class="stat-sub">Coverage: {{ coverage_range }}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon purple">{{ icon('truck', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ completed_deliveries }}</span>
                 <span class="stat-label">Completed Deliveries</span>
-                <span class="stat-sub">Coverage: {{ coverage_range }}</span>
             </div>
         </section>
 

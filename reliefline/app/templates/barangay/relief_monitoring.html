@@ -33,25 +33,21 @@
                 <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ total_deliveries }}</span>
                 <span class="stat-label">Total Deliveries</span>
-                <span class="stat-sub">All time</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
                 <span class="stat-value">{{ in_transit_count }}</span>
                 <span class="stat-label">In Transit</span>
-                <span class="stat-sub">Currently moving</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
                 <span class="stat-value">{{ received_count }}</span>
                 <span class="stat-label">Received</span>
-                <span class="stat-sub">Confirmed</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon purple">{{ icon('package', 18, '#6c5ce7') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_packs) }}</span>
                 <span class="stat-label">Total Packs</span>
-                <span class="stat-sub">All deliveries</span>
             </div>
         </section>
 

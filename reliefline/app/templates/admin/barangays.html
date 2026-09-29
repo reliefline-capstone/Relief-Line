@@ -36,19 +36,16 @@
                 <div class="stat-icon blue">{{ icon('map-pin', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ total_barangays }}</span>
                 <span class="stat-label">Total Barangays</span>
-                <span class="stat-sub">registered in system</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
                 <span class="stat-value">{{ high_risk_count }}</span>
                 <span class="stat-label">High Risk</span>
-                <span class="stat-sub">disaster risk classification</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('trending-up', 18, '#f39c12') }}</div>
                 <span class="stat-value">{{ "%.1f"|format(avg_poverty) }}%</span>
                 <span class="stat-label">Average Poverty Incidence</span>
-                <span class="stat-sub">across all barangays</span>
             </div>
         </section>
 

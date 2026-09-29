@@ -42,7 +42,7 @@ from app.utils import weather as weather_service
 # CSWDO office deducted at dispatch, and _take_from_batches (model-agnostic)
 # deducts nearest-expiry-first when the barangay hands packs out.
 from app.routes.pswdo import (
-    DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META, _notification_category_counts,
+    DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
     _shelf_status, NEAR_EXPIRY_DAYS, _lots_from_json, _take_from_batches, _batch_take_order, _refreshed_batch_items,
     _resolve_batch_item_specs, _plan_expiration,
 )
@@ -2100,7 +2100,6 @@ def notifications():
 
     unread_count = ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).count()
     total_count = ActivityLog.query.filter(scope).count()
-    category_counts = _notification_category_counts(scope)
 
     per_page = 10
     all_matching = query.order_by(ActivityLog.created_at.desc()).all()
@@ -2138,7 +2137,7 @@ def notifications():
         "barangay/notifications.html",
         items=page_items, unread_count=unread_count, total_count=total_count,
         total_filtered=total_filtered, category_filter=category_filter,
-        categories=categories, category_counts=category_counts,
+        categories=categories,
         page=page, total_pages=total_pages, per_page=per_page, barangay=barangay,
     )
 

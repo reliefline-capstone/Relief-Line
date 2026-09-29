@@ -32,7 +32,7 @@
                     <p class="rc-source">{{ source_line }}</p>
                 </div>
                 <div class="rc-refbox">
-                    <span>Reference</span>
+                    <span>{{ 'Transfer' if kind == 'transfer' else 'Delivery' }} Reference</span>
                     <strong>{{ ref }}</strong>
                     {% if not received %}<em class="rc-badge rc-badge-pending">Awaiting receipt</em>
                     {% elif condition == 'complete' %}<em class="rc-badge rc-badge-ok">Complete</em>
@@ -52,11 +52,11 @@
                     <span class="rc-label">To (receiver)</span>
                     <strong>{{ recipient }}</strong>
                     {% if received %}
-                    <small>Received
+                    <small>Receipt acknowledged
                         {% if received_at %}{{ received_at.strftime('%b %d, %Y %I:%M %p') }}
                         {% elif received_on %}{{ received_on.strftime('%b %d, %Y') }}{% if received_time %} {{ received_time.strftime('%I:%M %p') }}{% endif %}{% endif %}
                         {% if received_by %} by {{ received_by }}{% endif %}</small>
-                    {% else %}<small>Not yet confirmed by the receiver</small>{% endif %}
+                    {% else %}<small>Receipt not yet acknowledged</small>{% endif %}
                 </div>
             </section>
 
@@ -79,24 +79,41 @@
                 {% for r in replacements %}<p class="rc-note">Replacement <strong>{{ r.ref }}</strong> dispatched for {{ "{:,}".format(r.qty) }} packs.</p>{% endfor %}
             </section>
 
+            {% set STATUS_LABELS = {'fresh': 'Fresh', 'near_expiry': 'Near expiry', 'expired': 'Expired'} %}
             <section class="rc-section">
-                <h3>What was delivered</h3>
+                <h3>Contents of {{ 'Transfer' if kind == 'transfer' else 'Delivery' }}</h3>
                 {% if lots %}
                 {% for lot in lots %}
+                {# Item-level counts, so a single expired item (usually the rice)
+                   doesn't read as the whole delivery being expired. #}
+                {% set n_expired = lot['items']|selectattr('status', 'equalto', 'expired')|list|length %}
+                {% set n_near = lot['items']|selectattr('status', 'equalto', 'near_expiry')|list|length %}
+                {% set n_fresh = lot['items']|selectattr('status', 'equalto', 'fresh')|list|length %}
                 <div class="rc-lot">
                     <div class="rc-lot-head">
-                        <strong>{{ "{:,}".format(lot.qty) }} packs</strong>
-                        <span>stocked {{ lot.received.strftime('%b %d, %Y') }}</span>
-                        {% if lot.earliest %}<span>earliest expiry {{ lot.earliest.strftime('%b %d, %Y') }}</span>
-                        <em class="rc-tag rc-tag-{{ lot.status }}">{{ {'fresh':'Fresh','near_expiry':'Near expiry','expired':'Expired'}.get(lot.status, lot.status) }}</em>{% endif %}
+                        <strong>{{ "{:,}".format(lot.qty) }} Food Pack{{ 's' if lot.qty != 1 }}{% if lot['items'] %} &middot; {{ lot['items']|length }} item type{{ 's' if lot['items']|length != 1 }}{% endif %}</strong>
+                        {% if lot['items'] %}
+                        <span class="rc-lot-summary">
+                            {%- set parts = [] %}
+                            {%- if n_expired %}{% set _ = parts.append('<b class="rc-sum-expired">' ~ n_expired ~ ' expired</b>') %}{% endif %}
+                            {%- if n_near %}{% set _ = parts.append('<b class="rc-sum-near">' ~ n_near ~ ' near expiry</b>') %}{% endif %}
+                            {%- if n_fresh %}{% set _ = parts.append('<b class="rc-sum-fresh">' ~ n_fresh ~ ' fresh</b>') %}{% endif %}
+                            {{ parts|join(' &middot; ')|safe }}
+                        </span>
+                        {% endif %}
                     </div>
                     {% if lot['items'] %}
                     <table class="rc-table rc-items">
-                        <colgroup><col style="width:45%"><col style="width:20%"><col style="width:35%"></colgroup>
-                        <thead><tr><th>Item</th><th>Per pack</th><th>Expires</th></tr></thead>
+                        <colgroup><col style="width:40%"><col style="width:20%"><col style="width:22%"><col style="width:18%"></colgroup>
+                        <thead><tr><th>Item</th><th>Quantity / Pack</th><th>Expiry Date</th><th>Status</th></tr></thead>
                         <tbody>
                         {% for i in lot['items'] %}
-                        <tr><td>{{ i.name }}</td><td>{{ i.qty_label or '-' }}</td><td>{{ i.expires.strftime('%b %d, %Y') }} <em class="rc-tag rc-tag-{{ i.status }}">{{ {'fresh':'Fresh','near_expiry':'Near expiry','expired':'Expired'}.get(i.status, i.status) }}</em></td></tr>
+                        <tr>
+                            <td>{{ i.name }}</td>
+                            <td>{{ i.qty_label or '-' }}</td>
+                            <td>{{ i.expires.strftime('%b %d, %Y') }}</td>
+                            <td><em class="rc-tag rc-tag-{{ i.status }}">{{ STATUS_LABELS.get(i.status, i.status) }}</em></td>
+                        </tr>
                         {% endfor %}
                         </tbody>
                     </table>
@@ -106,8 +123,27 @@
                 </div>
                 {% endfor %}
                 {% else %}
-                <p class="rc-hint">Batch and expiration details weren't recorded for this delivery (it was dispatched before batch tracking was added).</p>
+                <p class="rc-hint">Item and expiration details weren't recorded for this {{ 'transfer' if kind == 'transfer' else 'delivery' }} (it was dispatched before batch tracking was added).</p>
                 {% endif %}
+            </section>
+
+            {# 5. Receiver acknowledgment - blank lines to sign on a printed copy
+               while awaiting receipt; the recorded details once confirmed. #}
+            <section class="rc-section rc-ack">
+                <h3>Receiver Acknowledgment</h3>
+                {% if received %}
+                <p class="rc-ack-status">{{ icon('check-circle', 15, '#1e8449') }} Received and acknowledged</p>
+                {% endif %}
+                <div class="rc-ack-grid">
+                    <div><span>Received by</span><strong>{{ received_by if received and received_by else '' }}</strong></div>
+                    <div><span>Position</span><strong></strong></div>
+                    <div><span>Date received</span><strong>
+                        {%- if received -%}
+                        {%- if received_at %}{{ received_at.strftime('%b %d, %Y') }}{% elif received_on %}{{ received_on.strftime('%b %d, %Y') }}{% endif -%}
+                        {%- endif -%}
+                    </strong></div>
+                    <div><span>Signature</span><strong></strong></div>
+                </div>
             </section>
 
             {% if attachments %}
@@ -118,7 +154,8 @@
             {% endif %}
 
             <footer class="rc-footer">
-                <span>Generated {{ generated_at.strftime('%b %d, %Y %I:%M %p') }} by {{ current_user.name }}</span>
+                <span><b>Generated:</b> {{ generated_at.strftime('%b %d, %Y') }} &middot; {{ generated_at.strftime('%I:%M %p').lstrip('0') }}</span>
+                <span><b>Generated by:</b> {{ current_user.name }}, {{ current_user.designation or ROLE_LABELS.get(current_user.role, current_user.role) }}</span>
             </footer>
         </article>
     </main>
