@@ -30,6 +30,9 @@ from app.routes.pswdo import (
 
 prediction_bp = Blueprint("prediction", __name__)
 
+MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July",
+               "August", "September", "October", "November", "December"]
+
 
 def _scope_lgus():
     """LGUs this user's analytics view may cover.
@@ -380,6 +383,38 @@ def index():
                 "stockpile": fb["horizon_p90"] if fb else 0,
             })
 
+    # Per-month barangay split for the Projected Demand chart: click a month
+    # to see only that month's packs per barangay. Same top-down maths as
+    # forecast_barangay (barangay share x the LGU's month figure), done
+    # straight from lgu_forecast so the forecast isn't recomputed per barangay.
+    # The chart also draws the current month (months[0] below), in addition
+    # to the next `forecast_months`; tiles/totals still use lgu_forecast.
+    chart_forecast = (ml_predict.forecast_lgu(forecast_lgu_choice, forecast_months + 1, include_current=True)
+                      if lgu_forecast else None)
+    chart_months = chart_forecast["months"] if chart_forecast else []
+    # Y axis for that chart: a round top value + evenly spaced ticks.
+    peak = max((m["p90_packs"] for m in chart_months), default=0)
+    step = min((c * mag for mag in (1, 10, 100, 1000, 10000, 100000) for c in (1, 2, 2.5, 5)
+                if c * mag * 4 >= peak), default=1)
+    step = max(int(-(-step // 1)), 1)
+    chart_axis_max = step * 4
+    chart_axis_ticks = [step * i for i in range(5)]
+    month_breakdown = {}
+    if lgu_forecast:
+        shares = sorted(ml_predict.share_breakdown(forecast_lgu_choice), key=lambda r: r["share"], reverse=True)
+        for m in chart_months:
+            month_breakdown[m["date"]] = {
+                "label": f"{MONTH_NAMES[m['month'] - 1]} {m['year']}",
+                "expected": m["projected_packs"],
+                "stockpile": m["p90_packs"],
+                "rows": [{
+                    "name": r["name"],
+                    "share": round(r["share"] * 100, 1),
+                    "expected": max(int(round(m["projected_packs"] * r["share"])), 0),
+                    "stockpile": max(int(round(m["p90_packs"] * r["share"])), 0),
+                } for r in shares],
+            }
+
     # ---- Recommendations: real stock-transfer rules + top-priority barangay ----
     # Link targets are role-aware - the PSWDO stock-transfer / relief-request
     # pages are role_required("pswdo_admin", ...) and would 403 a cswdo_admin.
@@ -449,6 +484,10 @@ def index():
         lgu_forecast=lgu_forecast,
         forecast_summary_by_lgu=forecast_summary_by_lgu,
         barangay_breakdown=barangay_breakdown,
+        month_breakdown=month_breakdown,
+        chart_months=chart_months,
+        chart_axis_max=chart_axis_max,
+        chart_axis_ticks=chart_axis_ticks,
         cover_chart=cover_chart,
         backtest_chart=backtest_chart,
         show_breakdown=show_breakdown,

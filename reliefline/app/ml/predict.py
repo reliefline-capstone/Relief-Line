@@ -73,22 +73,26 @@ def _add_months(d, n):
     return date(total // 12, total % 12 + 1, 1)
 
 
-def _forecast_window(months_ahead, start_month=None):
+def _forecast_window(months_ahead, start_month=None, include_current=False):
     """The ordered list of calendar months this forecast covers, as date
     objects (first of month). THIS is the single place "how does a horizon
     anchor to today" lives - confirmed: start from the NEXT FULL calendar
     month (no prorating the remainder of the current month - stock lead time
     makes a partial current month not actionable). A specific `start_month`
-    (1-12) resolves to its next occurrence on/after next month."""
+    (1-12) resolves to its next occurrence on/after next month.
+
+    `include_current` anchors at the current calendar month instead - used only
+    to DRAW the current month on the Projected Demand chart; the stock-planning
+    totals keep the next-full-month anchor above."""
     today = ph_today()
-    base = _add_months(date(today.year, today.month, 1), 1)
+    base = _add_months(date(today.year, today.month, 1), 0 if include_current else 1)
     if start_month and start_month != base.month:
         year = base.year if start_month > base.month else base.year + 1
         base = date(year, start_month, 1)
     return [_add_months(base, i) for i in range(months_ahead)]
 
 
-def forecast_lgu(lgu, months_ahead, start_month=None):
+def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
     """Food-pack demand projection for `lgu` (a Barangay.city_municipality /
     Office.area_covered value) over the next `months_ahead` months, starting
     from the next full calendar month. Returns None if no model is trained or
@@ -99,7 +103,8 @@ def forecast_lgu(lgu, months_ahead, start_month=None):
     L = artifact["lgu"][lgu]
     climatology = artifact["climatology"]
     buffer = artifact["buffer"]
-    window = _forecast_window(months_ahead, start_month)
+    window = _forecast_window(months_ahead, start_month, include_current)
+    today = ph_today()
 
     monthly_rate = [climatology.get(d.month, 0.0) for d in window]
     expected_typhoons = sum(monthly_rate)
@@ -122,6 +127,7 @@ def forecast_lgu(lgu, months_ahead, start_month=None):
         months.append({
             "month": d.month, "year": d.year, "label": MONTH_LABELS[d.month - 1],
             "date": d.strftime("%Y-%m"),
+            "is_current": (d.year, d.month) == (today.year, today.month),
             "projected_packs": proj, "p90_packs": p90,
             "is_wet_season": d.month in ref.WET_SEASON_MONTHS,
             "is_peak_season": d.month in ref.PEAK_MONTHS,

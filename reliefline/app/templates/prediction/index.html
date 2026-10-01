@@ -100,46 +100,77 @@
                 </form>
             </div>
             {% if lgu_forecast %}
-            {% set months = lgu_forecast.months %}
+            {% set months = chart_months %}
             {% set n = months|length %}
-            {% set max_packs = months|map(attribute='p90_packs')|max %}
-            {% set ns = namespace(bars=[]) %}
-            <div class="pa-bar-chart">
-                <svg class="pa-bar-svg" viewBox="0 0 1000 262" role="img"
-                     aria-label="Projected food packs needed per month, {{ lgu_forecast.lgu }}">
-                    {% for gy in [30, 77.5, 125, 172.5, 220] %}
-                    <line class="pa-bar-grid" x1="40" y1="{{ gy }}" x2="960" y2="{{ gy }}"></line>
+            {% set axis_max = chart_axis_max or 1 %}
+            {# plot area: x 70..980, y 40 (top) .. 280 (zero line) #}
+            {% set pl, pr, pt, pb = 70, 980, 40, 280 %}
+            {% set slot = (pr - pl) / n %}
+            {% set bw = [slot * 0.3, 30]|min %}
+            {% set compact = n > 8 %}
+            {% macro packs(v) -%}{%- if compact and v >= 1000 -%}{{ '%.1f'|format(v / 1000) }}k{%- else -%}{{ "{:,}".format(v) }}{%- endif -%}{%- endmacro %}
+            <div class="pa-bar-chart pa-bar-chart-wide">
+                <svg class="pa-bar-svg" viewBox="0 0 1000 340" role="img"
+                     aria-label="Projected food packs needed per month for {{ lgu_forecast.lgu }}: expected demand and recommended stockpile">
+                    <text class="pa-axis-title" x="{{ pl }}" y="14">Food packs per month</text>
+                    {% for t in chart_axis_ticks %}
+                    {% set gy = pb - (t / axis_max) * (pb - pt) %}
+                    <line class="pa-bar-grid{{ ' pa-bar-grid-zero' if t == 0 }}" x1="{{ pl }}" x2="{{ pr }}" y1="{{ '%.1f'|format(gy) }}" y2="{{ '%.1f'|format(gy) }}"></line>
+                    <text class="pa-axis" x="{{ pl - 10 }}" y="{{ '%.1f'|format(gy + 4) }}" text-anchor="end">{{ "{:,}".format(t) }}</text>
                     {% endfor %}
-                    {% set col_width = (900 / n) * 0.55 %}
-                    {% set pl = namespace(pts='') %}
                     {%- for m in months -%}
-                    {% set cx = 40 + (loop.index0 + 0.5) * (920 / n) %}
+                    {% set x0 = pl + loop.index0 * slot %}
+                    {% set cx = x0 + slot / 2 %}
+                    {% set eh = (m.projected_packs / axis_max) * (pb - pt) %}
+                    {% set ph = (m.p90_packs / axis_max) * (pb - pt) %}
                     {% if m.is_wet_season or m.is_peak_season %}
-                    <rect class="pa-bar-band{{ ' pa-bar-band-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(40 + loop.index0 * (920 / n)) }}" y="14" width="{{ '%.1f'|format(920 / n) }}" height="208"></rect>
+                    <rect class="pa-bar-band{{ ' pa-bar-band-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt }}"></rect>
                     {% endif %}
-                    {% set bar_h = (m.projected_packs / max_packs * 190) if max_packs else 0 %}
-                    {% set p90_h = (m.p90_packs / max_packs * 190) if max_packs else 0 %}
-                    {% set y = 220 - bar_h %}
-                    {% set pl.pts = pl.pts ~ ('%.1f,%.1f '|format(cx, 220 - p90_h)) %}
-                    <rect class="pa-bar-col" x="{{ '%.1f'|format(cx - col_width / 2) }}" y="{{ '%.1f'|format(y) }}"
-                          width="{{ '%.1f'|format(col_width) }}" height="{{ '%.1f'|format(bar_h) }}"></rect>
-                    <text class="pa-bar-value" x="{{ '%.1f'|format(cx) }}" y="{{ '%.1f'|format(y - 8) }}" text-anchor="middle">{{ "{:,}".format(m.projected_packs) }}</text>
-                    <text class="pa-bar-label" x="{{ '%.1f'|format(cx) }}" y="248" text-anchor="middle">{{ m.label }}{% if m.year != months[0].year %} '{{ '%02d'|format(m.year % 100) }}{% endif %}</text>
-                    {%- endfor -%}
-                    <polyline class="pa-stock-line" points="{{ pl.pts }}"></polyline>
-                    {%- for m in months -%}
-                    {% set cx = 40 + (loop.index0 + 0.5) * (920 / n) %}
-                    <circle class="pa-stock-dot" cx="{{ '%.1f'|format(cx) }}" cy="{{ '%.1f'|format(220 - (m.p90_packs / max_packs * 190 if max_packs else 0)) }}" r="3.5">
-                        <title>{{ m.label }}: recommended stockpile {{ "{:,}".format(m.p90_packs) }} packs (expected {{ "{:,}".format(m.projected_packs) }})</title>
-                    </circle>
+                    {% if m.is_current %}
+                    <rect class="pa-now-band" x="{{ '%.1f'|format(x0 + 2) }}" y="{{ pt - 6 }}" width="{{ '%.1f'|format(slot - 4) }}" height="{{ pb - pt + 68 }}" rx="8"></rect>
+                    <text class="pa-now-tag" x="{{ '%.1f'|format(cx) }}" y="{{ pt - 12 }}" text-anchor="middle">THIS MONTH</text>
+                    {% endif %}
+                    <rect class="pa-bar-col" x="{{ '%.1f'|format(cx - bw - 1.5) }}" y="{{ '%.1f'|format(pb - eh) }}" width="{{ '%.1f'|format(bw) }}" height="{{ '%.1f'|format(eh) }}"></rect>
+                    <rect class="pa-bar-p90" x="{{ '%.1f'|format(cx + 1.5) }}" y="{{ '%.1f'|format(pb - ph) }}" width="{{ '%.1f'|format(bw) }}" height="{{ '%.1f'|format(ph) }}"></rect>
+                    <text class="pa-bar-value" x="{{ '%.1f'|format(cx - bw / 2 - 1.5) }}" y="{{ '%.1f'|format(pb - eh - 6) }}" text-anchor="middle">{{ packs(m.projected_packs) }}</text>
+                    {% if m.p90_packs > 0 %}
+                    <text class="pa-bar-value pa-bar-value-p90" x="{{ '%.1f'|format(cx + bw / 2 + 1.5) }}" y="{{ '%.1f'|format(pb - ph - 6) }}" text-anchor="middle">{{ packs(m.p90_packs) }}</text>
+                    {% endif %}
+                    <text class="pa-bar-label{{ ' pa-bar-label-now' if m.is_current }}" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 22 }}" text-anchor="middle">{{ m.label }}</text>
+                    <text class="pa-bar-sublabel" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 38 }}" text-anchor="middle">{{ m.year }}</text>
+                    <text class="pa-season-tag{{ ' pa-season-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 56 }}" text-anchor="middle">{% if m.is_peak_season %}peak{% elif m.is_wet_season %}rainy{% endif %}</text>
+                    <rect class="pa-month-hit" data-month="{{ m.date }}" tabindex="0" role="button"
+                          aria-label="{{ m.label }} {{ m.year }}: expected {{ m.projected_packs }} packs, recommended stockpile {{ m.p90_packs }} packs. Show barangay breakdown."
+                          x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt + 62 }}">
+                        <title>{{ m.label }} {{ m.year }} - expected {{ "{:,}".format(m.projected_packs) }} packs; recommended stockpile {{ "{:,}".format(m.p90_packs) }} packs. Click for barangay breakdown.</title>
+                    </rect>
                     {%- endfor -%}
                 </svg>
             </div>
             <div class="pa-legend">
-                <span><i class="lg-exp"></i>Expected demand</span>
-                <span><i class="lg-p90"></i>Recommended stockpile (covers 9 scenarios in 10)</span>
+                <span><i class="lg-exp"></i>Expected demand - the most likely need</span>
+                <span><i class="lg-p90-bar"></i>Recommended stockpile - covers 9 scenarios in 10</span>
                 <span><i class="lg-wet"></i>Rainy season (Jun-Oct)</span>
                 <span><i class="lg-peak"></i>Peak typhoon months (Jul-Oct)</span>
+            </div>
+            <p class="rd-sub" style="text-align:center; margin:2px 0 0;">How to read it: stock up to the <strong>light bar</strong> to be safe in most scenarios; the <strong>blue bar</strong> is what is most likely to be used. Months with no bars have no typhoon demand expected.</p>
+            <p class="rd-sub" style="text-align:center; margin:4px 0 0;">Click a month to see its barangay breakdown.</p>
+            <div id="pa-month-detail" class="pa-month-detail" hidden>
+                <div class="panel-header" style="margin-bottom:8px;">
+                    <h4 id="pa-month-title" style="margin:0;"></h4>
+                    <button type="button" class="link-manage" id="pa-month-close" style="background:none; border:0; cursor:pointer;">Close</button>
+                </div>
+                <div class="rr-table-wrap" style="max-height:380px; overflow:auto;">
+                    <table class="rr-table">
+                        <thead><tr><th>Barangay</th><th>Expected</th><th>Recommended stockpile</th></tr></thead>
+                        <tbody id="pa-month-rows"></tbody>
+                        <tfoot><tr>
+                            <td><strong>{{ lgu_forecast.lgu }}</strong></td>
+                            <td id="pa-month-total-e"></td><td id="pa-month-total-p"></td>
+                        </tr></tfoot>
+                    </table>
+                </div>
+                <p class="rd-sub" id="pa-month-note" style="margin-top:6px;"></p>
             </div>
             <div class="pa-stock-tiles">
                 <div class="pa-decision-tile">
@@ -148,12 +179,12 @@
                     <span class="rd-sub">packs</span>
                 </div>
                 <div class="pa-decision-tile">
-                    <span class="rd-sub">Recommended stockpile (dashed line)</span>
+                    <span class="rd-sub">Recommended stockpile</span>
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong>
                     <span class="rd-sub">packs (covers 9 scenarios in 10)</span>
                 </div>
             </div>
-            <p class="rd-sub" style="text-align:center;">Two-stage forecast (barangay share regression + typhoon climatology) fit on real per-typhoon relief records through {{ lgu_forecast.data_through }}. The dashed recommended-stockpile line is the level that covers 9 scenarios in 10. See Model Performance below.</p>
+            <p class="rd-sub" style="text-align:center;">Two-stage forecast (barangay share regression + typhoon climatology) fit on real per-typhoon relief records through {{ lgu_forecast.data_through }}. The recommended stockpile is the level that covers 9 scenarios in 10. See Model Performance below.</p>
             {% else %}
             <p class="empty-note">No model has been trained yet. Run <code>scripts/train_model.py</code> against the current database.</p>
             {% endif %}
@@ -518,4 +549,45 @@
 
     </main>
 </div>
+{% if month_breakdown %}
+<script>
+(function () {
+    var DATA = {{ month_breakdown|tojson }};
+    var panel = document.getElementById('pa-month-detail');
+    if (!panel) return;
+    var hits = document.querySelectorAll('.pa-month-hit');
+    var fmt = function (n) { return Number(n).toLocaleString('en-US'); };
+    function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    function select(key) {
+        var m = DATA[key];
+        if (!m) return;
+        hits.forEach(function (h) { h.classList.toggle('active', h.dataset.month === key); });
+        document.getElementById('pa-month-title').textContent = 'Barangay breakdown - ' + m.label;
+        document.getElementById('pa-month-rows').innerHTML = m.rows.map(function (r) {
+            return '<tr><td><strong>' + esc(r.name) + '</strong></td><td>' +
+                fmt(r.expected) + '</td><td>' + fmt(r.stockpile) + '</td></tr>';
+        }).join('');
+        document.getElementById('pa-month-total-e').innerHTML = '<strong>' + fmt(m.expected) + '</strong>';
+        document.getElementById('pa-month-total-p').innerHTML = '<strong>' + fmt(m.stockpile) + '</strong>';
+        document.getElementById('pa-month-note').textContent = m.expected === 0 && m.stockpile === 0
+            ? 'No typhoon relief demand is expected in ' + m.label + ' (outside the typhoon season), so every barangay shows 0.'
+            : 'Only ' + m.label + ' is shown. Barangay figures can differ from the municipal total by a few packs due to rounding.';
+        panel.hidden = false;
+    }
+    function close() {
+        panel.hidden = true;
+        hits.forEach(function (h) { h.classList.remove('active'); });
+    }
+
+    hits.forEach(function (h) {
+        h.addEventListener('click', function () { select(h.dataset.month); });
+        h.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(h.dataset.month); }
+        });
+    });
+    document.getElementById('pa-month-close').addEventListener('click', close);
+})();
+</script>
+{% endif %}
 {% endblock %}
