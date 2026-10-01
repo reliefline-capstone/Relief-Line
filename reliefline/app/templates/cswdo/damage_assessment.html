@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Barangay Reports - ReliefLine{% endblock %}
 
@@ -177,18 +178,37 @@
         </div>
         {% endif %}
 
+        {% set EP = 'cswdo.damage_assessment' %}
+        {% set fargs = {'tab': tab, 'q': search_query or None, 'barangay_id': barangay_filter, 'event_id': event_filter,
+                        'date_from': date_from or None, 'date_to': date_to or None} %}
         <div class="page-tabs">
             {% for key, label, coll in TABS %}
-            <a href="{{ url_for('cswdo.damage_assessment', tab=key) }}" class="page-tab {{ 'active' if tab == key }}">{{ label }}{% if key == 'queue' %} <span class="page-tab-badge">{{ coll|length }}</span>{% endif %}</a>
+            <a href="{{ f_url('cswdo.damage_assessment', fargs, {'tab': key}) }}" class="page-tab {{ 'active' if tab == key }}">{{ label }}{% if key == 'queue' %} <span class="page-tab-badge">{{ coll|length }}</span>{% endif %}</a>
             {% endfor %}
         </div>
 
-        <form class="da-filter-bar" method="GET">
-            <input type="hidden" name="tab" value="{{ tab }}">
-            <input type="text" name="q" value="{{ search_query }}" placeholder="Search barangay or request ID...">
-            <button type="submit" class="btn-outline">{{ icon('search', 14) }} Search</button>
-            <span class="da-filter-count">{{ active_rows|length }} request{{ 's' if active_rows|length != 1 }}</span>
-        </form>
+        {% set chips = [] %}
+        {% if barangay_filter %}{% for b in lgu_barangays if b.barangay_id == barangay_filter %}{% set _ = chips.append({'label': 'Barangay', 'value': b.barangay_name, 'tone': 'violet', 'url': f_url(EP, fargs, {'barangay_id': None})}) %}{% endfor %}{% endif %}
+        {% if event_filter %}{% for e in filter_events if e.event_id == event_filter %}{% set _ = chips.append({'label': 'Event', 'value': e.event_name, 'tone': 'blue', 'url': f_url(EP, fargs, {'event_id': None})}) %}{% endfor %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+        {% if search_query %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+
+        {% call filter_panel(chips, url_for(EP, tab=tab), hidden={'tab': tab}, summary=(active_rows|length) ~ ' report' ~ ('s' if active_rows|length != 1 else '')) %}
+            {{ fp_search('q', search_query, 'Search barangay or report ID...') }}
+            {% call fp_select('Barangay', 'barangay_id', 'map-pin') %}
+                <option value="">All barangays</option>
+                {% for b in lgu_barangays %}
+                <option value="{{ b.barangay_id }}" {{ 'selected' if barangay_filter == b.barangay_id }}>{{ b.barangay_name }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Typhoon Event', 'event_id', 'cloud-lightning') %}
+                <option value="">All events</option>
+                {% for e in filter_events %}
+                <option value="{{ e.event_id }}" {{ 'selected' if event_filter == e.event_id }}>{{ e.event_name }}</option>
+                {% endfor %}
+            {% endcall %}
+            {{ fp_date_range('Date Submitted', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
 
         <div class="da-table-wrap">
             <table class="da-table">

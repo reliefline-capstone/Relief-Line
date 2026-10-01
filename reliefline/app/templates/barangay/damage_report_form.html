@@ -66,15 +66,17 @@
                 <div class="panel-header"><h3>{{ icon('map-pin', 18, '#0f2547') }} Basic Information</h3></div>
                 <p class="form-hint">Confirm the identifying details below, then continue.</p>
                 <div class="autofill-box">
-                    <span class="autofill-box-title">Auto-filled Basic Information</span>
                     <div class="autofill-grid">
                         <div class="autofill-field"><span>Barangay</span><strong>{{ barangay.barangay_name }}</strong></div>
                         <div class="autofill-field"><span>Municipality</span><strong>{{ barangay.city_municipality }}</strong></div>
-                        <div class="autofill-field"><span>Submitted By</span><strong>{{ report.submitted_by_name if report else current_user.name }}</strong></div>
+                        <div class="autofill-field">
+                            <label for="submitted_by_name">Submitted By</label>
+                            <input type="text" id="submitted_by_name" name="submitted_by_name" class="autofill-input"
+                                   value="{{ submitted_by_default }}" required>
+                        </div>
                         <div class="autofill-field"><span>Date Today</span><strong>{{ today.strftime('%B %d, %Y') }}</strong></div>
                     </div>
                 </div>
-                <input type="hidden" name="submitted_by_name" value="{{ report.submitted_by_name if report else current_user.name }}">
                 <input type="hidden" name="submitted_by_designation" value="{{ (report.submitted_by_designation if report else current_user.designation) or '' }}">
                 {% if event_options|length > 1 %}
                 <div class="form-row">

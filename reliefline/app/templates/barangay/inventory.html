@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Barangay Inventory - ReliefLine{% endblock %}
 
@@ -86,22 +87,27 @@
         <section class="panel">
             <div class="panel-header">
                 <h3>Movement History</h3>
-                <form method="GET" class="wh-movement-filters">
-                    <select name="type" onchange="this.form.submit()">
-                        <option value="all" {{ 'selected' if type_filter == 'all' }}>All Types</option>
-                        <option value="delivery" {{ 'selected' if type_filter == 'delivery' }}>Received</option>
-                        <option value="distribution" {{ 'selected' if type_filter == 'distribution' }}>Distributed</option>
-                        <option value="damaged_return" {{ 'selected' if type_filter == 'damaged_return' }}>Returned - Damaged</option>
-                        <option value="expired" {{ 'selected' if type_filter == 'expired' }}>Expired</option>
-                    </select>
-                    <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
-                </form>
             </div>
+            {% set EP = 'barangay.inventory' %}
+            {% set type_labels = {'delivery': 'Received', 'distribution': 'Distributed', 'damaged_return': 'Returned - Damaged', 'expired': 'Expired'} %}
+            {% set fargs = {'type': type_filter if type_filter != 'all' else None, 'date_from': date_from or None, 'date_to': date_to or None} %}
+            {% set chips = [] %}
+            {% if fargs.type %}{% set _ = chips.append({'label': 'Type', 'value': type_labels.get(type_filter, type_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'type': None})}) %}{% endif %}
+            {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+            {% call filter_panel(chips, url_for(EP)) %}
+                {% call fp_select('Type', 'type', 'activity') %}
+                    <option value="all">All types</option>
+                    {% for key, label in type_labels.items() %}
+                    <option value="{{ key }}" {{ 'selected' if type_filter == key }}>{{ label }}</option>
+                    {% endfor %}
+                {% endcall %}
+                {{ fp_date_range('Date', 'date_from', date_from, 'date_to', date_to) }}
+            {% endcall %}
             {% for l in logs[:3] %}
             {{ movement_row(l, delivery_recs) }}
             {% else %}
             <p class="empty-note">
-                {% if type_filter != 'all' or date_filter %}No movement matches the selected filters.
+                {% if type_filter != 'all' or date_from or date_to %}No movement matches the selected filters.
                 {% else %}No movement yet. Your inventory grows when you validate a delivery on Relief Monitoring.{% endif %}
             </p>
             {% endfor %}

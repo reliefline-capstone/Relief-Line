@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Distribution - ReliefLine{% endblock %}
 
@@ -66,19 +67,33 @@
         </section>
 
         <!-- Filter bar -->
-        <form method="GET" class="filter-bar dist-filter-bar">
-            <div class="rr-search-wrapper">
-                {{ icon('search', 14, '#8a94a6') }}
-                <input type="text" name="q" value="{{ search_query }}" placeholder="Search...">
-            </div>
-            <select name="status" onchange="this.form.submit()">
-                <option value="all" {{ 'selected' if status_filter == 'all' }}>All Status</option>
+        {% set EP = 'pswdo.distribution' %}
+        {% set fargs = {'status': status_filter if status_filter != 'all' else None, 'q': search_query or None,
+                        'municipality': municipality_filter if municipality_filter != 'all' else None,
+                        'date_from': date_from or None, 'date_to': date_to or None} %}
+        {% set chips = [] %}
+        {% if fargs.status %}{% set _ = chips.append({'label': 'Status', 'value': dispatch_labels.get(status_filter, status_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'status': None})}) %}{% endif %}
+        {% if fargs.municipality %}{% set _ = chips.append({'label': 'Municipality', 'value': municipality_filter, 'tone': 'violet', 'url': f_url(EP, fargs, {'municipality': None})}) %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+        {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+
+        {% call filter_panel(chips, url_for(EP), summary=(records|length) ~ ' distribution' ~ ('s' if records|length != 1 else '')) %}
+            {{ fp_search('q', search_query, 'Search distribution ID or municipality...') }}
+            {% call fp_select('Municipality', 'municipality', 'map-pin') %}
+                <option value="all">All municipalities</option>
+                {% for lgu in target_lgus %}
+                <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Status', 'status', 'check-circle') %}
+                <option value="all">All statuses</option>
                 {% for key, label in dispatch_labels.items() %}
                 <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
                 {% endfor %}
-            </select>
-            <a href="{{ url_for('pswdo.export_distribution', status=status_filter, q=search_query) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
-        </form>
+            {% endcall %}
+            {{ fp_date_range('Distribution Date', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
+        <div class="fp-export-row"><a href="{{ url_for('pswdo.export_distribution', **fargs) }}" class="btn-outline">{{ icon('download', 14) }} Export</a></div>
 
         <!-- Table -->
         <section class="panel rr-table-panel">

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Stock Requests - ReliefLine{% endblock %}
 
@@ -165,12 +166,40 @@
         </div>
 
         {% else %}
-        <form class="filter-bar" method="GET">
-            <input type="hidden" name="tab" value="overview">
-            <input type="text" name="q" value="{{ search_query }}" placeholder="Search request ID...">
-            <button type="submit" class="btn-outline">{{ icon('search', 14) }} Search</button>
-            <span class="rr-table-count">{{ rows|length }} of {{ total }}</span>
-        </form>
+        {% set EP = 'cswdo.relief_requests' %}
+        {% set st_opts = {'draft': 'Draft', 'pending': 'Under Review', 'approved': 'Approved', 'fulfilled': 'Fulfilled', 'declined': 'Declined'} %}
+        {% set fargs = {'tab': 'overview', 'q': search_query or None, 'status': status_filter if status_filter != 'all' else None,
+                        'priority': priority_filter if priority_filter != 'all' else None, 'event_id': event_filter,
+                        'date_from': date_from or None, 'date_to': date_to or None} %}
+        {% set chips = [] %}
+        {% if fargs.status %}{% set _ = chips.append({'label': 'Status', 'value': st_opts.get(status_filter, status_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'status': None})}) %}{% endif %}
+        {% if fargs.priority %}{% set _ = chips.append({'label': 'Priority', 'value': priority_labels.get(priority_filter, priority_filter), 'tone': {'high': 'red', 'medium': 'amber', 'low': 'green'}.get(priority_filter, 'neutral'), 'url': f_url(EP, fargs, {'priority': None})}) %}{% endif %}
+        {% if event_filter %}{% for e in filter_events if e.event_id == event_filter %}{% set _ = chips.append({'label': 'Event', 'value': e.event_name, 'tone': 'blue', 'url': f_url(EP, fargs, {'event_id': None})}) %}{% endfor %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+        {% if search_query %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+
+        {% call filter_panel(chips, url_for(EP, tab='overview'), hidden={'tab': 'overview'}, summary=(rows|length) ~ ' of ' ~ total) %}
+            {{ fp_search('q', search_query, 'Search request ID...') }}
+            {% call fp_select('Status', 'status', 'check-circle') %}
+                <option value="all">All statuses</option>
+                {% for key, label in st_opts.items() %}
+                <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Priority', 'priority', 'alert-triangle') %}
+                <option value="all">All priorities</option>
+                {% for key, label in priority_labels.items() %}
+                <option value="{{ key }}" {{ 'selected' if priority_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Typhoon Event', 'event_id', 'cloud-lightning') %}
+                <option value="">All events</option>
+                {% for e in filter_events %}
+                <option value="{{ e.event_id }}" {{ 'selected' if event_filter == e.event_id }}>{{ e.event_name }}</option>
+                {% endfor %}
+            {% endcall %}
+            {{ fp_date_range('Date', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
         <div class="rr-panel rr-panel-flush">
             <table class="rr-table">
                 <thead><tr><th>Request ID</th><th>Event</th><th>Requested</th><th>Approved</th><th>Status</th><th>Date</th><th></th></tr></thead>

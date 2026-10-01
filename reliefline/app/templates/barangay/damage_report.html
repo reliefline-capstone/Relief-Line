@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Barangay Reports - ReliefLine{% endblock %}
 
@@ -64,20 +65,33 @@
 
         {% if tab == 'history' %}
 
-        <form method="GET" class="filter-bar">
-            <input type="hidden" name="tab" value="history">
-            <div class="rr-search-wrapper">
-                {{ icon('search', 14, '#8a94a6') }}
-                <input type="text" name="q" value="{{ search_query }}" placeholder="Search report ID or barangay...">
-            </div>
-            <select name="status" onchange="this.form.submit()">
-                <option value="all" {{ 'selected' if status_filter == 'all' }}>All Status</option>
+        {% set EP = 'barangay.damage_report' %}
+        {% set hist_labels = {} %}{% for key, label in history_statuses %}{% set _ = hist_labels.update({key: label}) %}{% endfor %}
+        {% set fargs = {'tab': 'history', 'status': status_filter if status_filter != 'all' else None, 'q': search_query or None,
+                        'event_id': event_filter, 'date_from': date_from or None, 'date_to': date_to or None} %}
+        {% set chips = [] %}
+        {% if fargs.status %}{% set _ = chips.append({'label': 'Status', 'value': hist_labels.get(status_filter, status_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'status': None})}) %}{% endif %}
+        {% if event_filter %}{% for e in filter_events if e.event_id == event_filter %}{% set _ = chips.append({'label': 'Event', 'value': e.event_name, 'tone': 'blue', 'url': f_url(EP, fargs, {'event_id': None})}) %}{% endfor %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+        {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+
+        {% call filter_panel(chips, url_for(EP, tab='history'), hidden={'tab': 'history'}, summary=(decided_reports|length) ~ ' report' ~ ('s' if decided_reports|length != 1 else '')) %}
+            {{ fp_search('q', search_query, 'Search report ID...') }}
+            {% call fp_select('Status', 'status', 'check-circle') %}
+                <option value="all">All statuses</option>
                 {% for key, label in history_statuses %}
                 <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
                 {% endfor %}
-            </select>
-            <a href="{{ url_for('barangay.damage_report_export', q=search_query, status=status_filter) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
-        </form>
+            {% endcall %}
+            {% call fp_select('Typhoon Event', 'event_id', 'cloud-lightning') %}
+                <option value="">All events</option>
+                {% for e in filter_events %}
+                <option value="{{ e.event_id }}" {{ 'selected' if event_filter == e.event_id }}>{{ e.event_name }}</option>
+                {% endfor %}
+            {% endcall %}
+            {{ fp_date_range('Date Submitted', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
+        <div class="fp-export-row"><a href="{{ url_for('barangay.damage_report_export', **fargs) }}" class="btn-outline">{{ icon('download', 14) }} Export</a></div>
 
         <section class="panel rr-table-panel">
             {% if decided_reports %}

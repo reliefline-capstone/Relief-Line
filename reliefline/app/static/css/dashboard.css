@@ -425,6 +425,11 @@ html.sidebar-collapsed .dashboard-main {
     flex-wrap: wrap;
     gap: 12px;
 }
+/* The title block takes the free width and wraps its own long subtitle,
+   so the header's buttons (View Receipt, Export...) stay on the right
+   instead of dropping below it; they only wrap under on narrow screens. */
+.page-header > div:first-child { flex: 1 1 320px; min-width: 0; }
+.page-header > a, .page-header > button { flex-shrink: 0; }
 
 .page-header h2 { font-size: 21px; color: #5347ce; margin-bottom: 3px; }
 .page-header p { font-size: 13px; color: #8a94a6; }
@@ -497,6 +502,83 @@ html.sidebar-collapsed .dashboard-main {
     .wh-breadcrumb, .wh-back-btn, .flash-messages { display: none !important; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Shared filter panel (_filter_panel.html): header with an "N Active"
+   count, Clear All and Apply Filters; a row of labelled fields; then one
+   removable chip per applied filter. */
+.fp {
+    background: white;
+    border: 1px solid #eceef4;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(28, 30, 58, 0.04);
+}
+.fp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.fp-title { display: flex; align-items: center; gap: 10px; }
+.fp-title strong { font-size: 16px; color: #1a1a1a; }
+.fp-title-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 9px;
+    background: #f1eefc; color: #5347ce;
+}
+.fp-count {
+    font-size: 11.5px; font-weight: 700; color: #5347ce;
+    background: #f1eefc; padding: 3px 10px; border-radius: 999px;
+}
+.fp-summary { font-size: 12.5px; color: #8a94a6; }
+.fp-actions { display: flex; align-items: center; gap: 12px; }
+.fp-clear { font-size: 13px; color: #667085; font-weight: 600; }
+.fp-clear:hover { color: #1a1a1a; }
+.fp-apply {
+    background: #5347ce; color: white; border: none; border-radius: 9px;
+    padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.fp-apply:hover { background: #4436b4; }
+
+/* Flex, not a fixed grid: fields share one row when they fit, and when a
+   field has to wrap, everything on that line grows to fill it - no small
+   leftover field stranded on a row of its own. */
+.fp-fields { display: flex; flex-wrap: wrap; gap: 12px; }
+.fp .fp-field { display: flex; flex-direction: column; gap: 6px; margin: 0; flex: 1 1 170px; min-width: 0; }
+.fp .fp-field-search { flex: 2 1 260px; }
+.fp .fp-field-range { flex: 2 1 320px; }
+.fp-range { display: flex; align-items: center; gap: 8px; }
+.fp-range .fp-input { flex: 1; min-width: 0; }
+.fp-range-sep { font-size: 12px; color: #8a94a6; }
+.fp-label { font-size: 12px; font-weight: 700; color: #1a1a1a; }
+.fp-input {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid #e3e4ec; border-radius: 10px; padding: 0 12px;
+    background: white; min-height: 42px;
+}
+.fp-input:focus-within { border-color: #5347ce; box-shadow: 0 0 0 3px rgba(83, 71, 206, 0.12); }
+.fp-input input, .fp-input select {
+    flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+    font: inherit; font-size: 13.5px; color: #1a1a1a; padding: 10px 0;
+}
+/* Custom-select / date-picker wrappers fill the field and drop their own box. */
+.fp-input .csel-wrap, .fp-input .cdt-wrap { flex: 1; min-width: 0; }
+.fp-input .csel-trigger, .fp-input .cdt-trigger { border: none !important; box-shadow: none !important; background: transparent !important; padding-left: 0 !important; }
+
+/* Export button that used to sit in a page's old filter bar. */
+.fp-export-row { display: flex; justify-content: flex-end; margin: -6px 0 12px; }
+
+.fp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.fp-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 5px 8px 5px 11px; border-radius: 8px;
+    border: 1px solid transparent; text-decoration: none;
+}
+.fp-chip b { font-weight: 700; }
+.fp-chip-x { font-size: 14px; line-height: 1; opacity: 0.6; }
+.fp-chip:hover .fp-chip-x { opacity: 1; }
+.fp-chip-neutral { background: #f4f5f8; color: #333; border-color: #e3e4ec; }
+.fp-chip-violet  { background: #f1eefc; color: #4436b4; border-color: #e2ddf9; }
+.fp-chip-green   { background: #e8f6ee; color: #1e8449; border-color: #cdeedb; }
+.fp-chip-amber   { background: #fdf3e2; color: #b9770e; border-color: #f7e2bd; }
+.fp-chip-red     { background: #fdecea; color: #c0392b; border-color: #f8d2cd; }
+.fp-chip-blue    { background: #eaf2fd; color: #2c5aa0; border-color: #d3e3f8; }
 
 /* The one back button used on every in-app page: an icon-only arrow-left
    square, placed either in the .wh-breadcrumb nav (_warehouse_subnav.html)

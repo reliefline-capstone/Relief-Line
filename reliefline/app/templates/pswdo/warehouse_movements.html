@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Stock Movement History - ReliefLine{% endblock %}
 
@@ -23,28 +24,34 @@
         ] %}
         {% include "pswdo/_warehouse_subnav.html" %}
 
-        <section class="page-header">
-            <form method="GET" class="wh-movement-filters">
-                <select name="office_id" onchange="this.form.submit()">
-                    <option value="">All Warehouse</option>
-                    {% for w in warehouses %}
-                    <option value="{{ w.office.office_id }}" {{ 'selected' if office_filter == w.office.office_id }}>{{ w.office.office_name }}</option>
-                    {% endfor %}
-                </select>
-                <select name="type" onchange="this.form.submit()">
-                    <option value="all" {{ 'selected' if type_filter == 'all' }}>All Types</option>
-                    <option value="released" {{ 'selected' if type_filter == 'released' }}>Released</option>
-                    <option value="transferred_out" {{ 'selected' if type_filter == 'transferred_out' }}>Transferred Out</option>
-                    <option value="transferred_in" {{ 'selected' if type_filter == 'transferred_in' }}>Transferred In</option>
-                    <option value="received" {{ 'selected' if type_filter == 'received' }}>Received</option>
-                </select>
-                <input type="date" name="date" value="{{ date_filter }}" onchange="this.form.submit()">
-            </form>
-            <div class="wh-header-actions">
-                <span class="wh-sub">{{ movements|length }} record{{ 's' if movements|length != 1 }}</span>
-                <a href="{{ url_for('pswdo.warehouse_stock_movements_export', office_id=office_filter, type=type_filter, date=date_filter) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
-            </div>
-        </section>
+        {% set EP = 'pswdo.warehouse_stock_movements' %}
+        {% set type_labels = {'released': 'Released', 'transferred_out': 'Transferred Out', 'transferred_in': 'Transferred In',
+                              'received': 'Received', 'returned_damaged': 'Returned - Damaged', 'damaged_resolved': 'Damaged - Resolved'} %}
+        {% set fargs = {'office_id': office_filter, 'type': type_filter if type_filter != 'all' else None, 'q': search_query or None,
+                        'date_from': date_from or None, 'date_to': date_to or None} %}
+        {% set chips = [] %}
+        {% if office_filter %}{% for w in warehouses if w.office.office_id == office_filter %}{% set _ = chips.append({'label': 'Warehouse', 'value': w.office.office_name, 'tone': 'violet', 'url': f_url(EP, fargs, {'office_id': None})}) %}{% endfor %}{% endif %}
+        {% if fargs.type %}{% set _ = chips.append({'label': 'Activity', 'value': type_labels.get(type_filter, type_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'type': None})}) %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+        {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+
+        {% call filter_panel(chips, url_for(EP), summary=(movements|length) ~ ' record' ~ ('s' if movements|length != 1 else '')) %}
+            {{ fp_search('q', search_query, 'Search warehouse, activity or details...') }}
+            {% call fp_select('Warehouse', 'office_id', 'building') %}
+                <option value="">All warehouses</option>
+                {% for w in warehouses %}
+                <option value="{{ w.office.office_id }}" {{ 'selected' if office_filter == w.office.office_id }}>{{ w.office.office_name }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Activity', 'type', 'activity') %}
+                <option value="all">All activities</option>
+                {% for key, label in type_labels.items() %}
+                <option value="{{ key }}" {{ 'selected' if type_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            {% endcall %}
+            {{ fp_date_range('Date', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
+        <div class="fp-export-row"><a href="{{ url_for('pswdo.warehouse_stock_movements_export', **fargs) }}" class="btn-outline">{{ icon('download', 14) }} Export</a></div>
 
         <section class="panel wh-table-panel">
             <div class="panel-header"><h3>Movements Table</h3></div>

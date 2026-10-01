@@ -41,6 +41,7 @@ from app.utils import weather as weather_service
 # _lots_from_json rebuilds the barangay's batches from what the fulfilling
 # CSWDO office deducted at dispatch, and _take_from_batches (model-agnostic)
 # deducts nearest-expiry-first when the barangay hands packs out.
+from app.utils.filters import arg_date, date_range, in_range, iso
 from app.routes.pswdo import (
     DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
     _shelf_status, NEAR_EXPIRY_DAYS, _lots_from_json, _take_from_batches, _batch_take_order, _refreshed_batch_items,
@@ -379,6 +380,29 @@ def _save_report_upload(report):
         report.photo_paths = ",".join(saved)
 
 
+def _report_history_list_filters(reports):
+    """Event + submitted-date filters for the Reports page's Report History
+    table and its CSV export. Prefixed names (report_event, report_from,
+    report_to) so they never clash with the report generator's own event_id."""
+    event_filter = request.args.get("report_event", type=int)
+    date_from, date_to = date_range(request.args, "report_from", "report_to")
+    if event_filter:
+        reports = [r for r in reports if r.event_id == event_filter]
+    reports = [r for r in reports if in_range(r.submitted_at, date_from, date_to)]
+    return reports, {"report_event": event_filter, "report_from": iso(date_from), "report_to": iso(date_to)}
+
+
+def _report_history_extra_filters(reports):
+    """Event + submitted-date filters shared by the Report History tab and
+    its CSV export. Returns (filtered reports, template context)."""
+    event_filter = request.args.get("event_id", type=int)
+    date_from, date_to = date_range(request.args)
+    if event_filter:
+        reports = [r for r in reports if r.event_id == event_filter]
+    reports = [r for r in reports if in_range(r.submitted_at, date_from, date_to)]
+    return reports, {"event_filter": event_filter, "date_from": iso(date_from), "date_to": iso(date_to)}
+
+
 @barangay_bp.route("/damage-report")
 @login_required
 @role_required("barangay_user")
@@ -427,11 +451,15 @@ def damage_report():
                 r for r in history_reports
                 if search_query in r.ref.lower() or search_query in r.barangay.barangay_name.lower()
             ]
+        all_history = [r for r in all_reports if not _is_active_open(r)]
+        history_reports, extra = _report_history_extra_filters(history_reports)
         ctx.update({
             "decided_reports": history_reports,
             "history_statuses": history_statuses,
             "search_query": search_query,
             "status_filter": status_filter,
+            "filter_events": sorted({r.event for r in all_history if r.event}, key=lambda e: e.start_date, reverse=True),
+            **extra,
         })
     else:
         # Active Event Report tab - open items (draft/submitted/returned) for
@@ -467,6 +495,7 @@ def damage_report_export():
             r for r in decided_reports
             if search_query in r.ref.lower() or search_query in r.barangay.barangay_name.lower()
         ]
+    decided_reports, _ = _report_history_extra_filters(decided_reports)
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
@@ -531,6 +560,18 @@ def _report_form_context(barangay, report=None):
     # has affected_families/individuals but no checklist rows - default it
     # back into manual mode so its existing numbers aren't blanked out.
     manual_mode = bool(report and not report.affected_families_list and (report.affected_families or report.affected_individuals))
+
+    # "Submitted By" defaults to the barangay captain - the active barangay
+    # account here whose designation says Captain / Punong Barangay - and
+    # stays editable. A report being edited keeps the name it was saved with.
+    captain = User.query.filter(
+        User.barangay_id == barangay.barangay_id, User.is_active.is_(True),
+        db.or_(User.designation.ilike("%captain%"), User.designation.ilike("%punong%"),
+               User.designation.ilike("%kapitan%")),
+    ).first()
+    submitted_by_default = (report.submitted_by_name if report and report.submitted_by_name
+                            else (captain.name if captain else current_user.name))
+
     return {
         "barangay": barangay,
         "report": report,
@@ -541,6 +582,7 @@ def _report_form_context(barangay, report=None):
         "families": families,
         "selected_family_ids": selected_family_ids,
         "manual_mode": manual_mode,
+        "submitted_by_default": submitted_by_default,
     }
 
 
@@ -1146,12 +1188,22 @@ def relief_monitoring():
     elif status_filter == "received":
         delivery_rows = [r for r in delivery_rows if r["distribution"].status == "confirmed"]
 
+    event_filter = request.args.get("event_id", type=int)
+    date_from, date_to = date_range(request.args)
+    if event_filter:
+        delivery_rows = [r for r in delivery_rows if r["distribution"].allocation
+                         and r["distribution"].allocation.event_id == event_filter]
+    delivery_rows = [r for r in delivery_rows if in_range(r["distribution"].distribution_date, date_from, date_to)]
+
     return render_template(
         "barangay/relief_monitoring.html",
         barangay=barangay,
         delivery_rows=delivery_rows,
         search_query=search_query,
         status_filter=status_filter,
+        event_filter=event_filter, date_from=iso(date_from), date_to=iso(date_to),
+        filter_events=sorted({d.allocation.event for d in distributions if d.allocation and d.allocation.event},
+                             key=lambda e: e.start_date, reverse=True),
         total_deliveries=len(distributions),
         in_transit_count=in_transit_count,
         received_count=received_count,
@@ -1496,16 +1548,17 @@ def inventory():
     given_out = sum(-l.delta for l in all_logs if l.delta < 0)
 
     type_filter = request.args.get("type", "all")
-    date_filter = request.args.get("date", "")
+    date_from, date_to = date_range(request.args)
+    legacy = arg_date(request.args, "date")  # old single-day ?date= links
+    if legacy and not (date_from or date_to):
+        date_from = date_to = legacy
     logs_q = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id)
     if type_filter != "all":
         logs_q = logs_q.filter(BarangayStockLog.source_type == type_filter)
-    if date_filter:
-        try:
-            day = datetime.strptime(date_filter, "%Y-%m-%d").date()
-            logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) == day)
-        except ValueError:
-            date_filter = ""
+    if date_from:
+        logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) >= date_from)
+    if date_to:
+        logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) <= date_to)
     logs = logs_q.order_by(BarangayStockLog.created_at.desc()).limit(30).all()
 
     # Delivery/damaged-return log rows link back to the DistributionRecord
@@ -1536,7 +1589,7 @@ def inventory():
         "barangay/inventory.html",
         barangay=barangay, on_hand=on_hand, logs=logs, families=families,
         received=received, given_out=given_out, delivery_recs=delivery_recs,
-        type_filter=type_filter, date_filter=date_filter,
+        type_filter=type_filter, date_from=iso(date_from), date_to=iso(date_to),
         batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
     )
 
@@ -1907,6 +1960,7 @@ def reports():
         history = [r for r in history if r.status == report_status]
     if report_q:
         history = [r for r in history if report_q in r.ref.lower()]
+    history, hist_filters = _report_history_list_filters(history)
     history = history[:10]
 
     return render_template(
@@ -1924,7 +1978,8 @@ def reports():
         download_all_url=url_for("barangay.report_download_all"),
         history=history,
         status_labels=REPORT_STATUS_LABELS,
-        report_q=report_q, report_status=report_status,
+        report_q=report_q, report_status=report_status, **hist_filters,
+        report_filter_events=sorted({r.event for r in my_reports if r.event}, key=lambda e: e.start_date, reverse=True),
     )
 
 
@@ -2063,6 +2118,7 @@ def reports_export():
         my_reports = [r for r in my_reports if r.status == report_status]
     if report_q:
         my_reports = [r for r in my_reports if report_q in r.ref.lower()]
+    my_reports, _ = _report_history_list_filters(my_reports)
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)

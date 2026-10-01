@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Deliveries - ReliefLine{% endblock %}
 
@@ -56,17 +57,47 @@
             </div>
         </section>
 
-        <form class="filter-bar dist-filter-bar" method="GET">
-            <input type="text" name="q" value="{{ search_query }}" placeholder="Search barangay...">
-            <select name="status" onchange="this.form.submit()">
+        {% set EP = 'cswdo.deliveries' %}
+        {% set fargs = {'status': status_filter, 'q': search_query or None, 'barangay_id': barangay_filter,
+                        'event_id': event_filter, 'source': source_filter if source_filter != 'all' else None,
+                        'date_from': date_from or None, 'date_to': date_to or None} %}
+        {% set source_labels = {'barangay_request': 'Barangay request', 'cswdo_direct': 'Proactive allocation'} %}
+        {% set chips = [] %}
+        {% if status_filter != 'all' %}{% set _ = chips.append({'label': 'Status', 'value': dispatch_labels.get(status_filter, status_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'status': 'all'})}) %}{% endif %}
+        {% if barangay_filter %}{% for b in lgu_barangays if b.barangay_id == barangay_filter %}{% set _ = chips.append({'label': 'Barangay', 'value': b.barangay_name, 'tone': 'violet', 'url': f_url(EP, fargs, {'barangay_id': None})}) %}{% endfor %}{% endif %}
+        {% if event_filter %}{% for e in filter_events if e.event_id == event_filter %}{% set _ = chips.append({'label': 'Event', 'value': e.event_name, 'tone': 'blue', 'url': f_url(EP, fargs, {'event_id': None})}) %}{% endfor %}{% endif %}
+        {% if source_filter != 'all' %}{% set _ = chips.append({'label': 'Type', 'value': source_labels.get(source_filter, source_filter), 'tone': 'amber', 'url': f_url(EP, fargs, {'source': None})}) %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+        {% if search_query %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+
+        {% call filter_panel(chips, url_for(EP, status='all'), summary=(rows|length) ~ ' deliver' ~ ('ies' if rows|length != 1 else 'y')) %}
+            {{ fp_search('q', search_query, 'Search barangay or delivery ID...') }}
+            {% call fp_select('Status', 'status', 'check-circle') %}
                 <option value="all" {{ 'selected' if status_filter == 'all' }}>All statuses</option>
                 {% for key, label in dispatch_labels.items() %}
                 <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
                 {% endfor %}
-            </select>
-            <button type="submit" class="btn-outline">{{ icon('search', 14) }} Filter</button>
-            <span class="rr-table-count">{{ rows|length }} deliver{{ 'ies' if rows|length != 1 else 'y' }}</span>
-        </form>
+            {% endcall %}
+            {% call fp_select('Barangay', 'barangay_id', 'map-pin') %}
+                <option value="">All barangays</option>
+                {% for b in lgu_barangays %}
+                <option value="{{ b.barangay_id }}" {{ 'selected' if barangay_filter == b.barangay_id }}>{{ b.barangay_name }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Typhoon Event', 'event_id', 'cloud-lightning') %}
+                <option value="">All events</option>
+                {% for e in filter_events %}
+                <option value="{{ e.event_id }}" {{ 'selected' if event_filter == e.event_id }}>{{ e.event_name }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Type', 'source', 'package') %}
+                <option value="all">All types</option>
+                {% for key, label in source_labels.items() %}
+                <option value="{{ key }}" {{ 'selected' if source_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            {% endcall %}
+            {{ fp_date_range('Delivery Date', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
 
         <section class="panel rr-table-panel">
             <table class="rr-table">

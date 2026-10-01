@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, f_url with context %}
 
 {% block title %}User Management - ReliefLine{% endblock %}
 
@@ -28,21 +29,33 @@
             <button type="button" class="btn-add-warehouse" data-open-modal="add-user-modal">{{ icon('plus', 14, 'white') }} Add User</button>
         </section>
 
+        {% set EP = 'admin.users' %}
+        {% set fargs = {'status': status_filter if status_filter != 'all' else None, 'q': search_query or None,
+                        'role': role_filter if role_filter != 'all' else None} %}
         <div class="page-tabs">
-            <a href="{{ url_for('admin.users', status='all', q=search_query) }}" class="page-tab {{ 'active' if status_filter == 'all' }}">All Users <span class="page-tab-badge">{{ total_count }}</span></a>
-            <a href="{{ url_for('admin.users', status='active', q=search_query) }}" class="page-tab {{ 'active' if status_filter == 'active' }}">Active <span class="page-tab-badge">{{ active_count }}</span></a>
-            <a href="{{ url_for('admin.users', status='inactive', q=search_query) }}" class="page-tab {{ 'active' if status_filter == 'inactive' }}">Inactive <span class="page-tab-badge">{{ inactive_count }}</span></a>
+            <a href="{{ f_url(EP, fargs, {'status': None}) }}" class="page-tab {{ 'active' if status_filter == 'all' }}">All Users <span class="page-tab-badge">{{ total_count }}</span></a>
+            <a href="{{ f_url(EP, fargs, {'status': 'active'}) }}" class="page-tab {{ 'active' if status_filter == 'active' }}">Active <span class="page-tab-badge">{{ active_count }}</span></a>
+            <a href="{{ f_url(EP, fargs, {'status': 'inactive'}) }}" class="page-tab {{ 'active' if status_filter == 'inactive' }}">Inactive <span class="page-tab-badge">{{ inactive_count }}</span></a>
         </div>
 
-        <section class="page-header" style="margin-bottom: 12px;">
-            <form method="GET" class="wh-search-form">
-                <input type="hidden" name="status" value="{{ status_filter }}">
-                <div class="wh-search-wrapper">
-                    {{ icon('search', 14, '#8a94a6') }}
-                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search name or email...">
-                </div>
-            </form>
-        </section>
+        {% set chips = [] %}
+        {% if fargs.status %}{% set _ = chips.append({'label': 'Status', 'value': status_filter|title, 'tone': 'green', 'url': f_url(EP, fargs, {'status': None})}) %}{% endif %}
+        {% if fargs.role %}{% set _ = chips.append({'label': 'Role', 'value': ROLE_LABELS.get(role_filter, role_filter), 'tone': 'violet', 'url': f_url(EP, fargs, {'role': None})}) %}{% endif %}
+        {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+        {% call filter_panel(chips, url_for(EP), summary=(users|length) ~ ' account' ~ ('s' if users|length != 1 else '')) %}
+            {{ fp_search('q', search_query, 'Search name or email...') }}
+            {% call fp_select('Role', 'role', 'user') %}
+                <option value="all">All roles</option>
+                {% for r in role_choices %}
+                <option value="{{ r }}" {{ 'selected' if role_filter == r }}>{{ ROLE_LABELS.get(r, r) }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Status', 'status', 'check-circle') %}
+                <option value="all">All statuses</option>
+                <option value="active" {{ 'selected' if status_filter == 'active' }}>Active</option>
+                <option value="inactive" {{ 'selected' if status_filter == 'inactive' }}>Inactive</option>
+            {% endcall %}
+        {% endcall %}
 
         <section class="panel wh-table-panel">
             <table class="wh-table">

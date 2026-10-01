@@ -1,0 +1,79 @@
+{% from "_macros.html" import icon with context %}
+{#
+  Shared filter panel: "Filters · N Active" header with Clear All / Apply
+  Filters, a row of labelled fields (passed in via `caller()`), and one
+  removable chip per applied filter.
+
+    {% from "_filter_panel.html" import filter_panel, fp_search, fp_select with context %}
+    {% call filter_panel(chips, clear_url, hidden={'status': status_filter}) %}
+        {{ fp_search('q', search_query, 'Search request ID...') }}
+        {% call fp_select('Municipality', 'municipality', 'map-pin') %} <option>...</option> {% endcall %}
+    {% endcall %}
+
+  chips: [{'label': 'Municipality', 'value': 'Calasiao', 'url': <url without
+  that filter>, 'tone': 'violet' | 'green' | 'amber' | 'red' | 'blue' | 'neutral'}]
+#}
+{% macro filter_panel(chips, clear_url, hidden={}, summary=None) %}
+<form class="fp" method="GET">
+    {% for name, value in hidden.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    <div class="fp-head">
+        <div class="fp-title">
+            <span class="fp-title-icon">{{ icon('sliders', 16) }}</span>
+            <strong>Filters</strong>
+            {% if chips %}<span class="fp-count">{{ chips|length }} Active</span>{% endif %}
+            {% if summary %}<span class="fp-summary">{{ summary }}</span>{% endif %}
+        </div>
+        <div class="fp-actions">
+            {% if chips %}<a href="{{ clear_url }}" class="fp-clear">Clear All</a>{% endif %}
+            <button type="submit" class="fp-apply">Apply Filters</button>
+        </div>
+    </div>
+    <div class="fp-fields">{{ caller() }}</div>
+    {% if chips %}
+    <div class="fp-chips">
+        {% for c in chips %}
+        <a href="{{ c.url }}" class="fp-chip fp-chip-{{ c.tone or 'neutral' }}" title="Remove this filter">
+            {{ c.label }}: <b>{{ c.value }}</b><span class="fp-chip-x" aria-hidden="true">&times;</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</form>
+{% endmacro %}
+
+{# The page's URL with every current filter (`fargs`, defaults left out as
+   None) kept, `over` changing some of them - None drops one. Used for chip
+   links, tabs and pagination so no filter is lost moving around. #}
+{% macro f_url(endpoint, fargs, over={}) %}{% set d = fargs.copy() %}{% set _ = d.update(over) %}{{ url_for(endpoint, **d) }}{% endmacro %}
+
+{% macro fp_search(name, value, placeholder='Search anything...', label='Search') %}
+<label class="fp-field fp-field-search">
+    <span class="fp-label">{{ label }}</span>
+    <span class="fp-input">{{ icon('search', 15, '#8a94a6') }}<input type="text" name="{{ name }}" value="{{ value or '' }}" placeholder="{{ placeholder }}"></span>
+</label>
+{% endmacro %}
+
+{% macro fp_select(label, name, field_icon='list') %}
+<label class="fp-field">
+    <span class="fp-label">{{ label }}</span>
+    <span class="fp-input fp-input-select">{{ icon(field_icon, 15, '#8a94a6') }}<select name="{{ name }}">{{ caller() }}</select></span>
+</label>
+{% endmacro %}
+
+{% macro fp_date_range(label, from_name, from_value, to_name, to_value) %}
+<div class="fp-field fp-field-range">
+    <span class="fp-label">{{ label }}</span>
+    <span class="fp-range">
+        <span class="fp-input fp-input-date"><input type="date" name="{{ from_name }}" value="{{ from_value or '' }}" aria-label="{{ label }} from"></span>
+        <span class="fp-range-sep">to</span>
+        <span class="fp-input fp-input-date"><input type="date" name="{{ to_name }}" value="{{ to_value or '' }}" aria-label="{{ label }} to"></span>
+    </span>
+</div>
+{% endmacro %}
+
+{% macro fp_date(label, name, value) %}
+<label class="fp-field">
+    <span class="fp-label">{{ label }}</span>
+    <span class="fp-input fp-input-date"><input type="date" name="{{ name }}" value="{{ value or '' }}"></span>
+</label>
+{% endmacro %}

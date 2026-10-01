@@ -21,6 +21,7 @@ from app.models.warehouse import WarehouseInventory, WarehouseStockLog
 from app.models.food_pack_batch import FoodPackBatch, FoodPackComponent, FoodPackBatchItem
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
+from app.utils.filters import arg_date, date_range, in_range, iso
 from app.models.disaster_event import DisasterEvent, event_categories_from_form
 from app.models.event_barangay import EventBarangay
 from app.models.barangay_status import BarangayDisasterStatus
@@ -252,6 +253,10 @@ GIS_LGU_FILES = {
 # _load_topojson_file below instead of duplicating every shared border's
 # coordinates on disk.
 PROVINCE_TOPOJSON_FILE = "Province/municities-provdist-105500000.topo.0.1.json"
+# Outlines of the three target LGUs, dissolved from their barangay files
+# (GIS_LGU_FILES) so the city/town border lines up exactly with its
+# barangays - see the province_context build in gis_map_data.
+TARGET_LGU_OUTLINES_FILE = "Province/target-lgu-outlines.json"
 
 _geojson_cache = {}
 
@@ -761,6 +766,28 @@ def _item_status(qty, min_level):
     elif pct >= 0.5:
         return "Moderate"
     return "Low"
+
+
+ITEM_TYPE_LABELS = {"food_pack": "Food Packs"}
+
+
+def _inventory_row_filters(rows, office_id):
+    """Item-type + stock-status filters for an Inventory Management list
+    (PSWDO warehouse items and the CSWDO Municipal Warehouse). Type choices
+    come from the items this warehouse actually holds."""
+    type_filter = request.args.get("item_type", "all")
+    status_filter = request.args.get("stock_status", "all")
+    item_types = sorted({
+        t for (t,) in db.session.query(WarehouseInventory.item_type).filter_by(office_id=office_id).distinct() if t
+    })
+    if type_filter != "all":
+        rows = [r for r in rows if r["item"].item_type == type_filter]
+    if status_filter != "all":
+        rows = [r for r in rows if r["status"] == status_filter]
+    return rows, {
+        "type_filter": type_filter, "stock_status_filter": status_filter,
+        "item_type_options": [(t, ITEM_TYPE_LABELS.get(t, t.replace("_", " ").title())) for t in item_types],
+    }
 
 
 def _food_pack_health(qty, capacity):
@@ -1760,6 +1787,7 @@ def warehouse_inventory_items(office_id):
         {"item": item, "status": _item_status(item.quantity_available, item.min_stock_level)}
         for item in items
     ]
+    rows, item_filters = _inventory_row_filters(rows, office_id)
 
     batches = FoodPackBatch.query.filter(
         FoodPackBatch.office_id == office_id, FoodPackBatch.quantity_remaining > 0
@@ -1768,7 +1796,7 @@ def warehouse_inventory_items(office_id):
 
     return render_template(
         "pswdo/warehouse_items.html",
-        office=office, rows=rows, search_query=search_query,
+        office=office, rows=rows, search_query=search_query, **item_filters,
         batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
         food_pack_components=FoodPackComponent.query.order_by(FoodPackComponent.sort_order).all(),
     )
@@ -2153,6 +2181,34 @@ def warehouse_stock_transfer_page():
     )
 
 
+def _movement_filters(office_ids):
+    """Stock Movement History filters (page + its CSV export): warehouse,
+    type, date range and a free-text search over warehouse/activity/context.
+    A legacy single ?date= is still honoured as a one-day range."""
+    office_filter = request.args.get("office_id", type=int)
+    # Only an office the caller may already see - a CSWDO account passes
+    # just its own office, so ?office_id= can never widen its scope.
+    if office_filter not in office_ids:
+        office_filter = None
+    type_filter = request.args.get("type", "all")
+    date_from, date_to = date_range(request.args)
+    legacy = arg_date(request.args, "date")
+    if legacy and not (date_from or date_to):
+        date_from = date_to = legacy
+    search_query = request.args.get("q", "").strip()
+    scoped_ids = [office_filter] if office_filter else office_ids
+    movements = [m for m in _full_stock_movements(scoped_ids, type_filter, "")
+                 if in_range(m["when"], date_from, date_to)]
+    if search_query:
+        needle = search_query.lower()
+        movements = [m for m in movements if needle in " ".join(
+            str(m.get(k) or "") for k in ("office_name", "direction", "context")).lower()]
+    return movements, {
+        "office_filter": office_filter, "type_filter": type_filter, "search_query": search_query,
+        "date_from": iso(date_from), "date_to": iso(date_to),
+    }
+
+
 @pswdo_bp.route("/warehouse-inventory/movements")
 @login_required
 @role_required("pswdo_admin", "system_admin")
@@ -2160,20 +2216,13 @@ def warehouse_stock_movements():
     all_offices, warehouses, total_food_packs = _load_warehouses()
     office_ids = [o.office_id for o in all_offices]
 
-    office_filter = request.args.get("office_id", type=int)
-    type_filter = request.args.get("type", "all")
-    date_filter = request.args.get("date", "")
-
-    scoped_ids = [office_filter] if office_filter else office_ids
-    movements = _full_stock_movements(scoped_ids, type_filter, date_filter)
+    movements, filters = _movement_filters(office_ids)
 
     return render_template(
         "pswdo/warehouse_movements.html",
         warehouses=warehouses,
         movements=movements,
-        office_filter=office_filter,
-        type_filter=type_filter,
-        date_filter=date_filter,
+        **filters,
         default_office_id=warehouses[0]["office"].office_id if warehouses else None,
     )
 
@@ -2185,11 +2234,7 @@ def warehouse_stock_movements_export():
     all_offices, warehouses, total_food_packs = _load_warehouses()
     office_ids = [o.office_id for o in all_offices]
 
-    office_filter = request.args.get("office_id", type=int)
-    type_filter = request.args.get("type", "all")
-    date_filter = request.args.get("date", "")
-    scoped_ids = [office_filter] if office_filter else office_ids
-    movements = _full_stock_movements(scoped_ids, type_filter, date_filter)
+    movements, _ = _movement_filters(office_ids)
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
@@ -2401,6 +2446,15 @@ def gis_map_data():
     # plain background, no click-through, no data.
     province_geojson = _load_topojson_file(PROVINCE_TOPOJSON_FILE)
     target_by_normalized = {_normalize_muni_name(l).lower(): l for l in TARGET_LGUS}
+    # The target LGUs' barangay polygons are full-detail PSA/NAMRIA data,
+    # far finer than the province file's simplified municipality shapes - so
+    # their outline is swapped for one dissolved from those same barangays
+    # (TARGET_LGU_OUTLINES_FILE). Otherwise the city border and the
+    # barangays' outer edges ran as two separate, overlapping lines.
+    target_outlines = {
+        f["properties"]["lgu"]: f["geometry"]
+        for f in _load_geojson_file(TARGET_LGU_OUTLINES_FILE)["features"]
+    }
     province_features = []
     for feature in province_geojson["features"]:
         name = feature["properties"]["adm3_en"]
@@ -2409,7 +2463,7 @@ def gis_map_data():
         province_features.append({
             "type": "Feature",
             "properties": {"name": name, "is_target": in_scope, "lgu": matched_lgu if in_scope else None},
-            "geometry": feature["geometry"],
+            "geometry": target_outlines.get(matched_lgu) or feature["geometry"],
         })
     province_context_geojson = {"type": "FeatureCollection", "features": province_features}
 
@@ -2815,7 +2869,27 @@ RR_STATUS_LABELS = {
 }
 
 
-def _stock_request_rows(status_filter="all", municipality_filter="all", search=""):
+def _stock_request_filters(args):
+    """Every Stock Requests filter from the query string (page, filter panel
+    and CSV export all read the same set)."""
+    def as_date(key):
+        try:
+            return datetime.strptime(args.get(key, ""), "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    return {
+        "status": args.get("status", "all"),
+        "municipality": args.get("municipality", "all"),
+        "q": args.get("q", "").strip(),
+        "priority": args.get("priority", "all"),
+        "event_id": args.get("event_id", type=int),
+        "date_from": as_date("date_from"),
+        "date_to": as_date("date_to"),
+    }
+
+
+def _stock_request_rows(status_filter="all", municipality_filter="all", search="",
+                        priority="all", event_id=None, date_from=None, date_to=None):
     q = ReliefRequestBatch.query.filter(ReliefRequestBatch.submitted_at.isnot(None))
     batches = q.order_by(ReliefRequestBatch.submitted_at.desc()).all()
     rows = []
@@ -2827,6 +2901,13 @@ def _stock_request_rows(status_filter="all", municipality_filter="all", search="
             if b.display_status not in ("approved", "partially_approved"):
                 continue
         elif status_filter != "all" and b.display_status != status_filter:
+            continue
+        if priority != "all" and b.priority != priority:
+            continue
+        if event_id and b.event_id != event_id:
+            continue
+        submitted = b.submitted_at.date()
+        if (date_from and submitted < date_from) or (date_to and submitted > date_to):
             continue
         if search and search.lower() not in b.ref.lower() and search.lower() not in lgu.lower():
             continue
@@ -2857,10 +2938,10 @@ def _stock_request_rows(status_filter="all", municipality_filter="all", search="
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def relief_requests():
-    status_filter = request.args.get("status", "all")
-    municipality_filter = request.args.get("municipality", "all")
-    search_query = request.args.get("q", "").strip()
-    rows = _stock_request_rows(status_filter, municipality_filter, search_query)
+    f = _stock_request_filters(request.args)
+    status_filter, municipality_filter, search_query = f["status"], f["municipality"], f["q"]
+    rows = _stock_request_rows(status_filter, municipality_filter, search_query,
+                               f["priority"], f["event_id"], f["date_from"], f["date_to"])
 
     all_submitted = ReliefRequestBatch.query.filter(ReliefRequestBatch.submitted_at.isnot(None)).all()
     counts = {
@@ -2887,6 +2968,10 @@ def relief_requests():
         rows=page_rows, counts=counts, total_count=len(all_submitted), total_filtered=total_filtered,
         cswdo_offices=cswdo_offices,
         status_filter=status_filter, municipality_filter=municipality_filter, search_query=search_query,
+        priority_filter=f["priority"], event_filter=f["event_id"],
+        date_from=f["date_from"].isoformat() if f["date_from"] else "",
+        date_to=f["date_to"].isoformat() if f["date_to"] else "",
+        events=DisasterEvent.query.order_by(DisasterEvent.start_date.desc()).all(),
         target_lgus=TARGET_LGUS, status_labels=RR_STATUS_LABELS, priority_labels={"high": "High", "medium": "Medium", "low": "Low"},
         depots=depots, page=page, total_pages=total_pages, per_page=per_page,
     )
@@ -2896,10 +2981,9 @@ def relief_requests():
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def export_relief_requests():
-    rows = _stock_request_rows(
-        request.args.get("status", "all"), request.args.get("municipality", "all"),
-        request.args.get("q", "").strip(),
-    )
+    f = _stock_request_filters(request.args)
+    rows = _stock_request_rows(f["status"], f["municipality"], f["q"],
+                               f["priority"], f["event_id"], f["date_from"], f["date_to"])
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(["Request ID", "Municipality", "Event", "Requested", "Approved", "Status", "Submitted"])
@@ -3115,15 +3199,34 @@ def transfers():
     # Instant depot->depot redistributions never get a dispatch_status; exclude.
     monitored = [t for t in all_t if t.dispatch_status is not None or t.batch_id is not None]
 
+    search_query = request.args.get("q", "").strip()
+    destination_filter = request.args.get("destination", "all")
+    type_filter = request.args.get("type", "all")
+    date_from, date_to = date_range(request.args)
+
     rows = monitored
     if status_filter == "active":
         rows = [t for t in rows if t.status != "completed"]
     elif status_filter == "completed":
         rows = [t for t in rows if t.status == "completed"]
+    elif status_filter in TRANSFER_STATUS_LABELS:
+        rows = [t for t in rows if t.dispatch_status == status_filter]
+    if destination_filter != "all":
+        rows = [t for t in rows if t.to_office and t.to_office.area_covered == destination_filter]
+    if type_filter == "replenishment":
+        rows = [t for t in rows if t.batch_id]
+    elif type_filter == "preposition":
+        rows = [t for t in rows if not t.batch_id]
+    rows = [t for t in rows if in_range(t.requested_at, date_from, date_to)]
+    if search_query:
+        needle = search_query.lower()
+        rows = [t for t in rows if needle in t.ref.lower() or (t.batch and needle in t.batch.ref.lower())]
 
     return render_template(
         "pswdo/transfers.html",
         rows=rows, status_filter=status_filter,
+        search_query=search_query, destination_filter=destination_filter, type_filter=type_filter,
+        date_from=iso(date_from), date_to=iso(date_to), target_lgus=TARGET_LGUS,
         labels=TRANSFER_STATUS_LABELS,
         active_count=sum(1 for t in monitored if t.status != "completed"),
         completed_count=sum(1 for t in monitored if t.status == "completed"),
@@ -3295,6 +3398,8 @@ def _filtered_distributions():
     today = ph_today()
     status_filter = request.args.get("status", "all")
     search_query = request.args.get("q", "").strip()
+    municipality_filter = request.args.get("municipality", "all")
+    date_from, date_to = date_range(request.args)
 
     primary_event = DisasterEvent.query.filter_by(status="active", scope="province").order_by(
         DisasterEvent.start_date.desc()
@@ -3323,11 +3428,19 @@ def _filtered_distributions():
     query = base_query
     if status_filter != "all":
         query = query.filter(DistributionRecord.dispatch_status == status_filter)
-    if search_query:
-        like = f"%{search_query}%"
-        query = query.filter(Barangay.city_municipality.ilike(like))
+    if municipality_filter != "all":
+        query = query.filter(Barangay.city_municipality == municipality_filter)
+    if date_from:
+        query = query.filter(DistributionRecord.distribution_date >= date_from)
+    if date_to:
+        query = query.filter(DistributionRecord.distribution_date <= date_to)
 
     records = query.order_by(DistributionRecord.distribution_date.desc()).all()
+    if search_query:
+        # Municipality name or the D-YYYY-NNN reference shown in the table.
+        needle = search_query.lower()
+        records = [r for r in records if needle in r.barangay.city_municipality.lower()
+                   or needle in f"d-{r.distribution_date.year}-{r.distribution_id:03d}"]
 
     return {
         "primary_event": primary_event,
@@ -3340,6 +3453,10 @@ def _filtered_distributions():
         "packs_released": packs_released,
         "status_filter": status_filter,
         "search_query": search_query,
+        "municipality_filter": municipality_filter,
+        "date_from": iso(date_from),
+        "date_to": iso(date_to),
+        "target_lgus": TARGET_LGUS,
         "records": records,
     }
 

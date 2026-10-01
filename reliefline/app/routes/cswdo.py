@@ -18,6 +18,7 @@ from app.models.barangay import Barangay
 from app.models.warehouse import WarehouseInventory
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
+from app.utils.filters import date_range, in_range, iso
 from app.models.disaster_event import DisasterEvent, event_categories_from_form
 from app.models.event_barangay import EventBarangay
 from app.models.barangay_status import BarangayDisasterStatus
@@ -42,7 +43,7 @@ from app.routes.pswdo import (
     ROUTE_PROGRESS_BY_STATUS, DISPATCH_STEPS, STEP_LABELS,
     NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
     _item_status, _food_pack_health, _priority_info,
-    _lgu_burn_rate, _recent_stock_movements,
+    _lgu_burn_rate, _recent_stock_movements, _movement_filters, _inventory_row_filters,
     _gis_scope_lgus, _gis_config,
     _parse_stock_source, _slugify, _full_stock_movements,
     _shelf_status, _sync_food_pack_batches, NEAR_EXPIRY_DAYS,
@@ -619,6 +620,14 @@ def damage_assessment():
             if search_query in r["barangay"].barangay_name.lower()
             or search_query in r["report"].ref.lower()
         ]
+    barangay_filter = request.args.get("barangay_id", type=int)
+    event_filter = request.args.get("event_id", type=int)
+    date_from, date_to = date_range(request.args)
+    if barangay_filter:
+        rows = [r for r in rows if r["barangay"].barangay_id == barangay_filter]
+    if event_filter:
+        rows = [r for r in rows if r["report"].event_id == event_filter]
+    rows = [r for r in rows if in_range(r["report"].submitted_at, date_from, date_to)]
 
     pending_rows = [r for r in rows if r["report"].status in ("pending", "returned")]
     verified_rows = [r for r in rows if r["report"].status == "verified"]
@@ -649,6 +658,9 @@ def damage_assessment():
         status_labels=DAMAGE_STATUS_LABELS,
         dispatch_labels=DISPATCH_STATUS_LABELS,
         search_query=search_query,
+        barangay_filter=barangay_filter, event_filter=event_filter,
+        date_from=iso(date_from), date_to=iso(date_to), lgu_barangays=lgu_barangays,
+        filter_events=sorted({r.event for r in reports if r.event}, key=lambda e: e.start_date, reverse=True),
     )
 
 
@@ -1073,11 +1085,24 @@ def deliveries():
         return (r.dispatch_status in ("dispatched", "in_transit", "delayed", "delivered")
                 and r.status != "confirmed")
 
+    barangay_filter = request.args.get("barangay_id", type=int)
+    event_filter = request.args.get("event_id", type=int)
+    source_filter = request.args.get("source", "all")
+    date_from, date_to = date_range(request.args)
+
     recs = all_recs
     if status_filter != "all":
         recs = [r for r in recs if r.dispatch_status == status_filter]
+    if barangay_filter:
+        recs = [r for r in recs if r.barangay_id == barangay_filter]
+    if event_filter:
+        recs = [r for r in recs if r.allocation and r.allocation.event_id == event_filter]
+    if source_filter != "all":
+        recs = [r for r in recs if r.allocation and r.allocation.source == source_filter]
+    recs = [r for r in recs if in_range(r.distribution_date, date_from, date_to)]
     if search_query:
-        recs = [r for r in recs if search_query in r.barangay.barangay_name.lower()]
+        recs = [r for r in recs if search_query in r.barangay.barangay_name.lower()
+                or search_query in f"d-{r.distribution_date.year}-{r.distribution_id:03d}"]
 
     rows = [{
         "rec": r,
@@ -1104,6 +1129,11 @@ def deliveries():
         lgu_barangays=lgu_barangays,
         active_events=active_events,
         total_food_packs=fp.quantity_available if fp else 0,
+        barangay_filter=barangay_filter, event_filter=event_filter, source_filter=source_filter,
+        date_from=iso(date_from), date_to=iso(date_to),
+        # Only events that actually have a delivery here, newest first.
+        filter_events=sorted({r.allocation.event for r in all_recs if r.allocation and r.allocation.event},
+                             key=lambda e: e.start_date, reverse=True),
     )
 
 
@@ -1384,8 +1414,26 @@ def relief_requests():
         ctx.update({"trackable": submitted[:12], "selected": selected})
     else:  # overview
         search = request.args.get("q", "").strip().lower()
+        status_filter = request.args.get("status", "all")
+        priority_filter = request.args.get("priority", "all")
+        event_filter = request.args.get("event_id", type=int)
+        date_from, date_to = date_range(request.args)
         rows = [b for b in batches if not search or search in b.ref.lower()]
-        ctx.update({"rows": rows, "total": len(submitted), "search_query": search})
+        if status_filter == "approved":
+            rows = [b for b in rows if b.display_status in ("approved", "partially_approved")]
+        elif status_filter != "all":
+            rows = [b for b in rows if b.display_status == status_filter]
+        if priority_filter != "all":
+            rows = [b for b in rows if b.priority == priority_filter]
+        if event_filter:
+            rows = [b for b in rows if b.event_id == event_filter]
+        rows = [b for b in rows if in_range(b.submitted_at or b.created_at, date_from, date_to)]
+        ctx.update({
+            "rows": rows, "total": len(submitted), "search_query": search,
+            "status_filter": status_filter, "priority_filter": priority_filter, "event_filter": event_filter,
+            "date_from": iso(date_from), "date_to": iso(date_to),
+            "filter_events": sorted({b.event for b in batches if b.event}, key=lambda e: e.start_date, reverse=True),
+        })
 
     return render_template("cswdo/relief_requests.html", **ctx)
 
@@ -2097,6 +2145,8 @@ def municipal_inventory():
         {"item": item, "status": _item_status(item.quantity_available, item.min_stock_level)}
         for item in items
     ]
+    all_rows = rows
+    rows, item_filters = _inventory_row_filters(rows, office.office_id)
 
     movements = _recent_stock_movements([office.office_id], limit=3)
     all_movements = _full_stock_movements([office.office_id])
@@ -2119,7 +2169,7 @@ def municipal_inventory():
     return render_template(
         "cswdo/municipal_inventory.html",
         office=office, food_pack_qty=food_pack_qty, capacity=capacity, pct=pct, health=health,
-        burn=burn, days_remaining=days_remaining, inventory_summary=rows, rows=rows,
+        burn=burn, days_remaining=days_remaining, inventory_summary=all_rows, rows=rows, **item_filters,
         movements=movements, search_query=search_query, incoming_transfers=incoming,
         stock_in=stock_in, stock_out=stock_out, has_active_event=bool(active_events),
         batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
@@ -2433,12 +2483,10 @@ def municipal_inventory_delete(inventory_id):
 @role_required("cswdo_admin", "system_admin")
 def municipal_inventory_movements():
     office = _own_office_or_404()
-    type_filter = request.args.get("type", "all")
-    date_filter = request.args.get("date", "")
-    movements = _full_stock_movements([office.office_id], type_filter, date_filter)
+    movements, filters = _movement_filters([office.office_id])
     return render_template(
         "cswdo/municipal_inventory_movements.html",
-        office=office, movements=movements, type_filter=type_filter, date_filter=date_filter,
+        office=office, movements=movements, **filters,
     )
 
 

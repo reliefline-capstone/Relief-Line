@@ -207,6 +207,18 @@
 
 .autofill-field span { display: block; font-size: 11px; color: #8a94a6; margin-bottom: 2px; }
 .autofill-field strong { font-size: 14px; color: #1a1a1a; font-weight: 600; }
+/* Editable "Submitted By" - same label look as the read-only fields, with a
+   light input box so it reads as the one field you can change. The extra
+   selector beats the form-wide label rule (display:block + margins). */
+.autofill-field label,
+.settings-form .autofill-field label { display: block; font-size: 11px; color: #8a94a6; font-weight: 400; margin: 0 0 2px; }
+.autofill-input {
+    width: 100%;
+    font: inherit; font-size: 14px; font-weight: 600; color: #1a1a1a;
+    background: white; border: 1px solid #e3e4ec; border-radius: 8px;
+    padding: 6px 10px;
+}
+.autofill-input:focus { outline: none; border-color: #5347ce; box-shadow: 0 0 0 3px rgba(83, 71, 206, 0.12); }
 
 /* Typhoon-Related Event picker (Barangay Report step 1) - a plain <select>
    read as an oddly bare dropdown next to the rest of the Basic Information

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}System Activity - ReliefLine{% endblock %}
 
@@ -23,21 +24,29 @@
                 <h2>System Activity</h2>
                 <p>Recent user actions and platform interactions{% if rows %} - showing latest {{ rows|length }}{% endif %}</p>
             </div>
-            <a href="{{ url_for('admin.export_activity', role=selected_group) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
+            <a href="{{ url_for('admin.export_activity', role=selected_group, q=search_query or None, module=module_filter if module_filter != 'all' else None, date_from=date_from or None, date_to=date_to or None) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
         </section>
 
         {% set endpoint = 'admin.activity' %}
+        {% set EP = 'admin.activity' %}
         {% include "admin/_activity_filters.html" with context %}
 
-        <section class="page-header" style="margin-bottom: 12px;">
-            <form method="GET" class="wh-search-form">
-                <input type="hidden" name="role" value="{{ selected_group }}">
-                <div class="wh-search-wrapper">
-                    {{ icon('search', 14, '#8a94a6') }}
-                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search activity...">
-                </div>
-            </form>
-        </section>
+        {% set fargs = {'role': selected_group if selected_group != 'all' else None, 'q': search_query or None, 'module': module_filter if module_filter != 'all' else None,
+                        'date_from': date_from or None, 'date_to': date_to or None} %}
+        {% set chips = [] %}
+        {% if fargs.module %}{% set _ = chips.append({'label': 'Module', 'value': module_filter, 'tone': 'violet', 'url': f_url(EP, fargs, {'module': None})}) %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+        {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+        {% call filter_panel(chips, url_for(EP, role=selected_group if selected_group != 'all' else None), hidden={'role': selected_group}, summary=(rows|length) ~ ' action' ~ ('s' if rows|length != 1 else '')) %}
+            {{ fp_search('q', search_query, 'Search activity or user...') }}
+            {% call fp_select('Module', 'module', 'grid') %}
+                <option value="all">All modules</option>
+                {% for m in module_options %}
+                <option value="{{ m }}" {{ 'selected' if module_filter == m }}>{{ m }}</option>
+                {% endfor %}
+            {% endcall %}
+            {{ fp_date_range('Date', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
 
         <section class="panel wh-table-panel">
             <table class="wh-table">

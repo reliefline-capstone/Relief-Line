@@ -8,7 +8,8 @@ from flask_login import login_required, current_user
 
 from app.extensions import db
 from app.utils.decorators import role_required
-from app.utils.activity import log_admin_activity, module_for_action, module_badge_class
+from app.utils.activity import log_admin_activity, module_for_action, module_badge_class, MODULE_LABELS, DEFAULT_MODULE_LABEL
+from app.utils.filters import date_range, iso
 from app.utils.presence import is_online, ONLINE_THRESHOLD
 from app.utils.settings import SETTINGS_SCHEMA, get_setting, set_setting
 from app.utils.timezone import ph_time, ph_now, ph_today
@@ -113,11 +114,14 @@ def dashboard():
 def users():
     search_query = request.args.get("q", "").strip()
     status_filter = request.args.get("status", "all")
+    role_filter = request.args.get("role", "all")
 
     base_q = User.query
     if search_query:
         like = f"%{search_query}%"
         base_q = base_q.filter(db.or_(User.name.ilike(like), User.email.ilike(like)))
+    if role_filter in ROLE_CHOICES:
+        base_q = base_q.filter(User.role == role_filter)
 
     # Counts always reflect the search term but ignore the status filter
     # itself, so the tab badges show what each tab would contain if clicked.
@@ -136,7 +140,7 @@ def users():
 
     return render_template(
         "admin/users.html", users=user_list, offices=offices, barangays=barangays,
-        search_query=search_query, role_choices=ROLE_CHOICES, status_filter=status_filter,
+        search_query=search_query, role_choices=ROLE_CHOICES, status_filter=status_filter, role_filter=role_filter,
         active_count=active_count, inactive_count=inactive_count, total_count=active_count + inactive_count,
         is_online=is_online,
     )
@@ -281,8 +285,9 @@ def user_activity(user_id):
     Activity shows, just scoped to one actor instead of everyone."""
     user = User.query.get_or_404(user_id)
     search_query = request.args.get("q", "").strip()
-    rows = _activity_rows(ActivityLog.query.filter_by(actor_id=user_id), search_query, limit=500)
-    return render_template("admin/user_activity.html", user=user, rows=rows, search_query=search_query)
+    query, filters = _activity_filters(ActivityLog.query.filter_by(actor_id=user_id))
+    rows = _activity_rows(query, search_query, limit=500)
+    return render_template("admin/user_activity.html", user=user, rows=rows, search_query=search_query, **filters)
 
 
 @admin_bp.route("/users/<int:user_id>/activity/export")
@@ -291,7 +296,8 @@ def user_activity(user_id):
 def export_user_activity(user_id):
     user = User.query.get_or_404(user_id)
     filename = f"{user.name.replace(' ', '_')}_activity.csv"
-    return _export_activity(ActivityLog.query.filter_by(actor_id=user_id), filename)
+    query, _ = _activity_filters(ActivityLog.query.filter_by(actor_id=user_id))
+    return _export_activity(_search_activity(query, request.args.get("q", "").strip()), filename)
 
 
 # ---------------------------------------------------------------------------
@@ -502,7 +508,10 @@ def toggle_office_active(office_id):
 @role_required("system_admin")
 def barangays():
     search_query = request.args.get("q", "").strip()
+    municipality_filter = request.args.get("municipality", "all")
     barangays_q = Barangay.query.filter(Barangay.city_municipality.in_(TARGET_LGUS))
+    if municipality_filter in TARGET_LGUS:
+        barangays_q = barangays_q.filter(Barangay.city_municipality == municipality_filter)
     if search_query:
         barangays_q = barangays_q.filter(Barangay.barangay_name.ilike(f"%{search_query}%"))
     barangay_list = barangays_q.order_by(Barangay.city_municipality, Barangay.barangay_name).all()
@@ -515,7 +524,7 @@ def barangays():
     total_barangays = len(barangay_list)
 
     return render_template(
-        "admin/barangays.html", rows=rows, search_query=search_query,
+        "admin/barangays.html", rows=rows, search_query=search_query, municipality_filter=municipality_filter,
         total_barangays=total_barangays, target_lgus=TARGET_LGUS,
     )
 
@@ -637,11 +646,36 @@ def _groups_with_online_flag():
     return groups
 
 
-def _activity_rows(query, search_query, limit=200):
+def _activity_filters(query):
+    """Module + date-range filters for System Activity / User Activity and
+    their CSV exports. Returns (filtered query, template context)."""
+    module_filter = request.args.get("module", "all")
+    date_from, date_to = date_range(request.args)
+    if module_filter != "all":
+        if module_filter == DEFAULT_MODULE_LABEL:
+            query = query.filter(ActivityLog.action_type.notin_(list(MODULE_LABELS)))
+        else:
+            query = query.filter(ActivityLog.action_type.in_(
+                [a for a, m in MODULE_LABELS.items() if m == module_filter]))
+    if date_from:
+        query = query.filter(db.func.date(ActivityLog.created_at) >= date_from)
+    if date_to:
+        query = query.filter(db.func.date(ActivityLog.created_at) <= date_to)
+    modules = sorted(set(MODULE_LABELS.values())) + [DEFAULT_MODULE_LABEL]
+    return query, {"module_filter": module_filter, "module_options": modules,
+                   "date_from": iso(date_from), "date_to": iso(date_to)}
+
+
+def _search_activity(query, search_query):
     if search_query:
         query = query.join(User, ActivityLog.actor_id == User.user_id, isouter=True).filter(
             db.or_(ActivityLog.description.ilike(f"%{search_query}%"), User.name.ilike(f"%{search_query}%"))
         )
+    return query
+
+
+def _activity_rows(query, search_query, limit=200):
+    query = _search_activity(query, search_query)
     logs = query.order_by(ActivityLog.created_at.desc()).limit(limit).all()
     return [
         {"log": log, "module": module_for_action(log.action_type), "badge_class": module_badge_class(log.action_type)}
@@ -655,11 +689,12 @@ def _activity_rows(query, search_query, limit=200):
 def activity():
     search_query = request.args.get("q", "").strip()
     group_key = request.args.get("role", "all")
-    rows = _activity_rows(_apply_actor_group_filter(ActivityLog.query, group_key), search_query)
+    query, filters = _activity_filters(_apply_actor_group_filter(ActivityLog.query, group_key))
+    rows = _activity_rows(query, search_query)
     groups = _groups_with_online_flag()
     return render_template(
         "admin/activity.html", rows=rows, search_query=search_query,
-        groups=groups, selected_group=group_key,
+        groups=groups, selected_group=group_key, **filters,
     )
 
 
@@ -685,8 +720,8 @@ def _export_activity(query, filename):
 @login_required
 @role_required("system_admin")
 def export_activity():
-    query = _apply_actor_group_filter(ActivityLog.query, request.args.get("role", "all"))
-    return _export_activity(query, "system_activity.csv")
+    query, _ = _activity_filters(_apply_actor_group_filter(ActivityLog.query, request.args.get("role", "all")))
+    return _export_activity(_search_activity(query, request.args.get("q", "").strip()), "system_activity.csv")
 
 
 # ---------------------------------------------------------------------------

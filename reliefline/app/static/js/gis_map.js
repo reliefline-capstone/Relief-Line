@@ -30,6 +30,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // markers from their actual lat/lng instead of transforming the old
     // frame, so they stay pinned to the right spot at any zoom level.
     var map = L.map('gis-map', { zoomControl: false, zoomAnimation: false }).setView([15.98, 120.45], 11);
+    // Fixed stacking for the vector layers, independent of the order they
+    // happen to be (re)added in: municipalities in the default overlay pane
+    // (z 400), barangays above them, delivery routes above both. Before,
+    // everything shared one pane, so re-adding the municipality layer (e.g.
+    // toggling "Municipality Boundary" off and on) put the city polygon on
+    // top of its barangays and it swallowed their hover and clicks.
+    map.createPane('barangayPane').style.zIndex = 410;
+    map.createPane('routePane').style.zIndex = 420;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
@@ -104,7 +112,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // update live.
         var isSelected = state.lgu === feature.properties.lgu;
         var fillColor = '#5347ce';
-        var borderColor = isSelected ? '#3d2eb0' : '#5347ce';
+        // CSWDO/MSWDO: dark green outline around their own city/town - sits
+        // with the green barangay fills instead of a clashing purple line.
+        var borderColor = '#145a32';
         if (IS_MUNI_ONLY) {
             var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === feature.properties.lgu; }) : null;
             var tier = muni ? muni.status_tier : 'unrated';
@@ -188,6 +198,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 });
                 layer.on('mouseout', function () { layer.setStyle(provinceStyle(feature)); });
+            } else if (!IS_MUNI_ONLY) {
+                // CSWDO/MSWDO: every other municipality is plain backdrop -
+                // no hover highlight, tooltip, click or pointer cursor.
+                // (Set before the layer is added, so Leaflet never makes the
+                // path interactive in the first place.)
+                layer.options.interactive = false;
             } else {
                 // Outside current detailed coverage - hover or click both
                 // answer with just the name plus why nothing else shows, as
@@ -200,17 +216,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 layer.bindTooltip(
                     '<strong>' + escapeHtml(p.name) + '</strong>' +
                     '<span class="gis-neutral-tt-note">Outside current detailed data coverage' +
-                    (IS_MUNI_ONLY ? '<br><em>Click to view</em>' : '') + '</span>',
+                    '<br><em>Click to view</em></span>',
                     { className: 'gis-neutral-tooltip', sticky: true }
                 );
                 // PSWDO/system_admin (province-wide oversight) can open any
                 // municipality - it just lands on an empty-state panel, see
-                // renderMunicipalityPanel. A CSWDO/MSWDO account's other
-                // LGUs stay inert, as before.
-                layer.on('click', function (e) {
-                    if (IS_MUNI_ONLY) toggleMunicipality(p.name);
-                    else layer.openTooltip(e.latlng);
-                });
+                // renderMunicipalityPanel.
+                layer.on('click', function () { toggleMunicipality(p.name); });
                 // Fill darkens too on hover, not just the border - a weight/
                 // color-only change was easy to miss on a shape this small
                 // at province zoom; the fill covers the whole shape, so its
@@ -286,6 +298,18 @@ document.addEventListener('DOMContentLoaded', function () {
         return [pt[1], pt[0]];
     }
 
+    // Largest outer ring of a Polygon/MultiPolygon ([lng, lat] pairs) - what a
+    // nudged label position is checked against to stay inside its barangay.
+    function largestRing(geometry) {
+        var polys = geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates];
+        var best = null, bestArea = 0;
+        polys.forEach(function (poly) {
+            var a = Math.abs(ringArea(poly[0]));
+            if (a > bestArea) { bestArea = a; best = poly[0]; }
+        });
+        return best;
+    }
+
     function rebuildBarangayLabels(features) {
         barangayLabelLayer.clearLayers();
         barangayLabels = [];
@@ -297,7 +321,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 interactive: false,
                 keyboard: false,
             }).addTo(barangayLabelLayer);
-            barangayLabels.push({ marker: marker, name: f.properties.name, bounds: L.geoJSON(f).getBounds() });
+            barangayLabels.push({
+                marker: marker, name: f.properties.name, id: f.properties.barangay_id,
+                bounds: L.geoJSON(f).getBounds(), home: L.latLng(at), ring: largestRing(f.geometry),
+            });
         });
         updateBarangayLabelVisibility();
     }
@@ -312,31 +339,63 @@ document.addEventListener('DOMContentLoaded', function () {
             var r = e.getBoundingClientRect();
             if (r.width) taken.push({ l: r.left - cbox.left, t: r.top - cbox.top, r: r.right - cbox.left, b: r.bottom - cbox.top });
         });
-        // Biggest barangays claim their spot first; a smaller one whose label
+        // The selected barangay's label always shows; after it, the biggest
+        // barangays claim their spot first, and a smaller one whose label
         // would land on top of an already-placed label stays hidden until
-        // there's room for it (zooming in makes room - every barangay shows
-        // by one zoom level closer).
+        // there's room for it (zooming in makes room).
+        var selectedId = state.level === 'barangay-detail' ? state.barangayId : null;
         barangayLabels.map(function (entry) {
             var sw = map.latLngToContainerPoint(entry.bounds.getSouthWest());
             var ne = map.latLngToContainerPoint(entry.bounds.getNorthEast());
-            return { entry: entry, area: Math.abs(ne.x - sw.x) * Math.abs(sw.y - ne.y) };
+            var area = Math.abs(ne.x - sw.x) * Math.abs(sw.y - ne.y);
+            return { entry: entry, area: entry.id === selectedId ? Infinity : area };
         }).sort(function (x, y) { return y.area - x.area; }).forEach(function (item) {
             var entry = item.entry, el = entry.marker.getElement();
             if (!el) return;
-            var pt = map.latLngToContainerPoint(entry.marker.getLatLng());
-            var w = entry.name.length * 5.6 + 8, h = 13;
-            var box = { l: pt.x - w / 2, t: pt.y - h / 2, r: pt.x + w / 2, b: pt.y + h / 2 };
-            var clash = taken.some(function (t) {
-                return !(box.r <= t.l || t.r <= box.l || box.b <= t.t || t.b <= box.t);
-            });
-            el.style.display = clash ? 'none' : '';
-            if (!clash) taken.push(box);
+            // The label's real rendered size (measured once - the font
+            // doesn't change with zoom), not a per-character estimate: the
+            // estimate ran wide and hid labels that actually had room.
+            if (!entry.size) {
+                el.style.display = '';
+                var span = el.querySelector('span') || el;
+                if (span.offsetWidth) entry.size = { w: span.offsetWidth + 4, h: span.offsetHeight || 13 };
+            }
+            var w = entry.size ? entry.size.w : entry.name.length * 5.6 + 8;
+            var h = entry.size ? entry.size.h : 13;
+            var home = map.latLngToContainerPoint(entry.home);
+            function boxAt(p) { return { l: p.x - w / 2, t: p.y - h / 2, r: p.x + w / 2, b: p.y + h / 2 }; }
+            function clashes(box) {
+                return taken.some(function (t) {
+                    return !(box.r <= t.l || t.r <= box.l || box.b <= t.t || t.b <= box.t);
+                });
+            }
+            // Its own spot first; if another label is already there, try a
+            // few nudges (up/down/left/right) that keep the label's centre
+            // inside its own barangay, before giving up and hiding it.
+            var offsets = [[0, 0], [0, -h], [0, h], [-w / 2, 0], [w / 2, 0], [0, -2 * h], [0, 2 * h],
+                           [-w / 2, -h], [w / 2, -h], [-w / 2, h], [w / 2, h]];
+            var placed = null;
+            for (var i = 0; i < offsets.length && !placed; i++) {
+                var p = L.point(home.x + offsets[i][0], home.y + offsets[i][1]);
+                var ll = i === 0 ? entry.home : map.containerPointToLatLng(p);
+                if (i > 0 && (!entry.ring || !pointInRing([ll.lng, ll.lat], entry.ring))) continue;
+                if (entry.id === selectedId || !clashes(boxAt(p))) placed = { p: p, ll: ll };
+            }
+            if (placed) {
+                entry.marker.setLatLng(placed.ll);
+                el.style.display = '';
+                taken.push(boxAt(placed.p));
+            } else {
+                entry.marker.setLatLng(entry.home);
+                el.style.display = 'none';
+            }
         });
     }
     barangayLabelLayer.on('add', updateBarangayLabelVisibility);
     map.on('zoomend moveend', updateBarangayLabelVisibility);
 
     var barangayLayer = L.geoJSON(null, {
+        pane: 'barangayPane',
         style: function (feature) {
             var p = feature.properties;
             var color = TIER_COLORS[p.priority_tier] || TIER_COLORS.unrated;
@@ -720,9 +779,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 // map. Same technique real map products use for a route
                 // that has to stay legible over arbitrary terrain.
                 L.geoJSON(route.geometry, {
+                    pane: 'routePane',
                     style: { color: '#ffffff', weight: 9, opacity: 0.95 },
                 }).addTo(osrmRouteLayer);
                 var line = L.geoJSON(route.geometry, {
+                    pane: 'routePane',
                     style: { color: ROUTE_COLOR, weight: 5, opacity: 1 },
                 }).addTo(osrmRouteLayer);
                 var pin = addRouteEndpoints(r);
@@ -741,8 +802,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 // a straight line between the two real endpoints, clearly
                 // labelled as not a road route, rather than an empty map.
                 var from = [r.from_lat, r.from_lng], to = [r.to_lat, r.to_lng];
-                L.polyline([from, to], { color: '#ffffff', weight: 8, opacity: 0.95 }).addTo(osrmRouteLayer);
-                var straight = L.polyline([from, to], { color: ROUTE_COLOR, weight: 4, opacity: 1, dashArray: '8 8' }).addTo(osrmRouteLayer);
+                L.polyline([from, to], { pane: 'routePane', color: '#ffffff', weight: 8, opacity: 0.95 }).addTo(osrmRouteLayer);
+                var straight = L.polyline([from, to], { pane: 'routePane', color: ROUTE_COLOR, weight: 4, opacity: 1, dashArray: '8 8' }).addTo(osrmRouteLayer);
                 var pin = addRouteEndpoints(r);
                 var km = (map.distance(from, to) / 1000).toFixed(1);
                 pinSummary(pin, r, '~' + km + ' km straight line');
@@ -1225,6 +1286,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return true;
         });
         barangayLayer.addData({ type: 'FeatureCollection', features: filtered });
+        // Draw the selected barangay last so its blue border isn't partly
+        // covered by its neighbours' white borders along shared edges.
+        if (state.level === 'barangay-detail' && state.barangayId) {
+            barangayLayer.eachLayer(function (layer) {
+                if (layer.feature && layer.feature.properties.barangay_id === state.barangayId) layer.bringToFront();
+            });
+        }
         rebuildBarangayLabels(filtered);
     }
 

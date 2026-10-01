@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range with context %}
+{# This page's URL with every current filter kept, `over` changing some of
+   them (None drops one). #}
+{% macro rr_url(fargs, over={}) %}{% set d = fargs.copy() %}{% set _ = d.update(over) %}{{ url_for('pswdo.relief_requests', **d) }}{% endmacro %}
 
 {% block title %}Stock Requests - ReliefLine{% endblock %}
 
@@ -18,13 +22,22 @@
     <main class="dashboard-main">
 
 
+        {% set fargs = {
+            'status': status_filter if status_filter != 'all' else None,
+            'municipality': municipality_filter if municipality_filter != 'all' else None,
+            'q': search_query or None,
+            'priority': priority_filter if priority_filter != 'all' else None,
+            'event_id': event_filter,
+            'date_from': date_from or None,
+            'date_to': date_to or None,
+        } %}
         <div class="rr-page-head">
             <div>
                 <h2>Stock Requests</h2>
                 <p>Municipal warehouse replenishment requests from CSWDO/MSWDO offices - the only requests PSWDO decides on.</p>
             </div>
             <div style="display:flex; gap:8px;">
-                <a href="{{ url_for('pswdo.export_relief_requests', status=status_filter, municipality=municipality_filter, q=search_query) }}"
+                <a href="{{ url_for('pswdo.export_relief_requests', **fargs) }}"
                    class="rr-icon-btn" title="Export to CSV">{{ icon('download', 14) }}</a>
                 <button type="button" class="rr-primary-btn" data-open-modal="direct-preposition-modal">{{ icon('plus', 14, 'white') }} Pre-position</button>
             </div>
@@ -40,28 +53,54 @@
                     ('declined', 'Declined', counts.declined),
                 ] %}
                 {% for key, label, n in pill_defs %}
-                <a href="{{ url_for('pswdo.relief_requests', status=key, municipality=municipality_filter, q=search_query) }}"
+                <a href="{{ rr_url(fargs, {'status': key if key != 'all' else None}) }}"
                    class="page-tab {{ 'active' if status_filter == key }}">
                     {{ label }}
                 </a>
                 {% endfor %}
             </nav>
-
-            <form class="rr-toolbar-controls" method="GET">
-                <input type="hidden" name="status" value="{{ status_filter }}">
-                <select name="municipality" onchange="this.form.submit()" class="rr-mini-select">
-                    <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All municipalities</option>
-                    {% for lgu in target_lgus %}
-                    <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
-                    {% endfor %}
-                </select>
-                <div class="rr-search-box">
-                    {{ icon('search', 14, '#8a94a6') }}
-                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search request ID...">
-                </div>
-                <button type="submit" class="rr-filter-btn">{{ icon('sliders', 14) }} Filter</button>
-            </form>
         </div>
+
+        {# Active filters as removable chips - each chip's link is this page
+           with just that one filter reset. #}
+        {% set tab_labels = {} %}{% for key, label, n in pill_defs %}{% set _ = tab_labels.update({key: label}) %}{% endfor %}
+        {% set event_names = {} %}{% for e in events %}{% set _ = event_names.update({e.event_id: e.event_name}) %}{% endfor %}
+        {% set chips = [] %}
+        {% if fargs.status %}{% set _ = chips.append({'label': 'Status', 'value': tab_labels.get(status_filter, status_filter), 'tone': 'green', 'url': rr_url(fargs, {'status': None})}) %}{% endif %}
+        {% if fargs.municipality %}{% set _ = chips.append({'label': 'Municipality', 'value': municipality_filter, 'tone': 'violet', 'url': rr_url(fargs, {'municipality': None})}) %}{% endif %}
+        {% if fargs.priority %}{% set _ = chips.append({'label': 'Priority', 'value': priority_labels.get(priority_filter, priority_filter), 'tone': {'high': 'red', 'medium': 'amber', 'low': 'green'}.get(priority_filter, 'neutral'), 'url': rr_url(fargs, {'priority': None})}) %}{% endif %}
+        {% if fargs.event_id %}{% set _ = chips.append({'label': 'Event', 'value': event_names.get(event_filter, 'Event #' ~ event_filter), 'tone': 'blue', 'url': rr_url(fargs, {'event_id': None})}) %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': rr_url(fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+        {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': rr_url(fargs, {'q': None})}) %}{% endif %}
+
+        {% call filter_panel(chips, url_for('pswdo.relief_requests')) %}
+            {{ fp_search('q', search_query, 'Search request ID or municipality...') }}
+            {% call fp_select('Municipality', 'municipality', 'map-pin') %}
+                <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All municipalities</option>
+                {% for lgu in target_lgus %}
+                <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
+                {% endfor %}
+            {% endcall %}
+            {# Same `status` value the tabs above use, so the two stay in step. #}
+            {% call fp_select('Status', 'status', 'check-circle') %}
+                {% for key, label, n in pill_defs %}
+                <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ 'All statuses' if key == 'all' else label }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Priority', 'priority', 'alert-triangle') %}
+                <option value="all" {{ 'selected' if priority_filter == 'all' }}>All priorities</option>
+                {% for key, label in priority_labels.items() %}
+                <option value="{{ key }}" {{ 'selected' if priority_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Typhoon Event', 'event_id', 'cloud-lightning') %}
+                <option value="" {{ 'selected' if not event_filter }}>All events</option>
+                {% for e in events %}
+                <option value="{{ e.event_id }}" {{ 'selected' if event_filter == e.event_id }}>{{ e.event_name }}</option>
+                {% endfor %}
+            {% endcall %}
+            {{ fp_date_range('Date Submitted', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
 
         <div class="rr-table-wrap">
             <table class="rr-table">
@@ -93,11 +132,11 @@
                     {% set prev_disabled = page <= 1 %}
                     {% set next_disabled = page >= total_pages %}
                     <a class="page-nav {{ 'is-disabled' if prev_disabled }}"
-                       href="{{ '#' if prev_disabled else url_for('pswdo.relief_requests', page=page-1, status=status_filter, municipality=municipality_filter, q=search_query) }}"
+                       href="{{ '#' if prev_disabled else rr_url(fargs, {'page': page - 1}) }}"
                        aria-label="Previous page">{{ icon('chevron-left', 14) }}</a>
                     <span class="page-current">{{ page }}</span>
                     <a class="page-nav {{ 'is-disabled' if next_disabled }}"
-                       href="{{ '#' if next_disabled else url_for('pswdo.relief_requests', page=page+1, status=status_filter, municipality=municipality_filter, q=search_query) }}"
+                       href="{{ '#' if next_disabled else rr_url(fargs, {'page': page + 1}) }}"
                        aria-label="Next page">{{ icon('chevron-right', 14) }}</a>
                 </div>
             </div>
