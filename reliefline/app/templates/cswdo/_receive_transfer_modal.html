@@ -38,7 +38,6 @@
                         <input type="number" id="rt-dmg-{{ t.transfer_id }}" name="quantity_damaged" min="1" max="{{ t.quantity }}" placeholder="0">
                     </div>
                 </div>
-                <p class="form-hint">Good + damaged = packs that arrived (up to {{ "{:,}".format(t.quantity) }}). Only the good ones are added to stock; damaged ones go to Damaged Food Packs for disposal or repair.</p>
             </div>
             <div data-toggle-field="partial,damaged">
                 <label for="rt-note-{{ t.transfer_id }}">What happened? *</label>

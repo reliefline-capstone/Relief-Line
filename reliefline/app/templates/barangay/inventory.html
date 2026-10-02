@@ -7,6 +7,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
@@ -114,13 +115,37 @@
             {% if logs|length > 3 %}
             <details class="wh-movement-more">
                 <summary>{{ icon('list', 13) }}
-                    <span class="wh-more-open">View all {{ logs|length }} movements</span>
+                    <span class="wh-more-open">View all {{ logs|length }} movements on this page</span>
                     <span class="wh-more-close">Show fewer</span>
                 </summary>
                 {% for l in logs[3:] %}
                 {{ movement_row(l, delivery_recs) }}
                 {% endfor %}
             </details>
+            {% endif %}
+            {% if total_logs %}
+            <div class="rr-pagination">
+                <span>Showing {{ (page - 1) * per_page + 1 }}–{{ (page - 1) * per_page + logs|length }} of {{ total_logs }} movement{{ 's' if total_logs != 1 }}</span>
+                {% if total_pages > 1 %}
+                <div class="pagination-controls">
+                    {% if page > 1 %}
+                    <a href="{{ f_url(EP, fargs, {'page': page - 1}) }}" class="page-btn">Previous</a>
+                    {% endif %}
+                    {% set win_end = [[page, 10]|max, total_pages]|min %}
+                    {% set win_start = [1, win_end - 9]|max %}
+                    {% for p in range(win_start, win_end + 1) %}
+                    {% if p == page %}
+                    <span class="page-btn active">{{ p }}</span>
+                    {% else %}
+                    <a href="{{ f_url(EP, fargs, {'page': p}) }}" class="page-btn">{{ p }}</a>
+                    {% endif %}
+                    {% endfor %}
+                    {% if page < total_pages %}
+                    <a href="{{ f_url(EP, fargs, {'page': page + 1}) }}" class="page-btn">Next</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
             {% endif %}
         </section>
 

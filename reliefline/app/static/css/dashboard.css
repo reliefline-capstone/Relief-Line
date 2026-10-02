@@ -1952,6 +1952,13 @@ html.sidebar-collapsed .dashboard-main {
 
 .inventory-bar-fill { height: 100%; background: #27ae60; }
 
+/* Damaged / expired stock holding packs - spoiled goods, so red instead of the healthy green. */
+.inventory-box-bad { background: #fdecea; }
+.inventory-box-bad strong,
+.inventory-box-bad .inventory-unit { color: #c0392b; }
+.inventory-box-bad .inventory-bar { background: rgba(192, 57, 43, 0.15); }
+.inventory-box-bad .inventory-bar-fill { background: #e74c3c; }
+
 .stock-warning {
     display: flex;
     align-items: flex-start;

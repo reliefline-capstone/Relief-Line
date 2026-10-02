@@ -328,7 +328,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h3>Recent Activities</h3>
-                    <span class="panel-date">{{ now.strftime('%B') }} {{ now.day }}, {{ now.strftime('%Y') }}</span>
+                    <a href="{{ url_for('pswdo.notifications') }}" class="link-manage">View All →</a>
                 </div>
                 {% for act in recent_activities %}
                 <div class="activity-row">

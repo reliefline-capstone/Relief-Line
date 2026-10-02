@@ -42,7 +42,7 @@ from app.routes.pswdo import (
     DISPATCH_STATUS_LABELS,
     ROUTE_PROGRESS_BY_STATUS, DISPATCH_STEPS, STEP_LABELS,
     NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
-    _item_status, _food_pack_health, _priority_info,
+    _item_status, _food_pack_health,
     _lgu_burn_rate, _recent_stock_movements, _movement_filters, _inventory_row_filters,
     _gis_scope_lgus, _gis_config,
     _parse_stock_source, _slugify, _full_stock_movements,
@@ -443,28 +443,6 @@ def dashboard():
                 "progress_pct": ROUTE_PROGRESS_BY_STATUS.get(active_distribution.dispatch_status, 0) if active_distribution else None,
             })
 
-    # Barangay status reports - real priority tiers for this LGU (no "verified/
-    # pending" concept exists in the data model, so this uses the same
-    # normal/monitoring/needs_assistance/high_priority tiers the GIS map uses).
-    barangay_reports = []
-    if primary_event and lgu_barangays:
-        status_by_barangay = {
-            s.barangay_id: s for s in BarangayDisasterStatus.query.filter(
-                BarangayDisasterStatus.event_id == primary_event.event_id,
-                BarangayDisasterStatus.barangay_id.in_(lgu_barangay_ids),
-            ).all()
-        }
-        for b in lgu_barangays:
-            status_row = status_by_barangay.get(b.barangay_id)
-            status_key = status_row.status if status_row else "normal"
-            barangay_reports.append({
-                "barangay": b,
-                "affected_families": status_row.affected_families if status_row else 0,
-                "priority": _priority_info(status_key),
-            })
-        barangay_reports.sort(key=lambda r: (r["priority"]["rank"], r["affected_families"]), reverse=True)
-        barangay_reports = barangay_reports[:5]
-
     # Recent activity + notifications - scoped to this office and/or this LGU's
     # barangays, same scope the full Notifications page and mark-as-read
     # actions use (see _own_activity_filters).
@@ -505,7 +483,6 @@ def dashboard():
         next_delivery=next_delivery,
         pending_barangay_reports_count=pending_barangay_reports_count,
         relief_request_rows=relief_request_rows,
-        barangay_reports=barangay_reports,
         recent_activities=recent_activities,
         status_labels=DAMAGE_STATUS_LABELS,
         dispatch_status_labels=DISPATCH_STATUS_LABELS,

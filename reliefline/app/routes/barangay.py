@@ -1559,7 +1559,12 @@ def inventory():
         logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) >= date_from)
     if date_to:
         logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) <= date_to)
-    logs = logs_q.order_by(BarangayStockLog.created_at.desc(), BarangayStockLog.log_id.desc()).limit(30).all()
+    per_page = 20
+    total_logs = logs_q.count()
+    total_pages = max((total_logs + per_page - 1) // per_page, 1)
+    page = min(max(request.args.get("page", 1, type=int), 1), total_pages)
+    logs = (logs_q.order_by(BarangayStockLog.created_at.desc(), BarangayStockLog.log_id.desc())
+            .offset((page - 1) * per_page).limit(per_page).all())
 
     # Delivery/damaged-return log rows link back to the DistributionRecord
     # they came from - fetched in one query so the Movement History can show
@@ -1591,6 +1596,7 @@ def inventory():
         received=received, given_out=given_out, delivery_recs=delivery_recs,
         type_filter=type_filter, date_from=iso(date_from), date_to=iso(date_to),
         batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
+        page=page, total_pages=total_pages, per_page=per_page, total_logs=total_logs,
     )
 
 

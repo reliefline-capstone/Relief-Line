@@ -248,7 +248,7 @@
 
         </div>
 
-        <!-- Municipal Inventory + Recent Barangay Reports -->
+        <!-- Municipal Inventory + Recent Activities -->
         <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
             <section class="panel">
@@ -265,7 +265,7 @@
                         <div class="inventory-bar"><div class="inventory-bar-fill" style="width: {{ stock_pct if stock_pct <= 100 else 100 }}%;"></div></div>
                     </div>
                     {% for row in other_items %}
-                    <div class="inventory-box">
+                    <div class="inventory-box{{ ' inventory-box-bad' if row.item.item_type in ('food_pack_damaged', 'food_pack_expired') and row.item.quantity_available > 0 }}">
                         <strong>{{ "{:,}".format(row.item.quantity_available) }}</strong>
                         <span class="inventory-unit">{{ row.item.unit }}</span>
                         <span class="inventory-label">{{ row.item.item_name }}</span>
@@ -284,42 +284,23 @@
 
             <section class="panel">
                 <div class="panel-header">
-                    <h3>Recent Barangay Reports</h3>
-                    <a href="{{ url_for('cswdo.damage_assessment') }}" class="link-manage">View All →</a>
+                    <h3>Recent Activities</h3>
+                    <a href="{{ url_for('cswdo.notifications') }}" class="link-manage">View All →</a>
                 </div>
-                {% for r in barangay_reports %}
-                <div class="barangay-report-row">
-                    <a href="{{ url_for('cswdo.damage_assessment', tab='reports', q=r.barangay.barangay_name) }}">
-                        <strong>{{ r.barangay.barangay_name }}</strong>
-                        <span>{{ "{:,}".format(r.affected_families) }} affected families</span>
-                    </a>
-                    <span class="badge-priority tier-{{ r.priority.tier }}">{{ r.priority.label }}</span>
+                {% for act in recent_activities %}
+                <div class="activity-row">
+                    <div class="activity-icon">{{ icon('check-circle', 14, '#27ae60') }}</div>
+                    <div>
+                        <span class="activity-time">{{ act.created_at.strftime('%H:%M') }}</span>
+                        <span class="activity-desc">{{ act.description }}</span>
+                    </div>
                 </div>
                 {% else %}
-                <p class="empty-note">No barangay reports yet.</p>
+                <p class="empty-note">No recent activity.</p>
                 {% endfor %}
             </section>
 
         </div>
-
-        <!-- Recent Activities -->
-        <section class="panel" style="margin-top:16px;">
-            <div class="panel-header">
-                <h3>Recent Activities</h3>
-                <span class="panel-date">{{ now.strftime('%B') }} {{ now.day }}, {{ now.strftime('%Y') }}</span>
-            </div>
-            {% for act in recent_activities %}
-            <div class="activity-row">
-                <div class="activity-icon">{{ icon('check-circle', 14, '#27ae60') }}</div>
-                <div>
-                    <span class="activity-time">{{ act.created_at.strftime('%H:%M') }}</span>
-                    <span class="activity-desc">{{ act.description }}</span>
-                </div>
-            </div>
-            {% else %}
-            <p class="empty-note">No recent activity.</p>
-            {% endfor %}
-        </section>
     </main>
 </div>
 {% endblock %}
