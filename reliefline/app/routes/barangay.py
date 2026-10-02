@@ -1559,7 +1559,7 @@ def inventory():
         logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) >= date_from)
     if date_to:
         logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) <= date_to)
-    logs = logs_q.order_by(BarangayStockLog.created_at.desc()).limit(30).all()
+    logs = logs_q.order_by(BarangayStockLog.created_at.desc(), BarangayStockLog.log_id.desc()).limit(30).all()
 
     # Delivery/damaged-return log rows link back to the DistributionRecord
     # they came from - fetched in one query so the Movement History can show

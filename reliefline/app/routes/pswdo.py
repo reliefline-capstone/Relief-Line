@@ -1241,12 +1241,12 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
             WarehouseStockLog.delta > 0
         )
         if type_filter == "received":
-            log_q = log_q.filter(WarehouseStockLog.source_type != "returned_damaged")
+            log_q = log_q.filter(WarehouseStockLog.source_type.notin_(("returned_damaged", "expired")))
         elif type_filter == "returned_damaged":
             log_q = log_q.filter(WarehouseStockLog.source_type == "returned_damaged")
         if filter_date:
             log_q = log_q.filter(db.func.date(WarehouseStockLog.created_at) == filter_date)
-        for log in log_q.order_by(WarehouseStockLog.created_at.desc()).all():
+        for log in log_q.order_by(WarehouseStockLog.created_at.desc(), WarehouseStockLog.log_id.desc()).all():
             base_context = log.reason or f"{log.item_name} stock update"
             if log.is_donation:
                 context = f"Donated by {log.donor_name}" + (f" - {log.reason}" if log.reason else "")
@@ -1254,6 +1254,10 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
                 context = base_context
             if log.is_damaged_return:
                 direction = "Returned - Damaged"
+            elif log.is_expired:
+                # Internal transfer, not new stock: the "+" half of an expired
+                # pack being flagged or replaced with fresh stock.
+                direction = "Expired - Flagged" if log.item_type == "food_pack_expired" else "Expired - Restocked"
             elif log.is_donation:
                 direction = "Received - Donation"
             else:
@@ -1282,7 +1286,7 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
         )
         if filter_date:
             resolved_q = resolved_q.filter(db.func.date(WarehouseStockLog.created_at) == filter_date)
-        for log in resolved_q.order_by(WarehouseStockLog.created_at.desc()).all():
+        for log in resolved_q.order_by(WarehouseStockLog.created_at.desc(), WarehouseStockLog.log_id.desc()).all():
             direction = "Expired - Resolved" if log.item_type == "food_pack_expired" else "Damaged - Resolved"
             movements.append({
                 "office_id": log.office_id,
