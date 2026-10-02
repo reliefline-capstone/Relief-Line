@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
-{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, f_url with context %}
 
 {% block title %}{{ office.office_name }} Inventory - ReliefLine{% endblock %}
 
@@ -26,7 +25,13 @@
         {% include "pswdo/_warehouse_subnav.html" %}
 
         <section class="page-header">
-            <div></div>
+            <form method="GET" class="wh-search-form">
+                <div class="wh-search-wrapper">
+                    {{ icon('search', 14, '#8a94a6') }}
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search item...">
+                    {% if search_query %}<a href="{{ url_for('pswdo.warehouse_inventory_items', office_id=office.office_id) }}" class="wh-search-clear" title="Clear search" aria-label="Clear search">&times;</a>{% endif %}
+                </div>
+            </form>
             <div class="wh-header-actions">
                 <a href="{{ url_for('pswdo.warehouse_inventory_export', office_id=office.office_id) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
                 {% if office.office_type == 'pswdo' %}
@@ -34,30 +39,6 @@
                 {% endif %}
             </div>
         </section>
-
-        {% set EP = 'pswdo.warehouse_inventory_items' %}
-        {% set fargs = {'office_id': office.office_id, 'q': search_query or None, 'item_type': type_filter if type_filter != 'all' else None,
-                        'stock_status': stock_status_filter if stock_status_filter != 'all' else None} %}
-        {% set type_names = {} %}{% for k, v in item_type_options %}{% set _ = type_names.update({k: v}) %}{% endfor %}
-        {% set chips = [] %}
-        {% if fargs.item_type %}{% set _ = chips.append({'label': 'Type', 'value': type_names.get(type_filter, type_filter), 'tone': 'violet', 'url': f_url(EP, fargs, {'item_type': None})}) %}{% endif %}
-        {% if fargs.stock_status %}{% set _ = chips.append({'label': 'Status', 'value': stock_status_filter, 'tone': {'Healthy': 'green', 'Moderate': 'amber', 'Low': 'red'}.get(stock_status_filter, 'neutral'), 'url': f_url(EP, fargs, {'stock_status': None})}) %}{% endif %}
-        {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
-        {% call filter_panel(chips, url_for(EP, office_id=office.office_id), summary=(rows|length) ~ ' item' ~ ('s' if rows|length != 1 else '')) %}
-            {{ fp_search('q', search_query, 'Search item...') }}
-            {% call fp_select('Item Type', 'item_type', 'package') %}
-                <option value="all">All types</option>
-                {% for key, label in item_type_options %}
-                <option value="{{ key }}" {{ 'selected' if type_filter == key }}>{{ label }}</option>
-                {% endfor %}
-            {% endcall %}
-            {% call fp_select('Stock Status', 'stock_status', 'activity') %}
-                <option value="all">All statuses</option>
-                {% for st in ['Healthy', 'Moderate', 'Low'] %}
-                <option value="{{ st }}" {{ 'selected' if stock_status_filter == st }}>{{ st }}</option>
-                {% endfor %}
-            {% endcall %}
-        {% endcall %}
 
         <section class="panel wh-table-panel">
             <table class="wh-table">

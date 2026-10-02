@@ -66,25 +66,18 @@
         {% set tab_labels = {} %}{% for key, label, n in pill_defs %}{% set _ = tab_labels.update({key: label}) %}{% endfor %}
         {% set event_names = {} %}{% for e in events %}{% set _ = event_names.update({e.event_id: e.event_name}) %}{% endfor %}
         {% set chips = [] %}
-        {% if fargs.status %}{% set _ = chips.append({'label': 'Status', 'value': tab_labels.get(status_filter, status_filter), 'tone': 'green', 'url': rr_url(fargs, {'status': None})}) %}{% endif %}
         {% if fargs.municipality %}{% set _ = chips.append({'label': 'Municipality', 'value': municipality_filter, 'tone': 'violet', 'url': rr_url(fargs, {'municipality': None})}) %}{% endif %}
         {% if fargs.priority %}{% set _ = chips.append({'label': 'Priority', 'value': priority_labels.get(priority_filter, priority_filter), 'tone': {'high': 'red', 'medium': 'amber', 'low': 'green'}.get(priority_filter, 'neutral'), 'url': rr_url(fargs, {'priority': None})}) %}{% endif %}
         {% if fargs.event_id %}{% set _ = chips.append({'label': 'Event', 'value': event_names.get(event_filter, 'Event #' ~ event_filter), 'tone': 'blue', 'url': rr_url(fargs, {'event_id': None})}) %}{% endif %}
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': rr_url(fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': rr_url(fargs, {'q': None})}) %}{% endif %}
 
-        {% call filter_panel(chips, url_for('pswdo.relief_requests')) %}
+        {% call filter_panel(chips, url_for('pswdo.relief_requests', status=fargs.status), hidden={'status': fargs.status} if fargs.status else {}) %}
             {{ fp_search('q', search_query, 'Search request ID or municipality...') }}
             {% call fp_select('Municipality', 'municipality', 'map-pin') %}
                 <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All municipalities</option>
                 {% for lgu in target_lgus %}
                 <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
-                {% endfor %}
-            {% endcall %}
-            {# Same `status` value the tabs above use, so the two stay in step. #}
-            {% call fp_select('Status', 'status', 'check-circle') %}
-                {% for key, label, n in pill_defs %}
-                <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ 'All statuses' if key == 'all' else label }}</option>
                 {% endfor %}
             {% endcall %}
             {% call fp_select('Priority', 'priority', 'alert-triangle') %}

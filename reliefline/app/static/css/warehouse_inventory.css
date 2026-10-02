@@ -900,3 +900,10 @@
 
 .wh-modal-item-top span { color: #555; }
 .wh-modal-item-top strong { color: #1a1a1a; }
+
+/* "x" inside a search box once a search is applied - clears it. */
+.wh-search-clear {
+    margin-left: auto; padding: 0 4px;
+    font-size: 17px; line-height: 1; color: #8a94a6; text-decoration: none;
+}
+.wh-search-clear:hover { color: #1a1a1a; }

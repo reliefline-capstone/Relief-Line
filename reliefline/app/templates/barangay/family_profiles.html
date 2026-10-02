@@ -58,30 +58,56 @@
         {% endif %}
 
         {% set puroks = families|map(attribute='purok')|reject('none')|unique|sort|list %}
-        <section class="page-header" style="margin-bottom: 12px;">
-            <div class="fam-filter-bar" style="margin-bottom:0;">
-                <div class="fam-search-wrapper">
-                    {{ icon('search', 14, '#8a94a6') }}
-                    <input type="text" id="fam-search" placeholder="Search family name or purok...">
+        {# Same filter panel look as the other list pages (_filter_panel.html),
+           but filtering stays instant/client-side here - chips and the
+           "N Active" count are drawn by the script at the bottom. Status
+           (Active / Archived) is a real page switch. #}
+        <div class="fp" id="fam-fp">
+            <div class="fp-head">
+                <div class="fp-title">
+                    <span class="fp-title-icon">{{ icon('sliders', 16) }}</span>
+                    <strong>Filters</strong>
+                    <span class="fp-count" id="fam-fp-count" hidden></span>
+                    <span class="fp-summary" id="fam-table-hint"></span>
                 </div>
+                <div class="fp-actions">
+                    <a href="#" class="fp-clear" id="fam-fp-clear" hidden>Clear All</a>
+                </div>
+            </div>
+            <div class="fp-fields">
+                <label class="fp-field fp-field-search">
+                    <span class="fp-label">Search</span>
+                    <span class="fp-input">{{ icon('search', 15, '#8a94a6') }}<input type="text" id="fam-search" placeholder="Search family name, head or purok..."></span>
+                </label>
                 {% if puroks|length > 1 %}
-                <select id="fam-purok-filter">
-                    <option value="">All Puroks</option>
-                    {% for p in puroks %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
-                </select>
+                <label class="fp-field">
+                    <span class="fp-label">Purok</span>
+                    <span class="fp-input fp-input-select">{{ icon('map-pin', 15, '#8a94a6') }}<select id="fam-purok-filter">
+                        <option value="">All puroks</option>
+                        {% for p in puroks %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+                    </select></span>
+                </label>
                 {% endif %}
-                <select id="fam-category-filter">
-                    <option value="">All Families</option>
-                    <option value="pwd">With PWD Members</option>
-                    <option value="senior">With Senior Citizens</option>
-                    <option value="children">With Children</option>
-                </select>
+                <label class="fp-field">
+                    <span class="fp-label">Category</span>
+                    <span class="fp-input fp-input-select">{{ icon('users', 15, '#8a94a6') }}<select id="fam-category-filter">
+                        <option value="">All families</option>
+                        <option value="pwd">With PWD members</option>
+                        <option value="senior">With senior citizens</option>
+                        <option value="children">With children</option>
+                    </select></span>
+                </label>
+                <label class="fp-field">
+                    <span class="fp-label">Status</span>
+                    <span class="fp-input fp-input-select">{{ icon('check-circle', 15, '#8a94a6') }}<select id="fam-status-filter"
+                            data-active-url="{{ url_for('barangay.family_profiles') }}" data-archived-url="{{ url_for('barangay.family_profiles', archived=1) }}">
+                        <option value="active" {{ 'selected' if not show_archived }}>Active</option>
+                        <option value="archived" {{ 'selected' if show_archived }}>Archived</option>
+                    </select></span>
+                </label>
             </div>
-            <div class="notif-filter-tabs" style="margin:0;">
-                <a href="{{ url_for('barangay.family_profiles') }}" class="notif-filter-tab {{ 'active' if not show_archived }}">{{ icon('users', 14) }} Active</a>
-                <a href="{{ url_for('barangay.family_profiles', archived=1) }}" class="notif-filter-tab {{ 'active' if show_archived }}">{{ icon('file-text', 14) }} Archived</a>
-            </div>
-        </section>
+            <div class="fp-chips" id="fam-fp-chips" hidden></div>
+        </div>
 
         <section class="panel wh-table-panel fam-sticky-panel">
             {% if not show_archived and families %}
@@ -142,7 +168,6 @@
                     {% endif %}
                 </tbody>
             </table>
-            <p class="fam-checklist-hint" id="fam-table-hint" style="padding:0 16px 12px;"></p>
         </section>
 
     </main>
@@ -375,6 +400,70 @@
     if (famPurokFilter) famPurokFilter.addEventListener('change', applyFamFilter);
     if (famCategoryFilter) famCategoryFilter.addEventListener('change', applyFamFilter);
     applyFamFilter();
+
+    // --- Filter panel chrome: chips, "N Active", Clear All, Status ---------
+    // Filtering itself stays instant (applyFamFilter above); this only draws
+    // the same chip row / count the server-rendered panels show elsewhere.
+    var fpCount = document.getElementById('fam-fp-count');
+    var fpClear = document.getElementById('fam-fp-clear');
+    var fpChips = document.getElementById('fam-fp-chips');
+    var statusSel = document.getElementById('fam-status-filter');
+
+    function setSelect(sel, value) {
+        if (!sel || sel.value === value) return;
+        sel.value = value;
+        sel.dispatchEvent(new Event('change'));   // re-labels the custom select + re-filters
+    }
+    function selectedText(sel) { return sel.options[sel.selectedIndex].text; }
+    function chip(label, value, tone, onRemove) {
+        var a = document.createElement('a');
+        a.href = '#';
+        a.className = 'fp-chip fp-chip-' + tone;
+        a.title = 'Remove this filter';
+        a.innerHTML = label + ': <b></b><span class="fp-chip-x" aria-hidden="true">&times;</span>';
+        a.querySelector('b').textContent = value;
+        a.addEventListener('click', function (e) { e.preventDefault(); onRemove(); });
+        return a;
+    }
+    function drawPanel() {
+        var chips = [];
+        if (statusSel && statusSel.value === 'archived') {
+            chips.push(chip('Status', 'Archived', 'amber', function () { window.location.href = statusSel.dataset.activeUrl; }));
+        }
+        if (famPurokFilter && famPurokFilter.value) {
+            chips.push(chip('Purok', famPurokFilter.value, 'violet', function () { setSelect(famPurokFilter, ''); }));
+        }
+        if (famCategoryFilter && famCategoryFilter.value) {
+            chips.push(chip('Category', selectedText(famCategoryFilter), 'green', function () { setSelect(famCategoryFilter, ''); }));
+        }
+        if (famSearch && famSearch.value.trim()) {
+            chips.push(chip('Search', famSearch.value.trim(), 'neutral', function () { famSearch.value = ''; applyFamFilter(); drawPanel(); }));
+        }
+        fpChips.innerHTML = '';
+        chips.forEach(function (c) { fpChips.appendChild(c); });
+        fpChips.hidden = !chips.length;
+        fpCount.hidden = fpClear.hidden = !chips.length;
+        fpCount.textContent = chips.length + ' Active';
+    }
+    if (fpChips) {
+        [famSearch, famPurokFilter, famCategoryFilter].forEach(function (el) {
+            if (el) el.addEventListener(el === famSearch ? 'input' : 'change', drawPanel);
+        });
+        fpClear.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (statusSel && statusSel.value === 'archived') { window.location.href = statusSel.dataset.activeUrl; return; }
+            if (famSearch) famSearch.value = '';
+            setSelect(famPurokFilter, '');
+            setSelect(famCategoryFilter, '');
+            applyFamFilter();
+            drawPanel();
+        });
+        if (statusSel) statusSel.addEventListener('change', function () {
+            var url = statusSel.value === 'archived' ? statusSel.dataset.archivedUrl : statusSel.dataset.activeUrl;
+            if (url !== window.location.pathname + window.location.search) window.location.href = url;
+        });
+        drawPanel();
+    }
 })();
 </script>
 {% endblock %}
