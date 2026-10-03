@@ -67,3 +67,47 @@ with app.app_context():
         nz_cell = (f"{nz * 100:.1f}% ({cv['barangay_nonzero_hits']}/{cv['barangay_nonzero_n']})"
                    if nz is not None else "n/a")
         print(f"{lgu:<20}{lgu_cell:>14}{cv['barangay_coverage'] * 100:>17.1f}%{nz_cell:>20}")
+
+    # Defense metrics (2026-10-03) - one per claim; see app.ml.train.
+    print("\nP90 stock: pinball loss (tau 0.9, packs; lower is better) + shortfall/excess, no buffer")
+    print(f"{'':<16}{'level':<22}{'pinball':>10}{'ran short':>12}{'avg short':>11}{'avg excess':>12}")
+    for lgu, cv in out["loto_p90"].items():
+        if not cv:
+            continue
+        for label, pin, sh in (("municipality", cv["pinball_lgu"], cv["shortfall_lgu"]),
+                               ("barangays w/ packs", cv["pinball_barangay_nonzero"],
+                                cv["shortfall_barangay_nonzero"])):
+            if pin is None:
+                continue
+            print(f"{lgu if label == 'municipality' else '':<16}{label:<22}{pin:>10,.1f}"
+                  f"{str(sh['n_short']) + '/' + str(sh['n']):>12}{sh['avg_shortfall']:>11,.0f}{sh['avg_excess']:>12,.0f}")
+
+    print("\nShare skill vs pooled history (1 - model / pooled, size-weighted; > 0 = model better)")
+    for lgu, cv in out["loto_cv"].items():
+        if not cv or cv.get("skill_vs_pooled") is None:
+            continue
+        lo, hi = cv["skill_vs_pooled_ci"]
+        verdict = "tie" if lo < 0 < hi else ("model better" if lo > 0 else "pooled history better")
+        print(f"  {lgu:<16}{cv['skill_vs_pooled']:+.1%}   95% interval {lo:+.1%} to {hi:+.1%}  ({verdict})")
+
+    print("\nFloor protection (current forecast)")
+    for lgu, cv in out["loto_cv"].items():
+        f = (cv or {}).get("floor")
+        if not f:
+            continue
+        print(f"  {lgu:<16}{f['n_history_below_half']} of {f['n_barangays']} barangays would get < half their "
+              f"per-family share from history alone; floor lifts {f['n_floor_lifted']} "
+              f"({f['share_moved_by_floor']:.1%} of the LGU's stock)")
+
+    print(f"\nPriority ranking (held-out storms with >= 5 barangays served)")
+    print(f"{'':<18}{'Spearman model':>16}{'pooled':>9}{'top-5 hit model':>18}{'pooled':>9}{'storms':>8}")
+    for lgu, cv in out["loto_cv"].items():
+        if not cv or not cv.get("rank_n_storms"):
+            continue
+        print(f"  {lgu:<16}{cv['spearman_model']:>16.2f}{cv['spearman_pooled']:>9.2f}"
+              f"{cv['top_k_model']:>18.0%}{cv['top_k_pooled']:>9.0%}{cv['rank_n_storms']:>8}")
+
+    print(f"\n{'Pack error':<20}{'MAE':>10}{'WAPE':>10}")
+    for lgu, cv in out["loto_packs_cv"].items():
+        if cv:
+            print(f"  {lgu:<18}{cv['mae_packs']:>10.1f}{cv['wape']:>10.1%}")

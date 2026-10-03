@@ -258,7 +258,16 @@
 .pa-legend .lg-wet { background: #eef5ff; border: 1px solid #cfe2ff; }
 .pa-legend .lg-peak { background: #dcebff; border: 1px solid #b9d6ff; }
 .pa-stock-tiles { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 12px auto 4px; }
-.pa-stock-tiles .pa-decision-tile { max-width: 300px; flex: 1 1 220px; }
+.pa-stock-tiles .pa-decision-tile {
+    max-width: 300px; flex: 1 1 200px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    padding: 12px 14px; border: 1px solid #e3e8f0; border-radius: 10px; background: #f8fafc;
+}
+.pa-stock-tiles .pa-decision-tile > .rd-sub:first-child {
+    font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: #5b6475;
+}
+.pa-stock-tiles .pa-decision-tile strong { font-size: 22px; line-height: 1.2; color: #0f2547; }
+.pa-stock-tiles .pa-decision-tile strong + .rd-sub { font-size: 13px; color: #6b7280; }
 
 .pa-bar-value {
     fill: #1a2233;

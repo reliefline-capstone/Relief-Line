@@ -4,15 +4,23 @@ demand for an LGU (forecast_lgu) or, via a barangay-share split, for a single
 barangay (forecast_barangay).
 
 Every forecast month carries two numbers:
-  projected_packs - EXPECTED demand (Stage 2's severity.expected scenario)
-  p90_packs       - SAFETY-STOCK level (Stage 2's severity.high / 90th
-                     percentile scenario). Pre-positioning is about not
-                     running out, so stock toward P90, not the average.
-The horizon has the same pair (horizon_total, horizon_p90).
+  projected_packs - EXPECTED demand: expected relief events x mean event
+                     size (Stage 2's severity.expected), no buffer
+  p90_packs       - SAFETY-STOCK level: expected relief events x the
+                     per-STORM P90 (severity.high) x (1 + buffer).
+                     Pre-positioning is about not running out, so stock
+                     toward P90.
+The horizon has the same pair (horizon_total, horizon_p90). horizon_p90 is
+expected storms x the per-storm P90 - NOT a true percentile of the horizon's
+multi-storm total (a simulated one was built and not adopted - see the
+experiment log in app.ml.train), so the page labels it that way and compares
+it with the largest storm AND the largest year on record.
 
 Formula (see app.ml.train module doc for the full rationale):
-  stock = expected_typhoons(horizon) x P(relief) x total_packs(scenario)
-          x barangay_share x (1 + buffer)
+  expected  = expected_typhoons(horizon) x P(relief) x mean event size
+              x barangay_share
+  stockpile = expected_typhoons(horizon) x P(relief) x per-event P90
+              x barangay_share x (1 + buffer)       (buffer: stockpile only)
 
 expected_typhoons(horizon) is CLIMATOLOGICAL (Stage 2's per-calendar-month
 typhoon rate, summed over the horizon's months - see _forecast_window) and
@@ -97,7 +105,12 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
     """Food-pack demand projection for `lgu` (a Barangay.city_municipality /
     Office.area_covered value) over the next `months_ahead` months, starting
     from the next full calendar month. Returns None if no model is trained or
-    the LGU has no fitted share model."""
+    the LGU has no fitted share model.
+
+    Expected = expected relief events x mean event size (no buffer).
+    Stockpile = expected relief events x per-storm P90 x (1 + buffer) - the
+    buffer applies to the stockpile only, and the pre-buffer figure is
+    computed directly, never derived back by dividing."""
     artifact = _load_artifact()
     if artifact is None or lgu not in artifact["lgu"]:
         return None
@@ -109,8 +122,10 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
 
     monthly_rate = [climatology.get(d.month, 0.0) for d in window]
     expected_typhoons = sum(monthly_rate)
-    lgu_expected_total = expected_typhoons * L["p_relief"] * L["severity"]["expected"] * (1 + buffer)
-    lgu_p90_total = expected_typhoons * L["p_relief"] * L["severity"]["high"] * (1 + buffer)
+    relief_events = expected_typhoons * L["p_relief"]
+    lgu_expected_total = relief_events * L["severity"]["expected"]
+    lgu_p90_raw = relief_events * L["severity"]["high"]
+    lgu_p90_total = lgu_p90_raw * (1 + buffer)
 
     months = []
     running_e = running_p = 0
@@ -136,21 +151,25 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
         })
 
     total = sum(m["projected_packs"] for m in months)
+    p90_before_buffer = int(round(lgu_p90_raw))
     horizon_p90 = max(int(round(lgu_p90_total)), total)
     if months:
         months[-1]["cum_p90"] = horizon_p90
-    # Reported separately so the buffer stays a visible policy choice and
-    # never silently absorbs a change in the percentile itself.
-    p90_before_buffer = int(round(lgu_p90_total / (1 + buffer)))
     largest_event = int(round(L["severity"].get("max") or 0))
     per_event_p90 = int(round(L["severity"]["high"]))
+    # Largest calendar YEAR on record (all relief events that year) - the
+    # stockpile isn't a true yearly percentile, so the page shows this next
+    # to the single-storm comparison.
+    yearly = L.get("yearly_totals") or {}
+    largest_year = max(yearly, key=yearly.get) if yearly else None
+    largest_year_total = int(round(yearly[largest_year])) if largest_year is not None else None
     return {
         "lgu": lgu, "months": months,
         "horizon_total": total, "horizon_p90": horizon_p90,
         "p90_before_buffer": p90_before_buffer,
         "buffer": buffer, "buffer_packs": horizon_p90 - p90_before_buffer,
         "expected_typhoons": expected_typhoons,
-        "expected_relief_events": expected_typhoons * L["p_relief"],
+        "expected_relief_events": relief_events,
         "per_event_p90": per_event_p90,
         # Known limits (2026-10-03). The horizon P90 is expected storms x
         # P(relief) x the per-EVENT P90, not the P90 of a multi-storm total,
@@ -166,6 +185,8 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
         # as coverage is a policy decision, so it's reported, not assumed.
         "below_largest_event": largest_event > p90_before_buffer,
         "largest_covered_only_by_buffer": p90_before_buffer < largest_event <= horizon_p90,
+        "largest_year": largest_year, "largest_year_total": largest_year_total,
+        "below_largest_year": (largest_year_total or 0) > p90_before_buffer,
         "model_version": artifact.get("version"), "data_through": artifact.get("data_through"),
     }
 
@@ -201,6 +222,16 @@ def loto_cv_summary():
             "beats_pooled_k": cv.get("beats_pooled_k"),
             "beats_pooled_n": cv.get("beats_pooled_n"),
             "diff_vs_pooled_weighted_ci": cv.get("diff_vs_pooled_weighted_ci"),
+            # Defense metrics (2026-10-03); None on an older artifact.
+            "skill_vs_pooled": cv.get("skill_vs_pooled"),
+            "skill_vs_pooled_ci": cv.get("skill_vs_pooled_ci"),
+            "spearman_model": cv.get("spearman_model"),
+            "spearman_pooled": cv.get("spearman_pooled"),
+            "top_k_model": cv.get("top_k_model"),
+            "top_k_pooled": cv.get("top_k_pooled"),
+            "top_k": cv.get("top_k"),
+            "rank_n_storms": cv.get("rank_n_storms"),
+            "floor": cv.get("floor"),
         })
     rows.sort(key=lambda r: r["lgu"])
     return rows
@@ -221,6 +252,7 @@ def loto_packs_cv_summary():
             "lgu": lgu,
             "mae_packs": cv["mae_packs"],
             "rmse_packs": cv["rmse_packs"],
+            "wape": cv.get("wape"),
             "n": cv["n"],
         })
     rows.sort(key=lambda r: r["lgu"])
@@ -249,6 +281,10 @@ def p90_coverage_summary():
             "barangay_nonzero_n": cv.get("barangay_nonzero_n"),
             "lgu_hits": cv.get("lgu_hits"),
             "barangay_nonzero_hits": cv.get("barangay_nonzero_hits"),
+            "pinball_lgu": cv.get("pinball_lgu"),
+            "pinball_barangay_nonzero": cv.get("pinball_barangay_nonzero"),
+            "shortfall_lgu": cv.get("shortfall_lgu"),
+            "shortfall_barangay_nonzero": cv.get("shortfall_barangay_nonzero"),
         })
     rows.sort(key=lambda r: r["lgu"])
     return rows

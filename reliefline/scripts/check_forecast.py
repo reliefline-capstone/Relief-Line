@@ -7,8 +7,7 @@ to catch a broken model before it reaches a page.
 
 Exits non-zero if any check fails. A [WARN] line is a known limitation or
 a below-target figure worth reading - it is printed loudly but does not
-fail the run (e.g. Calasiao's 12-month P90 knowingly sits below its largest
-storm on record).
+fail the run (e.g. a municipality's received-packs P90 coverage below 80%).
 """
 import os
 import sys
@@ -27,8 +26,9 @@ warnings = []
 
 # LGUs whose 12-month P90 is KNOWN to sit below their largest real event (a
 # once-in-years storm no forecast from 8-14 events covers) - a warning there,
-# a failure anywhere else.
-KNOWN_UNCOVERED_LARGEST_EVENT = {"Calasiao"}
+# a failure anywhere else. Empty since Calasiao's complete 2026-10-03 dataset:
+# its 12-month P90 (60,744 before buffer) now covers Crising + Emong (39,103).
+KNOWN_UNCOVERED_LARGEST_EVENT = set()
 
 # Does the 15% safety buffer count as covering the largest storm? A POLICY
 # decision, not a modelling one - so it's an explicit switch, not a silent
@@ -55,12 +55,18 @@ def info(text_):
 app = create_app()
 with app.app_context():
     print("Data")
-    check("typhoon_calendar has 36 verified events",
-          db.session.execute(text("SELECT COUNT(*) FROM typhoon_calendar")).scalar() == 36)
+    # The calendar is built only from the relief reports - see
+    # scripts/typhoon_calendar_from_reports.py.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import typhoon_calendar_from_reports as _calendar
+    expected_keys = set(_calendar.derive())
+    db_keys = set(db.session.execute(text("SELECT typhoon_key FROM typhoon_calendar")).scalars())
+    check(f"typhoon_calendar = exactly the storms named in the relief reports ({len(expected_keys)})",
+          db_keys == expected_keys, f"extra {sorted(db_keys - expected_keys)}, missing {sorted(expected_keys - db_keys)}")
     n_ref_events = db.session.execute(text(
         "SELECT COUNT(*) FROM disaster_events WHERE is_reference = 1")).scalar()
-    check("disaster_events has a matching is_reference row per calendar typhoon", n_ref_events == 36,
-          str(n_ref_events))
+    check("disaster_events has a matching is_reference row per calendar typhoon",
+          n_ref_events == len(expected_keys), str(n_ref_events))
     n_unlinked = db.session.execute(text(
         "SELECT COUNT(*) FROM typhoon_calendar WHERE disaster_event_id IS NULL")).scalar()
     check("every typhoon_calendar row resolves to a disaster_events row", n_unlinked == 0, str(n_unlinked))
@@ -72,14 +78,14 @@ with app.app_context():
     check("Urdaneta City has real relief events on record", per_lgu.get("Urdaneta City", 0) >= 10, str(per_lgu))
 
     # Only real typhoon reports may train the model: every relief event must
-    # link to at least one verified typhoon_calendar key. Keeps app test rows
+    # link to at least one typhoon_calendar key. Keeps app test rows
     # ("Test Typhoon", "try lang", ...) out if they're ever ingested.
     unlinked = db.session.execute(text(
         "SELECT e.relief_event_id, e.city_municipality, e.label FROM relief_events e "
         "WHERE NOT EXISTS (SELECT 1 FROM relief_event_typhoons t "
         "                  JOIN typhoon_calendar c ON c.typhoon_key = t.typhoon_key "
         "                  WHERE t.relief_event_id = e.relief_event_id)")).fetchall()
-    check("every relief event links to a verified typhoon_calendar storm (no test/unlinked events)",
+    check("every relief event links to a typhoon_calendar storm (no test/unlinked events)",
           not unlinked, str([tuple(r) for r in unlinked][:5]))
 
     n_neg = db.session.execute(text(
@@ -87,11 +93,17 @@ with app.app_context():
         "OR affected_families < 0 OR total_families_snapshot < 0")).scalar()
     check("no negative values in barangay_relief_records", n_neg == 0, str(n_neg))
 
-    sb_aug2026 = db.session.execute(text(
+    # Sta. Barbara's 2026 combined report carries exactly the packs of the
+    # Aug 2026 DSWD+LGU sheet it replaced - the sheet must not also be loaded.
+    sb_2026 = db.session.execute(text(
         "SELECT SUM(r.food_packs_given) FROM barangay_relief_records r "
         "JOIN relief_events e ON e.relief_event_id = r.relief_event_id "
-        "WHERE e.city_municipality = 'Santa Barbara' AND e.label LIKE 'Aug 2026%'")).scalar()
-    check("real Aug 2026 Sta. Barbara sheet loaded (14,071 packs)", int(sb_aug2026 or 0) == 14071, str(sb_aug2026))
+        "WHERE e.city_municipality = 'Santa Barbara' AND e.label = 'Luis + Maymay + Neneng + Pilandok (2026)'")).scalar()
+    check("real Sta. Barbara 2026 report loaded (14,071 packs)", int(sb_2026 or 0) == 14071, str(sb_2026))
+    n_retired = db.session.execute(text(
+        "SELECT COUNT(*) FROM relief_events WHERE source_file IN "
+        "('sample_sta_barbara_aug2026', 'real_sta_barbara_typhoons_2021_2025')")).scalar()
+    check("retired Sta. Barbara sources not loaded (no double-counted packs)", n_retired == 0, str(n_retired))
 
     # All three LGUs now source population/num_households from the latest
     # real relief record (not PSA, not synthetic) - see scripts/real_profiles.py.
@@ -154,6 +166,22 @@ with app.app_context():
               abs(implied - sum(with_packs)) < 1, f"{implied:,.0f} vs {sum(with_packs):,.0f}")
         f12 = P.forecast_lgu(lgu, 12)
         largest = int(max(with_packs)) if with_packs else 0
+
+        # Stockpile = expected relief events x per-storm P90, buffer on the
+        # stockpile only (2026-10-03) - recomputed here from the artifact,
+        # and the pre-buffer figure must not be derived back by dividing.
+        window = P._forecast_window(12)
+        events_12 = sum(art["climatology"].get(d.month, 0.0) for d in window) * L["p_relief"]
+        raw = events_12 * L["severity"]["high"]
+        check(f"{lgu}: 12-month stockpile = expected relief events x per-storm P90, buffer on the stockpile only",
+              f12["p90_before_buffer"] == int(round(raw))
+              and f12["horizon_p90"] == max(int(round(raw * (1 + art["buffer"]))), f12["horizon_total"])
+              and abs(f12["horizon_total"] - events_12 * L["severity"]["expected"]) <= len(window),
+              f"{f12['p90_before_buffer']:,} + buffer = {f12['horizon_p90']:,}; expected {f12['horizon_total']:,} (no buffer)")
+        if f12.get("largest_year") is not None:
+            info(f"{lgu}: largest year on record {f12['largest_year']} = {f12['largest_year_total']:,} packs vs "
+                 f"12-month stockpile {f12['p90_before_buffer']:,} before buffer / {f12['horizon_p90']:,} with buffer"
+                 + (" - NOT covered" if f12["below_largest_year"] else " - covered"))
         unbuffered, buffered = f12["p90_before_buffer"], f12["horizon_p90"]
         msg = f"12-month P90 {unbuffered:,} before buffer / {buffered:,} with buffer vs largest event {largest:,}"
         if unbuffered >= largest:
@@ -209,8 +237,9 @@ with app.app_context():
              f"{cv['mae_pooled_history_weighted']:.4f}; better in {cv['beats_pooled_k']} of "
              f"{cv['beats_pooled_n']} storms; 95% interval {lo:+.4f} to {hi:+.4f}"
              + (" (no clear difference)" if lo < 0 < hi else ""))
-        # Supply-only sheets (no family counts, e.g. Sta. Barbara's event 49)
-        # must never feed history shares - guards a future reload.
+        # Supply-only sheets (no family counts, like Sta. Barbara's retired
+        # Aug 2026 DSWD+LGU sheet) must never feed history shares - guards a
+        # future reload.
         supply = [eid for eid, ev in events.items() if _is_supply_only(_event_total_and_known(ev["records"])[1])]
         without = {eid: ev for eid, ev in events.items() if eid not in supply}
         check(f"{lgu}: pooled history ignores supply-only events ({len(supply)} found)",

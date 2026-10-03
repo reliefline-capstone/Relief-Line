@@ -1,4 +1,11 @@
 """
+NO LONGER LOADED (2026-10-03): this sheet's per-barangay packs are exactly
+the "Food Packs Given" of the Luis & Maymay & Neneng & Pilandok (2026) report
+in scripts/real_sta_barbara_typhoons_2021_2026.py, which also carries
+affected-family and population figures - loading both would double-count.
+Kept only as the source record of the DSWD vs LGU split, which the report
+does not have.
+
 REAL sample record given to the team: "Municipality of Sta. Barbara,
 Pangasinan - Relief Distribution Status" (scanned 24 Sep 2026). Family Food
 Packs (FFP) delivered to barangays after the late-August 2026 habagat

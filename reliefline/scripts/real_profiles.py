@@ -24,9 +24,9 @@ record (barangay_relief_records.total_individuals_snapshot/
 total_families_snapshot - see scripts/real_<lgu>_typhoons_*.py), NOT a PSA
 census count, for all three LGUs including Urdaneta:
 
-  Urdaneta City   - Maymay (Aug 2026), all 34 barangays.
-  Calasiao        - Maymay (Aug 2026), all 24 barangays.
-  Santa Barbara   - Crising/Dante/Emong (Jul 2025), all 29 barangays.
+  Urdaneta City   - Luis/Maymay/Neneng/Pilandok (2026), all 34 barangays.
+  Calasiao        - Luis/Maymay/Neneng/Pilandok (Aug 2026), all 24 barangays.
+  Santa Barbara   - Luis/Maymay/Neneng/Pilandok (Aug 2026), all 29 barangays.
 
 Urdaneta previously used real PSA 2024 census figures here instead (city
 totals then: population 145,935, households 40,015). Switched to match
@@ -53,8 +53,8 @@ REAL_PROFILES = {}
 
 
 # --- Urdaneta City --------------------------------------------------------
-# Maymay (Aug 2026) report - see scripts/real_urdaneta_typhoons_2021_2026.py
-# (updated dataset 2026-10-03).
+# Luis & Maymay & Neneng & Pilandok (2026) report - see
+# scripts/real_urdaneta_typhoons_2021_2026.py (dataset 2026-10-03).
 _URDANETA_INDIVIDUALS_2026 = {
     "Anonas": 6285, "Bactad East": 2231, "Bayaoas": 5864, "Bolaoen": 1604,
     "Cabaruan": 2389, "Cabuloan": 3564, "Camanang": 5397, "Camantiles": 6564,
@@ -67,15 +67,15 @@ _URDANETA_INDIVIDUALS_2026 = {
     "Santo Domingo": 3423, "Sugcong": 1160, "Tipuso": 2262, "Tulong": 1567,
 }
 _URDANETA_FAMILIES_2026 = {
-    "Anonas": 1540, "Bactad East": 611, "Bayaoas": 1635, "Bolaoen": 432,
-    "Cabaruan": 624, "Cabuloan": 915, "Camanang": 1335, "Camantiles": 1732,
-    "Casantaan": 456, "Catablan": 1695, "Cayambanan": 1267, "Consolacion": 480,
-    "Dilan Paurido": 1983, "Dr. Pedro T. Orata": 670, "Labit Proper": 968,
-    "Labit West": 726, "Mabanogbog": 975, "Macalong": 495, "Nancalobasaan": 860,
-    "Nancamaliran East": 1502, "Nancamaliran West": 1595, "Nancayasan": 2397,
-    "Oltama": 399, "Palina East": 1425, "Palina West": 948, "Pinmaludpod": 2171,
-    "Poblacion": 1958, "San Jose": 1554, "San Vicente": 2624, "Santa Lucia": 940,
-    "Santo Domingo": 954, "Sugcong": 321, "Tipuso": 558, "Tulong": 400,
+    "Anonas": 1726, "Bactad East": 705, "Bayaoas": 1810, "Bolaoen": 450,
+    "Cabaruan": 696, "Cabuloan": 1140, "Camanang": 1460, "Camantiles": 1858,
+    "Casantaan": 428, "Catablan": 1805, "Cayambanan": 1407, "Consolacion": 433,
+    "Dilan Paurido": 2079, "Dr. Pedro T. Orata": 1327, "Labit Proper": 1014,
+    "Labit West": 789, "Mabanogbog": 1079, "Macalong": 484, "Nancalobasaan": 1008,
+    "Nancamaliran East": 1300, "Nancamaliran West": 1707, "Nancayasan": 2420,
+    "Oltama": 392, "Palina East": 1273, "Palina West": 985, "Pinmaludpod": 2320,
+    "Poblacion": 2194, "San Jose": 1832, "San Vicente": 2974, "Santa Lucia": 875,
+    "Santo Domingo": 931, "Sugcong": 322, "Tipuso": 616, "Tulong": 444,
 }
 for _name, _pop in _URDANETA_INDIVIDUALS_2026.items():
     REAL_PROFILES.setdefault(("Urdaneta City", _name), {})["population"] = _pop
@@ -84,23 +84,23 @@ for _name, _hh in _URDANETA_FAMILIES_2026.items():
 
 
 # --- Calasiao --------------------------------------------------------------
-# Maymay (Aug 2026) report - see scripts/real_calasiao_typhoons_2021_2026.py
-# (updated dataset 2026-10-03).
+# Luis & Maymay & Neneng & Pilandok (Aug 2026) report - see
+# scripts/real_calasiao_typhoons_2021_2026.py (complete dataset 2026-10-03).
 _CALASIAO_INDIVIDUALS_2026 = {
-    "Ambonao": 7131, "Ambuetel": 3081, "Banaoang": 5088, "Bued": 5908, "Buenlag": 8206,
-    "Cabilocaan": 3262, "Dinalaoan": 4167, "Doyong": 4052, "Gabon": 2782, "Lasip": 3139,
-    "Longos": 3101, "Lumbang": 2784, "Macabito": 4494, "Malabago": 4477, "Mancup": 3793,
-    "Nagsaing": 6066, "Nalsian": 6203, "Poblacion East": 1691, "Poblacion West": 506,
-    "Quesban": 3205, "San Miguel": 7890, "San Vicente": 2122, "Songkoy": 3001,
-    "Talibaew": 4722,
+    "Ambonao": 7046, "Ambuetel": 3031, "Banaoang": 5069, "Bued": 5904, "Buenlag": 8231,
+    "Cabilocaan": 3167, "Dinalaoan": 4149, "Doyong": 4020, "Gabon": 2861, "Lasip": 3223,
+    "Longos": 3069, "Lumbang": 2642, "Macabito": 4461, "Malabago": 4427, "Mancup": 3735,
+    "Nagsaing": 6064, "Nalsian": 6429, "Poblacion East": 1684, "Poblacion West": 609,
+    "Quesban": 3200, "San Miguel": 7842, "San Vicente": 2117, "Songkoy": 2949,
+    "Talibaew": 4757,
 }
 _CALASIAO_FAMILIES_2026 = {
-    "Ambonao": 1739, "Ambuetel": 752, "Banaoang": 1241, "Bued": 1441, "Buenlag": 2001,
-    "Cabilocaan": 796, "Dinalaoan": 1016, "Doyong": 988, "Gabon": 679, "Lasip": 766,
-    "Longos": 756, "Lumbang": 679, "Macabito": 1096, "Malabago": 1092, "Mancup": 925,
-    "Nagsaing": 1480, "Nalsian": 1513, "Poblacion East": 412, "Poblacion West": 123,
-    "Quesban": 782, "San Miguel": 1924, "San Vicente": 518, "Songkoy": 732,
-    "Talibaew": 1152,
+    "Ambonao": 1895, "Ambuetel": 776, "Banaoang": 1327, "Bued": 1649, "Buenlag": 2087,
+    "Cabilocaan": 876, "Dinalaoan": 1123, "Doyong": 1046, "Gabon": 757, "Lasip": 875,
+    "Longos": 838, "Lumbang": 705, "Macabito": 1179, "Malabago": 1159, "Mancup": 1026,
+    "Nagsaing": 1503, "Nalsian": 1797, "Poblacion East": 438, "Poblacion West": 162,
+    "Quesban": 927, "San Miguel": 2150, "San Vicente": 549, "Songkoy": 786,
+    "Talibaew": 1339,
 }
 for _name, _pop in _CALASIAO_INDIVIDUALS_2026.items():
     REAL_PROFILES.setdefault(("Calasiao", _name), {})["population"] = _pop
@@ -109,29 +109,29 @@ for _name, _hh in _CALASIAO_FAMILIES_2026.items():
 
 
 # --- Santa Barbara -------------------------------------------------------
-# Crising/Dante/Emong (Jul 2025) report, all 29 barangays - see
-# scripts/real_sta_barbara_typhoons_2021_2025.py (updated dataset 2026-10-03).
-_STA_BARBARA_INDIVIDUALS_2025 = {
-    "Alibago": 1789, "Balingueo": 3922, "Banaoang": 4551, "Banzal": 1747, "Botao": 3484,
-    "Cablong": 3102, "Carusocan": 1981, "Dalongue": 2278, "Erfe": 675,
-    "Gueguesangen": 1872, "Leet": 6891, "Malanay": 2914, "Maningding": 4940,
-    "Maronong": 3523, "Maticmatic": 4992, "Minien East": 3373, "Minien West": 5284,
-    "Nilombot": 2632, "Patayac": 2834, "Payas": 4021, "Poblacion Norte": 3671,
-    "Poblacion Sur": 1504, "Primicias": 1932, "Sapang": 2354, "Sonquil": 3401,
-    "Tebag East": 354, "Tebag West": 2678, "Tuliao": 6128, "Ventinilla": 3656,
+# Luis & Maymay & Neneng & Pilandok (Aug 2026) report, all 29 barangays - see
+# scripts/real_sta_barbara_typhoons_2021_2026.py (dataset 2026-10-03).
+_STA_BARBARA_INDIVIDUALS_2026 = {
+    "Alibago": 1744, "Balingueo": 3920, "Banaoang": 4536, "Banzal": 1712,
+    "Botao": 3467, "Cablong": 3093, "Carusocan": 1960, "Dalongue": 2228, "Erfe": 670,
+    "Gueguesangen": 1864, "Leet": 6968, "Malanay": 2884, "Maningding": 4930,
+    "Maronong": 3479, "Maticmatic": 5017, "Minien East": 3350, "Minien West": 5273,
+    "Nilombot": 2592, "Patayac": 2843, "Payas": 4002, "Poblacion Norte": 3872,
+    "Poblacion Sur": 1556, "Primicias": 1909, "Sapang": 2346, "Sonquil": 3375,
+    "Tebag East": 371, "Tebag West": 2650, "Tuliao": 6187, "Ventinilla": 3622,
 }
-_STA_BARBARA_FAMILIES_2025 = {
-    "Alibago": 480, "Balingueo": 1053, "Banaoang": 1222, "Banzal": 469, "Botao": 935,
-    "Cablong": 833, "Carusocan": 532, "Dalongue": 612, "Erfe": 181, "Gueguesangen": 503,
-    "Leet": 1850, "Malanay": 782, "Maningding": 1326, "Maronong": 946,
-    "Maticmatic": 1340, "Minien East": 906, "Minien West": 1419, "Nilombot": 707,
-    "Patayac": 761, "Payas": 1079, "Poblacion Norte": 986, "Poblacion Sur": 404,
-    "Primicias": 519, "Sapang": 632, "Sonquil": 913, "Tebag East": 95,
-    "Tebag West": 719, "Tuliao": 1645, "Ventinilla": 981,
+_STA_BARBARA_FAMILIES_2026 = {
+    "Alibago": 452, "Balingueo": 1110, "Banaoang": 1214, "Banzal": 461, "Botao": 1001,
+    "Cablong": 868, "Carusocan": 504, "Dalongue": 680, "Erfe": 218,
+    "Gueguesangen": 497, "Leet": 1842, "Malanay": 771, "Maningding": 1419,
+    "Maronong": 982, "Maticmatic": 1280, "Minien East": 969, "Minien West": 1634,
+    "Nilombot": 706, "Patayac": 814, "Payas": 1077, "Poblacion Norte": 914,
+    "Poblacion Sur": 531, "Primicias": 614, "Sapang": 644, "Sonquil": 893,
+    "Tebag East": 116, "Tebag West": 765, "Tuliao": 1715, "Ventinilla": 972,
 }
-for _name, _pop in _STA_BARBARA_INDIVIDUALS_2025.items():
+for _name, _pop in _STA_BARBARA_INDIVIDUALS_2026.items():
     REAL_PROFILES.setdefault(("Santa Barbara", _name), {})["population"] = _pop
-for _name, _hh in _STA_BARBARA_FAMILIES_2025.items():
+for _name, _hh in _STA_BARBARA_FAMILIES_2026.items():
     REAL_PROFILES.setdefault(("Santa Barbara", _name), {})["num_households"] = _hh
 
 

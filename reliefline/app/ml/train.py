@@ -36,7 +36,7 @@ problem it was already suspect for. Two-stage sidesteps this entirely:
 
   Stage 2 (severity/frequency, computed): how bad is a typical typhoon for
   this LGU, and how often does one hit? Both come straight from real
-  records/the verified calendar, not a fitted model - with 8-14 events per
+  records/the typhoon calendar, not a fitted model - with 8-14 events per
   LGU there isn't enough data to fit a distribution shape, so empirical
   percentiles (25th/mean/90th of real per-typhoon LGU totals) and a simple
   frequency count are the honest choice. Crucially, frequency is CLIMATOLOGICAL
@@ -45,19 +45,18 @@ problem it was already suspect for. Two-stage sidesteps this entirely:
   forecast for "next 3 months" run in December can climatologically show ~0
   expected typhoons (Dec-May has none in the record) without needing to
   predict an unknowable future event - see app.ml.predict._forecast_window.
+  Since 2026-10-03 the calendar is built ONLY from the relief reports: every
+  storm a report names, dated by the reports
+  (scripts/typhoon_calendar_from_reports.py). The earlier researched
+  36-storm list was removed on request.
 
-  P(relief) - the chance a typhoon on the calendar actually triggered a
-  relief operation for THIS LGU - is deliberately computed from real
-  relief-record coverage (p_relief below), NOT from typhoon_calendar's own
-  pangasinan_impact_confirmed column: that column is only research-search
-  confidence (did a news article name Pangasinan), and real records already
-  contradict it for many "not confirmed" storms (Kiko, Jolina, Fabian,
-  Karding... all have real Calasiao/Urdaneta relief despite being marked
-  "not confirmed in sources reviewed" - a desk search missing a source is not
-  the same as relief not happening). It is relief EVENTS per calendar
-  typhoon (v9.3 fix - counting storms covered overstated totals by up to
-  x1.38, since one combined report can cover several storms), and a LOWER
-  bound, since a storm with no record is treated as no relief.
+  P(relief) - relief operations for THIS LGU per calendar storm - is
+  computed from real relief-record coverage (p_relief below). It is relief
+  EVENTS per calendar typhoon (v9.3 fix - counting storms covered overstated
+  totals by up to x1.38, since one combined report can cover several
+  storms). With the calendar built from the reports, a storm only counts if
+  some LGU reported relief for it, so this is "relief events per REPORTED
+  storm"; storms x P(relief) still reproduces each LGU's real event count.
 
   v9.1 (2026-10-03): the regression is weighted by each event's LGU total.
   v9.2 (2026-10-03): the regression share is BLENDED with each barangay's
@@ -69,13 +68,17 @@ problem it was already suspect for. Two-stage sidesteps this entirely:
   v9.3 (2026-10-03): P(relief) fix above.
 
 Formula (see app.ml.predict.forecast_lgu for the actual implementation):
-  stock(barangay, horizon, scenario) =
-      expected_typhoons(horizon) x P(relief) x total_packs(scenario)
-      x share(barangay) x (1 + BUFFER)
-Known limits: the horizon P90 is expected storms x P(relief) x the per-event
-P90, not the P90 of a multi-storm total (not a safety stock under ~6
-months), and no forecast built from 8-14 events covers a once-in-years storm
-(Calasiao's 39,103-pack Crising + Emong exceeds its 12-month P90).
+  expected(barangay, horizon)  = expected_typhoons(horizon) x P(relief)
+                                 x mean event size x share(barangay)
+  stockpile(barangay, horizon) = expected_typhoons(horizon) x P(relief)
+                                 x per-event P90 x share(barangay)
+                                 x (1 + BUFFER)
+The buffer applies to the stockpile only (2026-10-03). Known limits: the
+stockpile is expected storms x the per-STORM P90, not a true percentile of
+a multi-storm (e.g. yearly) total; it is compared on the page with the
+largest single storm AND the largest year on record (yearly_totals). No
+forecast built from 8-14 events is guaranteed to cover a once-in-years
+storm or season (2025 was one).
 
 Validation: leave-one-typhoon-out cross-validation (leave_one_typhoon_out_cv)
 against three baselines - equal 1/N split, each barangay's average
@@ -83,10 +86,49 @@ per-event share, and POOLED HISTORY (its share of all past relief, the
 strongest) - refit on every OTHER event, scored on the held-out one, plain
 and size-weighted, with "beats pooled history in k of n storms" and a
 bootstrap interval. As of v9.3 the model does NOT clearly beat pooled
-history in any LGU (every interval crosses 0): its case is protecting
-barangays with little relief history (cap + floor), not proven accuracy.
+history in any LGU: Calasiao's and Urdaneta's intervals cross 0, and on
+Sta. Barbara's full 14-report set (2026-10-03) pooled history is slightly
+but measurably better (size-weighted 0.0108 vs 0.0116, interval +0.0001 to
++0.0015) - the price of the 50% floor and the 0.75 alpha cap, which move
+share toward barangays with little relief history. That protection is the
+model's case, not proven accuracy.
 With 7-14 scored storms per LGU and the design choices made on the same
 data, treat every figure as approximate.
+
+Experiment log - tried on the same leave-one-typhoon-out data, kept or
+rejected (adopt only if it beats the current model on the same metrics):
+  ADOPTED  v9.1 size-weighted share regression (2026-10-03).
+  ADOPTED  v9.2 history blend + 50% floor (ties pooled history; kept for
+           the floor's protection of barangays with little history).
+  ADOPTED  v9.3 P(relief) = relief events / calendar storms.
+  ADOPTED  buffer on the stockpile only (2026-10-03): "expected" carries
+           no buffer, and the pre-buffer P90 is computed directly, never
+           derived back by dividing.
+  BUILT, NOT ADOPTED  simulated horizon P90 (2026-10-03, reverted on the
+           user's decision): relief events/month ~ Poisson(climatology x
+           P(relief)), sizes resampled from the LGU's real events, 50,000
+           draws, fixed seed, 90th percentile of the horizon total.
+           12-month P90 before buffer: Calasiao 46,030, Sta. Barbara
+           20,919, Urdaneta 14,035 (vs 61,218 / 22,890 / 12,097 from the
+           formula kept). Out-of-sample year replay (each year vs a
+           simulation built without it): 4 of 5 years in every LGU, all
+           three missing 2025 (Calasiao 57,778 vs 29,717; Sta. Barbara
+           18,437 vs 17,752; Urdaneta 21,876 vs 3,331). Without the
+           largest storm on record its P90 fell to 32,120 / 16,190 / 7,440.
+  REJECTED minimum event size for the share fit - same result as weighting,
+           with a magic number.
+  REJECTED MAPE / R2 as headline metrics (2026-09-28) - see
+           leave_one_typhoon_out_packs_cv; WAPE used instead.
+  REJECTED affected-families relative-risk share model - tied v9.3.
+  REJECTED shared-storm (cross-LGU) lognormal severity - its tail exploded
+           for Sta. Barbara (median P90 ~180k packs); no coverage gain.
+  NOT A MODEL  allocating by the storm's reported affected families: packs
+           track affected families (~0.75-0.83 packs per family; Urdaneta
+           1:1 in 40% of rows), so its ~40-67% lower share error mostly
+           measures the CSWDOs' own rule. Out of the forecast metrics;
+           possible separate allocation-support feature.
+  SKIPPED  recency weighting - 14 storms can't tell a trend from luck, and
+           the family-count change is partly a report-source change.
 --------------------------------------------------------------------------
 """
 import os
@@ -252,8 +294,8 @@ def _as_date(value):
 
 
 def load_typhoon_calendar():
-    """[(typhoon_key, start_date, key_date, year)] - the verified 36-event
-    calendar (scripts/typhoon_calendar_2021_2026.py)."""
+    """[(typhoon_key, start_date, key_date, year)] - every storm named in a
+    real relief report (scripts/typhoon_calendar_from_reports.py)."""
     from sqlalchemy import text
     from app.extensions import db
 
@@ -383,7 +425,7 @@ def apply_share_floor(shares, total_families_by_barangay, floor):
 def _is_supply_only(known):
     """True for an event where no reported barangay has a family snapshot -
     a supply-distribution sheet (e.g. Sta. Barbara's Aug 2026 DSWD+LGU
-    sheet), not a needs report. Excluded from every history-based share
+    sheet, retired 2026-10-03 for its full report), not a needs report. Excluded from every history-based share
     (model and baselines alike) but kept in Stage 2 severity."""
     return not any(r["total_families_snapshot"] is not None for r in known)
 
@@ -419,7 +461,8 @@ def pooled_history_shares(events):
 # so at least a quarter of every barangay's share always comes from its
 # family count - a barangay that happened to get little relief in past
 # storms can still need it in the next one. (Sta. Barbara's tuning picked
-# 1.0 when allowed, but 0.75 scored the same: 0.0110 vs 0.0111.)
+# 1.0 when allowed, but 0.75 scored the same: 0.0110 vs 0.0111 - on its
+# earlier 7-report set.)
 ALPHA_GRID = (0.0, 0.25, 0.5, 0.75)
 SHARE_FLOOR = 0.5
 
@@ -467,7 +510,7 @@ def fit_stage1(events):
     Why blend history in (v9.2, 2026-10-03): family count alone explains
     only part of where relief goes - some barangays flood every storm. The
     blend clearly helped Sta. Barbara over the family-count regression alone
-    and was about neutral elsewhere, but it does NOT clearly beat pooled
+    (on its earlier 7-report set) and was about neutral elsewhere, but it does NOT clearly beat pooled
     history alone in any LGU (see leave_one_typhoon_out_cv's k-of-n and
     bootstrap interval) - run scripts/train_model.py for the current
     figures rather than trusting numbers quoted here."""
@@ -492,6 +535,93 @@ def stage1_shares(stage1, total_families_by_barangay):
     """Shares from a fit_stage1() result (regression + history blend + floor)."""
     return predict_shares(stage1["model"], total_families_by_barangay,
                           stage1["history"], stage1["alpha"], SHARE_FLOOR)
+
+
+# Defense metrics (2026-10-03, agreed with the consultant): one metric per
+# claim the model makes - see leave_one_typhoon_out_cv (skill score, ranking),
+# leave_one_typhoon_out_packs_cv (WAPE), leave_one_typhoon_out_p90_coverage
+# (pinball loss, shortfall/excess) and floor_protection.
+PINBALL_TAU = 0.9
+RANK_TOP_K = 5
+
+
+def _avg_ranks(values):
+    """Ranks 1..n, ties sharing their average rank (as Spearman needs)."""
+    arr = np.asarray(values, dtype=float)
+    order = arr.argsort(kind="mergesort")
+    ranks = np.empty(len(arr))
+    ranks[order] = np.arange(1, len(arr) + 1)
+    for v in np.unique(arr):
+        tie = arr == v
+        if tie.sum() > 1:
+            ranks[tie] = ranks[tie].mean()
+    return ranks
+
+
+def _spearman(x, y):
+    """Spearman rank correlation, or None if either side is constant."""
+    rx, ry = _avg_ranks(x), _avg_ranks(y)
+    if rx.std() == 0 or ry.std() == 0:
+        return None
+    return float(np.corrcoef(rx, ry)[0, 1])
+
+
+def _top_k_hit_rate(predicted, actual, k=RANK_TOP_K):
+    """Of the k barangays ranked highest by `predicted`, the fraction that
+    are really among the top k by `actual` - a barangay tied with the k-th
+    largest actual value counts as a hit, so ties can't be unlucky."""
+    bids = list(actual)
+    top_pred = sorted(bids, key=lambda b: predicted.get(b, 0.0), reverse=True)[:k]
+    kth = sorted((actual[b] for b in bids), reverse=True)[k - 1]
+    return sum(1 for b in top_pred if actual[b] >= kth) / k
+
+
+def _pinball(actual, quantile, tau=PINBALL_TAU):
+    """Mean quantile (pinball) loss of a tau-quantile forecast: a shortfall
+    costs tau per pack, an excess (1 - tau) per pack - so at tau = 0.9
+    running short is penalised 9x more than overstocking, and an inflated
+    P90 still pays for every unused pack."""
+    a, q = np.asarray(actual, dtype=float), np.asarray(quantile, dtype=float)
+    d = a - q
+    return float(np.mean(np.where(d >= 0, tau * d, (tau - 1) * d)))
+
+
+def _shortfall_excess(actual, quantile):
+    """Readable companion to the pinball loss: how many cases ran short,
+    by how much on average when they did, and how much was left over on
+    average when they didn't (packs)."""
+    a, q = np.asarray(actual, dtype=float), np.asarray(quantile, dtype=float)
+    short = a > q
+    return {
+        "n_short": int(short.sum()),
+        "n": int(len(a)),
+        "avg_shortfall": float((a - q)[short].mean()) if short.any() else 0.0,
+        "avg_excess": float((q - a)[~short].mean()) if (~short).any() else 0.0,
+    }
+
+
+def floor_protection(stage1, total_families_by_barangay):
+    """What the 50% floor is FOR, counted on the final model: barangays
+    whose pooled relief history would give them less than half their
+    per-family share, and barangays the floor actually lifts in the current
+    forecast (share before vs after apply_share_floor)."""
+    tf = {bid: f for bid, f in total_families_by_barangay.items() if f}
+    ftot = sum(tf.values())
+    if not tf or ftot <= 0:
+        return None
+    history = stage1["history"] or {}
+    hsum = sum(history.get(bid, 0.0) for bid in tf) or 1.0
+    below_half = sum(1 for bid, f in tf.items()
+                     if history.get(bid, 0.0) / hsum < SHARE_FLOOR * f / ftot)
+    before = predict_shares(stage1["model"], tf, stage1["history"], stage1["alpha"], 0.0)
+    after = predict_shares(stage1["model"], tf, stage1["history"], stage1["alpha"], SHARE_FLOOR)
+    lifted = [bid for bid in tf if after[bid] > before[bid] + 1e-12]
+    return {
+        "n_barangays": len(tf),
+        "n_history_below_half": below_half,
+        "n_floor_lifted": len(lifted),
+        "share_moved_by_floor": float(sum(after[b] - before[b] for b in lifted)),
+    }
 
 
 def leave_one_typhoon_out_cv(events):
@@ -526,6 +656,7 @@ def leave_one_typhoon_out_cv(events):
 
     err_model, err_equal, err_avg, err_pooled, weights = [], [], [], [], []
     per_event = []  # (event total, sum |err| model, sum |err| pooled history, n barangays)
+    rank = {"sp_model": [], "sp_pooled": [], "top_model": [], "top_pooled": []}
     for held_out in scoreable:
         train_events = {eid: ev for eid, ev in events.items() if eid != held_out}
         stage1 = fit_stage1(train_events)
@@ -573,6 +704,18 @@ def leave_one_typhoon_out_cv(events):
             s_pooled += e_p
         per_event.append((total, s_model, s_pooled, n))
 
+        # Ranking: does the model put the right barangays first? Only on
+        # storms where at least RANK_TOP_K barangays got packs - in a 1-pack
+        # storm there is no ranking to get right.
+        packs = {r["barangay_id"]: r["food_packs_given"] for r in known}
+        if sum(1 for v in packs.values() if v > 0) >= RANK_TOP_K:
+            bids = list(packs)
+            for name, pred in (("model", pred_share), ("pooled", pooled_share)):
+                sp = _spearman([pred.get(b, 0.0) for b in bids], [packs[b] for b in bids])
+                if sp is not None:
+                    rank[f"sp_{name}"].append(sp)
+                rank[f"top_{name}"].append(_top_k_hit_rate(pred, packs))
+
     if not err_model:
         return None
 
@@ -582,12 +725,24 @@ def leave_one_typhoon_out_cv(events):
     # Bootstrap the size-weighted MAE difference over held-out storms.
     pe = np.array(per_event, dtype=float)
     rng = np.random.default_rng(0)
-    diffs = []
+    diffs, skills = [], []
     for _ in range(2000):
         s = pe[rng.integers(0, len(pe), len(pe))]
         denom = (s[:, 0] * s[:, 3]).sum()
         diffs.append(((s[:, 0] * s[:, 1]).sum() - (s[:, 0] * s[:, 2]).sum()) / denom)
+        pooled_err = (s[:, 0] * s[:, 2]).sum()
+        if pooled_err > 0:
+            skills.append(1 - (s[:, 0] * s[:, 1]).sum() / pooled_err)
     ci_low, ci_high = np.percentile(diffs, [2.5, 97.5])
+    # Skill vs pooled history = 1 - model error / pooled-history error
+    # (size-weighted): > 0 model better, < 0 worse, interval over 0 = tie.
+    mae_w = float(np.average(err_model, weights=weights))
+    pooled_w = float(np.average(err_pooled, weights=weights))
+    skill = 1 - mae_w / pooled_w if pooled_w > 0 else None
+    skill_lo, skill_hi = (np.percentile(skills, [2.5, 97.5]) if skills else (None, None))
+
+    def _mean(xs):
+        return float(np.mean(xs)) if xs else None
     return {
         "mae_pooled_history": float(np.mean(err_pooled)),
         "mae_pooled_history_weighted": float(np.average(err_pooled, weights=weights)),
@@ -600,6 +755,15 @@ def leave_one_typhoon_out_cv(events):
         "mae_model_weighted": float(np.average(err_model, weights=weights)),
         "mae_equal_split_weighted": float(np.average(err_equal, weights=weights)),
         "mae_avg_share_weighted": float(np.average(err_avg, weights=weights)),
+        "skill_vs_pooled": skill,
+        "skill_vs_pooled_ci": (float(skill_lo), float(skill_hi)) if skills else None,
+        # Ranking, averaged over held-out storms with >= RANK_TOP_K served.
+        "spearman_model": _mean(rank["sp_model"]),
+        "spearman_pooled": _mean(rank["sp_pooled"]),
+        "top_k_model": _mean(rank["top_model"]),
+        "top_k_pooled": _mean(rank["top_pooled"]),
+        "top_k": RANK_TOP_K,
+        "rank_n_storms": len(rank["top_model"]),
         # Storms actually scored - a supply-only event (no family counts)
         # can't be, so this can be smaller than the LGU's event count.
         "n_folds": len(per_event),
@@ -639,8 +803,8 @@ def climatology_by_month(calendar_rows, today):
 def p_relief(events, all_typhoon_keys):
     """Relief operations per calendar typhoon for this LGU: the number of
     real relief EVENTS with packs (linked to at least one calendar typhoon)
-    divided by the calendar's typhoon count - deliberately NOT
-    typhoon_calendar's pangasinan_impact_confirmed column (see module doc).
+    divided by the calendar's typhoon count (the storms named in any LGU's
+    relief reports - see module doc).
 
     Fixed 2026-10-03 (was: calendar typhoons COVERED by a relief record /
     36). The forecast multiplies this by severity, which is the mean size of
@@ -652,9 +816,9 @@ def p_relief(events, all_typhoon_keys):
     bias in typical years and says nothing about 2025-type years, which no
     version predicts.
 
-    Caveat: a storm with no relief record is counted as no relief, but some
-    may simply not have been digitized - so this is a LOWER bound on how
-    often relief happens."""
+    Caveat: storms that brought no relief to ANY of the three LGUs are not
+    in the calendar at all, so this is relief per reported storm, not per
+    storm that passed near Pangasinan."""
     universe = set(all_typhoon_keys)
     if not universe:
         return 0.0
@@ -678,6 +842,27 @@ def severity_scenarios(events):
         "max": float(arr.max()),  # largest real event, for the "P90 below worst storm" warning
         "n": len(totals),
     }
+
+
+def yearly_totals(events, calendar_rows):
+    """{calendar year: real packs over all of this LGU's relief events that
+    year} - the page compares the stockpile with the largest YEAR on record,
+    not only the largest single storm, since the stockpile formula (expected
+    storms x per-storm P90) is not a true yearly percentile. A combined
+    report counts in the year of its first named storm."""
+    year_of_key = {r[0]: r[3] for r in calendar_rows}
+    out = {}
+    for ev in events.values():
+        total = _event_total_and_known(ev["records"])[0]
+        if total <= 0:
+            continue
+        year = next((year_of_key[k] for k in ev["typhoon_keys"] if k in year_of_key), None)
+        if year is None:
+            d = _as_date(ev["report_date"])
+            year = d.year if d else None
+        if year is not None:
+            out[year] = out.get(year, 0) + total
+    return out
 
 
 def _loto_severity_excluding(events, exclude_eid):
@@ -732,7 +917,8 @@ def leave_one_typhoon_out_packs_cv(events):
     R2 sat near/below 0, both technically correct but not informative without
     a longer explanation than a dashboard tile can carry. MAE/RMSE in packs
     still say something useful (typical/worst-case miss size) without that
-    baggage."""
+    baggage. WAPE (sum |miss| / sum real packs, 2026-10-03) is the
+    percentage figure in MAPE's place."""
     scoreable = [eid for eid, ev in events.items() if _event_total_and_known(ev["records"])[0] > 0
                  and len(_event_total_and_known(ev["records"])[1]) >= 2]
     if len(scoreable) < 2:
@@ -765,6 +951,9 @@ def leave_one_typhoon_out_packs_cv(events):
     return {
         "mae_packs": float(np.abs(err).mean()),
         "rmse_packs": float(np.sqrt((err ** 2).mean())),
+        # WAPE = total |miss| / total real packs - the "% error" MAPE was
+        # meant to give, without blowing up on near-zero barangays.
+        "wape": float(np.abs(err).sum() / a.sum()) if a.sum() > 0 else None,
         "n": len(a),
     }
 
@@ -778,9 +967,9 @@ def leave_one_typhoon_out_p90_coverage(events):
     though a single typhoon's exact size can't be point-forecast (see
     leave_one_typhoon_out_packs_cv's docstring).
 
-    Two levels, both leave-one-typhoon-out, no (1 + BUFFER) applied (that's
-    a deployment-time safety margin on top of raw P90, so live coverage
-    should run a bit higher than what's reported here):
+    Two levels, both leave-one-typhoon-out, scored on the raw P90 without
+    the (1 + BUFFER) margin - the buffer is a policy choice and is not
+    counted as coverage:
       lgu_coverage     - held-out event's real LGU total <= that fold's P90
                           LGU total.
       barangay_coverage - same check per barangay (share x P90 total vs
@@ -793,7 +982,7 @@ def leave_one_typhoon_out_p90_coverage(events):
                           flatters the model - judge P90 by lgu_coverage and
                           this one.
     lgu_n counts every event with packs, including a supply-only sheet (a
-    real LGU total - Sta. Barbara's event 49); the barangay-level figures
+    real LGU total; none loaded since 2026-10-03); the barangay-level figures
     skip it, since it has no family counts to split by. So the two levels
     can be over different storm counts.
     None if there isn't enough data to run a single fold."""
@@ -803,6 +992,7 @@ def leave_one_typhoon_out_p90_coverage(events):
         return None
 
     lgu_hits = lgu_n = brgy_hits = brgy_n = nz_hits = nz_n = 0
+    lgu_pairs, nz_pairs = [], []  # (real packs, P90 packs) for pinball/shortfall
     for held_out in scoreable:
         sev = _loto_severity_excluding(events, held_out)
         if sev is None:
@@ -811,6 +1001,7 @@ def leave_one_typhoon_out_p90_coverage(events):
 
         lgu_hits += int(total <= sev["high"])  # every event with packs, supply-only included
         lgu_n += 1
+        lgu_pairs.append((total, sev["high"]))
 
         train_events = {eid: ev for eid, ev in events.items() if eid != held_out}
         stage1 = fit_stage1(train_events)
@@ -829,6 +1020,7 @@ def leave_one_typhoon_out_p90_coverage(events):
             if r["food_packs_given"] > 0:
                 nz_hits += hit
                 nz_n += 1
+                nz_pairs.append((r["food_packs_given"], p90_packs))
 
     if lgu_n == 0 or brgy_n == 0:
         return None
@@ -841,6 +1033,12 @@ def leave_one_typhoon_out_p90_coverage(events):
         "barangay_n": brgy_n,
         "barangay_coverage_nonzero": nz_hits / nz_n if nz_n else None,
         "barangay_nonzero_n": nz_n,
+        # Pinball loss at tau 0.9 (packs) + readable shortfall/excess, at
+        # the municipality level and over barangays that received packs.
+        "pinball_lgu": _pinball(*zip(*lgu_pairs)),
+        "pinball_barangay_nonzero": _pinball(*zip(*nz_pairs)) if nz_pairs else None,
+        "shortfall_lgu": _shortfall_excess(*zip(*lgu_pairs)),
+        "shortfall_barangay_nonzero": _shortfall_excess(*zip(*nz_pairs)) if nz_pairs else None,
     }
 
 
@@ -861,7 +1059,7 @@ def train_and_persist():
     if not by_lgu:
         raise RuntimeError(
             "No relief_events found. Run scripts/apply_relief_schema.py, "
-            "scripts/typhoon_calendar_2021_2026.py then scripts/load_relief_events.py first."
+            "then scripts/load_relief_events.py first."
         )
 
     calendar_rows = load_typhoon_calendar()
@@ -895,6 +1093,9 @@ def train_and_persist():
             "share_floor": SHARE_FLOOR,
             "p_relief": p_relief(events, all_keys),
             "severity": severity_scenarios(events),
+            # Real packs per calendar year - the "largest year on record"
+            # comparison on the page.
+            "yearly_totals": yearly_totals(events, calendar_rows),
             "barangays": {bid: {"latest_total_families": tf} for bid, tf in latest_tf.items()},
             # What this LGU was trained on - check_forecast compares these
             # with the database to catch a model older than the data.
@@ -907,6 +1108,8 @@ def train_and_persist():
             "total_packs": sum(_event_total_and_known(ev["records"])[0] for ev in events.values()),
         }
         loto_cv[lgu] = leave_one_typhoon_out_cv(events)
+        if loto_cv[lgu] is not None:
+            loto_cv[lgu]["floor"] = floor_protection(stage1, latest_tf)
         loto_packs_cv[lgu] = leave_one_typhoon_out_packs_cv(events)
         loto_p90[lgu] = leave_one_typhoon_out_p90_coverage(events)
         backtest_series[lgu] = {

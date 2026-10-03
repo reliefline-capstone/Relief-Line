@@ -177,8 +177,8 @@
             <div class="panel-header">
                 <h3>{{ icon('building', 18, '#0f2547') }} How long will the stock last? - {{ lgu_forecast.lgu }}</h3>
                 <span class="rd-sub">packs needed over time vs packs in the warehouse &middot;
-                    {% if is_cswdo %}<a href="{{ url_for('cswdo.municipal_inventory') }}" class="link-manage">Manage Warehouse &rarr;</a>
-                    {% else %}<a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="link-manage">View Stock Transfer &rarr;</a>{% endif %}</span>
+                    {% if is_cswdo %}<a href="{{ url_for('cswdo.relief_requests') }}" class="link-manage">Stock Requests &rarr;</a>
+                    {% else %}<a href="{{ url_for('pswdo.relief_requests') }}" class="link-manage">Stock Requests &rarr;</a>{% endif %}</span>
             </div>
             <div class="pa-stock-tiles" style="margin-bottom:8px;">
                 <div class="pa-decision-tile">
@@ -446,7 +446,7 @@
             </div>
             {% if loto_p90 %}
             <h4 style="margin:14px 0 4px;">Per-municipality validation (P90 coverage)</h4>
-            <p class="rd-sub" style="margin:0 0 6px;">Also leave-one-typhoon-out: of the real typhoons held out, how often did what actually happened stay at or below the recommended P90 stockpile? Target ~90% - this doesn't use the (1 + buffer) safety margin the live forecast adds on top, so real coverage should run a bit higher than shown here. Barangay-level coverage counts barangays that received nothing as covered, which flatters it; the "received packs" column checks only barangays that actually got relief. With 8-14 typhoons per municipality, a gap of one or two typhoons from 90% is within normal variation.</p>
+            <p class="rd-sub" style="margin:0 0 6px;">Also leave-one-typhoon-out: of the real typhoons held out, how often did what actually happened stay at or below the recommended P90 stockpile? Target ~90%. Scored on the stockpile before the safety buffer: the buffer is a policy margin and is not counted as coverage. Barangay-level coverage counts barangays that received nothing as covered, which flatters it; the "received packs" column checks only barangays that actually got relief. With 8-14 typhoons per municipality, a gap of one or two typhoons from 90% is within normal variation.</p>
             <div class="rr-table-wrap">
                 <table class="rr-table">
                     <thead><tr>
@@ -468,11 +468,11 @@
             {% endif %}
             {% if loto_packs_cv %}
             <h4 style="margin:14px 0 4px;">Per-municipality validation (packs)</h4>
-            <p class="rd-sub" style="margin:0 0 6px;">Same leave-one-typhoon-out setup as the share table below, but scoring the end-to-end forecast (share &times; that fold's expected severity) against real food packs given, per barangay per held-out typhoon. MAPE and R&sup2; were tried here and dropped: a single typhoon's severity isn't meant to be point-forecast exactly (that's what the P90 scenario range is for), so MAPE exploded past 1,000% on near-zero actuals and R&sup2; sat near or below 0 - both technically correct but not useful without a longer explanation than a table can carry.</p>
+            <p class="rd-sub" style="margin:0 0 6px;">Same leave-one-typhoon-out setup as the share table below, but scoring the end-to-end forecast (share &times; that fold's expected severity) against real food packs given, per barangay per held-out typhoon. WAPE = total packs missed &divide; total packs really given; for reference, predicting zero packs everywhere gives exactly 100%. MAPE and R&sup2; were tried here and dropped: a single typhoon's severity isn't meant to be point-forecast exactly (that's what the P90 scenario range is for), so MAPE exploded past 1,000% on near-zero actuals and R&sup2; sat near or below 0 - both technically correct but not useful without a longer explanation than a table can carry.</p>
             <div class="rr-table-wrap">
                 <table class="rr-table">
                     <thead><tr>
-                        <th>Municipality</th><th>MAE (packs)</th><th>RMSE (packs)</th><th>Barangay-typhoon pairs</th>
+                        <th>Municipality</th><th>MAE (packs)</th><th>RMSE (packs)</th><th>WAPE</th><th>Barangay-typhoon pairs</th>
                     </tr></thead>
                     <tbody>
                         {% for r in loto_packs_cv %}
@@ -480,7 +480,59 @@
                             <td><strong>{{ r.lgu }}</strong></td>
                             <td>{{ "{:,.0f}".format(r.mae_packs) }}</td>
                             <td>{{ "{:,.0f}".format(r.rmse_packs) }}</td>
+                            <td>{{ "%.0f%%"|format(r.wape * 100) if r.wape is not none else "-" }}</td>
                             <td>{{ r.n }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            {% if loto_p90 and loto_p90[0].pinball_lgu is not none %}
+            <h4 style="margin:14px 0 4px;">Stock sufficiency (P90)</h4>
+            <p class="rd-sub" style="margin:0 0 6px;">Leave-one-typhoon-out, without the safety buffer. Pinball loss scores a P90 stockpile in packs: every pack short costs 0.9, every pack left over costs 0.1, so a stockpile can't score well just by being huge. "Ran short" counts held-out typhoons (or barangay-typhoons that received packs) where real relief exceeded the P90; the averages say by how much it was short when it ran short, and how much was left over when it didn't.</p>
+            <div class="rr-table-wrap">
+                <table class="rr-table">
+                    <thead><tr>
+                        <th>Municipality</th><th>Pinball loss, municipality</th><th>Ran short, municipality</th><th>Avg shortfall / excess, municipality</th>
+                        <th>Pinball loss, barangays with packs</th><th>Ran short, barangays with packs</th><th>Avg shortfall / excess, barangays</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for r in loto_p90 %}{% set a = r.shortfall_lgu %}{% set b = r.shortfall_barangay_nonzero %}
+                        <tr>
+                            <td><strong>{{ r.lgu }}</strong></td>
+                            <td>{{ "{:,.0f}".format(r.pinball_lgu) }}</td>
+                            <td>{{ a.n_short }} of {{ a.n }}</td>
+                            <td>{{ "{:,.0f}".format(a.avg_shortfall) }} / {{ "{:,.0f}".format(a.avg_excess) }}</td>
+                            <td>{{ "{:,.0f}".format(r.pinball_barangay_nonzero) if r.pinball_barangay_nonzero is not none else "-" }}</td>
+                            <td>{{ (b.n_short ~ " of " ~ b.n) if b else "-" }}</td>
+                            <td>{{ ("{:,.0f}".format(b.avg_shortfall) ~ " / " ~ "{:,.0f}".format(b.avg_excess)) if b else "-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            {% if loto_cv and loto_cv[0].skill_vs_pooled is not none %}
+            <h4 style="margin:14px 0 4px;">Allocation quality</h4>
+            <p class="rd-sub" style="margin:0 0 6px;">Skill = 1 &minus; model error / pooled-history error (size-weighted share MAE): above 0 the model splits relief better than each barangay's past share, below 0 worse; an interval that crosses 0 is a tie. Ranking checks whether the barangays the model puts first are the ones that really needed the most (Spearman correlation, 1 = perfect order; top-5 hit = share of the model's top 5 that were really in the top 5), on held-out typhoons where at least 5 barangays received packs. The floor columns show what the 50% minimum is for: barangays whose relief history alone would give them less than half their per-family share, and how many the floor lifts in today's forecast.</p>
+            <div class="rr-table-wrap">
+                <table class="rr-table">
+                    <thead><tr>
+                        <th>Municipality</th><th>Skill vs pooled history (95% interval)</th>
+                        <th>Spearman, model / pooled</th><th>Top-5 hit, model / pooled</th><th>Typhoons ranked</th>
+                        <th>Below half from history alone</th><th>Lifted by floor</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for r in loto_cv %}
+                        <tr>
+                            <td><strong>{{ r.lgu }}</strong></td>
+                            <td>{{ "%+.1f%%"|format(r.skill_vs_pooled * 100) }}{% if r.skill_vs_pooled_ci %} <small>({{ "%+.1f%%"|format(r.skill_vs_pooled_ci[0] * 100) }} to {{ "%+.1f%%"|format(r.skill_vs_pooled_ci[1] * 100) }})</small>{% endif %}</td>
+                            <td>{{ ("%.2f"|format(r.spearman_model) ~ " / " ~ "%.2f"|format(r.spearman_pooled)) if r.spearman_model is not none else "-" }}</td>
+                            <td>{{ ("%.0f%%"|format(r.top_k_model * 100) ~ " / " ~ "%.0f%%"|format(r.top_k_pooled * 100)) if r.top_k_model is not none else "-" }}</td>
+                            <td>{{ r.rank_n_storms }}</td>
+                            <td>{{ (r.floor.n_history_below_half ~ " of " ~ r.floor.n_barangays) if r.floor else "-" }}</td>
+                            <td>{{ (r.floor.n_floor_lifted ~ " (" ~ "%.1f%%"|format(r.floor.share_moved_by_floor * 100) ~ " of stock)") if r.floor else "-" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

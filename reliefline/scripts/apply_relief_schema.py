@@ -7,15 +7,15 @@ after the new pipeline is verified). Idempotent, like apply_timeseries_schema.py
     bash scripts/sync_db_dump.sh
 
 Adds:
-  * typhoon_calendar          - the 36-event verified Pangasinan calendar
-                                 (2021-2026), superseding app.ml.climate_reference.EVENTS
+  * typhoon_calendar          - one row per storm named in a real relief
+                                 report (filled by scripts/typhoon_calendar_from_reports.py)
   * relief_events             - one row per transcribed real relief report
                                  (may span several calendar typhoons, e.g. a
                                  combined "Nika + Ofel + Pepito" report)
   * relief_event_typhoons     - many-to-many: relief_events <-> typhoon_calendar
   * barangay_relief_records   - one row per barangay per relief_event (the
                                  Stage 1/Stage 2 training data)
-  * disaster_events.is_reference - marks the 36 calendar-seeded rows so they
+  * disaster_events.is_reference - marks the calendar-seeded rows so they
                                  don't pollute the staff's live event pickers
                                  (see the 4 patched DisasterEvent.query call
                                  sites in app/routes/{cswdo,reports,barangay,pswdo}.py)

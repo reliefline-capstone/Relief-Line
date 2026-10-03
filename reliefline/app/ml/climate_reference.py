@@ -6,10 +6,10 @@ SARIMAX forecaster's synthetic history generator (scripts/seed_monthly_history.p
 now deleted) - EVENTS, ONI, oni_for, severity_for, TC_CLIMO and the baseline-
 incident constants were only ever consumed by that generator or the SARIMAX
 exogenous features and are gone with it. The typhoon calendar those events
-were transcribed from is now scripts/typhoon_calendar_2021_2026.py (36
-source-verified events, loaded into the `typhoon_calendar` table), which is
-the authoritative source for Stage 2's climatology and P(relief) - see
-app.ml.train module doc.
+were transcribed from was later removed too: Stage 2's climatology and
+P(relief) now come from the `typhoon_calendar` table, built only from the
+storms named in the real relief reports (scripts/typhoon_calendar_from_reports.py)
+- see app.ml.train module doc.
 
 VERIFIED (looked up, source noted):
   * RAINFALL_NORMAL_MM / RAINY_DAYS - PAGASA Dagupan station, 1991-2020

@@ -4,29 +4,24 @@ relief_events / relief_event_typhoons / barangay_relief_records (see
 scripts/apply_relief_schema.py). Replaces seed_monthly_history.py's
 load_real()/load_real_sample() - there is no synthetic fallback anymore.
 
-Sources loaded (4 modules):
+Sources loaded (3 modules):
   real_calasiao_typhoons_2021_2026   - 14 reports, has population snapshots
-                                        (updated dataset 2026-10-03; replaced
-                                        the old 25-typhoon version and
-                                        real_calasiao_reports_2025)
-  real_sta_barbara_typhoons_2021_2025 - 7 reports, NEW, has population snapshots
+                                        (complete dataset 2026-10-03, same
+                                        14-report structure as Urdaneta's;
+                                        replaced the old 25-typhoon version
+                                        and real_calasiao_reports_2025)
+  real_sta_barbara_typhoons_2021_2026 - 14 reports, has population snapshots
+                                        (dataset 2026-10-03; replaced
+                                        real_sta_barbara_typhoons_2021_2025
+                                        and the Aug-2026 DSWD+LGU sheet
+                                        sample_sta_barbara_aug2026, whose
+                                        packs are exactly this set's Luis &
+                                        Maymay & Neneng & Pilandok report)
   real_urdaneta_typhoons_2021_2026   - 14 reports, has population snapshots
                                         (updated dataset 2026-10-03; replaced
                                         real_urdaneta_typhoons_2021_2025 and
                                         real_urdaneta_reports_2025 - see
                                         _drop_retired_sources below)
-  sample_sta_barbara_aug2026         - 1 distribution sheet, EXISTING, packs
-                                        only (no affected-families figure and
-                                        no population snapshot) - mapped to
-                                        BOTH maymay_2026 and pilandok_2026 as a
-                                        combined relief_event: the delivery
-                                        window (19 Aug - 2 Sep 2026) plausibly
-                                        reflects cumulative relief for both
-                                        storms and the sheet gives no way to
-                                        split it by event. This is a judgement
-                                        call, documented here rather than
-                                        silently picked - revisit if a cleaner
-                                        per-storm Sta. Barbara sheet turns up.
 
 Run: .venv/Scripts/python.exe -m scripts.load_relief_events
 Then: bash scripts/sync_db_dump.sh
@@ -43,9 +38,9 @@ from app import create_app
 from app.extensions import db
 
 import real_calasiao_typhoons_2021_2026 as calasiao_new
-import real_sta_barbara_typhoons_2021_2025 as sta_barbara_new
+import real_sta_barbara_typhoons_2021_2026 as sta_barbara_new
 import real_urdaneta_typhoons_2021_2026 as urdaneta_new
-import sample_sta_barbara_aug2026 as sta_barbara_aug2026
+import typhoon_calendar_from_reports as calendar
 
 
 def _barangay_index():
@@ -100,7 +95,7 @@ def _upsert_relief_event(lgu, label, report_date, source_file, is_raw, notes, ty
             "SELECT 1 FROM typhoon_calendar WHERE typhoon_key = :k"), {"k": key}).scalar()
         if not exists:
             raise KeyError(f"typhoon_key {key!r} not found in typhoon_calendar - "
-                            f"run scripts/typhoon_calendar_2021_2026.py first")
+                            f"see scripts/typhoon_calendar_from_reports.py")
         db.session.execute(text(
             "INSERT INTO relief_event_typhoons (relief_event_id, typhoon_key) VALUES (:id, :k)"
         ), {"id": relief_event_id, "k": key})
@@ -169,7 +164,8 @@ def load_new_module(module, lgu):
 # module labels the same reports differently (e.g. "Dante/Emong + habagat
 # (2025)" -> "Dante + Emong (2025)") and the label-keyed upsert would
 # otherwise leave the old copies behind as duplicates.
-_RETIRED_SOURCES = ("real_urdaneta_reports_2025", "real_calasiao_reports_2025")
+_RETIRED_SOURCES = ("real_urdaneta_reports_2025", "real_calasiao_reports_2025",
+                    "real_sta_barbara_typhoons_2021_2025", "sample_sta_barbara_aug2026")
 
 
 def _drop_retired_sources():
@@ -183,34 +179,19 @@ def _drop_retired_sources():
         print(f"  dropped {len(ids)} relief events from retired sources {_RETIRED_SOURCES}")
 
 
-def load_sta_barbara_aug2026():
-    idx, _pop = _barangay_index()
-    lgu = "Santa Barbara"
-    totals = sta_barbara_aug2026.combined_totals()
-    eid = _upsert_relief_event(
-        lgu=lgu, label="Aug 2026 DSWD+LGU distribution sheet", report_date="2026-08-19",
-        source_file="sample_sta_barbara_aug2026", is_raw=True,
-        notes="Supply distributed, not measured need; no affected-families figure or population "
-              "snapshot in this source. Mapped to Maymay+Pilandok jointly - delivery window "
-              "(19 Aug-2 Sep 2026) can't be cleanly split between the two storms from this sheet.",
-        typhoon_keys=["maymay_2026", "pilandok_2026"])
-    records = []
-    for norm_name, packs in totals.items():
-        bid = idx.get((lgu, norm_name))
-        if bid is None:
-            raise KeyError(f"no barangay match for {lgu!r} / {norm_name!r}")
-        records.append((bid, None, None, packs, None, None))
-    _insert_records(eid, records)
-    print(f"  {lgu}: Aug 2026 sheet -> {len(records)} barangay rows (packs only)")
-
-
 def load_all():
+    # The typhoon calendar is built from these same reports (every storm a
+    # report names) - synced before the events link to it, and storms no
+    # report names any more are pruned after.
+    calendar.sync()
     _drop_retired_sources()
     print("Loading real relief-event modules...")
     load_new_module(calasiao_new, "Calasiao")
     load_new_module(sta_barbara_new, "Santa Barbara")
     load_new_module(urdaneta_new, "Urdaneta City")
-    load_sta_barbara_aug2026()
+    n_pruned = calendar.prune()
+    print(f"typhoon_calendar: {len(calendar.derive())} storms from the relief reports"
+          + (f", {n_pruned} no longer named in any report removed" if n_pruned else ""))
     db.session.commit()
 
 
