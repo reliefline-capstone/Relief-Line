@@ -190,12 +190,12 @@ def create_app():
     @app.context_processor
     def inject_pending_barangay_reports():
         # Powers the badge on cswdo/_sidebar.html's "Barangay Reports" link
-        # (included on every cswdo/*.html page). Counts submitted damage
-        # reports still awaiting a CSWDO decision from this office's own
-        # LGU - same "pending" filter as the "queue" tab default on the
-        # Barangay Reports page itself (app.routes.cswdo.damage_assessment),
-        # so the badge and the page it links to never disagree.
+        # (included on every cswdo/*.html page). Counts this office's LGU
+        # reports tagged "New" on the Barangay Reports page - pending and
+        # not tied to an ended event (same rule as BarangayReport.is_new),
+        # so the badge clears once the event it was sent under ends.
         from flask_login import current_user
+        from app.models.disaster_event import DisasterEvent
         if not current_user.is_authenticated or current_user.role not in ("cswdo_admin", "system_admin"):
             return dict(pending_barangay_reports=0)
         office = current_user.office
@@ -205,9 +205,12 @@ def create_app():
         barangay_ids = [b.barangay_id for b in Barangay.query.filter_by(city_municipality=lgu).all()]
         if not barangay_ids:
             return dict(pending_barangay_reports=0)
-        count = BarangayReport.query.filter(
+        count = BarangayReport.query.outerjoin(
+            DisasterEvent, BarangayReport.event_id == DisasterEvent.event_id
+        ).filter(
             BarangayReport.barangay_id.in_(barangay_ids),
             BarangayReport.status == "pending",
+            db.or_(BarangayReport.event_id.is_(None), DisasterEvent.status != "ended"),
         ).count()
         return dict(pending_barangay_reports=count)
 

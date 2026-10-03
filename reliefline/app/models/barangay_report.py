@@ -130,6 +130,15 @@ class BarangayReport(db.Model):
         return AllocationRecord.query.filter_by(barangay_report_id=self.report_id).first()
 
     @property
+    def is_new(self):
+        """CSWDO's "New" tag: still awaiting review, and its disaster event
+        (if any) hasn't ended - an ended event's leftover report is stale.
+        Mirrors ReliefRequestBatch.is_new."""
+        if self.status != "pending":
+            return False
+        return not (self.event and self.event.status == "ended")
+
+    @property
     def ref(self):
         year = (self.submitted_at or self.created_at).year
         return f"RR-{year}-{self.report_id:03d}"

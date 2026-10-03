@@ -29,28 +29,6 @@
                 <h2>Analytics &amp; Recommendations</h2>
                 <p>Data-driven decision support for {{ scope_label }}</p>
             </div>
-            <form method="GET" class="gis-filters">
-                <select name="event_id" onchange="this.form.submit()">
-                    <option value="">No active event</option>
-                    {% for e in active_events %}
-                    <option value="{{ e.event_id }}" {{ 'selected' if event_id == e.event_id }}>{{ e.event_name }}</option>
-                    {% endfor %}
-                </select>
-                {% if target_lgus|length > 1 %}
-                <select name="municipality" onchange="this.form.submit()">
-                    <option value="all" {{ 'selected' if municipality_filter == 'all' }}>All Municipalities</option>
-                    {% for lgu in target_lgus %}
-                    <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
-                    {% endfor %}
-                </select>
-                {% endif %}
-                <select name="days" onchange="this.form.submit()">
-                    <option value="7" {{ 'selected' if days_filter == 7 }}>Last 7 Days</option>
-                    <option value="30" {{ 'selected' if days_filter == 30 }}>Last 30 Days</option>
-                    <option value="90" {{ 'selected' if days_filter == 90 }}>Last 90 Days</option>
-                </select>
-                <a href="{{ url_for('prediction.export_forecast', event_id=event_id, municipality=municipality_filter) }}" class="btn-outline">{{ icon('download', 14) }} Export Report</a>
-            </form>
         </section>
 
         <!-- Stat cards -->
@@ -148,13 +126,11 @@
                 </svg>
             </div>
             <div class="pa-legend">
-                <span><i class="lg-exp"></i>Expected demand - the most likely need</span>
-                <span><i class="lg-p90-bar"></i>Recommended stockpile - covers 9 scenarios in 10</span>
-                <span><i class="lg-wet"></i>Rainy season (Jun-Oct)</span>
-                <span><i class="lg-peak"></i>Peak typhoon months (Jul-Oct)</span>
+                <span><i class="lg-exp"></i>Expected</span>
+                <span><i class="lg-p90-bar"></i>Stockpile</span>
+                <span><i class="lg-wet"></i>Rainy (Jun-Oct)</span>
+                <span><i class="lg-peak"></i>Peak (Jul-Oct)</span>
             </div>
-            <p class="rd-sub" style="text-align:center; margin:2px 0 0;">How to read it: stock up to the <strong>light bar</strong> to be safe in most scenarios; the <strong>blue bar</strong> is what is most likely to be used. Months with no bars have no typhoon demand expected.</p>
-            <p class="rd-sub" style="text-align:center; margin:4px 0 0;">Click a month to see its barangay breakdown.</p>
             <div id="pa-month-detail" class="pa-month-detail" hidden>
                 <div class="panel-header" style="margin-bottom:8px;">
                     <h4 id="pa-month-title" style="margin:0;"></h4>
@@ -162,11 +138,11 @@
                 </div>
                 <div class="rr-table-wrap" style="max-height:380px; overflow:auto;">
                     <table class="rr-table">
-                        <thead><tr><th>Barangay</th><th>Expected</th><th>Recommended stockpile</th></tr></thead>
+                        <thead><tr><th>Barangay</th><th>Current stock</th><th>Expected</th><th>Recommended stockpile</th></tr></thead>
                         <tbody id="pa-month-rows"></tbody>
                         <tfoot><tr>
                             <td><strong>{{ lgu_forecast.lgu }}</strong></td>
-                            <td id="pa-month-total-e"></td><td id="pa-month-total-p"></td>
+                            <td id="pa-month-total-s"></td><td id="pa-month-total-e"></td><td id="pa-month-total-p"></td>
                         </tr></tfoot>
                     </table>
                 </div>
@@ -174,23 +150,22 @@
             </div>
             <div class="pa-stock-tiles">
                 <div class="pa-decision-tile">
-                    <span class="rd-sub">Expected demand - {{ lgu_forecast.lgu }}, next {{ forecast_months }} months</span>
+                    <span class="rd-sub">Expected ({{ forecast_months }} mo)</span>
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong>
                     <span class="rd-sub">packs</span>
                 </div>
                 <div class="pa-decision-tile">
-                    <span class="rd-sub">Recommended stockpile</span>
+                    <span class="rd-sub">Stockpile ({{ forecast_months }} mo)</span>
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong>
-                    <span class="rd-sub">packs = {{ "{:,}".format(lgu_forecast.p90_before_buffer) }} (90th-percentile scenario) + {{ "{:,}".format(lgu_forecast.buffer_packs) }} ({{ "%.0f"|format(lgu_forecast.buffer * 100) }}% safety buffer)</span>
+                    <span class="rd-sub">packs</span>
                 </div>
             </div>
             {% if lgu_forecast.short_horizon %}
-            <p class="stock-warning" style="margin:8px 0;"><span><strong>Not a safety stock for this period.</strong> Only about {{ "%.1f"|format(lgu_forecast.expected_typhoons) }} typhoon{{ '' if lgu_forecast.expected_typhoons|round(1) == 1 else 's' }} {{ 'is' if lgu_forecast.expected_typhoons|round(1) == 1 else 'are' }} expected in these months (fewer than one expected relief operation for {{ lgu_forecast.lgu }}), so the forecast spreads that chance across the period. The stockpile before buffer ({{ "{:,}".format(lgu_forecast.p90_before_buffer) }} packs) is smaller than a single bad relief operation ({{ "{:,}".format(lgu_forecast.per_event_p90) }} packs at the 90th percentile). Use a longer horizon that covers the typhoon season for stockpiling decisions.</span></p>
+            <p class="stock-warning" style="margin:8px 0;">{{ icon('alert-triangle', 16, '#b9651a') }}<strong>Not a safety stock for this period</strong></p>
             {% endif %}
             {% if lgu_forecast.below_largest_event %}
-            <p class="stock-warning" style="margin:8px 0;"><span>{% if lgu_forecast.largest_covered_only_by_buffer %}<strong>Largest storm covered only by the safety buffer.</strong> {{ lgu_forecast.lgu }}'s largest recorded relief operation used {{ "{:,}".format(lgu_forecast.largest_event) }} packs - more than the 90th-percentile scenario ({{ "{:,}".format(lgu_forecast.p90_before_buffer) }}), and covered only once the {{ "%.0f"|format(lgu_forecast.buffer * 100) }}% buffer is added.{% else %}<strong>Extreme storms are not covered.</strong> {{ lgu_forecast.lgu }}'s largest recorded relief operation used {{ "{:,}".format(lgu_forecast.largest_event) }} packs - more than this {{ forecast_months }}-month recommended stockpile, even with the {{ "%.0f"|format(lgu_forecast.buffer * 100) }}% buffer.{% endif %} A forecast built from a few years of records cannot cover a once-in-several-years storm; plan for that separately (provincial/DSWD augmentation).</span></p>
+            <p class="stock-warning" style="margin:8px 0;">{{ icon('alert-triangle', 16, '#b9651a') }}<strong>{% if lgu_forecast.largest_covered_only_by_buffer %}Largest storm covered only by the buffer{% else %}Extreme storms are not covered{% endif %}</strong></p>
             {% endif %}
-            <p class="rd-sub" style="text-align:center;">Two-stage forecast (barangay share model + typhoon climatology) fit on real per-typhoon relief records through {{ lgu_forecast.data_through }}. The recommended stockpile is the 90th-percentile scenario plus a separate safety buffer. It is built from only a few years of records (8-14 typhoons per municipality) and treats a storm with no relief record as no relief. See Model Performance below.</p>
             {% else %}
             <p class="empty-note">No model has been trained yet. Run <code>scripts/train_model.py</code> against the current database.</p>
             {% endif %}
@@ -200,8 +175,34 @@
         {% if cover_chart %}
         <section class="panel" id="pa-cover-chart" style="margin-bottom:16px;">
             <div class="panel-header">
-                <h3>{{ icon('building', 18, '#0f2547') }} Will the stock last? - {{ lgu_forecast.lgu }}</h3>
-                <span class="rd-sub">running total of demand vs the warehouse stock on hand</span>
+                <h3>{{ icon('building', 18, '#0f2547') }} How long will the stock last? - {{ lgu_forecast.lgu }}</h3>
+                <span class="rd-sub">packs needed over time vs packs in the warehouse &middot;
+                    {% if is_cswdo %}<a href="{{ url_for('cswdo.municipal_inventory') }}" class="link-manage">Manage Warehouse &rarr;</a>
+                    {% else %}<a href="{{ url_for('pswdo.warehouse_stock_transfer_page') }}" class="link-manage">View Stock Transfer &rarr;</a>{% endif %}</span>
+            </div>
+            <div class="pa-stock-tiles" style="margin-bottom:8px;">
+                <div class="pa-decision-tile">
+                    <span class="rd-sub">Stock on hand</span>
+                    <strong>{{ "{:,}".format(cover_chart.stock) }}</strong>
+                    <span class="rd-sub">packs{% if cover_wh %} &middot; {{ cover_wh.pct|int }}% of capacity{% endif %}</span>
+                </div>
+                <div class="pa-decision-tile">
+                    <span class="rd-sub">Lasts until - normal season</span>
+                    {% if cover_chart.runout_expected %}<strong>{{ cover_chart.runout_expected.month }}</strong> <span class="rd-sub">about {{ "%.0f"|format(cover_chart.runout_expected.months) }} months</span>
+                    {% else %}<strong>Whole period</strong><span class="rd-sub">all {{ cover_chart.n_months }} months</span>{% endif %}
+                </div>
+                <div class="pa-decision-tile">
+                    <span class="rd-sub">Lasts until - bad season</span>
+                    {% if cover_chart.runout_p90 %}<strong>{{ cover_chart.runout_p90.month }}</strong> <span class="rd-sub">about {{ "%.0f"|format(cover_chart.runout_p90.months) }} months</span>
+                    {% else %}<strong>Whole period</strong><span class="rd-sub">all {{ cover_chart.n_months }} months</span>{% endif %}
+                </div>
+                {% if cover_wh and cover_wh.cover %}
+                <div class="pa-decision-tile">
+                    <span class="rd-sub">Short of stockpile</span>
+                    {% if cover_wh.cover.shortfall %}<strong>{{ "{:,}".format(cover_wh.cover.shortfall) }}</strong> <span class="rd-sub">packs &middot; {{ cover_wh.cover.coverage_pct }}% stocked</span>
+                    {% else %}<strong>None</strong> <span class="rd-sub">fully stocked</span>{% endif %}
+                </div>
+                {% endif %}
             </div>
             <div class="pa-bar-chart">
                 <svg class="pa-bar-svg" viewBox="0 0 {{ cover_chart.w }} {{ cover_chart.h }}" role="img"
@@ -213,27 +214,27 @@
                     {% for l in cover_chart.x_labels %}
                     <text class="pa-bar-label" x="{{ l.x }}" y="{{ cover_chart.bottom + 22 }}" text-anchor="middle">{{ l.label }}</text>
                     {% endfor %}
+                    {% if cover_chart.short_p90_pts %}<polygon class="pa-short-p90" points="{{ cover_chart.short_p90_pts }}"></polygon>{% endif %}
+                    {% if cover_chart.short_expected_pts %}<polygon class="pa-short-exp" points="{{ cover_chart.short_expected_pts }}"></polygon>{% endif %}
                     <polyline class="pa-line-p90" points="{{ cover_chart.p90_pts }}"></polyline>
                     <polyline class="pa-line-exp" points="{{ cover_chart.expected_pts }}"></polyline>
                     <line class="pa-line-stock pa-stock-{{ cover_chart.status }}" x1="{{ cover_chart.left }}" x2="{{ cover_chart.right }}" y1="{{ cover_chart.stock_y }}" y2="{{ cover_chart.stock_y }}"></line>
-                    <text class="pa-stock-label pa-stock-{{ cover_chart.status }}-text" x="{{ cover_chart.right }}" y="{{ cover_chart.stock_y - 8 }}" text-anchor="end">Stock on hand: {{ "{:,}".format(cover_chart.stock) }}</text>
+                    <text class="pa-stock-label pa-stock-{{ cover_chart.status }}-text" x="{{ cover_chart.left + 6 }}" y="{{ cover_chart.stock_y - 8 }}" text-anchor="start">Stock on hand: {{ "{:,}".format(cover_chart.stock) }}</text>
+                    <text class="pa-end-label" x="{{ cover_chart.end_x }}" y="{{ cover_chart.end_p90_y }}" text-anchor="end">{{ "{:,}".format(cover_chart.end_p90) }}</text>
+                    <text class="pa-end-label pa-end-label-exp" x="{{ cover_chart.end_x }}" y="{{ cover_chart.end_expected_y }}" text-anchor="end">{{ "{:,}".format(cover_chart.end_expected) }}</text>
                     {% for mk in [cover_chart.cross_expected, cover_chart.cross_p90] if mk %}
                     <circle class="pa-cross-dot" cx="{{ mk.x }}" cy="{{ mk.y }}" r="6"><title>Runs out in {{ mk.label }}</title></circle>
+                    <text class="pa-stock-label" x="{{ mk.x }}" y="{{ mk.y + 22 if mk.y + 22 < cover_chart.bottom - 6 else mk.y - 12 }}" text-anchor="middle">{{ mk.label }}</text>
                     {% endfor %}
                 </svg>
             </div>
             <div class="pa-legend">
-                <span><i class="lg-line-exp"></i>Expected demand (running total)</span>
-                <span><i class="lg-p90"></i>Bad-season (P90) scenario</span>
+                <span><i class="lg-line-exp"></i>Packs needed - normal season</span>
+                <span><i class="lg-p90"></i>Packs needed - bad season</span>
                 <span><i class="lg-line-stock pa-stock-{{ cover_chart.status }}"></i>Stock on hand</span>
-                <span><i class="lg-cross"></i>Where the stock runs out</span>
+                <span><i class="lg-cross"></i>Stock runs out</span>
+                {% if cover_chart.short_p90_pts %}<span><i class="lg-short"></i>Not enough stock</span>{% endif %}
             </div>
-            <p class="rd-sub" style="text-align:center; margin:6px 0 0;">
-                {{ cover_chart.sentences[0] }} {{ cover_chart.sentences[1] }}
-                {% if cover_chart.status == 'healthy' %}<strong>The stock covers even the bad-season scenario.</strong>
-                {% elif cover_chart.status == 'warning' %}<strong>Not enough for the whole period in a bad season - plan a top-up before it runs out.</strong>
-                {% else %}<strong>The stock runs out within 3 months at expected demand - request or transfer more now.</strong>{% endif %}
-            </p>
         </section>
         {% endif %}
 
@@ -310,35 +311,15 @@
                 <span class="rd-sub">how the {{ forecast_months }}-month forecast is shared among barangays &middot;
                     <a href="?{% if municipality_filter != 'all' %}municipality={{ municipality_filter }}&amp;{% endif %}{% if event_id %}event_id={{ event_id }}&amp;{% endif %}forecast_lgu={{ lgu_forecast.lgu|urlencode }}&amp;forecast_months={{ forecast_months }}#pa-forecast-detail" class="link-manage">Hide</a></span>
             </div>
-            <ol class="rd-sub" style="margin:0 0 12px 18px; line-height:1.6;">
-                <li><strong>The model forecasts the whole municipality</strong> ({{ "{:,}".format(lgu_forecast.horizon_total) }} packs expected, {{ "{:,}".format(lgu_forecast.horizon_p90) }} recommended stockpile) from real per-typhoon relief records - a single barangay has too few typhoons of its own to forecast independently.</li>
-                <li><strong>Each barangay gets a share</strong> of that total from a regression fit on every real relief event this municipality has on record: <em>share = family count &times; a fitted rate</em>, clipped so it can't go negative and rescaled so every barangay's share adds up to 100%.</li>
-                <li><strong>Barangay figure = share &times; municipal figure.</strong> Shares add up to 100%, so barangay numbers always add up to the municipality.</li>
-            </ol>
-            <p class="rd-sub" style="background:#f4f7fc; border-radius:8px; padding:10px 12px; margin:0 0 12px;">
-                <strong>Example - {{ top.name }}:</strong>
-                {{ "{:,}".format(top.total_families_used) }} families &rarr;
-                <strong>{{ '%.1f'|format(top.share * 100) }}% share</strong>.
-                {{ '%.1f'|format(top.share * 100) }}% &times; {{ "{:,}".format(lgu_forecast.horizon_total) }} expected
-                &asymp; <strong>{{ "{:,}".format(top.expected) }} packs</strong>;
-                {{ '%.1f'|format(top.share * 100) }}% &times; {{ "{:,}".format(lgu_forecast.horizon_p90) }} stockpile
-                &asymp; <strong>{{ "{:,}".format(top.stockpile) }} packs</strong>.
-            </p>
             <div class="rr-table-wrap" style="max-height:460px; overflow:auto;">
                 <table class="rr-table">
                     <thead><tr>
-                        <th>Barangay</th><th>Households (current)</th><th>Family count used (share model)</th>
-                        <th>Share of past relief</th><th>Final share</th>
-                        <th>Expected ({{ forecast_months }} mo)</th><th>Recommended stockpile</th>
+                        <th>Barangay</th><th>Expected ({{ forecast_months }} mo)</th><th>Recommended stockpile</th>
                     </tr></thead>
                     <tbody>
                         {% for r in barangay_breakdown %}
                         <tr>
                             <td><strong>{{ r.name }}</strong></td>
-                            <td>{{ "{:,}".format(r.households) }}</td>
-                            <td>{{ "{:,}".format(r.total_families_used) }}</td>
-                            <td>{{ '%.1f'|format(r.history_share * 100) ~ '%' if r.history_share is not none else '-' }}</td>
-                            <td><strong>{{ '%.1f'|format(r.share * 100) }}%</strong>{% if r.floor_applied %} <span class="rd-sub" title="Raised to the minimum share so this barangay is not left without stock">(minimum)</span>{% endif %}</td>
                             <td>{{ "{:,}".format(r.expected) }}</td>
                             <td>{{ "{:,}".format(r.stockpile) }}</td>
                         </tr>
@@ -346,19 +327,18 @@
                     </tbody>
                     <tfoot><tr>
                         <td><strong>{{ lgu_forecast.lgu }}</strong></td>
-                        <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='households')) }}</td>
-                        <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='total_families_used')) }}</td>
-                        <td></td>
-                        <td><strong>100%</strong></td>
                         <td><strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong></td>
                         <td><strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong></td>
                     </tr></tfoot>
                 </table>
             </div>
-            <p class="rd-sub" style="margin-top:8px;">Barangay totals can differ from the municipal total by a few packs because each month is rounded. "Family count used" is what the share model actually runs on - the barangay's most recent real relief-record family count, falling back to its current household count only if it has never appeared in a relief record. It can differ from the "Households (current)" column, which is just the barangay's latest on-file household count and isn't itself an input to the forecast. "Share of past relief" is the portion of the municipality's recorded relief this barangay received across past typhoons. The final share blends that history with the family-count estimate, and no barangay goes below half of its share by family count - so a barangay with little relief history still gets stock (marked "minimum" where that floor applies).</p>
         </section>
         {% endif %}
 
+        {# CSWDO view: this panel's numbers now live in "How long will the stock
+           last?" (stock, capacity, shortfall, manage link). Kept for the
+           multi-warehouse admin view, where it compares every warehouse. #}
+        {% if not is_cswdo %}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>{{ icon('building', 18, '#0f2547') }} Warehouse Stock vs Forecast</h3>
@@ -402,6 +382,7 @@
             </div>
             <p class="rd-sub" style="margin-top:10px;">Months of cover = how long the stock lasts against the next 12 monthly expected-demand forecasts. Bar colour: green &ge; 100% of the stockpile, amber 50-99%, red below 50%. The Healthy/Low badge is the warehouse's capacity fill, a separate measure.</p>
         </section>
+        {% endif %}
 
         <div class="main-grid {{ 'pa-grid-stack' if is_cswdo else 'dash-grid-even' }}" style="margin-top:16px;">
 
@@ -434,16 +415,34 @@
                 <span class="rd-sub">Two-Stage Model (share regression + climatology) · leave-one-typhoon-out validation</span>
             </div>
             {% if latest_metrics %}
+            {# Every tile shows one figure per municipality, so no single
+               municipality (e.g. Calasiao's near-empty storms) sets the
+               headline and none is hidden behind a "worst" or combined number. #}
             <div class="pa-model-rows">
-                <div class="pa-decision-tile"><span class="rd-sub">Share MAE (worst LGU)</span><strong>{{ "%.4f"|format(latest_metrics.mae) if latest_metrics.mae is not none else '-' }}</strong><span class="rd-sub">lower is better</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">vs. equal-split baseline</span><strong>{{ "%.4f"|format(latest_metrics.mae_baseline_equal_split) if latest_metrics.mae_baseline_equal_split is not none else '-' }}</strong><span class="rd-sub">worst LGU</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">vs. avg-share baseline</span><strong>{{ "%.4f"|format(latest_metrics.mae_baseline_avg_share) if latest_metrics.mae_baseline_avg_share is not none else '-' }}</strong><span class="rd-sub">worst LGU</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">Share MAE</span>
+                    <ul class="pa-tile-lgus">{% for r in loto_cv %}<li><span>{{ r.lgu }}</span><strong>{{ "%.4f"|format(r.mae_model) }}</strong></li>{% endfor %}</ul>
+                    <span class="rd-sub">lower is better</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">vs. equal-split baseline</span>
+                    <ul class="pa-tile-lgus">{% for r in loto_cv %}<li><span>{{ r.lgu }}</span><strong>{{ "%.4f"|format(r.mae_equal_split) }}</strong></li>{% endfor %}</ul>
+                    <span class="rd-sub">share MAE of a 1/N split</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">vs. avg-share baseline</span>
+                    <ul class="pa-tile-lgus">{% for r in loto_cv %}<li><span>{{ r.lgu }}</span><strong>{{ "%.4f"|format(r.mae_avg_share) }}</strong></li>{% endfor %}</ul>
+                    <span class="rd-sub">share MAE of past average share</span></div>
                 <div class="pa-decision-tile"><span class="rd-sub">Training rows</span><strong>{{ latest_metrics.training_samples or '-' }}</strong><span class="rd-sub">{{ latest_metrics.model_version }}</span></div>
             </div>
             <div class="pa-model-rows" style="margin-top:8px;">
-                <div class="pa-decision-tile"><span class="rd-sub">Packs MAE (worst LGU)</span><strong>{{ "{:,.0f}".format(latest_metrics.mae_packs) if latest_metrics.mae_packs is not none else '-' }}</strong><span class="rd-sub">packs, lower is better</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">RMSE</span><strong>{{ "{:,.0f}".format(latest_metrics.rmse) if latest_metrics.rmse is not none else '-' }}</strong><span class="rd-sub">packs, worst LGU</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">P90 coverage, barangays that received packs (worst LGU)</span><strong>{{ "%.0f"|format(latest_metrics.p90_coverage * 100) if latest_metrics.p90_coverage is not none else '-' }}{{ '%' if latest_metrics.p90_coverage is not none }}</strong><span class="rd-sub">target ~90%</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">P90 coverage, municipality</span>
+                    <ul class="pa-tile-lgus">{% for r in loto_p90 %}<li><span>{{ r.lgu }}</span><strong>{{ "%.0f"|format(r.lgu_coverage * 100) }}%{% if r.lgu_hits is not none %} <small>({{ r.lgu_hits }}/{{ r.lgu_n }})</small>{% endif %}</strong></li>{% endfor %}</ul>
+                    <span class="rd-sub">typhoons covered, target ~90%</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">P90 coverage, barangays that received packs</span>
+                    <ul class="pa-tile-lgus">{% for r in loto_p90 %}<li><span>{{ r.lgu }}</span><strong>{% if r.barangay_coverage_nonzero is not none %}{{ "%.0f"|format(r.barangay_coverage_nonzero * 100) }}%{% if r.barangay_nonzero_hits is not none %} <small>({{ r.barangay_nonzero_hits }}/{{ r.barangay_nonzero_n }})</small>{% endif %}{% else %}-{% endif %}</strong></li>{% endfor %}</ul>
+                    <span class="rd-sub">target ~90%</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">Packs MAE</span>
+                    <ul class="pa-tile-lgus">{% for r in loto_packs_cv %}<li><span>{{ r.lgu }}</span><strong>{{ "{:,.0f}".format(r.mae_packs) }}</strong></li>{% endfor %}</ul>
+                    <span class="rd-sub">packs per barangay, lower is better</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">RMSE</span>
+                    <ul class="pa-tile-lgus">{% for r in loto_packs_cv %}<li><span>{{ r.lgu }}</span><strong>{{ "{:,.0f}".format(r.rmse_packs) }}</strong></li>{% endfor %}</ul>
+                    <span class="rd-sub">packs per barangay, lower is better</span></div>
             </div>
             {% if loto_p90 %}
             <h4 style="margin:14px 0 4px;">Per-municipality validation (P90 coverage)</h4>
@@ -490,7 +489,7 @@
             {% endif %}
             {% if loto_cv %}
             <h4 style="margin:14px 0 4px;">Per-municipality validation</h4>
-            <p class="rd-sub" style="margin:0 0 6px;">The tiles above show only the worst-performing LGU's MAE. Here's every LGU, so a strong or weak result in one municipality isn't hidden inside a single combined number. Plain MAE counts every typhoon equally, so storms where only a few packs went to one or two barangays (which no method can predict) weigh as much as major relief operations; size-weighted MAE weights each typhoon by its total packs, showing how much relief actually lands in the wrong barangay. "Pooled history" - each barangay's share of all past relief - is the strongest simple baseline. Because there are only 8-14 typhoons per municipality, the comparison with it is given as the number of held-out typhoons where the model did better, and a 95% interval for the difference in size-weighted MAE (negative means the model is better; an interval that crosses 0 means no clear difference).</p>
+            <p class="rd-sub" style="margin:0 0 6px;">The tiles above show each municipality's headline figures; this table adds the baselines and the size-weighted view. Plain MAE counts every typhoon equally, so storms where only a few packs went to one or two barangays (which no method can predict) weigh as much as major relief operations; size-weighted MAE weights each typhoon by its total packs, showing how much relief actually lands in the wrong barangay. "Pooled history" - each barangay's share of all past relief - is the strongest simple baseline. Because there are only 8-14 typhoons per municipality, the comparison with it is given as the number of held-out typhoons where the model did better, and a 95% interval for the difference in size-weighted MAE (negative means the model is better; an interval that crosses 0 means no clear difference).</p>
             <div class="rr-table-wrap">
                 <table class="rr-table">
                     <thead><tr>
@@ -580,9 +579,12 @@
         hits.forEach(function (h) { h.classList.toggle('active', h.dataset.month === key); });
         document.getElementById('pa-month-title').textContent = 'Barangay breakdown - ' + m.label;
         document.getElementById('pa-month-rows').innerHTML = m.rows.map(function (r) {
-            return '<tr><td><strong>' + esc(r.name) + '</strong></td><td>' +
+            var stock = r.on_hand === null || r.on_hand === undefined
+                ? '<span class="rd-sub">No record</span>' : fmt(r.on_hand);
+            return '<tr><td><strong>' + esc(r.name) + '</strong></td><td>' + stock + '</td><td>' +
                 fmt(r.expected) + '</td><td>' + fmt(r.stockpile) + '</td></tr>';
         }).join('');
+        document.getElementById('pa-month-total-s').innerHTML = '<strong>' + fmt(m.on_hand_total) + '</strong>';
         document.getElementById('pa-month-total-e').innerHTML = '<strong>' + fmt(m.expected) + '</strong>';
         document.getElementById('pa-month-total-p').innerHTML = '<strong>' + fmt(m.stockpile) + '</strong>';
         document.getElementById('pa-month-note').textContent = m.expected === 0 && m.stockpile === 0

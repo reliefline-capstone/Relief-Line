@@ -291,6 +291,11 @@
 .pa-model-rows span { font-size: 11px; color: #8a94a6; }
 .pa-model-rows strong { font-size: 13px; }
 
+/* One row per municipality inside a Model Performance tile. */
+.pa-tile-lgus { list-style: none; margin: 2px 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.pa-tile-lgus li { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.pa-tile-lgus small { font-size: 11px; font-weight: 400; color: #8a94a6; }
+
 .pa-decision-grid {
     display: flex;
     flex-direction: column;
@@ -318,6 +323,13 @@
 .pa-stock-warning-text { fill: #b9651a; }
 .pa-stock-critical-text { fill: #c0392b; }
 .pa-cross-dot { fill: #fff; stroke: #1a2233; stroke-width: 2.5; }
+/* "Will the stock last?": area where demand is above the stock on hand -
+   light for the bad season, stronger where even normal demand runs short. */
+.pa-short-p90 { fill: rgba(231, 76, 60, 0.10); }
+.pa-short-exp { fill: rgba(231, 76, 60, 0.22); }
+.pa-end-label { font-size: 12px; font-weight: 700; font-family: inherit; fill: #0f2547; }
+.pa-end-label-exp { fill: #2f6fd1; }
+.pa-legend .lg-short { width: 14px; height: 10px; border-radius: 2px; background: rgba(231, 76, 60, 0.22); }
 .pa-dot { fill: #1a2233; }
 .pa-dot-over { fill: #e74c3c; stroke: #fff; stroke-width: 1.5; }
 .pa-legend .lg-line-exp, .pa-legend .lg-line-actual, .pa-legend .lg-line-stock {

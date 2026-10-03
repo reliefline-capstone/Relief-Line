@@ -78,8 +78,31 @@ def cover_chart(months, stock):
 
     cross_e, cross_p = _crossing(cum_e, stock), _crossing(cum_p, stock)
 
+    def full_month_name(pos):
+        m = months[min(int(pos), n - 1)]
+        return f"{m['label']} {m['year']}"
+
     def marker(pos):
         return None if pos is None else {"x": round(x(pos), 1), "y": round(y(stock), 1), "label": month_name(pos)}
+
+    def runout(pos):
+        """Plain-language summary for the tiles above the chart: None when
+        the stock lasts the whole period."""
+        return None if pos is None else {"month": full_month_name(pos), "months": round(pos, 1)}
+
+    def shortfall(cum, pos):
+        """SVG polygon of the area where demand is above the stock line
+        (from the run-out point to the end of the period), or None."""
+        if pos is None:
+            return None
+        pts = [(x(pos), y(stock))] + [(x(i), y(cum[i])) for i in range(1, n + 1) if i > pos] + [(x(n), y(stock))]
+        return " ".join(f"{px:.1f},{py:.1f}" for px, py in pts)
+
+    # End-of-period totals at the right end of each line, nudged apart when
+    # the two lines finish close together so the labels don't overlap.
+    end_e_y, end_p_y = y(cum_e[-1]) - 8, y(cum_p[-1]) - 8
+    if abs(end_p_y - end_e_y) < 16:
+        end_p_y = end_e_y - 16
 
     def sentence(pos, what):
         if pos is None:
@@ -89,13 +112,22 @@ def cover_chart(months, stock):
     return {
         "w": W, "h": H, "left": LEFT, "right": W - RIGHT, "top": TOP, "bottom": TOP + PLOT_H,
         "y_ticks": [{"y": round(y(t), 1), "label": _fmt(t)} for t in ticks],
-        "x_labels": [{"x": round(x(i + 1), 1), "label": _month_label(f"{m['year']}-{m['month']:02d}", first_year)}
+        # Month labels sit at the MIDDLE of each month (month i spans x(i) to
+        # x(i+1)), so a run-out dot inside a month sits right above that
+        # month's label - at month ends, a July dot sat over "Jun".
+        "x_labels": [{"x": round(x(i + 0.5), 1), "label": _month_label(f"{m['year']}-{m['month']:02d}", first_year)}
                      for i, m in enumerate(months)],
         "expected_pts": " ".join(f"{x(i):.1f},{y(v):.1f}" for i, v in enumerate(cum_e)),
         "p90_pts": " ".join(f"{x(i):.1f},{y(v):.1f}" for i, v in enumerate(cum_p)),
+        "short_expected_pts": shortfall(cum_e, cross_e),
+        "short_p90_pts": shortfall(cum_p, cross_p),
+        "end_x": round(x(n), 1),
+        "end_expected_y": round(end_e_y, 1), "end_p90_y": round(end_p_y, 1),
         "stock_y": round(y(stock), 1),
         "stock": int(stock),
         "cross_expected": marker(cross_e), "cross_p90": marker(cross_p),
+        "runout_expected": runout(cross_e), "runout_p90": runout(cross_p),
+        "n_months": n,
         "sentences": [sentence(cross_e, "At expected demand,"), sentence(cross_p, "In a bad-season (P90) scenario,")],
         # green: lasts the whole period even in the P90 scenario; red: runs out
         # within 3 months at EXPECTED demand; amber: anything in between (runs

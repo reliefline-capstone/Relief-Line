@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from app.utils.timezone import ph_today
 
-from flask import Blueprint, render_template, request, Response, url_for
+from flask import Blueprint, render_template, request, url_for
 from flask_login import login_required, current_user
 
 from app.utils.decorators import role_required
@@ -11,7 +11,7 @@ from app.models.barangay_status import BarangayDisasterStatus
 from app.models.disaster_event import DisasterEvent
 from app.models.validation import DistributionRecord
 from app.models.prediction import ModelMetrics
-from app.models.barangay_inventory import food_pack_on_hand
+from app.models.barangay_inventory import BarangayInventory, food_pack_on_hand
 from app.models.barangay_report import BarangayReport
 from app.ml import predict as ml_predict
 from app.ml import charts as forecast_charts
@@ -338,13 +338,18 @@ def index():
     #    municipal warehouse's stock on hand for the LGU being viewed.
     #  - "How did the model do?": actual vs forecast for the latest backtest
     #    year, for the same LGU.
-    cover_chart = backtest_chart = None
+    cover_chart = backtest_chart = cover_wh = None
     if lgu_forecast:
-        stock = next((w["food_pack_qty"] for w in all_warehouses
-                      if w["office"].office_type == "cswdo"
-                      and w["office"].area_covered == forecast_lgu_choice), None)
-        if stock is not None:
-            cover_chart = forecast_charts.cover_chart(lgu_forecast["months"], stock)
+        wh = next((w for w in all_warehouses
+                   if w["office"].office_type == "cswdo"
+                   and w["office"].area_covered == forecast_lgu_choice), None)
+        if wh is not None:
+            cover_chart = forecast_charts.cover_chart(lgu_forecast["months"], wh["food_pack_qty"])
+            # Capacity fill and the gap to the recommended stockpile, shown in
+            # the same panel (formerly only in "Warehouse Stock vs Forecast",
+            # which now shows only for the multi-warehouse admin view).
+            cover_wh = {"pct": wh["pct"],
+                        "cover": _stock_cover(wh["food_pack_qty"], [forecast_lgu_choice], forecast_months)}
         bt = ml_predict.backtest_series(forecast_lgu_choice)
         if bt:
             backtest_chart = forecast_charts.backtest_chart(bt)
@@ -402,16 +407,28 @@ def index():
     month_breakdown = {}
     if lgu_forecast:
         shares = sorted(ml_predict.share_breakdown(forecast_lgu_choice), key=lambda r: r["share"], reverse=True)
+        # Each barangay's current food-pack stock, read once for the whole
+        # LGU (same source as food_pack_on_hand). None = no inventory row on
+        # record at all, shown as "No record" - not the same as a real 0.
+        on_hand = dict(BarangayInventory.query.with_entities(
+            BarangayInventory.barangay_id, BarangayInventory.quantity_available
+        ).filter(
+            BarangayInventory.barangay_id.in_([r["barangay_id"] for r in shares]),
+            BarangayInventory.item_type == "food_pack",
+        ).all())
+        stock_total = sum(v for v in on_hand.values() if v is not None)
         for m in chart_months:
             month_breakdown[m["date"]] = {
                 "label": f"{MONTH_NAMES[m['month'] - 1]} {m['year']}",
                 "expected": m["projected_packs"],
                 "stockpile": m["p90_packs"],
+                "on_hand_total": stock_total,
                 "rows": [{
                     "name": r["name"],
                     "share": round(r["share"] * 100, 1),
                     "expected": max(int(round(m["projected_packs"] * r["share"])), 0),
                     "stockpile": max(int(round(m["p90_packs"] * r["share"])), 0),
+                    "on_hand": on_hand.get(r["barangay_id"]),
                 } for r in shares],
             }
 
@@ -489,63 +506,10 @@ def index():
         chart_axis_max=chart_axis_max,
         chart_axis_ticks=chart_axis_ticks,
         cover_chart=cover_chart,
+        cover_wh=cover_wh,
         backtest_chart=backtest_chart,
         show_breakdown=show_breakdown,
         loto_cv=ml_predict.loto_cv_summary(),
         loto_packs_cv=ml_predict.loto_packs_cv_summary(),
         loto_p90=ml_predict.p90_coverage_summary(),
-    )
-
-
-@prediction_bp.route("/export.csv")
-@login_required
-@role_required("cswdo_admin", "system_admin")
-def export_forecast():
-    import csv
-    import io
-
-    explicit_event_id = request.args.get("event_id", type=int)
-    scope_lgus = _scope_lgus()
-    municipality_filter = request.args.get("municipality", "all")
-    if municipality_filter != "all" and municipality_filter in scope_lgus:
-        lgus = [municipality_filter]
-    else:
-        lgus = scope_lgus
-
-    lgu_event_ids, _ = _resolve_event_map(explicit_event_id, lgus)
-
-    barangays = Barangay.query.filter(Barangay.city_municipality.in_(lgus)).order_by(
-        Barangay.city_municipality, Barangay.barangay_name
-    ).all()
-    relevant_event_ids = {eid for eid in lgu_event_ids.values() if eid}
-    status_map = {}
-    if relevant_event_ids:
-        rows = BarangayDisasterStatus.query.filter(BarangayDisasterStatus.event_id.in_(relevant_event_ids)).all()
-        status_map = {r.barangay_id: r for r in rows}
-
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow([
-        "Municipality", "Barangay", "Stock Adequacy", "Need (families)",
-        "Barangay Stock", "Need/Stock %", "Affected Families",
-        "Packs Needed", "Need Source", "Delivered", "Undelivered",
-        "Forecast This Month (expected)", "Safety Stock This Month (P90)",
-    ])
-    for b in barangays:
-        b_event_id = lgu_event_ids.get(b.city_municipality)
-        s = _barangay_snapshot(b, status_map.get(b.barangay_id), b_event_id)
-        writer.writerow([
-            s["lgu"], s["name"], s["priority_label"], s["stock_need"],
-            "" if s["on_hand_stock"] is None else s["on_hand_stock"],
-            "" if s["stock_ratio_pct"] is None else s["stock_ratio_pct"],
-            s["affected_families"],
-            s["packs_needed"], s["need_source"], s["released"], s["undelivered"],
-            "" if s["predicted_quantity"] is None else s["predicted_quantity"],
-            "" if s["safety_stock"] is None else s["safety_stock"],
-        ])
-
-    return Response(
-        buffer.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=predictive_analytics.csv"},
     )

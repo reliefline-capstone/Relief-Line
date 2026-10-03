@@ -247,6 +247,8 @@ def p90_coverage_summary():
             "barangay_n": cv["barangay_n"],
             "barangay_coverage_nonzero": cv.get("barangay_coverage_nonzero"),
             "barangay_nonzero_n": cv.get("barangay_nonzero_n"),
+            "lgu_hits": cv.get("lgu_hits"),
+            "barangay_nonzero_hits": cv.get("barangay_nonzero_hits"),
         })
     rows.sort(key=lambda r: r["lgu"])
     return rows
