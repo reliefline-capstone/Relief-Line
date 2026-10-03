@@ -1,7 +1,9 @@
 """
 Trains the food-pack TWO-STAGE forecaster: per LGU (Urdaneta City, Santa
-Barbara, Calasiao), Stage 1 is a linear regression predicting each
-barangay's SHARE of its LGU's relief for a typhoon, and Stage 2 is computed
+Barbara, Calasiao), Stage 1 predicts each barangay's SHARE of its LGU's
+relief for a typhoon (a size-weighted family-count regression blended with
+the barangay's own relief history, with a per-family floor - see v9.2
+below), and Stage 2 is computed
 statistics (not ML) giving how often typhoons happen and how big they are.
 Together they answer "how many food packs should this barangay hold in
 stock for the next N months?" for PSWDO/CSWDO.
@@ -25,7 +27,8 @@ problem it was already suspect for. Two-stage sidesteps this entirely:
   typhoon's magnitude, so there's no leakage risk forecasting it months
   ahead. Fit by pooling every (relief_event, barangay) row across an LGU's
   whole real history: share = food_packs_given / that event's LGU total,
-  regressed on total_families_snapshot (the ONLY predictor - a barangay's
+  regressed on total_families_snapshot, each row weighted by its event's
+  LGU total (v9.1 - see fit_share_model) (the ONLY predictor - a barangay's
   own affected_families/food_packs_given for a FUTURE typhoon obviously
   can't be a predictor of themselves, and adding total_individuals_snapshot
   alongside total_families_snapshot was tested informally and added nothing,
@@ -33,7 +36,7 @@ problem it was already suspect for. Two-stage sidesteps this entirely:
 
   Stage 2 (severity/frequency, computed): how bad is a typical typhoon for
   this LGU, and how often does one hit? Both come straight from real
-  records/the verified calendar, not a fitted model - with 8-27 events per
+  records/the verified calendar, not a fitted model - with 8-14 events per
   LGU there isn't enough data to fit a distribution shape, so empirical
   percentiles (25th/mean/90th of real per-typhoon LGU totals) and a simple
   frequency count are the honest choice. Crucially, frequency is CLIMATOLOGICAL
@@ -51,20 +54,39 @@ problem it was already suspect for. Two-stage sidesteps this entirely:
   contradict it for many "not confirmed" storms (Kiko, Jolina, Fabian,
   Karding... all have real Calasiao/Urdaneta relief despite being marked
   "not confirmed in sources reviewed" - a desk search missing a source is not
-  the same as relief not happening).
+  the same as relief not happening). It is relief EVENTS per calendar
+  typhoon (v9.3 fix - counting storms covered overstated totals by up to
+  x1.38, since one combined report can cover several storms), and a LOWER
+  bound, since a storm with no record is treated as no relief.
+
+  v9.1 (2026-10-03): the regression is weighted by each event's LGU total.
+  v9.2 (2026-10-03): the regression share is BLENDED with each barangay's
+  pooled relief history (share = alpha x history + (1 - alpha) x
+  regression, alpha tuned per LGU by leave-one-typhoon-out, capped at 0.75)
+  and FLOORED at SHARE_FLOOR x its per-family share, so a barangay with
+  little relief history still gets stock - see fit_stage1, predict_shares,
+  apply_share_floor.
+  v9.3 (2026-10-03): P(relief) fix above.
 
 Formula (see app.ml.predict.forecast_lgu for the actual implementation):
   stock(barangay, horizon, scenario) =
       expected_typhoons(horizon) x P(relief) x total_packs(scenario)
       x share(barangay) x (1 + BUFFER)
+Known limits: the horizon P90 is expected storms x P(relief) x the per-event
+P90, not the P90 of a multi-storm total (not a safety stock under ~6
+months), and no forecast built from 8-14 events covers a once-in-years storm
+(Calasiao's 39,103-pack Crising + Emong exceeds its 12-month P90).
 
 Validation: leave-one-typhoon-out cross-validation (leave_one_typhoon_out_cv)
-against two baselines - equal 1/N split and each barangay's average
-historical share - refit on every OTHER event, scored on the held-out one.
-An informal check on a 14-typhoon Calasiao subset found LinReg MAE 0.0096 vs
-avg-share 0.0100 vs equal-split 0.0191: a real but modest edge over
-avg-share, kept because it also gives a sane number to a barangay with
-little/no history (avg-share can't).
+against three baselines - equal 1/N split, each barangay's average
+per-event share, and POOLED HISTORY (its share of all past relief, the
+strongest) - refit on every OTHER event, scored on the held-out one, plain
+and size-weighted, with "beats pooled history in k of n storms" and a
+bootstrap interval. As of v9.3 the model does NOT clearly beat pooled
+history in any LGU (every interval crosses 0): its case is protecting
+barangays with little relief history (cap + floor), not proven accuracy.
+With 7-14 scored storms per LGU and the design choices made on the same
+data, treat every figure as approximate.
 --------------------------------------------------------------------------
 """
 import os
@@ -76,7 +98,7 @@ from app.utils.timezone import ph_now, ph_today
 import numpy as np
 import joblib
 
-MODEL_VERSION = "v9.0-two-stage-lgu"
+MODEL_VERSION = "v9.3-two-stage-lgu"
 ARTIFACT_PATH = os.path.join(os.path.dirname(__file__), "artifacts", "food_pack_demand.joblib")
 
 # Safety margin added on top of the formula's raw output, applied uniformly
@@ -255,9 +277,10 @@ def _event_total_and_known(records):
 
 
 def _share_training_rows(events):
-    """[(total_families_snapshot, share)] pooled across every event with at
-    least 2 barangays reporting a known food_packs_given AND a known
-    total_families_snapshot - the (X, y) pairs Stage 1 fits on."""
+    """[(total_families_snapshot, share, event_total)] pooled across every
+    event with at least 2 barangays reporting a known food_packs_given AND a
+    known total_families_snapshot - the (X, y) pairs Stage 1 fits on, plus
+    the event's LGU total packs as the row's fitting weight."""
     rows = []
     for ev in events.values():
         total, known = _event_total_and_known(ev["records"])
@@ -265,48 +288,248 @@ def _share_training_rows(events):
             continue
         for r in known:
             if r["total_families_snapshot"] is not None:
-                rows.append((r["total_families_snapshot"], r["food_packs_given"] / total))
+                rows.append((r["total_families_snapshot"], r["food_packs_given"] / total, total))
     return rows
 
 
 def fit_share_model(rows):
-    """OLS share ~ total_families_snapshot on pooled (x, y) pairs. None if
-    there isn't enough data to fit (fewer than 3 rows)."""
+    """Weighted least squares share ~ total_families_snapshot on pooled
+    (x, y, event_total) rows, each row weighted by its event's LGU total
+    packs. None if there isn't enough data to fit (fewer than 3 rows).
+
+    Why weighted (v9.1, 2026-10-03): unweighted, a 1-pack storm (one barangay
+    gets share 1.0, the rest 0) pulled the line as hard as a 39,000-pack one,
+    though its shares say almost nothing about where relief goes in a real
+    operation. Weighting by size keeps every event but lets the big
+    operations the stockpile is actually for dominate the fit. Chosen over a
+    minimum-size cut-off (which performed about the same in a fixed-test-set
+    comparison) because it needs no arbitrary threshold."""
     if len(rows) < 3:
         return None
     x = np.array([r[0] for r in rows], dtype=float)
     y = np.array([r[1] for r in rows], dtype=float)
-    slope, intercept = np.polyfit(x, y, 1)
-    return {"slope": float(slope), "intercept": float(intercept), "n_rows": len(rows)}
+    # np.polyfit's w multiplies the residuals, so sqrt(weight) gives a
+    # squared-error weight of exactly event_total.
+    w = np.sqrt(np.array([r[2] for r in rows], dtype=float))
+    slope, intercept = np.polyfit(x, y, 1, w=w)
+    return {"slope": float(slope), "intercept": float(intercept), "n_rows": len(rows),
+            "weighting": "event_total"}
 
 
-def predict_shares(model, total_families_by_barangay):
-    """{barangay_id: total_families} -> {barangay_id: share}, clipped >=0 and
-    renormalized to sum to 1 (or split evenly if every prediction is <=0)."""
+def predict_shares(model, total_families_by_barangay, history=None, alpha=0.0, floor=0.0):
+    """{barangay_id: total_families} -> {barangay_id: share}, summing to 1.
+
+    1. Regression: clip(slope x total_families + intercept, 0), renormalized
+       (split evenly if every prediction is <= 0).
+    2. History blend (v9.2): alpha x the barangay's pooled relief history
+       (see pooled_history_shares, renormalized over these barangays) +
+       (1 - alpha) x its regression share. A barangay with no relief record
+       at all keeps its regression share.
+    3. Floor (v9.2): no barangay ends below `floor` x its per-family share
+       (families / LGU families) - see apply_share_floor.
+    With the defaults (no history, alpha 0, floor 0) this is the plain
+    regression split."""
     raw = {bid: max(model["slope"] * tf + model["intercept"], 0.0)
            for bid, tf in total_families_by_barangay.items()}
     total = sum(raw.values())
     if total <= 0:
         n = len(raw) or 1
-        return {bid: 1.0 / n for bid in raw}
-    return {bid: v / total for bid, v in raw.items()}
+        shares = {bid: 1.0 / n for bid in raw}
+    else:
+        shares = {bid: v / total for bid, v in raw.items()}
+
+    if history and alpha > 0:
+        have = {bid: history[bid] for bid in shares if history.get(bid) is not None}
+        hsum = sum(have.values())
+        if hsum > 0:
+            shares = {bid: (alpha * have[bid] / hsum + (1 - alpha) * s) if bid in have else s
+                      for bid, s in shares.items()}
+            ssum = sum(shares.values())
+            shares = {bid: s / ssum for bid, s in shares.items()}
+
+    return apply_share_floor(shares, total_families_by_barangay, floor)
+
+
+def apply_share_floor(shares, total_families_by_barangay, floor):
+    """Lift every barangay below `floor` x (its families / the LGU's families)
+    up to that minimum, and scale the rest down to make room so shares still
+    sum to 1. Repeats until no scaled-down barangay falls under its own
+    minimum. No-op if floor <= 0 or family counts are unknown.
+
+    Why (v9.2, 2026-10-03): a barangay with little relief history - or a
+    small one the regression line clips to ~0 (Calasiao's Poblacion West got
+    a 0.0001 share under v9.1) - can still need relief in the next storm.
+    The floor guarantees every barangay keeps at least part of what its
+    population alone would justify."""
+    ftot = sum(tf for tf in total_families_by_barangay.values() if tf)
+    if floor <= 0 or ftot <= 0:
+        return shares
+    minimum = {bid: floor * (total_families_by_barangay.get(bid) or 0) / ftot for bid in shares}
+    fixed = {}
+    while True:
+        free = {bid: s for bid, s in shares.items() if bid not in fixed}
+        if not free:
+            return fixed
+        room = 1.0 - sum(fixed.values())
+        fsum = sum(free.values())
+        scaled = ({bid: s * room / fsum for bid, s in free.items()} if fsum > 0
+                  else {bid: room / len(free) for bid in free})
+        below = {bid: minimum[bid] for bid, s in scaled.items() if s < minimum[bid]}
+        if not below:
+            return {**fixed, **scaled}
+        fixed.update(below)
+
+
+def _is_supply_only(known):
+    """True for an event where no reported barangay has a family snapshot -
+    a supply-distribution sheet (e.g. Sta. Barbara's Aug 2026 DSWD+LGU
+    sheet), not a needs report. Excluded from every history-based share
+    (model and baselines alike) but kept in Stage 2 severity."""
+    return not any(r["total_families_snapshot"] is not None for r in known)
+
+
+def pooled_history_shares(events):
+    """{barangay_id: share of the LGU's relief it has historically received}
+    = sum of its food_packs_given / sum of those events' LGU totals, over
+    every event it reported in. Pooling (rather than averaging per-event
+    shares) weights each event by its size, matching fit_share_model - a
+    1-pack storm barely moves it.
+
+    Events with no family snapshot on any record are skipped: those are
+    supply-distribution sheets (e.g. Sta. Barbara's Aug 2026 DSWD+LGU sheet),
+    which record where packs were sent, not where need was reported, and
+    can never be held out in validation since they have no family counts.
+    They still count toward Stage 2 severity (a real operation's size)."""
+    num, den = {}, {}
+    for ev in events.values():
+        total, known = _event_total_and_known(ev["records"])
+        if total <= 0 or _is_supply_only(known):
+            continue
+        for r in known:
+            bid = r["barangay_id"]
+            num[bid] = num.get(bid, 0.0) + r["food_packs_given"]
+            den[bid] = den.get(bid, 0.0) + total
+    return {bid: num[bid] / den[bid] for bid in num}
+
+
+# Blend weights tried for the history blend, and the per-family floor.
+# Chosen from a fixed-test-set comparison on 2026-10-03 (see
+# fit_stage1's docstring): a floor of 0.5 cost almost no accuracy.
+# alpha is capped at 0.75 on purpose: history never decides a share alone,
+# so at least a quarter of every barangay's share always comes from its
+# family count - a barangay that happened to get little relief in past
+# storms can still need it in the next one. (Sta. Barbara's tuning picked
+# 1.0 when allowed, but 0.75 scored the same: 0.0110 vs 0.0111.)
+ALPHA_GRID = (0.0, 0.25, 0.5, 0.75)
+SHARE_FLOOR = 0.5
+
+_STAGE1_CACHE = {}
+
+
+def _scoreable_with_families(events):
+    out = []
+    for eid, ev in events.items():
+        total, known = _event_total_and_known(ev["records"])
+        if total > 0 and len(known) >= 2 and all(r["total_families_snapshot"] is not None for r in known):
+            out.append(eid)
+    return out
+
+
+def _weighted_share_error(events, alpha):
+    """Size-weighted LOTO share MAE of the blend at a fixed alpha, over
+    `events` only - used to tune alpha without ever looking at the event
+    being scored by the outer validation."""
+    errs, weights = [], []
+    for held_out in _scoreable_with_families(events):
+        train_events = {eid: ev for eid, ev in events.items() if eid != held_out}
+        model = fit_share_model(_share_training_rows(train_events))
+        if model is None:
+            continue
+        total, known = _event_total_and_known(events[held_out]["records"])
+        tf = {r["barangay_id"]: r["total_families_snapshot"] for r in known}
+        pred = predict_shares(model, tf, pooled_history_shares(train_events), alpha, SHARE_FLOOR)
+        for r in known:
+            errs.append(abs(r["food_packs_given"] / total - pred[r["barangay_id"]]))
+            weights.append(total)
+    return float(np.average(errs, weights=weights)) if errs else None
+
+
+def fit_stage1(events):
+    """Stage 1 for one LGU's events: the weighted share regression, every
+    barangay's pooled relief history, and the blend weight alpha - picked
+    from ALPHA_GRID by the lowest size-weighted leave-one-typhoon-out share
+    error over these same events (ties -> the smaller alpha, i.e. leaning on
+    population). None if the regression can't be fit.
+
+    Memoized per set of event ids, since the three LOTO validations below
+    all refit the same folds.
+
+    Why blend history in (v9.2, 2026-10-03): family count alone explains
+    only part of where relief goes - some barangays flood every storm. The
+    blend clearly helped Sta. Barbara over the family-count regression alone
+    and was about neutral elsewhere, but it does NOT clearly beat pooled
+    history alone in any LGU (see leave_one_typhoon_out_cv's k-of-n and
+    bootstrap interval) - run scripts/train_model.py for the current
+    figures rather than trusting numbers quoted here."""
+    key = frozenset(events)
+    if key in _STAGE1_CACHE:
+        return _STAGE1_CACHE[key]
+    model = fit_share_model(_share_training_rows(events))
+    result = None
+    if model is not None:
+        best_alpha, best_err = 0.0, None
+        if len(_scoreable_with_families(events)) >= 2:
+            for alpha in ALPHA_GRID:
+                err = _weighted_share_error(events, alpha)
+                if err is not None and (best_err is None or err < best_err):
+                    best_alpha, best_err = alpha, err
+        result = {"model": model, "history": pooled_history_shares(events), "alpha": best_alpha}
+    _STAGE1_CACHE[key] = result
+    return result
+
+
+def stage1_shares(stage1, total_families_by_barangay):
+    """Shares from a fit_stage1() result (regression + history blend + floor)."""
+    return predict_shares(stage1["model"], total_families_by_barangay,
+                          stage1["history"], stage1["alpha"], SHARE_FLOOR)
 
 
 def leave_one_typhoon_out_cv(events):
     """Refit Stage 1 excluding each event in turn, score the held-out event's
     barangay shares against: the model, an equal 1/N split, and each
     barangay's average share over the OTHER events. Returns per-baseline MAE,
-    or None if there's too little data to run a single fold."""
+    or None if there's too little data to run a single fold.
+
+    Two scores per method, on the SAME held-out rows:
+      mae_*          - plain mean over every (event, barangay) pair, so a
+                       1-pack storm counts as much as a 39,000-pack one;
+      mae_*_weighted - each pair weighted by its event's LGU total, i.e. how
+                       much relief actually lands in the wrong barangay.
+    Near-empty storms (a few packs to 1-3 barangays) are unpredictable by
+    any method and dominate the plain score; the weighted one reflects real
+    misallocation. Both are reported - neither replaces the other.
+
+    Also scored against POOLED HISTORY alone (pooled_history_shares - the
+    same size-weighted history the model blends in), the strongest simple
+    baseline: avg-share averages per-event shares, so a 1-pack storm counts
+    as much as a 39,000-pack one, which makes it easy to beat. With only
+    8-14 events per LGU, a third-decimal MAE difference isn't evidence, so
+    the comparison with pooled history is also given as "model beats it in
+    k of n held-out storms" (size-weighted error per storm) and a bootstrap
+    95% interval (resampling held-out storms) for the size-weighted MAE
+    difference, model minus pooled history - negative = model better. Expect
+    it to be wide."""
     scoreable = [eid for eid, ev in events.items() if _event_total_and_known(ev["records"])[0] > 0
                  and len(_event_total_and_known(ev["records"])[1]) >= 2]
     if len(scoreable) < 2:
         return None
 
-    err_model, err_equal, err_avg = [], [], []
+    err_model, err_equal, err_avg, err_pooled, weights = [], [], [], [], []
+    per_event = []  # (event total, sum |err| model, sum |err| pooled history, n barangays)
     for held_out in scoreable:
         train_events = {eid: ev for eid, ev in events.items() if eid != held_out}
-        model = fit_share_model(_share_training_rows(train_events))
-        if model is None:
+        stage1 = fit_stage1(train_events)
+        if stage1 is None:
             continue
 
         total, known = _event_total_and_known(events[held_out]["records"])
@@ -315,12 +538,12 @@ def leave_one_typhoon_out_cv(events):
                   if r["total_families_snapshot"] is not None}
         if len(tf_map) < len(known):
             continue  # can't fairly score a barangay the model has no predictor for
-        pred_share = predict_shares(model, tf_map)
+        pred_share = stage1_shares(stage1, tf_map)
 
         hist_sum, hist_n = {}, {}
         for ev in train_events.values():
             t, k = _event_total_and_known(ev["records"])
-            if t <= 0:
+            if t <= 0 or _is_supply_only(k):
                 continue
             for r in k:
                 bid = r["barangay_id"]
@@ -330,21 +553,56 @@ def leave_one_typhoon_out_cv(events):
         avg_total = sum(avg_raw.get(bid, 0.0) for bid in actual_share) or 1.0
         avg_share = {bid: avg_raw.get(bid, 0.0) / avg_total for bid in actual_share}
 
+        pooled_raw = pooled_history_shares(train_events)
+        pooled_total = sum(pooled_raw.get(bid, 0.0) for bid in actual_share) or 1.0
+        pooled_share = {bid: pooled_raw.get(bid, 0.0) / pooled_total for bid in actual_share}
+
         n = len(actual_share)
         equal_share = {bid: 1.0 / n for bid in actual_share}
 
+        s_model = s_pooled = 0.0
         for bid, a in actual_share.items():
-            err_model.append(abs(a - pred_share.get(bid, 0.0)))
+            e_m = abs(a - pred_share.get(bid, 0.0))
+            e_p = abs(a - pooled_share[bid])
+            err_model.append(e_m)
             err_equal.append(abs(a - equal_share[bid]))
             err_avg.append(abs(a - avg_share.get(bid, 0.0)))
+            err_pooled.append(e_p)
+            weights.append(total)
+            s_model += e_m
+            s_pooled += e_p
+        per_event.append((total, s_model, s_pooled, n))
 
     if not err_model:
         return None
+
+    # k of n: held-out storms where the model's share error beats pooled
+    # history's (ties - e.g. both perfect - count as not beating).
+    beats_k = sum(1 for _t, sm, sp, _n in per_event if sm < sp)
+    # Bootstrap the size-weighted MAE difference over held-out storms.
+    pe = np.array(per_event, dtype=float)
+    rng = np.random.default_rng(0)
+    diffs = []
+    for _ in range(2000):
+        s = pe[rng.integers(0, len(pe), len(pe))]
+        denom = (s[:, 0] * s[:, 3]).sum()
+        diffs.append(((s[:, 0] * s[:, 1]).sum() - (s[:, 0] * s[:, 2]).sum()) / denom)
+    ci_low, ci_high = np.percentile(diffs, [2.5, 97.5])
     return {
+        "mae_pooled_history": float(np.mean(err_pooled)),
+        "mae_pooled_history_weighted": float(np.average(err_pooled, weights=weights)),
+        "beats_pooled_k": beats_k,
+        "beats_pooled_n": len(per_event),
+        "diff_vs_pooled_weighted_ci": (float(ci_low), float(ci_high)),
         "mae_model": float(np.mean(err_model)),
         "mae_equal_split": float(np.mean(err_equal)),
         "mae_avg_share": float(np.mean(err_avg)),
-        "n_folds": len(scoreable),
+        "mae_model_weighted": float(np.average(err_model, weights=weights)),
+        "mae_equal_split_weighted": float(np.average(err_equal, weights=weights)),
+        "mae_avg_share_weighted": float(np.average(err_avg, weights=weights)),
+        # Storms actually scored - a supply-only event (no family counts)
+        # can't be, so this can be smaller than the LGU's event count.
+        "n_folds": len(per_event),
         "n_rows": len(err_model),
     }
 
@@ -379,14 +637,30 @@ def climatology_by_month(calendar_rows, today):
 
 
 def p_relief(events, all_typhoon_keys):
-    """Fraction of the calendar's 36 typhoons that have at least one real
-    relief record for this LGU - deliberately NOT typhoon_calendar's
-    pangasinan_impact_confirmed column (see module doc)."""
-    covered = set()
-    for ev in events.values():
-        covered.update(ev["typhoon_keys"])
+    """Relief operations per calendar typhoon for this LGU: the number of
+    real relief EVENTS with packs (linked to at least one calendar typhoon)
+    divided by the calendar's typhoon count - deliberately NOT
+    typhoon_calendar's pangasinan_impact_confirmed column (see module doc).
+
+    Fixed 2026-10-03 (was: calendar typhoons COVERED by a relief record /
+    36). The forecast multiplies this by severity, which is the mean size of
+    a relief EVENT, and a combined report (e.g. Urdaneta's "Nika + Ofel +
+    Pepito") is one event covering several storms - counting storms covered
+    overstated historical totals by x1.36 (Urdaneta), x1.38 (Sta. Barbara)
+    and x1.07 (Calasiao). A leave-one-year-out check put the new definition
+    closer to the actual yearly total in 14 of 18 LGU-years; it fixes the
+    bias in typical years and says nothing about 2025-type years, which no
+    version predicts.
+
+    Caveat: a storm with no relief record is counted as no relief, but some
+    may simply not have been digitized - so this is a LOWER bound on how
+    often relief happens."""
     universe = set(all_typhoon_keys)
-    return len(covered & universe) / len(universe) if universe else 0.0
+    if not universe:
+        return 0.0
+    n_events = sum(1 for ev in events.values()
+                   if set(ev["typhoon_keys"]) & universe and _event_total_and_known(ev["records"])[0] > 0)
+    return n_events / len(universe)
 
 
 def severity_scenarios(events):
@@ -401,6 +675,7 @@ def severity_scenarios(events):
         "low": float(np.percentile(arr, 25)),
         "expected": float(arr.mean()),
         "high": float(np.percentile(arr, 90)),
+        "max": float(arr.max()),  # largest real event, for the "P90 below worst storm" warning
         "n": len(totals),
     }
 
@@ -466,9 +741,9 @@ def leave_one_typhoon_out_packs_cv(events):
     actual, predicted = [], []
     for held_out in scoreable:
         train_events = {eid: ev for eid, ev in events.items() if eid != held_out}
-        model = fit_share_model(_share_training_rows(train_events))
+        stage1 = fit_stage1(train_events)
         sev = _loto_severity_excluding(events, held_out)
-        if model is None or sev is None:
+        if stage1 is None or sev is None:
             continue
 
         _total, known = _event_total_and_known(events[held_out]["records"])
@@ -476,7 +751,7 @@ def leave_one_typhoon_out_packs_cv(events):
                   if r["total_families_snapshot"] is not None}
         if len(tf_map) < len(known):
             continue
-        pred_share = predict_shares(model, tf_map)
+        pred_share = stage1_shares(stage1, tf_map)
 
         for r in known:
             actual.append(r["food_packs_given"])
@@ -511,43 +786,61 @@ def leave_one_typhoon_out_p90_coverage(events):
       barangay_coverage - same check per barangay (share x P90 total vs
                           real food_packs_given), pooled across all
                           (barangay, held-out typhoon) pairs.
+      barangay_coverage_nonzero - the same, only over pairs where the
+                          barangay actually received packs. A barangay that
+                          got 0 is trivially "covered", and most pairs in
+                          small storms are 0, so barangay_coverage alone
+                          flatters the model - judge P90 by lgu_coverage and
+                          this one.
+    lgu_n counts every event with packs, including a supply-only sheet (a
+    real LGU total - Sta. Barbara's event 49); the barangay-level figures
+    skip it, since it has no family counts to split by. So the two levels
+    can be over different storm counts.
     None if there isn't enough data to run a single fold."""
     scoreable = [eid for eid, ev in events.items() if _event_total_and_known(ev["records"])[0] > 0
                  and len(_event_total_and_known(ev["records"])[1]) >= 2]
     if len(scoreable) < 2:
         return None
 
-    lgu_hits = lgu_n = brgy_hits = brgy_n = 0
+    lgu_hits = lgu_n = brgy_hits = brgy_n = nz_hits = nz_n = 0
     for held_out in scoreable:
         sev = _loto_severity_excluding(events, held_out)
         if sev is None:
             continue
         total, known = _event_total_and_known(events[held_out]["records"])
 
-        lgu_hits += int(total <= sev["high"])
+        lgu_hits += int(total <= sev["high"])  # every event with packs, supply-only included
         lgu_n += 1
 
         train_events = {eid: ev for eid, ev in events.items() if eid != held_out}
-        model = fit_share_model(_share_training_rows(train_events))
-        if model is None:
+        stage1 = fit_stage1(train_events)
+        if stage1 is None:
             continue
         tf_map = {r["barangay_id"]: r["total_families_snapshot"] for r in known
                   if r["total_families_snapshot"] is not None}
         if len(tf_map) < len(known):
             continue
-        pred_share = predict_shares(model, tf_map)
+        pred_share = stage1_shares(stage1, tf_map)
         for r in known:
             p90_packs = sev["high"] * pred_share.get(r["barangay_id"], 0.0)
-            brgy_hits += int(r["food_packs_given"] <= p90_packs)
+            hit = int(r["food_packs_given"] <= p90_packs)
+            brgy_hits += hit
             brgy_n += 1
+            if r["food_packs_given"] > 0:
+                nz_hits += hit
+                nz_n += 1
 
     if lgu_n == 0 or brgy_n == 0:
         return None
     return {
         "lgu_coverage": lgu_hits / lgu_n,
+        "lgu_hits": lgu_hits,
         "barangay_coverage": brgy_hits / brgy_n,
+        "barangay_nonzero_hits": nz_hits,
         "lgu_n": lgu_n,
         "barangay_n": brgy_n,
+        "barangay_coverage_nonzero": nz_hits / nz_n if nz_n else None,
+        "barangay_nonzero_n": nz_n,
     }
 
 
@@ -563,6 +856,7 @@ def train_and_persist():
     from app.extensions import db
     from app.models.prediction import ModelMetrics
 
+    _STAGE1_CACHE.clear()
     by_lgu = load_relief_data()
     if not by_lgu:
         raise RuntimeError(
@@ -577,9 +871,8 @@ def train_and_persist():
 
     lgu_artifact, loto_cv, loto_packs_cv, loto_p90, backtest_series = {}, {}, {}, {}, {}
     for lgu, events in by_lgu.items():
-        rows = _share_training_rows(events)
-        model = fit_share_model(rows)
-        if model is None:
+        stage1 = fit_stage1(events)
+        if stage1 is None:
             continue
 
         # Sort events chronologically first so the LAST write per barangay is
@@ -596,10 +889,22 @@ def train_and_persist():
                     latest_tf[r["barangay_id"]] = r["total_families_snapshot"]
 
         lgu_artifact[lgu] = {
-            "share_model": model,
+            "share_model": stage1["model"],
+            "history_share": stage1["history"],
+            "alpha": stage1["alpha"],
+            "share_floor": SHARE_FLOOR,
             "p_relief": p_relief(events, all_keys),
             "severity": severity_scenarios(events),
             "barangays": {bid: {"latest_total_families": tf} for bid, tf in latest_tf.items()},
+            # What this LGU was trained on - check_forecast compares these
+            # with the database to catch a model older than the data.
+            "event_ids": sorted(events),
+            "n_events_with_packs": sum(1 for ev in events.values()
+                                       if _event_total_and_known(ev["records"])[0] > 0),
+            # Record count and total packs too, so an edit INSIDE an
+            # existing event (same ids) still shows the model as stale.
+            "n_records": sum(len(ev["records"]) for ev in events.values()),
+            "total_packs": sum(_event_total_and_known(ev["records"])[0] for ev in events.values()),
         }
         loto_cv[lgu] = leave_one_typhoon_out_cv(events)
         loto_packs_cv[lgu] = leave_one_typhoon_out_packs_cv(events)
@@ -645,7 +950,10 @@ def train_and_persist():
             mae_baseline_avg_share=round(max(cv["mae_avg_share"] for cv in scored.values()), 4),
             mae_packs=round(max(cv["mae_packs"] for cv in packs_scored.values()), 4) if packs_scored else None,
             rmse=round(max(cv["rmse_packs"] for cv in packs_scored.values()), 4) if packs_scored else None,
-            p90_coverage=round(min(cv["barangay_coverage"] for cv in p90_scored.values()), 4) if p90_scored else None,
+            # Worst LGU's P90 coverage over barangays that actually received
+            # packs - the plain barangay figure is inflated by 0-pack rows.
+            p90_coverage=round(min(cv["barangay_coverage_nonzero"] for cv in p90_scored.values()
+                                   if cv.get("barangay_coverage_nonzero") is not None), 4) if p90_scored else None,
             training_samples=sum(len(ev["records"]) for events in by_lgu.values() for ev in events.values()),
         ))
         db.session.commit()

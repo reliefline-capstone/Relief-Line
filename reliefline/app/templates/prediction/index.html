@@ -181,10 +181,16 @@
                 <div class="pa-decision-tile">
                     <span class="rd-sub">Recommended stockpile</span>
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong>
-                    <span class="rd-sub">packs (covers 9 scenarios in 10)</span>
+                    <span class="rd-sub">packs = {{ "{:,}".format(lgu_forecast.p90_before_buffer) }} (90th-percentile scenario) + {{ "{:,}".format(lgu_forecast.buffer_packs) }} ({{ "%.0f"|format(lgu_forecast.buffer * 100) }}% safety buffer)</span>
                 </div>
             </div>
-            <p class="rd-sub" style="text-align:center;">Two-stage forecast (barangay share regression + typhoon climatology) fit on real per-typhoon relief records through {{ lgu_forecast.data_through }}. The recommended stockpile is the level that covers 9 scenarios in 10. See Model Performance below.</p>
+            {% if lgu_forecast.short_horizon %}
+            <p class="stock-warning" style="margin:8px 0;"><span><strong>Not a safety stock for this period.</strong> Only about {{ "%.1f"|format(lgu_forecast.expected_typhoons) }} typhoon{{ '' if lgu_forecast.expected_typhoons|round(1) == 1 else 's' }} {{ 'is' if lgu_forecast.expected_typhoons|round(1) == 1 else 'are' }} expected in these months (fewer than one expected relief operation for {{ lgu_forecast.lgu }}), so the forecast spreads that chance across the period. The stockpile before buffer ({{ "{:,}".format(lgu_forecast.p90_before_buffer) }} packs) is smaller than a single bad relief operation ({{ "{:,}".format(lgu_forecast.per_event_p90) }} packs at the 90th percentile). Use a longer horizon that covers the typhoon season for stockpiling decisions.</span></p>
+            {% endif %}
+            {% if lgu_forecast.below_largest_event %}
+            <p class="stock-warning" style="margin:8px 0;"><span>{% if lgu_forecast.largest_covered_only_by_buffer %}<strong>Largest storm covered only by the safety buffer.</strong> {{ lgu_forecast.lgu }}'s largest recorded relief operation used {{ "{:,}".format(lgu_forecast.largest_event) }} packs - more than the 90th-percentile scenario ({{ "{:,}".format(lgu_forecast.p90_before_buffer) }}), and covered only once the {{ "%.0f"|format(lgu_forecast.buffer * 100) }}% buffer is added.{% else %}<strong>Extreme storms are not covered.</strong> {{ lgu_forecast.lgu }}'s largest recorded relief operation used {{ "{:,}".format(lgu_forecast.largest_event) }} packs - more than this {{ forecast_months }}-month recommended stockpile, even with the {{ "%.0f"|format(lgu_forecast.buffer * 100) }}% buffer.{% endif %} A forecast built from a few years of records cannot cover a once-in-several-years storm; plan for that separately (provincial/DSWD augmentation).</span></p>
+            {% endif %}
+            <p class="rd-sub" style="text-align:center;">Two-stage forecast (barangay share model + typhoon climatology) fit on real per-typhoon relief records through {{ lgu_forecast.data_through }}. The recommended stockpile is the 90th-percentile scenario plus a separate safety buffer. It is built from only a few years of records (8-14 typhoons per municipality) and treats a storm with no relief record as no relief. See Model Performance below.</p>
             {% else %}
             <p class="empty-note">No model has been trained yet. Run <code>scripts/train_model.py</code> against the current database.</p>
             {% endif %}
@@ -322,7 +328,7 @@
                 <table class="rr-table">
                     <thead><tr>
                         <th>Barangay</th><th>Households (current)</th><th>Family count used (share model)</th>
-                        <th>Final share</th>
+                        <th>Share of past relief</th><th>Final share</th>
                         <th>Expected ({{ forecast_months }} mo)</th><th>Recommended stockpile</th>
                     </tr></thead>
                     <tbody>
@@ -331,7 +337,8 @@
                             <td><strong>{{ r.name }}</strong></td>
                             <td>{{ "{:,}".format(r.households) }}</td>
                             <td>{{ "{:,}".format(r.total_families_used) }}</td>
-                            <td><strong>{{ '%.1f'|format(r.share * 100) }}%</strong></td>
+                            <td>{{ '%.1f'|format(r.history_share * 100) ~ '%' if r.history_share is not none else '-' }}</td>
+                            <td><strong>{{ '%.1f'|format(r.share * 100) }}%</strong>{% if r.floor_applied %} <span class="rd-sub" title="Raised to the minimum share so this barangay is not left without stock">(minimum)</span>{% endif %}</td>
                             <td>{{ "{:,}".format(r.expected) }}</td>
                             <td>{{ "{:,}".format(r.stockpile) }}</td>
                         </tr>
@@ -341,13 +348,14 @@
                         <td><strong>{{ lgu_forecast.lgu }}</strong></td>
                         <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='households')) }}</td>
                         <td>{{ "{:,}".format(barangay_breakdown|sum(attribute='total_families_used')) }}</td>
+                        <td></td>
                         <td><strong>100%</strong></td>
                         <td><strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong></td>
                         <td><strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong></td>
                     </tr></tfoot>
                 </table>
             </div>
-            <p class="rd-sub" style="margin-top:8px;">Barangay totals can differ from the municipal total by a few packs because each month is rounded. "Family count used" is what the share model actually runs on - the barangay's most recent real relief-record family count, falling back to its current household count only if it has never appeared in a relief record. It can differ from the "Households (current)" column, which is just the barangay's latest on-file household count and isn't itself an input to the forecast.</p>
+            <p class="rd-sub" style="margin-top:8px;">Barangay totals can differ from the municipal total by a few packs because each month is rounded. "Family count used" is what the share model actually runs on - the barangay's most recent real relief-record family count, falling back to its current household count only if it has never appeared in a relief record. It can differ from the "Households (current)" column, which is just the barangay's latest on-file household count and isn't itself an input to the forecast. "Share of past relief" is the portion of the municipality's recorded relief this barangay received across past typhoons. The final share blends that history with the family-count estimate, and no barangay goes below half of its share by family count - so a barangay with little relief history still gets stock (marked "minimum" where that floor applies).</p>
         </section>
         {% endif %}
 
@@ -435,15 +443,15 @@
             <div class="pa-model-rows" style="margin-top:8px;">
                 <div class="pa-decision-tile"><span class="rd-sub">Packs MAE (worst LGU)</span><strong>{{ "{:,.0f}".format(latest_metrics.mae_packs) if latest_metrics.mae_packs is not none else '-' }}</strong><span class="rd-sub">packs, lower is better</span></div>
                 <div class="pa-decision-tile"><span class="rd-sub">RMSE</span><strong>{{ "{:,.0f}".format(latest_metrics.rmse) if latest_metrics.rmse is not none else '-' }}</strong><span class="rd-sub">packs, worst LGU</span></div>
-                <div class="pa-decision-tile"><span class="rd-sub">P90 stockpile coverage (worst LGU)</span><strong>{{ "%.0f"|format(latest_metrics.p90_coverage * 100) if latest_metrics.p90_coverage is not none else '-' }}{{ '%' if latest_metrics.p90_coverage is not none }}</strong><span class="rd-sub">target ~90%</span></div>
+                <div class="pa-decision-tile"><span class="rd-sub">P90 coverage, barangays that received packs (worst LGU)</span><strong>{{ "%.0f"|format(latest_metrics.p90_coverage * 100) if latest_metrics.p90_coverage is not none else '-' }}{{ '%' if latest_metrics.p90_coverage is not none }}</strong><span class="rd-sub">target ~90%</span></div>
             </div>
             {% if loto_p90 %}
             <h4 style="margin:14px 0 4px;">Per-municipality validation (P90 coverage)</h4>
-            <p class="rd-sub" style="margin:0 0 6px;">Also leave-one-typhoon-out: of the real typhoons held out, how often did what actually happened stay at or below the recommended P90 stockpile? Target ~90% - this doesn't use the (1 + buffer) safety margin the live forecast adds on top, so real coverage should run a bit higher than shown here.</p>
+            <p class="rd-sub" style="margin:0 0 6px;">Also leave-one-typhoon-out: of the real typhoons held out, how often did what actually happened stay at or below the recommended P90 stockpile? Target ~90% - this doesn't use the (1 + buffer) safety margin the live forecast adds on top, so real coverage should run a bit higher than shown here. Barangay-level coverage counts barangays that received nothing as covered, which flatters it; the "received packs" column checks only barangays that actually got relief. With 8-14 typhoons per municipality, a gap of one or two typhoons from 90% is within normal variation.</p>
             <div class="rr-table-wrap">
                 <table class="rr-table">
                     <thead><tr>
-                        <th>Municipality</th><th>Municipality-level coverage</th><th>Barangay-level coverage</th><th>Typhoons validated</th>
+                        <th>Municipality</th><th>Municipality-level coverage</th><th>Barangay-level coverage</th><th>Barangays that received packs</th><th>Typhoons validated</th>
                     </tr></thead>
                     <tbody>
                         {% for r in loto_p90 %}
@@ -451,6 +459,7 @@
                             <td><strong>{{ r.lgu }}</strong></td>
                             <td>{{ "%.1f%%"|format(r.lgu_coverage * 100) }}</td>
                             <td>{{ "%.1f%%"|format(r.barangay_coverage * 100) }}</td>
+                            <td>{{ "%.1f%%"|format(r.barangay_coverage_nonzero * 100) ~ " (" ~ r.barangay_nonzero_n ~ ")" if r.barangay_coverage_nonzero is not none else "-" }}</td>
                             <td>{{ r.lgu_n }}</td>
                         </tr>
                         {% endfor %}
@@ -481,12 +490,14 @@
             {% endif %}
             {% if loto_cv %}
             <h4 style="margin:14px 0 4px;">Per-municipality validation</h4>
-            <p class="rd-sub" style="margin:0 0 6px;">The tiles above show only the worst-performing LGU's MAE. Here's every LGU, so a strong or weak result in one municipality isn't hidden inside a single combined number.</p>
+            <p class="rd-sub" style="margin:0 0 6px;">The tiles above show only the worst-performing LGU's MAE. Here's every LGU, so a strong or weak result in one municipality isn't hidden inside a single combined number. Plain MAE counts every typhoon equally, so storms where only a few packs went to one or two barangays (which no method can predict) weigh as much as major relief operations; size-weighted MAE weights each typhoon by its total packs, showing how much relief actually lands in the wrong barangay. "Pooled history" - each barangay's share of all past relief - is the strongest simple baseline. Because there are only 8-14 typhoons per municipality, the comparison with it is given as the number of held-out typhoons where the model did better, and a 95% interval for the difference in size-weighted MAE (negative means the model is better; an interval that crosses 0 means no clear difference).</p>
             <div class="rr-table-wrap">
                 <table class="rr-table">
                     <thead><tr>
                         <th>Municipality</th><th>Model MAE</th><th>Equal-split MAE</th><th>Avg-share MAE</th>
-                        <th>Beats equal-split?</th><th>Beats avg-share?</th><th>Typhoons validated</th>
+                        <th>Beats equal-split?</th><th>Beats avg-share?</th><th>Storms scored</th>
+                        <th>Size-weighted MAE (model / equal / avg)</th>
+                        <th>Size-weighted MAE, pooled history</th><th>Beats pooled history in (of storms scored)</th><th>95% interval, model minus pooled</th>
                     </tr></thead>
                     <tbody>
                         {% for r in loto_cv %}
@@ -498,6 +509,10 @@
                             <td>{{ "Yes" if r.beats_equal_split else "No" }}</td>
                             <td>{{ "Yes" if r.beats_avg_share else "No" }}</td>
                             <td>{{ r.n_folds }}</td>
+                            <td>{% if r.mae_model_weighted is not none %}{{ "%.4f"|format(r.mae_model_weighted) }} / {{ "%.4f"|format(r.mae_equal_split_weighted) }} / {{ "%.4f"|format(r.mae_avg_share_weighted) }}{% else %}-{% endif %}</td>
+                            <td>{{ "%.4f"|format(r.mae_pooled_history_weighted) if r.mae_pooled_history_weighted is not none else "-" }}</td>
+                            <td>{{ (r.beats_pooled_k ~ " of " ~ r.beats_pooled_n ~ " typhoons") if r.beats_pooled_k is not none else "-" }}</td>
+                            <td>{% if r.diff_vs_pooled_weighted_ci %}{{ "%+.4f"|format(r.diff_vs_pooled_weighted_ci[0]) }} to {{ "%+.4f"|format(r.diff_vs_pooled_weighted_ci[1]) }}{% else %}-{% endif %}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

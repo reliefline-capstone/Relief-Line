@@ -20,9 +20,10 @@ anchored to the real current date: a horizon run in December over Jan-Mar can
 climatologically total ~0 expected typhoons (no historical Dec-May storms),
 which is correct behavior, not a bug - see app.ml.train.climatology_by_month.
 
-Barangay split: forecast_lgu's total is shared out by Stage 1's regression
-share (barangay_share = clip(slope x total_families + intercept, 0),
-renormalized to sum to 1 across the LGU) - see app.ml.train.predict_shares.
+Barangay split: forecast_lgu's total is shared out by Stage 1's share -
+the regression share (clip(slope x total_families + intercept, 0)) blended
+with the barangay's own relief history, with a per-family floor so no
+barangay is left near zero - see app.ml.train.predict_shares.
 Shares always sum to 1, so barangay forecasts always add up to the LGU
 forecast.
 
@@ -138,9 +139,33 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
     horizon_p90 = max(int(round(lgu_p90_total)), total)
     if months:
         months[-1]["cum_p90"] = horizon_p90
+    # Reported separately so the buffer stays a visible policy choice and
+    # never silently absorbs a change in the percentile itself.
+    p90_before_buffer = int(round(lgu_p90_total / (1 + buffer)))
+    largest_event = int(round(L["severity"].get("max") or 0))
+    per_event_p90 = int(round(L["severity"]["high"]))
     return {
         "lgu": lgu, "months": months,
         "horizon_total": total, "horizon_p90": horizon_p90,
+        "p90_before_buffer": p90_before_buffer,
+        "buffer": buffer, "buffer_packs": horizon_p90 - p90_before_buffer,
+        "expected_typhoons": expected_typhoons,
+        "expected_relief_events": expected_typhoons * L["p_relief"],
+        "per_event_p90": per_event_p90,
+        # Known limits (2026-10-03). The horizon P90 is expected storms x
+        # P(relief) x the per-EVENT P90, not the P90 of a multi-storm total,
+        # so it scales one bad storm down by the expected number of relief
+        # events. When that's under 1, the stockpile is smaller than a single
+        # 90th-percentile relief operation - not a safety stock. Keyed to
+        # the window's expected relief events, not its length: from a
+        # November start the 3- and 6-month windows hold the same ~1 typhoon
+        # (Dec-May has almost none), so a month count can't tell them apart.
+        "short_horizon": p90_before_buffer < per_event_p90,
+        "largest_event": largest_event,
+        # Compared WITHOUT the buffer: whether the 15% buffer should count
+        # as coverage is a policy decision, so it's reported, not assumed.
+        "below_largest_event": largest_event > p90_before_buffer,
+        "largest_covered_only_by_buffer": p90_before_buffer < largest_event <= horizon_p90,
         "model_version": artifact.get("version"), "data_through": artifact.get("data_through"),
     }
 
@@ -167,6 +192,15 @@ def loto_cv_summary():
             "n_folds": cv["n_folds"],
             "beats_equal_split": cv["mae_model"] <= cv["mae_equal_split"],
             "beats_avg_share": cv["mae_model"] <= cv["mae_avg_share"],
+            # Size-weighted scores (v9.1+); None on an older artifact.
+            "mae_model_weighted": cv.get("mae_model_weighted"),
+            "mae_equal_split_weighted": cv.get("mae_equal_split_weighted"),
+            "mae_avg_share_weighted": cv.get("mae_avg_share_weighted"),
+            # Pooled-history baseline + k-of-n + bootstrap CI (v9.2+).
+            "mae_pooled_history_weighted": cv.get("mae_pooled_history_weighted"),
+            "beats_pooled_k": cv.get("beats_pooled_k"),
+            "beats_pooled_n": cv.get("beats_pooled_n"),
+            "diff_vs_pooled_weighted_ci": cv.get("diff_vs_pooled_weighted_ci"),
         })
     rows.sort(key=lambda r: r["lgu"])
     return rows
@@ -211,6 +245,8 @@ def p90_coverage_summary():
             "barangay_coverage": cv["barangay_coverage"],
             "lgu_n": cv["lgu_n"],
             "barangay_n": cv["barangay_n"],
+            "barangay_coverage_nonzero": cv.get("barangay_coverage_nonzero"),
+            "barangay_nonzero_n": cv.get("barangay_nonzero_n"),
         })
     rows.sort(key=lambda r: r["lgu"])
     return rows
@@ -238,9 +274,12 @@ def _lgu_shares(lgu):
 
 
 def share_breakdown(lgu):
-    """Every barangay's share of its LGU's forecast, from Stage 1's
-    regression: share = clip(slope x total_families + intercept, 0),
-    renormalized so the LGU's barangays sum to 1 (app.ml.train.predict_shares).
+    """Every barangay's share of its LGU's forecast, from Stage 1
+    (app.ml.train.predict_shares): the regression share
+    clip(slope x total_families + intercept, 0), blended with the barangay's
+    pooled relief history by the LGU's tuned alpha, then floored so no
+    barangay gets less than SHARE_FLOOR x its per-family share - shares
+    always sum to 1 across the LGU.
     `total_families` is each barangay's most recent known family-count
     snapshot from a real relief record, falling back to its current
     num_households if it has never appeared in one.
@@ -270,12 +309,20 @@ def share_breakdown(lgu):
         snap = known.get(b.barangay_id, {}).get("latest_total_families")
         total_families[b.barangay_id] = snap if snap is not None else (_to_number(b.num_households) or 0)
 
-    shares = predict_shares(model, total_families)
-    history_packs = {b.barangay_id: 0 for b in barangays}  # informational only, see below
+    # v9.2+: regression blended with each barangay's pooled relief history,
+    # then the per-family floor (app.ml.train.predict_shares). An older
+    # artifact has no history/alpha/floor -> plain regression split.
+    history = L.get("history_share") or {}
+    alpha = L.get("alpha", 0.0)
+    floor = L.get("share_floor", 0.0)
+    shares = predict_shares(model, total_families, history, alpha, floor)
+    family_total = sum(total_families.values())
 
     rows = []
     for b in barangays:
         bid = b.barangay_id
+        family_share = total_families[bid] / family_total if family_total else 0.0
+        share = shares.get(bid, 0.0)
         rows.append({
             "barangay_id": bid,
             "name": b.barangay_name,
@@ -284,10 +331,14 @@ def share_breakdown(lgu):
             "flood_susceptibility": None,   # vulnerability blending dropped, see share_breakdown doc
             "hazard_source": None,
             "flood_weight": None,
-            "history_packs": history_packs[bid],
-            "history_share": None,
+            "history_packs": 0,
+            # Share of the LGU's past relief this barangay received (None if
+            # it has never appeared in a relief record).
+            "history_share": history.get(bid),
             "vulnerability_share": None,
-            "share": shares.get(bid, 0.0),
+            # True when the floor lifted this barangay to its minimum.
+            "floor_applied": floor > 0 and family_share > 0 and share <= floor * family_share + 1e-9,
+            "share": share,
         })
 
     if cache is not None:

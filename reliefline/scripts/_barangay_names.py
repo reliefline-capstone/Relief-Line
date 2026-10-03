@@ -5,7 +5,7 @@ convention (no diacritics, "Santa" spelled out, never "Sta."). Each real-data
 module keeps its own small alias dict on top of this for the spelling
 differences that are specific to its source (e.g. "Tiposu"->"tipuso",
 "Carusucan"->"carusocan") - this only factors out the NFKD-strip boilerplate
-that used to be duplicated in real_urdaneta_reports_2025.py and
+that used to be duplicated in the (since retired) real_urdaneta_reports_2025.py and
 sample_sta_barbara_aug2026.py.
 """
 import unicodedata
