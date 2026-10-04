@@ -98,17 +98,7 @@
 .badge-status-declined { background: #fdecea; color: #c0392b; }
 
 /* Active Alerts panel (Dashboard + Notifications) */
-.alert-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 12px 0;
-    border-bottom: 1px solid #eef0f5;
-}
-
-.alert-row:last-child { border-bottom: none; }
-.alert-row strong { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
-.alert-row span { font-size: 11px; color: #8a94a6; }
+/* .alert-row lives in dashboard.css (shared with the PSWDO/CSWDO Recent Activities). */
 
 .alert-row-damage_reports { background: transparent; }
 .alert-row-relief_requests { background: transparent; }

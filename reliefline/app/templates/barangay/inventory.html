@@ -95,7 +95,7 @@
             {% set chips = [] %}
             {% if fargs.type %}{% set _ = chips.append({'label': 'Type', 'value': type_labels.get(type_filter, type_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'type': None})}) %}{% endif %}
             {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
-            {% call filter_panel(chips, url_for(EP)) %}
+            {% call filter_panel(chips, url_for(EP), compact=True) %}
                 {% call fp_select('Type', 'type', 'activity') %}
                     <option value="all">All types</option>
                     {% for key, label in type_labels.items() %}
@@ -152,7 +152,6 @@
         <section class="panel wh-table-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Food Pack Batches</h3>
-                <span class="rd-sub">Shelf-life tracking per delivery - {{ near_expiry_days }} days or less to expiry is flagged Near Expiry.</span>
             </div>
             <table class="wh-table wh-batches-table">
                 <thead>
@@ -206,7 +205,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry reflects whichever component (usually the rice) spoils first - the whole batch is pulled together once it does, since a sealed pack isn't unbundled to save the canned goods.</p>
+            <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry is the first item in the pack to expire; the whole batch is pulled when it does.</p>
         </section>
 
     </main>

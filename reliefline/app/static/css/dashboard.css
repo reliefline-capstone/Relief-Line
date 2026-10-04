@@ -503,75 +503,54 @@ html.sidebar-collapsed .dashboard-main {
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
-/* Shared filter panel (_filter_panel.html): header with an "N Active"
-   count, Clear All and Apply Filters; a row of labelled fields; then one
-   removable chip per applied filter. */
-.fp {
-    background: white;
-    border: 1px solid #eceef4;
-    border-radius: 14px;
-    padding: 16px 18px;
-    margin-bottom: 16px;
-    box-shadow: 0 1px 3px rgba(28, 30, 58, 0.04);
-}
-.fp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-.fp-title { display: flex; align-items: center; gap: 10px; }
-.fp-title strong { font-size: 16px; color: #1a1a1a; }
-.fp-title-icon {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px; border-radius: 9px;
-    background: #f1eefc; color: #5347ce;
-}
-.fp-count {
-    font-size: 11.5px; font-weight: 700; color: #5347ce;
-    background: #f1eefc; padding: 3px 10px; border-radius: 999px;
-}
-.fp-summary { font-size: 12.5px; color: #8a94a6; }
-.fp-actions { display: flex; align-items: center; gap: 12px; }
-.fp-clear { font-size: 13px; color: #667085; font-weight: 600; }
+/* Shared filter bar (_filter_panel.html): a slim, unboxed toolbar of small
+   unlabelled fields (selects read "All ...", search has a placeholder),
+   Export at the far right, and one removable chip per applied filter with
+   Clear All - the chip row only shows when something is filtered. */
+.fp { margin: 0 0 12px; }
+.fp-clear { font-size: 12px; color: #667085; font-weight: 600; align-self: center; margin-left: 2px; }
 .fp-clear:hover { color: #1a1a1a; }
-.fp-apply {
-    background: #5347ce; color: white; border: none; border-radius: 9px;
-    padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
-}
-.fp-apply:hover { background: #4436b4; }
+.fp-submit-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; padding: 0; }
 
-/* Flex, not a fixed grid: fields share one row when they fit, and when a
-   field has to wrap, everything on that line grows to fill it - no small
-   leftover field stranded on a row of its own. */
-.fp-fields { display: flex; flex-wrap: wrap; gap: 12px; }
-.fp .fp-field { display: flex; flex-direction: column; gap: 6px; margin: 0; flex: 1 1 170px; min-width: 0; }
-.fp .fp-field-search { flex: 2 1 260px; }
-.fp .fp-field-range { flex: 2 1 320px; }
-.fp-range { display: flex; align-items: center; gap: 8px; }
-.fp-range .fp-input { flex: 1; min-width: 0; }
+/* Fields share one row and grow to fill it; a wrapped line fills too. */
+.fp-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fp .fp-field { display: flex; align-items: center; gap: 6px; margin: 0; flex: 1 1 140px; min-width: 0; }
+.fp .fp-field-search { flex: 2 1 220px; }
+.fp .fp-field-range { flex: 0 1 auto; min-width: fit-content; }
+/* Labels stay for screen readers; only the date range shows a small one. */
+.fp-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.fp-field-range .fp-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; font-size: 12px; font-weight: 500; color: #8a94a6; white-space: nowrap; }
+.fp-range { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.fp-range .fp-input { flex: 0 0 150px; min-width: 150px; }
 .fp-range-sep { font-size: 12px; color: #8a94a6; }
-.fp-label { font-size: 12px; font-weight: 700; color: #1a1a1a; }
 .fp-input {
-    display: flex; align-items: center; gap: 8px;
-    border: 1px solid #e3e4ec; border-radius: 10px; padding: 0 12px;
-    background: white; min-height: 42px;
+    display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
+    border: 1px solid #e6e7ee; border-radius: 8px; padding: 0 10px;
+    background: white; min-height: 34px;
 }
-.fp-input:focus-within { border-color: #5347ce; box-shadow: 0 0 0 3px rgba(83, 71, 206, 0.12); }
+.fp-input:focus-within { border-color: #5347ce; box-shadow: 0 0 0 2px rgba(83, 71, 206, 0.10); }
 .fp-input input, .fp-input select {
     flex: 1; min-width: 0; border: none; outline: none; background: transparent;
-    font: inherit; font-size: 13.5px; color: #1a1a1a; padding: 10px 0;
+    font: inherit; font-size: 12.5px; color: #1a1a1a; padding: 6px 0;
 }
 /* Custom-select / date-picker wrappers fill the field and drop their own box. */
 .fp-input .csel-wrap, .fp-input .cdt-wrap { flex: 1; min-width: 0; }
-.fp-input .csel-trigger, .fp-input .cdt-trigger { border: none !important; box-shadow: none !important; background: transparent !important; padding-left: 0 !important; }
+.fp-input .csel-trigger, .fp-input .cdt-trigger {
+    border: none !important; box-shadow: none !important; background: transparent !important;
+    padding-left: 0 !important; padding-right: 0 !important; min-height: 0 !important; min-width: 0 !important;
+    padding-top: 6px !important; padding-bottom: 6px !important; font-size: 12.5px !important;
+}
+.fp-fields .fp-export { margin-left: auto; padding: 6px 12px; font-size: 12.5px; min-height: 34px; box-sizing: border-box; }
 
-/* Export button that used to sit in a page's old filter bar. */
-.fp-export-row { display: flex; justify-content: flex-end; margin: -6px 0 12px; }
-
-.fp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.fp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.fp-chips[hidden] { display: none; }
 .fp-chip {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; padding: 5px 8px 5px 11px; border-radius: 8px;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; padding: 3px 7px 3px 9px; border-radius: 6px;
     border: 1px solid transparent; text-decoration: none;
 }
-.fp-chip b { font-weight: 700; }
-.fp-chip-x { font-size: 14px; line-height: 1; opacity: 0.6; }
+.fp-chip b { font-weight: 600; }
+.fp-chip-x { font-size: 13px; line-height: 1; opacity: 0.6; }
 .fp-chip:hover .fp-chip-x { opacity: 1; }
 .fp-chip-neutral { background: #f4f5f8; color: #333; border-color: #e3e4ec; }
 .fp-chip-violet  { background: #f1eefc; color: #4436b4; border-color: #e2ddf9; }
@@ -2268,3 +2247,17 @@ html.sidebar-collapsed .dashboard-main {
     font-size: 10.5px;
     color: #b3bac6;
 }
+
+/* One activity/alert row - Barangay "Active Alerts" and the PSWDO/CSWDO
+   "Recent Activities": type icon, description, then full date and time. */
+.alert-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid #eef0f5;
+}
+.alert-row > svg { flex-shrink: 0; margin-top: 1px; }
+.alert-row:last-child { border-bottom: none; }
+.alert-row strong { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
+.alert-row span { font-size: 11px; color: #8a94a6; }

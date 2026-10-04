@@ -36,7 +36,7 @@
 
         <section class="panel">
             <div class="notif-panel-header">
-                <h3>{{ icon('bell', 18, '#0f2547') }}
+                <h3>
                     {%- for cat in categories if cat.value == category_filter %} {{ cat.label }}{% endfor %} Notifications</h3>
             </div>
 

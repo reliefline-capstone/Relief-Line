@@ -94,7 +94,10 @@
         if (!select || !valueEl) return;
         var opt = select.options[select.selectedIndex];
         valueEl.textContent = opt ? opt.textContent : '';
-        valueEl.classList.toggle('csel-placeholder', !!(opt && opt.value === ''));
+        // In a filter bar the default first option ("All ...", value '' or
+        // 'all') reads muted like an empty date, so only a real filter is dark.
+        var isDefault = !!opt && (opt.value === '' || (!!wrap.closest('.fp') && select.selectedIndex === 0));
+        valueEl.classList.toggle('csel-placeholder', isDefault);
         if (list) {
             list.querySelectorAll('.csel-option').forEach(function (o) {
                 o.classList.toggle('is-selected', o.dataset.value === select.value);

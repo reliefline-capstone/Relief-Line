@@ -27,7 +27,6 @@
                 <p>{{ lgu or '-' }} · food packs released from your warehouse to barangays</p>
             </div>
             <div style="display:flex; gap:10px;">
-                <a href="{{ url_for('cswdo.damage_assessment') }}" class="btn-outline">{{ icon('clipboard', 16) }} Barangay Reports</a>
                 {% if can_allocate %}
                 <button type="button" class="btn-primary" data-open-modal="dv-allocate-modal">{{ icon('package', 16, 'white') }} Allocate</button>
                 {% endif %}
@@ -134,7 +133,7 @@
                         <td><a href="{{ url_for('cswdo.delivery_detail', distribution_id=r.distribution_id) }}" class="btn-view-sm">{{ icon('eye', 13) }} View</a></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="8"><p class="empty-note" style="padding:16px 0;">No deliveries yet. Approve a relief request to start one.</p></td></tr>
+                    <tr><td colspan="8"><p class="empty-note" style="padding:16px 0;">{% if search_query or barangay_filter or event_filter or source_filter != 'all' or date_from or date_to %}No deliveries match these filters.{% else %}No deliveries yet. Approve a relief request to start one.{% endif %}</p></td></tr>
                     {% endfor %}
                 </tbody>
             </table>

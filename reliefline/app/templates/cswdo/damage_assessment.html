@@ -143,7 +143,6 @@
                 <p>{{ lgu or '-' }}{% if primary_event %} · {{ icon('cloud-lightning', 12) }} {{ primary_event.event_name }}{% endif %} · {{ now.strftime('%B %d, %Y') }}</p>
             </div>
             <div style="display:flex; gap:10px;">
-                <a href="{{ url_for('cswdo.deliveries') }}" class="btn-outline">{{ icon('truck', 16) }} Deliveries</a>
                 <a href="{{ url_for('cswdo.damage_assessment_export') }}" class="btn-outline">{{ icon('download', 16) }} Export</a>
             </div>
         </div>
@@ -236,7 +235,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="8"><p class="empty-note" style="padding:14px 0;">No relief requests in this view.</p></td></tr>
+                    <tr><td colspan="8"><p class="empty-note" style="padding:14px 0;">{% if filtered_barangay and filtered_barangay.barangay_id not in reported_barangay_ids %}Brgy. {{ filtered_barangay.barangay_name }} has not submitted a Barangay Report yet.{% elif search_query or barangay_filter or event_filter or date_from or date_to %}No Barangay Reports match these filters.{% else %}No Barangay Reports in this view.{% endif %}</p></td></tr>
                     {% endfor %}
                 </tbody>
             </table>

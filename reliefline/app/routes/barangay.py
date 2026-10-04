@@ -380,18 +380,6 @@ def _save_report_upload(report):
         report.photo_paths = ",".join(saved)
 
 
-def _report_history_list_filters(reports):
-    """Event + submitted-date filters for the Reports page's Report History
-    table and its CSV export. Prefixed names (report_event, report_from,
-    report_to) so they never clash with the report generator's own event_id."""
-    event_filter = request.args.get("report_event", type=int)
-    date_from, date_to = date_range(request.args, "report_from", "report_to")
-    if event_filter:
-        reports = [r for r in reports if r.event_id == event_filter]
-    reports = [r for r in reports if in_range(r.submitted_at, date_from, date_to)]
-    return reports, {"report_event": event_filter, "report_from": iso(date_from), "report_to": iso(date_to)}
-
-
 def _report_history_extra_filters(reports):
     """Event + submitted-date filters shared by the Report History tab and
     its CSV export. Returns (filtered reports, template context)."""
@@ -1957,17 +1945,6 @@ def reports():
         f"{filters['start_date'].strftime('%b %d')} - {ph_today().strftime('%b %d, %Y')}"
     )
 
-    # Report History table - moved here from the now-removed standalone
-    # Affected Families page, same search + status + export toolbar.
-    report_q = request.args.get("report_q", "").strip().lower()
-    report_status = request.args.get("report_status", "all")
-    history = my_reports
-    if report_status != "all":
-        history = [r for r in history if r.status == report_status]
-    if report_q:
-        history = [r for r in history if report_q in r.ref.lower()]
-    history, hist_filters = _report_history_list_filters(history)
-    history = history[:10]
 
     return render_template(
         "barangay/reports.html",
@@ -1982,10 +1959,6 @@ def reports():
         report_cards=report_cards,
         recent_reports=recent_reports,
         download_all_url=url_for("barangay.report_download_all"),
-        history=history,
-        status_labels=REPORT_STATUS_LABELS,
-        report_q=report_q, report_status=report_status, **hist_filters,
-        report_filter_events=sorted({r.event for r in my_reports if r.event}, key=lambda e: e.start_date, reverse=True),
     )
 
 
@@ -2105,41 +2078,6 @@ def report_download_all():
         headers={
             "Content-Disposition": f"attachment; filename={barangay.barangay_name.replace(' ', '_')}_reports_{ph_now().strftime('%Y%m%d')}.zip"
         },
-    )
-
-
-@barangay_bp.route("/reports/export")
-@login_required
-@role_required("barangay_user")
-def reports_export():
-    """Lighter CSV export used by the Affected Families' Report History
-    table - separate from the PDF/Excel report_export_pdf/excel above,
-    which log to ReportLog and appear in this page's own Recent Reports."""
-    barangay = _own_barangay_or_404()
-    my_reports = _own_submitted_reports(barangay.barangay_id)
-
-    report_q = request.args.get("report_q", "").strip().lower()
-    report_status = request.args.get("report_status", "all")
-    if report_status != "all":
-        my_reports = [r for r in my_reports if r.status == report_status]
-    if report_q:
-        my_reports = [r for r in my_reports if report_q in r.ref.lower()]
-    my_reports, _ = _report_history_list_filters(my_reports)
-
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(["Report Ref", "Event", "Status", "Affected Families", "Affected Individuals",
-                      "Submitted By", "Submitted At"])
-    for r in my_reports:
-        writer.writerow([
-            r.ref, r.event.event_name if r.event else "", REPORT_STATUS_LABELS.get(r.status, r.status),
-            r.affected_families, r.affected_individuals,
-            r.submitted_by_name, r.submitted_at.strftime("%Y-%m-%d %H:%M") if r.submitted_at else "",
-        ])
-
-    return Response(
-        buffer.getvalue(), mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={barangay.barangay_name.replace(' ', '_')}_reports.csv"},
     )
 
 

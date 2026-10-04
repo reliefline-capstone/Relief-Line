@@ -21,8 +21,10 @@
         <form method="POST" action="{{ url_for('barangay.print_families_generate') }}">
             <section class="page-header">
                 <div style="max-width: 620px;">
-                    <a href="{{ url_for('barangay.family_profiles') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Back</a>
-                    <h2>Set Packs Per Family</h2>
+                    <div class="wh-title-row">
+                        <a href="{{ url_for('barangay.family_profiles') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+                        <h2>Set Packs Per Family</h2>
+                    </div>
                     <p>Brgy. {{ barangay.barangay_name }} · {{ families|length }} famil{{ 'y' if families|length == 1 else 'ies' }} selected - review the suggested pack count below, adjust if needed, then generate the printable list.</p>
                 </div>
                 <div class="wh-header-actions" style="flex-shrink: 0;">

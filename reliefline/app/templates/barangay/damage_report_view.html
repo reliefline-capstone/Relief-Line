@@ -21,8 +21,10 @@
 
         <section class="page-header">
             <div>
-                <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Back</a>
-                <h2>{{ report.ref }} <span class="badge-status status-{{ report.status }}" style="vertical-align:middle;">{{ status_labels.get(report.status, report.status) }}</span></h2>
+                <div class="wh-title-row">
+                    <a href="{{ url_for('barangay.damage_report') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+                    <h2>{{ report.ref }} <span class="badge-status status-{{ report.status }}" style="vertical-align:middle;">{{ status_labels.get(report.status, report.status) }}</span></h2>
+                </div>
             </div>
             <div style="display:flex; gap:10px;">
                 {% if report.affected_families_list %}
@@ -42,19 +44,18 @@
         {% set reviewer = report.reviewed_by_user.name ~ ' (MSWDO/CSWDO)' if report.reviewed_by_user else 'MSWDO/CSWDO' %}
         {% if report.status == 'returned' %}
         <section class="panel" style="border:1px solid #f6cfc9; background:#fdecea; margin-bottom:16px;">
-            <div class="panel-header"><h3 style="color:#c0392b;">{{ icon('rotate-ccw', 16, '#c0392b') }} Returned for Revision by {{ reviewer }}</h3></div>
+            <div class="panel-header"><h3 style="color:#c0392b;">Returned for Revision by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks or 'No reason was provided.' }}</p>
             <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-submit-final" style="background:#c0392b; text-decoration:none; margin-top:8px; display:inline-flex;">Correct &amp; Resubmit {{ icon('arrow-right', 14, 'white') }}</a>
         </section>
         {% elif report.status == 'declined' %}
         <section class="panel" style="border:1px solid #f6cfc9; background:#fdecea; margin-bottom:16px;">
-            <div class="panel-header"><h3 style="color:#c0392b;">{{ icon('x-circle', 16, '#c0392b') }} Declined by {{ reviewer }}</h3></div>
+            <div class="panel-header"><h3 style="color:#c0392b;">Declined by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks or 'No reason was provided.' }}</p>
         </section>
         {% elif report.status in ('approved', 'fulfilled') %}
         <section class="panel" style="border:1px solid #cdebd7; background:#f0faf4; margin-bottom:16px;">
-            <div class="panel-header"><h3 style="color:#1e8449;">{{ icon('check-circle', 16, '#1e8449') }}
-                {{ 'Approved' if report.status == 'approved' else 'Fulfilled - delivery confirmed received' }} by {{ reviewer }}</h3></div>
+            <div class="panel-header"><h3 style="color:#1e8449;">{{ 'Approved' if report.status == 'approved' else 'Fulfilled - delivery confirmed received' }} by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#1e5631;">
                 {% if report.allocation and report.allocation.allocated_quantity %}{{ "{:,}".format(report.allocation.allocated_quantity) }} food packs allocated to your barangay.{% endif %}
                 {% if report.review_remarks %} {{ report.review_remarks }}{% endif %}
@@ -63,7 +64,7 @@
         </section>
         {% elif report.status == 'verified' %}
         <section class="panel" style="border:1px solid #cfe0f0; background:#f0f6fc; margin-bottom:16px;">
-            <div class="panel-header"><h3 style="color:#2c5aa0;">{{ icon('check-circle', 16, '#2c5aa0') }} Verified by {{ reviewer }}</h3></div>
+            <div class="panel-header"><h3 style="color:#2c5aa0;">Verified by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#244b86;">
                 Your report has been reviewed and acknowledged. No relief delivery was scheduled - your barangay's current stock is considered sufficient for this situation.
                 {% if report.review_remarks %} {{ report.review_remarks }}{% endif %}
@@ -72,7 +73,7 @@
         {% endif %}
 
         <section class="panel">
-            <div class="panel-header"><h3>{{ icon('map-pin', 18, '#0f2547') }} Report Status Timeline</h3></div>
+            <div class="panel-header"><h3>Report Status Timeline</h3></div>
             <div class="status-timeline">
                 <div class="timeline-node done">
                     <div class="timeline-dot">{{ icon('check', 16) }}</div>
@@ -118,7 +119,7 @@
 
         <div class="main-grid drv-grid" style="margin-top:16px;">
             <section class="panel">
-                <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Report Information</h3></div>
+                <div class="panel-header"><h3>Report Information</h3></div>
                 <div class="review-row-list">
                     <div class="review-row"><span>Report ID</span><strong>{{ report.ref }}</strong></div>
                     <div class="review-row"><span>Barangay</span><strong>{{ report.barangay.barangay_name }}</strong></div>
@@ -132,7 +133,7 @@
 
             <div class="drv-side">
                 <section class="panel">
-                    <div class="panel-header"><h3>{{ icon('users', 18, '#0f2547') }} Barangay Assessment</h3></div>
+                    <div class="panel-header"><h3>Barangay Assessment</h3></div>
                     <div class="assess-pills assess-pills-2">
                         <div class="fam-pill fam-pill-purple"><span>Affected Families</span><strong>{{ "{:,}".format(report.affected_families) }}</strong></div>
                         <div class="fam-pill fam-pill-blue"><span>Affected Individuals</span><strong>{{ "{:,}".format(report.affected_individuals) }}</strong></div>
@@ -149,7 +150,7 @@
                 </section>
 
                 <section class="panel">
-                    <div class="panel-header"><h3>{{ icon('package', 18, '#0f2547') }} Relief Allocation</h3></div>
+                    <div class="panel-header"><h3>Relief Allocation</h3></div>
                     <div class="info-grid">
                         <div class="info-box"><span>Food Packs Requested</span><strong>{% if report.requested_food_packs %}{{ "{:,}".format(report.requested_food_packs) }}{% else %}Not specified{% endif %}</strong>
                             {% if report.affected_families_list %}<span class="rd-sub">suggested: {{ "{:,}".format(report.suggested_food_packs) }}</span>{% endif %}</div>
@@ -164,7 +165,7 @@
         {% set packs_given_total = report.affected_families_list|sum(attribute='packs_given') %}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
-                <h3>{{ icon('users', 18, '#0f2547') }} Distribution Tracking</h3>
+                <h3>Distribution Tracking</h3>
                 {% if report.status == 'fulfilled' %}
                 <span class="rd-sub">{{ received_count }} of {{ report.affected_families_list|length }} families given · {{ "{:,}".format(packs_given_total) }} packs distributed</span>
                 {% endif %}
@@ -209,12 +210,12 @@
         {% endif %}
 
         <section class="panel" style="margin-top:16px;">
-            <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Remarks</h3></div>
+            <div class="panel-header"><h3>Remarks</h3></div>
             <p style="font-size:13px;">{{ report.remarks or 'No remarks provided.' }}</p>
         </section>
 
         <section class="panel" style="margin-top:16px;">
-            <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Supporting Photos ({{ report.photo_paths.split(',')|length if report.photo_paths else 0 }})</h3></div>
+            <div class="panel-header"><h3>Supporting Photos ({{ report.photo_paths.split(',')|length if report.photo_paths else 0 }})</h3></div>
             {% if report.photo_paths %}
             <div class="qa-grid">
                 {% for fname in report.photo_paths.split(',') %}

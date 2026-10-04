@@ -50,7 +50,7 @@
         </section>
 
         <section class="panel">
-            <div class="panel-header"><h3>{{ icon('trending-up', 18, '#0f2547') }} Recommended Actions</h3><span class="tag-outline">{{ recommendations|length }}</span></div>
+            <div class="panel-header"><h3>Recommended Actions</h3><span class="tag-outline">{{ recommendations|length }}</span></div>
             <div id="reco-list">
             {% for rec in recommendations %}
             <div class="recommendation-row rec-{{ rec.type }}{% if loop.index > 4 %} reco-row-extra{% endif %}"{% if loop.index > 4 %} style="display:none;"{% endif %}>

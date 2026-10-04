@@ -154,3 +154,18 @@ a, button, select, input, textarea,
         scroll-behavior: auto !important;
     }
 }
+
+/* "x" at the end of a search box while it has text (script in base.html). */
+.search-x-host { position: relative; }
+.search-x-wrap { display: inline-flex; min-width: 0; }
+.search-x-wrap > input { flex: 1; min-width: 0; }
+input.has-search-x { padding-right: 28px !important; }
+.search-x {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; padding: 0; border: none; border-radius: 50%;
+    background: transparent; color: #8a94a6; font-size: 17px; line-height: 1;
+    cursor: pointer;
+}
+.search-x:hover { background: #eceef4; color: #1a1a1a; }
+.search-x[hidden] { display: none; }

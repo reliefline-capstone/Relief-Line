@@ -173,6 +173,14 @@ NOTIFICATION_META = {
 }
 DEFAULT_NOTIFICATION_META = {"icon": "bell", "color": "#8a94a6", "category": "other", "category_label": "Other"}
 
+
+@pswdo_bp.app_template_global()
+def notif_meta(action_type):
+    """Icon + color for an ActivityLog row in templates, so every activity
+    list (dashboards' Recent Activities, Active Alerts) marks each kind of
+    event the same way the Notifications page does."""
+    return NOTIFICATION_META.get(action_type, DEFAULT_NOTIFICATION_META)
+
 # Barangay Report review is entirely a CSWDO/MSWDO responsibility per the
 # manuscript - PSWDO has no barangay-report page of its own to click through
 # to. Rather than show these as dead-end, non-clickable entries, PSWDO's own

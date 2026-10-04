@@ -35,7 +35,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
 
-        {% call filter_panel(chips, url_for(EP), summary=(movements|length) ~ ' record' ~ ('s' if movements|length != 1 else '')) %}
+        {% call filter_panel(chips, url_for(EP), summary=(movements|length) ~ ' record' ~ ('s' if movements|length != 1 else ''), export_url=url_for('pswdo.warehouse_stock_movements_export', **fargs)) %}
             {{ fp_search('q', search_query, 'Search warehouse, activity or details...') }}
             {% call fp_select('Warehouse', 'office_id', 'building') %}
                 <option value="">All warehouses</option>
@@ -51,7 +51,6 @@
             {% endcall %}
             {{ fp_date_range('Date', 'date_from', date_from, 'date_to', date_to) }}
         {% endcall %}
-        <div class="fp-export-row"><a href="{{ url_for('pswdo.warehouse_stock_movements_export', **fargs) }}" class="btn-outline">{{ icon('download', 14) }} Export</a></div>
 
         <section class="panel wh-table-panel">
             <div class="panel-header"><h3>Movements Table</h3></div>

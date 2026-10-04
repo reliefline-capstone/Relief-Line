@@ -59,30 +59,19 @@
 
         {% set puroks = families|map(attribute='purok')|reject('none')|unique|sort|list %}
         {# Same filter panel look as the other list pages (_filter_panel.html),
-           but filtering stays instant/client-side here - chips and the
-           "N Active" count are drawn by the script at the bottom. Status
+           but filtering stays instant/client-side here - the chips are
+           drawn by the script at the bottom. Status
            (Active / Archived) is a real page switch. #}
         <div class="fp" id="fam-fp">
-            <div class="fp-head">
-                <div class="fp-title">
-                    <span class="fp-title-icon">{{ icon('sliders', 16) }}</span>
-                    <strong>Filters</strong>
-                    <span class="fp-count" id="fam-fp-count" hidden></span>
-                    <span class="fp-summary" id="fam-table-hint"></span>
-                </div>
-                <div class="fp-actions">
-                    <a href="#" class="fp-clear" id="fam-fp-clear" hidden>Clear All</a>
-                </div>
-            </div>
             <div class="fp-fields">
                 <label class="fp-field fp-field-search">
                     <span class="fp-label">Search</span>
-                    <span class="fp-input">{{ icon('search', 15, '#8a94a6') }}<input type="text" id="fam-search" placeholder="Search family name, head or purok..."></span>
+                    <span class="fp-input">{{ icon('search', 13, '#8a94a6') }}<input type="text" id="fam-search" placeholder="Search family name, head or purok..."></span>
                 </label>
                 {% if puroks|length > 1 %}
                 <label class="fp-field">
                     <span class="fp-label">Purok</span>
-                    <span class="fp-input fp-input-select">{{ icon('map-pin', 15, '#8a94a6') }}<select id="fam-purok-filter">
+                    <span class="fp-input fp-input-select"><select id="fam-purok-filter" aria-label="Purok">
                         <option value="">All puroks</option>
                         {% for p in puroks %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
                     </select></span>
@@ -90,7 +79,7 @@
                 {% endif %}
                 <label class="fp-field">
                     <span class="fp-label">Category</span>
-                    <span class="fp-input fp-input-select">{{ icon('users', 15, '#8a94a6') }}<select id="fam-category-filter">
+                    <span class="fp-input fp-input-select"><select id="fam-category-filter" aria-label="Category">
                         <option value="">All families</option>
                         <option value="pwd">With PWD members</option>
                         <option value="senior">With senior citizens</option>
@@ -99,14 +88,14 @@
                 </label>
                 <label class="fp-field">
                     <span class="fp-label">Status</span>
-                    <span class="fp-input fp-input-select">{{ icon('check-circle', 15, '#8a94a6') }}<select id="fam-status-filter"
+                    <span class="fp-input fp-input-select"><select id="fam-status-filter" aria-label="Status"
                             data-active-url="{{ url_for('barangay.family_profiles') }}" data-archived-url="{{ url_for('barangay.family_profiles', archived=1) }}">
                         <option value="active" {{ 'selected' if not show_archived }}>Active</option>
                         <option value="archived" {{ 'selected' if show_archived }}>Archived</option>
                     </select></span>
                 </label>
             </div>
-            <div class="fp-chips" id="fam-fp-chips" hidden></div>
+            <div class="fp-chips" id="fam-fp-chips" hidden><a href="#" class="fp-clear" id="fam-fp-clear">Clear All</a></div>
         </div>
 
         <section class="panel wh-table-panel fam-sticky-panel">
@@ -401,10 +390,9 @@
     if (famCategoryFilter) famCategoryFilter.addEventListener('change', applyFamFilter);
     applyFamFilter();
 
-    // --- Filter panel chrome: chips, "N Active", Clear All, Status ---------
+    // --- Filter panel chrome: chips, Clear All, Status ---------------------
     // Filtering itself stays instant (applyFamFilter above); this only draws
     // the same chip row / count the server-rendered panels show elsewhere.
-    var fpCount = document.getElementById('fam-fp-count');
     var fpClear = document.getElementById('fam-fp-clear');
     var fpChips = document.getElementById('fam-fp-chips');
     var statusSel = document.getElementById('fam-status-filter');
@@ -441,9 +429,8 @@
         }
         fpChips.innerHTML = '';
         chips.forEach(function (c) { fpChips.appendChild(c); });
+        fpChips.appendChild(fpClear);
         fpChips.hidden = !chips.length;
-        fpCount.hidden = fpClear.hidden = !chips.length;
-        fpCount.textContent = chips.length + ' Active';
     }
     if (fpChips) {
         [famSearch, famPurokFilter, famCategoryFilter].forEach(function (el) {

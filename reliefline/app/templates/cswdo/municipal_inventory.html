@@ -88,7 +88,7 @@
 
         {% if incoming_transfers %}
         <section class="panel" style="margin-top:16px;">
-            <div class="panel-header"><h3>{{ icon('truck', 18, '#0f2547') }} Incoming from PSWDO</h3></div>
+            <div class="panel-header"><h3>Incoming from PSWDO</h3></div>
             {% for t in incoming_transfers %}
             <div class="wh-movement-row">
                 <div class="wh-movement-text">
@@ -111,9 +111,7 @@
                 <form method="GET" class="wh-search-form">
                     <div class="wh-search-wrapper">
                         {{ icon('search', 14, '#8a94a6') }}
-                        <input type="text" name="q" value="{{ search_query }}" placeholder="Search item...">
-                        {% if search_query %}<a href="{{ url_for('cswdo.municipal_inventory') }}" class="wh-search-clear" title="Clear search" aria-label="Clear search">&times;</a>{% endif %}
-                    </div>
+                        <input type="text" name="q" value="{{ search_query }}" placeholder="Search item...">                    </div>
                 </form>
             </div>
             <table class="wh-table">
@@ -148,7 +146,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6" class="empty-note" style="text-align:center; padding:28px;">No items recorded for this warehouse yet.</td></tr>
+                    <tr><td colspan="6" class="empty-note" style="text-align:center; padding:28px;">{% if search_query %}No items match "{{ search_query }}".{% else %}No items recorded for this warehouse yet.{% endif %}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -157,7 +155,6 @@
         <section class="panel wh-table-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Food Pack Batches</h3>
-                <span class="rd-sub">Shelf-life tracking per delivery - {{ near_expiry_days }} days or less to expiry is flagged Near Expiry.</span>
             </div>
             <table class="wh-table wh-batches-table">
                 <thead>
@@ -211,7 +208,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry reflects whichever component (usually the rice) spoils first - the whole batch is pulled together once it does, since a sealed pack isn't unbundled to save the canned goods.</p>
+            <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry is the first item in the pack to expire; the whole batch is pulled when it does.</p>
         </section>
 
         <section class="panel" style="margin-top:16px;">

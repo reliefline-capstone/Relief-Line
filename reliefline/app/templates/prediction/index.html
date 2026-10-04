@@ -57,7 +57,7 @@
 
         <section class="panel" id="pa-forecast-detail" style="margin-top:16px; margin-bottom:16px;">
             <div class="panel-header">
-                <h3>{{ icon('trending-up', 18, '#0f2547') }} Projected Demand</h3>
+                <h3>Projected Demand</h3>
                 <form method="GET" class="wh-movement-filters">
                     {% if show_breakdown %}<input type="hidden" name="show_breakdown" value="1">{% endif %}
                     {% if municipality_filter != 'all' %}<input type="hidden" name="municipality" value="{{ municipality_filter }}">{% endif %}
@@ -175,7 +175,7 @@
         {% if cover_chart %}
         <section class="panel" id="pa-cover-chart" style="margin-bottom:16px;">
             <div class="panel-header">
-                <h3>{{ icon('building', 18, '#0f2547') }} How long will the stock last? - {{ lgu_forecast.lgu }}</h3>
+                <h3>How long will the stock last? - {{ lgu_forecast.lgu }}</h3>
                 <span class="rd-sub">packs needed over time vs packs in the warehouse &middot;
                     {% if is_cswdo %}<a href="{{ url_for('cswdo.relief_requests') }}" class="link-manage">Stock Requests &rarr;</a>
                     {% else %}<a href="{{ url_for('pswdo.relief_requests') }}" class="link-manage">Stock Requests &rarr;</a>{% endif %}</span>
@@ -278,7 +278,7 @@
 
             <section class="panel">
                 <div class="panel-header">
-                    <h3>{{ icon('trending-up', 18, '#0f2547') }} Projected Demand by Municipality</h3>
+                    <h3>Projected Demand by Municipality</h3>
                     <span class="rd-sub">expected demand, next {{ forecast_months }} months</span>
                 </div>
                 {% for f in forecast_summary_by_lgu %}
@@ -307,7 +307,7 @@
         {% set top = barangay_breakdown[0] %}
         <section class="panel" id="pa-barangay-breakdown" style="margin-top:16px;">
             <div class="panel-header">
-                <h3>{{ icon('map-pin', 18, '#0f2547') }} Barangay Breakdown - {{ lgu_forecast.lgu }}</h3>
+                <h3>Barangay Breakdown - {{ lgu_forecast.lgu }}</h3>
                 <span class="rd-sub">how the {{ forecast_months }}-month forecast is shared among barangays &middot;
                     <a href="?{% if municipality_filter != 'all' %}municipality={{ municipality_filter }}&amp;{% endif %}{% if event_id %}event_id={{ event_id }}&amp;{% endif %}forecast_lgu={{ lgu_forecast.lgu|urlencode }}&amp;forecast_months={{ forecast_months }}#pa-forecast-detail" class="link-manage">Hide</a></span>
             </div>
@@ -341,7 +341,7 @@
         {% if not is_cswdo %}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
-                <h3>{{ icon('building', 18, '#0f2547') }} Warehouse Stock vs Forecast</h3>
+                <h3>Warehouse Stock vs Forecast</h3>
                 <span class="rd-sub">stock compared with the recommended {{ cover_horizon }}-month stockpile</span>
             </div>
             {% if combined_cover %}
@@ -388,7 +388,7 @@
 
             <section class="panel">
                 <div class="panel-header">
-                    <h3>{{ icon('trending-up', 18, '#0f2547') }} System Recommendations</h3>
+                    <h3>System Recommendations</h3>
                     <span class="tag-outline">{{ recommendations|length }} active</span>
                 </div>
                 {% for rec in recommendations %}
@@ -411,7 +411,7 @@
 
         <section class="panel pa-model-panel" style="margin-top:16px;">
             <div class="panel-header">
-                <h3>{{ icon('activity', 18, '#0f2547') }} Model Performance</h3>
+                <h3>Model Performance</h3>
                 <span class="rd-sub">Two-Stage Model (share regression + climatology) · leave-one-typhoon-out validation</span>
             </div>
             {% if latest_metrics %}

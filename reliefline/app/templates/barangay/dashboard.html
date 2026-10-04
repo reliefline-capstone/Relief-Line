@@ -79,7 +79,7 @@
 
             <section class="panel">
                 <div class="panel-header">
-                    <h3>{{ icon('users', 18, '#0f2547') }} Current Situation</h3>
+                    <h3>Current Situation</h3>
                 </div>
                 {% if not primary_event %}
                 <p class="empty-note">There is no active typhoon event right now.</p>
@@ -115,7 +115,7 @@
 
             <section class="panel">
                 <div class="panel-header">
-                    <h3>{{ icon('map-pin', 18, '#0f2547') }} Barangay Profile</h3>
+                    <h3>Barangay Profile</h3>
                 </div>
                 <div class="info-grid">
                     <div class="info-box">
@@ -189,7 +189,7 @@
         <!-- Active Alerts -->
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
-                <h3>{{ icon('bell', 18, '#0f2547') }} Active Alerts for Brgy. {{ barangay.barangay_name }}</h3>
+                <h3>Active Alerts for Brgy. {{ barangay.barangay_name }}</h3>
                 <a href="{{ url_for('barangay.notifications') }}" class="link-manage">View All →</a>
             </div>
             {% for item in recent_alerts %}

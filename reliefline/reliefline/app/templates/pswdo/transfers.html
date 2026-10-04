@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
+
+{% block title %}Stock Transfers - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_requests.css') }}?v={{ asset_version('css/relief_requests.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/distribution.css') }}?v={{ asset_version('css/distribution.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'distribution' %}
+    {% include "pswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+
+        <div class="page-header">
+            <div>
+                <h2>Stock Transfers</h2>
+                <p>PSWDO depot → municipal warehouse legs. PSWDO monitors dispatch; the CSWDO office confirms receipt.</p>
+            </div>
+        </div>
+
+        <section class="stat-cards stat-cards-3">
+            <div class="stat-card"><div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
+                <span class="stat-value">{{ active_count }}</span><span class="stat-label">Active</span></div>
+            <div class="stat-card"><div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ "{:,}".format(in_transit_packs) }}</span><span class="stat-label">Packs In Transit</span></div>
+            <div class="stat-card"><div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
+                <span class="stat-value">{{ completed_count }}</span><span class="stat-label">Completed</span></div>
+        </section>
+
+        {% set EP = 'pswdo.transfers' %}
+        {% set status_opts = {'active': 'Active', 'completed': 'Completed'} %}{% set _ = status_opts.update(labels) %}
+        {% set type_labels = {'replenishment': 'Replenishment', 'preposition': 'Pre-positioning'} %}
+        {% set fargs = {'status': status_filter if status_filter != 'all' else None, 'q': search_query or None,
+                        'destination': destination_filter if destination_filter != 'all' else None,
+                        'type': type_filter if type_filter != 'all' else None,
+                        'date_from': date_from or None, 'date_to': date_to or None} %}
+        {% set chips = [] %}
+        {% if fargs.status %}{% set _ = chips.append({'label': 'Status', 'value': status_opts.get(status_filter, status_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'status': None})}) %}{% endif %}
+        {% if fargs.destination %}{% set _ = chips.append({'label': 'Destination', 'value': destination_filter, 'tone': 'violet', 'url': f_url(EP, fargs, {'destination': None})}) %}{% endif %}
+        {% if fargs.type %}{% set _ = chips.append({'label': 'Type', 'value': type_labels.get(type_filter, type_filter), 'tone': 'amber', 'url': f_url(EP, fargs, {'type': None})}) %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+        {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+
+        {% call filter_panel(chips, url_for(EP), summary=(rows|length) ~ ' transfer' ~ ('s' if rows|length != 1 else '')) %}
+            {{ fp_search('q', search_query, 'Search transfer or request ID...') }}
+            {% call fp_select('Status', 'status', 'check-circle') %}
+                <option value="all">All statuses</option>
+                {% for key, label in status_opts.items() %}
+                <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Destination', 'destination', 'map-pin') %}
+                <option value="all">All destinations</option>
+                {% for lgu in target_lgus %}
+                <option value="{{ lgu }}" {{ 'selected' if destination_filter == lgu }}>{{ lgu }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Type', 'type', 'package') %}
+                <option value="all">All types</option>
+                {% for key, label in type_labels.items() %}
+                <option value="{{ key }}" {{ 'selected' if type_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            {% endcall %}
+            {{ fp_date_range('Requested', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
+
+        <section class="panel wh-table-panel">
+            <table class="wh-table wh-table-transfers">
+                <thead><tr><th>Transfer</th><th>Type</th><th>From → To</th><th>Packs</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    {% for t in rows %}
+                    <tr>
+                        <td>{{ t.ref }}{% if t.batch %}<br><span class="wh-sub">{{ t.batch.ref }}</span>{% endif %}</td>
+                        <td>{{ 'Replenishment' if t.batch_id else 'Pre-positioning' }}</td>
+                        <td>{{ t.from_office.office_name }} → {{ t.to_office.office_name }}</td>
+                        <td><strong>{{ "{:,}".format(t.quantity) }}</strong></td>
+                        <td>
+                            <span class="badge-status status-{{ 'completed' if t.status == 'completed' else (t.dispatch_status or 'preparing') }}">
+                                {{ 'Received' if t.status == 'completed' else labels.get(t.dispatch_status, t.dispatch_status or 'Pending') }}
+                            </span>
+                        </td>
+                        <td><a href="{{ url_for('pswdo.transfer_detail', transfer_id=t.transfer_id) }}" class="btn-view-sm">{{ icon('eye', 13) }} View</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6"><p class="empty-note" style="padding:16px 0;">No transfers to municipal warehouses yet.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+{% endblock %}

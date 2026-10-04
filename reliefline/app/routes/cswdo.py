@@ -150,6 +150,26 @@ def _own_lgu_barangays():
     return lgu, barangays
 
 
+def _search_as_barangay(lgu_barangays):
+    """When the search box holds exactly one of this LGU's barangay names
+    ("Nancalobasaan", "Brgy. Nancalobasaan"), redirect to the same page with
+    the Barangay filter set instead, so the dropdown and chip show it.
+    None when the search is anything else."""
+    q = request.args.get("q", "").strip().lower()
+    if not q or request.args.get("barangay_id"):
+        return None
+    for prefix in ("brgy. ", "brgy ", "barangay "):
+        if q.startswith(prefix):
+            q = q[len(prefix):].strip()
+    match = [b for b in lgu_barangays if b.barangay_name.lower() == q]
+    if len(match) != 1:
+        return None
+    args = request.args.to_dict()
+    args.pop("q")
+    args["barangay_id"] = match[0].barangay_id
+    return redirect(url_for(request.endpoint, **args))
+
+
 def _assert_own_lgu(report):
     """A cswdo_admin may only act on reports from their own LGU's barangays -
     role_required() only checks the role, not the office/LGU boundary."""
@@ -576,6 +596,9 @@ def _relief_request_row(report):
 @role_required("cswdo_admin", "system_admin")
 def damage_assessment():
     lgu, lgu_barangays = _own_lgu_barangays()
+    as_barangay = _search_as_barangay(lgu_barangays)
+    if as_barangay:
+        return as_barangay
     office = current_user.office
     tab = request.args.get("tab", "queue")
     search_query = request.args.get("q", "").strip().lower()
@@ -638,6 +661,8 @@ def damage_assessment():
         barangay_filter=barangay_filter, event_filter=event_filter,
         date_from=iso(date_from), date_to=iso(date_to), lgu_barangays=lgu_barangays,
         filter_events=sorted({r.event for r in reports if r.event}, key=lambda e: e.start_date, reverse=True),
+        filtered_barangay=next((b for b in lgu_barangays if b.barangay_id == barangay_filter), None),
+        reported_barangay_ids={r.barangay_id for r in reports},
     )
 
 
@@ -1030,6 +1055,9 @@ def _own_delivery_or_404(distribution_id):
 @role_required("cswdo_admin", "system_admin")
 def deliveries():
     lgu, lgu_barangays = _own_lgu_barangays()
+    as_barangay = _search_as_barangay(lgu_barangays)
+    if as_barangay:
+        return as_barangay
     status_filter = request.args.get("status", "preparing")
     search_query = request.args.get("q", "").strip().lower()
     barangay_ids = [b.barangay_id for b in lgu_barangays]
