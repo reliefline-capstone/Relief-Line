@@ -7,8 +7,8 @@ after the new pipeline is verified). Idempotent, like apply_timeseries_schema.py
     bash scripts/sync_db_dump.sh
 
 Adds:
-  * typhoon_calendar          - one row per storm named in a real relief
-                                 report (filled by scripts/typhoon_calendar_from_reports.py)
+  * typhoon_calendar          - one row per storm on the PAGASA 2021-2026
+                                 list (filled by scripts/typhoon_calendar_pagasa.py)
   * relief_events             - one row per transcribed real relief report
                                  (may span several calendar typhoons, e.g. a
                                  combined "Nika + Ofel + Pepito" report)

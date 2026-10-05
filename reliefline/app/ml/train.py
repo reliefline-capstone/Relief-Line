@@ -45,18 +45,22 @@ problem it was already suspect for. Two-stage sidesteps this entirely:
   forecast for "next 3 months" run in December can climatologically show ~0
   expected typhoons (Dec-May has none in the record) without needing to
   predict an unknowable future event - see app.ml.predict._forecast_window.
-  Since 2026-10-03 the calendar is built ONLY from the relief reports: every
-  storm a report names, dated by the reports
-  (scripts/typhoon_calendar_from_reports.py). The earlier researched
-  36-storm list was removed on request.
+  Since 2026-10-05 the calendar is the user-supplied PAGASA-checked list of
+  the 33 tropical cyclones affecting / relevant to Pangasinan, 2021-2026
+  (scripts/typhoon_calendar_pagasa.py), each counted in the month it
+  started. Every storm a relief report names is on it; 9 listed storms
+  brought no relief report. (2026-10-03 to 10-05 the calendar was only the
+  24 storms named in the relief reports.)
 
   P(relief) - relief operations for THIS LGU per calendar storm - is
   computed from real relief-record coverage (p_relief below). It is relief
   EVENTS per calendar typhoon (v9.3 fix - counting storms covered overstated
   totals by up to x1.38, since one combined report can cover several
-  storms). With the calendar built from the reports, a storm only counts if
-  some LGU reported relief for it, so this is "relief events per REPORTED
-  storm"; storms x P(relief) still reproduces each LGU's real event count.
+  storms). It is relief events per LISTED storm - the 9 listed storms with
+  no relief report count as storms that brought none - and storms x
+  P(relief) still reproduces each LGU's real event count, so a bigger
+  calendar mostly changes WHICH months the expected relief falls in, not
+  the yearly total.
 
   v9.1 (2026-10-03): the regression is weighted by each event's LGU total.
   v9.2 (2026-10-03): the regression share is BLENDED with each barangay's
@@ -66,6 +70,8 @@ problem it was already suspect for. Two-stage sidesteps this entirely:
   little relief history still gets stock - see fit_stage1, predict_shares,
   apply_share_floor.
   v9.3 (2026-10-03): P(relief) fix above.
+  2026-10-05: calendar = PAGASA-checked 33-storm list (frequency AND the
+  P(relief) denominator, kept on the same storm set so they stay consistent).
 
 Formula (see app.ml.predict.forecast_lgu for the actual implementation):
   expected(barangay, horizon)  = expected_typhoons(horizon) x P(relief)
@@ -294,8 +300,8 @@ def _as_date(value):
 
 
 def load_typhoon_calendar():
-    """[(typhoon_key, start_date, key_date, year)] - every storm named in a
-    real relief report (scripts/typhoon_calendar_from_reports.py)."""
+    """[(typhoon_key, start_date, key_date, year)] - every storm on the
+    PAGASA-checked 2021-2026 list (scripts/typhoon_calendar_pagasa.py)."""
     from sqlalchemy import text
     from app.extensions import db
 
@@ -803,8 +809,8 @@ def climatology_by_month(calendar_rows, today):
 def p_relief(events, all_typhoon_keys):
     """Relief operations per calendar typhoon for this LGU: the number of
     real relief EVENTS with packs (linked to at least one calendar typhoon)
-    divided by the calendar's typhoon count (the storms named in any LGU's
-    relief reports - see module doc).
+    divided by the calendar's typhoon count (the PAGASA-checked storm list -
+    see module doc).
 
     Fixed 2026-10-03 (was: calendar typhoons COVERED by a relief record /
     36). The forecast multiplies this by severity, which is the mean size of
@@ -816,9 +822,10 @@ def p_relief(events, all_typhoon_keys):
     bias in typical years and says nothing about 2025-type years, which no
     version predicts.
 
-    Caveat: storms that brought no relief to ANY of the three LGUs are not
-    in the calendar at all, so this is relief per reported storm, not per
-    storm that passed near Pangasinan."""
+    The numerator and denominator must count the same storm set as
+    climatology_by_month: frequency from the full list x P(relief) from the
+    report-only list would overstate expected relief by 33/24 = x1.38 (the
+    same kind of bias the v9.3 fix removed)."""
     universe = set(all_typhoon_keys)
     if not universe:
         return 0.0
