@@ -16,7 +16,7 @@ from app.extensions import db
 from app.utils.decorators import role_required
 from app.models.office import Office
 from app.models.barangay import Barangay
-from app.models.barangay_inventory import food_pack_on_hand
+from app.models.barangay_inventory import BarangayInventory, food_pack_on_hand
 from app.models.warehouse import WarehouseInventory, WarehouseStockLog
 from app.models.food_pack_batch import FoodPackBatch, FoodPackComponent, FoodPackBatchItem
 from app.models.allocation import AllocationRecord
@@ -743,6 +743,122 @@ def _stock_recommendations(warehouses):
     return recommendations
 
 
+def _forecast_recommendations(warehouses, horizon_months=6, audience="pswdo"):
+    """Forecast-driven stock recommendations, one per municipal (CSWDO)
+    warehouse: compares its food-pack stock with the model's month-by-month
+    cumulative demand for its LGU (ml_predict.forecast_lgu) - the same numbers
+    behind the "How long will the stock last?" chart on Predictive Analytics.
+
+      critical - stock runs out within the horizon even at EXPECTED demand
+      warning  - expected demand is covered, but stock is below the
+                 recommended (P90) stockpile, i.e. a bad season runs it out
+      (nothing) - stock covers the recommended stockpile
+
+    `audience` only changes the wording of the suggested action: a CSWDO
+    requests stock, PSWDO transfers it. Shared by the CSWDO/PSWDO Predictive
+    Analytics page and the PSWDO dashboard / stock-transfer page so both sides
+    always see the same shortages."""
+    recs = []
+    for w in warehouses:
+        office = w["office"]
+        lgu = office.area_covered
+        if office.office_type != "cswdo" or lgu not in TARGET_LGUS:
+            continue
+        f = ml_predict.forecast_lgu(lgu, horizon_months)
+        if not f or not f["months"]:
+            continue
+        stock = int(w["food_pack_qty"])
+        stockpile, expected = int(f["horizon_p90"]), int(f["horizon_total"])
+        if stock >= stockpile:
+            continue
+
+        def runout(key):
+            m = next((m for m in f["months"] if m[key] > stock), None)
+            return f"{MONTH_NAMES[m['month'] - 1]} {m['year']}" if m else None
+
+        shortfall = stockpile - stock
+        action = (f"Request at least {shortfall:,} more packs" if audience == "cswdo"
+                  else f"Transfer or procure about {shortfall:,} packs for {lgu}")
+        run_e, run_p = runout("cum_expected"), runout("cum_p90")
+        if run_e:
+            rec_type, title = "critical", f"{lgu} stock may run out in {run_e}"
+            summary = (f"{stock:,} packs on hand vs {expected:,} expected over the next {horizon_months} months "
+                       f"(recommended stockpile {stockpile:,}).")
+        else:
+            rec_type, title = "warning", f"{lgu} stock is {shortfall:,} packs short of the recommended stockpile"
+            summary = (f"{stock:,} packs on hand covers the expected {expected:,} packs over the next "
+                       f"{horizon_months} months, but a bad season would run out{' in ' + run_p if run_p else ''}.")
+        recs.append({"type": rec_type, "lgu": lgu, "title": title, "summary": summary,
+                     "detail": f"{summary} {action} to reach {stockpile:,}."})
+    recs.sort(key=lambda r: 0 if r["type"] == "critical" else 1)
+    return recs
+
+
+def _barangay_shortages(lgu, horizon_months):
+    """Barangays in `lgu` whose own food-pack stock is below their share of
+    the forecast stockpile for the horizon, biggest gap first. Same top-down
+    split as ml_predict.forecast_barangay (barangay share x the LGU figure),
+    computed from one forecast_lgu call instead of one per barangay.
+    A barangay with no inventory row on record counts as 0 on hand and is
+    flagged `no_record`."""
+    f = ml_predict.forecast_lgu(lgu, horizon_months)
+    shares = ml_predict.share_breakdown(lgu)
+    if not f or not shares:
+        return []
+    on_hand = dict(BarangayInventory.query.with_entities(
+        BarangayInventory.barangay_id, BarangayInventory.quantity_available
+    ).filter(
+        BarangayInventory.barangay_id.in_([r["barangay_id"] for r in shares]),
+        BarangayInventory.item_type == "food_pack",
+    ).all())
+    rows = []
+    for r in shares:
+        expected = sum(max(int(round(m["projected_packs"] * r["share"])), 0) for m in f["months"])
+        stockpile = max(int(round(f["horizon_p90"] * r["share"])), expected)
+        stock = on_hand.get(r["barangay_id"])
+        have = stock or 0
+        if have < stockpile:
+            rows.append({"barangay_id": r["barangay_id"], "name": r["name"], "on_hand": have,
+                         "no_record": stock is None, "expected": expected, "stockpile": stockpile,
+                         "short": stockpile - have, "short_expected": have < expected})
+    rows.sort(key=lambda x: x["short"], reverse=True)
+    return rows
+
+
+def _barangay_recommendations(warehouses, lgus, horizon_months=6, audience="pswdo", top=5):
+    """One recommendation per LGU naming the barangays that most need food
+    packs ahead of the season (see _barangay_shortages): critical when some
+    barangay's stock doesn't even cover its EXPECTED demand, warning when it
+    covers that but not its recommended stockpile. Shared by the CSWDO/PSWDO
+    Predictive Analytics page, the PSWDO dashboard and Recommendations page."""
+    municipal = {w["office"].area_covered: int(w["food_pack_qty"])
+                 for w in warehouses if w["office"].office_type == "cswdo"}
+    recs = []
+    for lgu in lgus:
+        rows = _barangay_shortages(lgu, horizon_months)
+        if not rows:
+            continue
+        listed = ", ".join(
+            f"{r['name']} ({r['short']:,} short, "
+            + ("no stock on record)" if r["no_record"] else f"{r['on_hand']:,} on hand)")
+            for r in rows[:top])
+        more = f" and {len(rows) - top} more" if len(rows) > top else ""
+        total_short = sum(r["short"] for r in rows)
+        stock_note = (f" {lgu}'s municipal warehouse has {municipal[lgu]:,} packs."
+                      if lgu in municipal else "")
+        action = ("Allocate from the municipal warehouse, biggest gap first." if audience == "cswdo"
+                  else f"Follow up with {lgu} CSWDO/MSWDO on pre-positioning packs in these barangays.")
+        recs.append({
+            "type": "critical" if any(r["short_expected"] for r in rows) else "warning",
+            "lgu": lgu, "barangays": rows,
+            "title": f"{len(rows)} barangay{'s' if len(rows) != 1 else ''} in {lgu} need food packs",
+            "detail": f"Most in need: {listed}{more}. Together they are {total_short:,} packs short of their "
+                      f"{horizon_months}-month recommended stockpile.{stock_note} {action}",
+        })
+    recs.sort(key=lambda r: 0 if r["type"] == "critical" else 1)
+    return recs
+
+
 def _lgu_burn_rate(office, active_events):
     """Packs/day burn rate for a warehouse's own LGU, same 3-day-per-pack basis
     as the dashboard's province-wide burn rate. Returns None when the warehouse
@@ -1464,8 +1580,12 @@ def dashboard():
         w["office"].office_name for w in warehouses if w["health"] == "Low"
     )
 
-    # System Recommendations - simple threshold-based logic, food_pack only
-    recommendations = _stock_recommendations(warehouses)
+    # System Recommendations - forecast-based municipal shortages first (same
+    # logic the CSWDO sees on Predictive Analytics), then the simple
+    # capacity-threshold rules, food_pack only.
+    recommendations = (_forecast_recommendations(warehouses)
+                       + _barangay_recommendations(warehouses, TARGET_LGUS)
+                       + _stock_recommendations(warehouses))
 
     # Recent activity feed - the general audit trail. Restricted to
     # NOTIFICATION_META's known operational action_types - System
@@ -3363,26 +3483,46 @@ def recommendations_page():
             "barangays": barangay_rows,
         })
 
+    src = healthiest["office"].office_name if healthiest else "a provincial depot"
+
+    def _action(m, qty):
+        """Next step for a short municipality, depending on its open request."""
+        if m["open_request"] and m["open_request"].status == "pending":
+            return (f"Stock request {m['open_request'].ref} is pending - approve up to {qty:,} packs.",
+                    url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id))
+        if m["open_request"]:
+            return (f"Stock request {m['open_request'].ref} already approved - monitor the transfer.",
+                    url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id))
+        return (f"No request on file yet. Consider pre-positioning ~{qty:,} packs from {src} "
+                f"now, toward a {horizon_months}-month stockpile target of {m['stockpile_total']:,} packs.",
+                url_for("pswdo.relief_requests"))
+
     recs = []
     for m in sorted(municipalities, key=lambda x: x["shortage"], reverse=True):
         if m["shortage"] <= 0:
             continue
-        src = healthiest["office"].office_name if healthiest else "a provincial depot"
-        if m["open_request"] and m["open_request"].status == "pending":
-            action = f"Stock request {m['open_request'].ref} is pending - approve up to {m['shortage']:,} packs."
-            link = url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id)
-        elif m["open_request"]:
-            action = f"Stock request {m['open_request'].ref} already approved - monitor the transfer."
-            link = url_for("pswdo.relief_request_detail", batch_id=m["open_request"].batch_id)
-        else:
-            action = (f"No request on file yet. Consider pre-positioning ~{m['shortage']:,} packs from {src} "
-                      f"now, toward a {horizon_months}-month stockpile target of {m['stockpile_total']:,} packs.")
-            link = url_for("pswdo.relief_requests")
+        action, link = _action(m, m["shortage"])
         recs.append({
             "type": "critical" if m["coverage_pct"] < 50 else "warning",
             "title": f"{m['lgu']}: {m['demand']:,} projected this month vs {m['on_hand']:,} on hand → short {m['shortage']:,}",
             "detail": action, "link": link,
         })
+    # This month is covered, but the stock is below the horizon's recommended
+    # stockpile - the same forecast check the CSWDO sees on Predictive
+    # Analytics and PSWDO sees on the dashboard (_forecast_recommendations).
+    by_lgu = {m["lgu"]: m for m in municipalities}
+    for fr in _forecast_recommendations(warehouses, horizon_months):
+        m = by_lgu.get(fr["lgu"])
+        if not m or m["shortage"] > 0:
+            continue
+        action, link = _action(m, max(m["stockpile_total"] - m["on_hand"], 0))
+        recs.append({"type": fr["type"], "title": fr["title"],
+                     "detail": fr["summary"] + " " + action, "link": link})
+    # Barangays inside each municipality that are short of their own share
+    # of the forecast stockpile - who to pre-position for first.
+    for br in _barangay_recommendations(warehouses, TARGET_LGUS, horizon_months):
+        recs.append({"type": br["type"], "title": br["title"], "detail": br["detail"],
+                     "link": url_for("pswdo.relief_requests")})
     for w in depots:
         if w["health"] == "Low":
             recs.append({

@@ -24,7 +24,7 @@ from app.utils.disaster_events import (
 # logic the Dashboard/GIS Map/Relief Requests pages already use.
 from app.routes.pswdo import (
     TARGET_LGUS,
-    _load_warehouses, _stock_recommendations, _relief_summary,
+    _load_warehouses, _stock_recommendations, _forecast_recommendations, _barangay_recommendations, _relief_summary,
     _stock_adequacy, _STOCK_TIER,
 )
 
@@ -380,10 +380,19 @@ def index():
     barangay_breakdown = []
     if lgu_forecast and show_breakdown:
         by_id = {b.barangay_id: b for b in Barangay.query.filter_by(city_municipality=forecast_lgu_choice).all()}
+        # Each barangay's current food-pack stock (None = no inventory row on
+        # record, shown as "No record" - not the same as a real 0).
+        breakdown_on_hand = dict(BarangayInventory.query.with_entities(
+            BarangayInventory.barangay_id, BarangayInventory.quantity_available
+        ).filter(
+            BarangayInventory.barangay_id.in_(list(by_id)),
+            BarangayInventory.item_type == "food_pack",
+        ).all())
         for row in sorted(ml_predict.share_breakdown(forecast_lgu_choice), key=lambda r: r["share"], reverse=True):
             fb = ml_predict.forecast_barangay(by_id[row["barangay_id"]], forecast_months)
             barangay_breakdown.append({
                 **row,
+                "on_hand": breakdown_on_hand.get(row["barangay_id"]),
                 "expected": fb["horizon_total"] if fb else 0,
                 "stockpile": fb["horizon_p90"] if fb else 0,
             })
@@ -453,6 +462,27 @@ def index():
                        f" Current local stock: {local_stock:,} packs only.",
             "link_label": "View Relief Request",
             "link": relief_link + ("?municipality=" + top["lgu"] if not is_cswdo else ""),
+        })
+    # Forecast-based: municipal stock vs the model's cumulative demand (the
+    # "How long will the stock last?" chart). A CSWDO sees only their own
+    # warehouse (`warehouses` is already scoped); PSWDO sees every municipality.
+    for rec in _forecast_recommendations(warehouses, forecast_months, "cswdo" if is_cswdo else "pswdo"):
+        if rec["lgu"] not in scope_lgus:
+            continue
+        recommendations.append({
+            "type": rec["type"], "title": rec["title"],
+            "tag": "Forecast", "detail": rec["detail"],
+            "link_label": "Request Stock" if is_cswdo else "View Stock Transfer",
+            "link": relief_link if is_cswdo else transfer_link,
+        })
+    # Barangays short of their share of the forecast stockpile - CSWDO
+    # allocates to them from the Deliveries page (proactive allocation).
+    for rec in _barangay_recommendations(all_warehouses, scope_lgus, forecast_months,
+                                         "cswdo" if is_cswdo else "pswdo"):
+        recommendations.append({
+            "type": rec["type"], "title": rec["title"], "tag": "Barangays", "detail": rec["detail"],
+            "link_label": "Allocate to Barangays" if is_cswdo else "View Relief Requests",
+            "link": url_for("cswdo.deliveries") if is_cswdo else relief_link,
         })
     for rec in _stock_recommendations(warehouses):
         recommendations.append({

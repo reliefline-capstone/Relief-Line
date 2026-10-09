@@ -1798,6 +1798,10 @@ html.sidebar-collapsed .dashboard-main {
     font-size: 13px;
 }
 
+/* Keep the icon at full size: as a flex item it otherwise shrinks when the
+   text beside it is long enough to wrap onto several lines. */
+.recommendation-row > svg { flex-shrink: 0; margin-top: 2px; }
+
 .recommendation-row strong { display: block; font-size: 12px; }
 .recommendation-row span { font-size: 11px; opacity: 0.8; }
 
