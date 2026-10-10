@@ -137,7 +137,7 @@
                     {% if p == page %}
                     <span class="page-btn active">{{ p }}</span>
                     {% else %}
-                    <a href="{{ f_url(EP, fargs, {'page': p}) }}" class="page-btn">{{ p }}</a>
+                    <a href="{{ f_url(EP, fargs, {'page': p}) }}" class="page-btn{{ ' page-btn-far' if (p - page)|abs > 1 }}">{{ p }}</a>
                     {% endif %}
                     {% endfor %}
                     {% if page < total_pages %}

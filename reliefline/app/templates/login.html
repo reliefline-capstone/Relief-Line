@@ -10,6 +10,8 @@
 
 <!-- The login card shows its own inline .flash-message; base.html's corner
      toast would otherwise render the same message a second time. -->
+{# Public page: keeps its own light look, no dark mode. #}
+{% block theme_init %}{% endblock %}
 {% block global_flash %}{% endblock %}
 
 {% block content %}

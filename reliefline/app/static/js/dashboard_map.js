@@ -34,7 +34,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // already applied to the full GIS Map's own Leaflet instance.
     var map = L.map(mapEl, {
         zoomControl: false,
-        attributionControl: true,
+        // Off: the prefix-less control added right below is the only one -
+        // with both, the credit line was drawn twice, one over the other.
+        attributionControl: false,
         minZoom: MIN_ZOOM,
         maxZoom: MAX_ZOOM,
         scrollWheelZoom: false,

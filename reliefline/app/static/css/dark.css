@@ -1,0 +1,129 @@
+/* ============================================================
+   ReliefLine - dark mode, hand-written part
+   ------------------------------------------------------------
+   html[data-theme="dark"] is set by the sidebar's Dark Mode toggle
+   (base.html, saved in localStorage). Most of the dark look comes
+   from the twins scripts/gen_dark_css.py appends to every other
+   stylesheet; this file covers what a colour remap can't: the page
+   canvas, unstyled form controls, inline style="" colours in
+   templates, map tiles, and the toggle itself. Loaded last.
+   Screen only - printing always stays light.
+   ============================================================ */
+
+/* Sidebar "Dark Mode" row: moon + label + an on/off switch at the end. */
+.theme-switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 36px; height: 20px;
+    margin-left: auto;
+    border-radius: 999px;
+    background: #d5d8e2;
+    transition: background-color 0.2s ease;
+}
+.theme-switch-knob {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease;
+}
+html[data-theme="dark"] .theme-switch { background: #5347ce; }
+html[data-theme="dark"] .theme-switch-knob { transform: translateX(16px); }
+html.sidebar-collapsed .theme-toggle .sidebar-label { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+    .theme-switch, .theme-switch-knob { transition: none; }
+}
+
+@media screen {
+    html[data-theme="dark"] {
+        color-scheme: dark;
+        --rl-canvas: #12151d;
+        --rl-surface: #1b1e28;
+        --rl-border: #2c3040;
+        --rl-tint: #262245;
+        --dk-text: #e4e6ee;
+        --dk-muted: #9aa3b5;
+    }
+    html[data-theme="dark"] body,
+    html[data-theme="dark"] .dashboard-layout,
+    html[data-theme="dark"] .dashboard-main { background: var(--rl-canvas); color: var(--dk-text); }
+
+    /* Headings and plain text that never set their own colour. */
+    html[data-theme="dark"] h1, html[data-theme="dark"] h2, html[data-theme="dark"] h3,
+    html[data-theme="dark"] h4, html[data-theme="dark"] h5, html[data-theme="dark"] strong { color: inherit; }
+
+    /* Unstyled form controls (browser defaults are white). */
+    html[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    html[data-theme="dark"] textarea,
+    html[data-theme="dark"] select {
+        background-color: var(--rl-surface);
+        color: var(--dk-text);
+        border-color: var(--rl-border);
+    }
+    html[data-theme="dark"] .fp-input input,
+    html[data-theme="dark"] .fp-input select { background-color: transparent; }
+    html[data-theme="dark"] input::placeholder,
+    html[data-theme="dark"] textarea::placeholder { color: #6f7889; }
+    html[data-theme="dark"] input:disabled,
+    html[data-theme="dark"] textarea:disabled,
+    html[data-theme="dark"] input[readonly] { background-color: #232734; color: var(--dk-muted); }
+
+    /* Tables. */
+    html[data-theme="dark"] table { color: inherit; }
+
+    /* Inline style="" colours used in a handful of templates. */
+    html[data-theme="dark"] [style*="color:#c0392b"], html[data-theme="dark"] [style*="color: #c0392b"] { color: #f0857a !important; }
+    html[data-theme="dark"] [style*="color:#1e8449"], html[data-theme="dark"] [style*="color: #1e8449"],
+    html[data-theme="dark"] [style*="color:#1e5631"], html[data-theme="dark"] [style*="color: #1e5631"] { color: #6fd39a !important; }
+    html[data-theme="dark"] [style*="color:#1f3a63"], html[data-theme="dark"] [style*="color: #1f3a63"],
+    html[data-theme="dark"] [style*="color:#244b86"], html[data-theme="dark"] [style*="color: #244b86"],
+    html[data-theme="dark"] [style*="color:#2c5aa0"], html[data-theme="dark"] [style*="color: #2c5aa0"] { color: #8fb4f0 !important; }
+    html[data-theme="dark"] [style*="color:#7a2e23"], html[data-theme="dark"] [style*="color: #7a2e23"] { color: #f0a59a !important; }
+    html[data-theme="dark"] [style*="color:#333"], html[data-theme="dark"] [style*="color: #333"],
+    html[data-theme="dark"] [style*="color:#555"], html[data-theme="dark"] [style*="color: #555"],
+    html[data-theme="dark"] [style*="color:#1a1a1a"], html[data-theme="dark"] [style*="color: #1a1a1a"] { color: #c9cdd8 !important; }
+    html[data-theme="dark"] [style*="background:#fdecea"], html[data-theme="dark"] [style*="background: #fdecea"] { background: #3a2023 !important; }
+    html[data-theme="dark"] [style*="background:#eaf0fd"], html[data-theme="dark"] [style*="background: #eaf0fd"],
+    html[data-theme="dark"] [style*="background:#eef4ff"], html[data-theme="dark"] [style*="background: #eef4ff"],
+    html[data-theme="dark"] [style*="background:#f0f6fc"], html[data-theme="dark"] [style*="background: #f0f6fc"] { background: #1d2740 !important; }
+    html[data-theme="dark"] [style*="background:#f0faf4"], html[data-theme="dark"] [style*="background: #f0faf4"] { background: #1a2e24 !important; }
+    html[data-theme="dark"] [style*="background:#f0f2f6"], html[data-theme="dark"] [style*="background: #f0f2f6"],
+    html[data-theme="dark"] [style*="background:white"], html[data-theme="dark"] [style*="background: white"],
+    html[data-theme="dark"] [style*="background:#fff"], html[data-theme="dark"] [style*="background: #fff"] { background: var(--rl-surface) !important; }
+    html[data-theme="dark"] [style*="border:1px solid #f6cfc9"], html[data-theme="dark"] [style*="border: 1px solid #f6cfc9"],
+    html[data-theme="dark"] [style*="border-color:#e0b4b4"], html[data-theme="dark"] [style*="border-color: #e0b4b4"] { border-color: #5a2f2f !important; }
+    html[data-theme="dark"] [style*="#cfe0f0"], html[data-theme="dark"] [style*="#c7d8f5"] { border-color: #2c3b5c !important; }
+    html[data-theme="dark"] [style*="#cdebd7"] { border-color: #24412f !important; }
+    html[data-theme="dark"] [style*="border-top:1px solid #f0f2f6"], html[data-theme="dark"] [style*="border-top: 1px solid #f0f2f6"] { border-top-color: var(--rl-border) !important; }
+
+    /* Map tiles: invert the light basemap; the coloured overlays (other
+       panes) are left alone. */
+    html[data-theme="dark"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6); }
+    html[data-theme="dark"] .leaflet-container { background: #1b1e28; }
+    html[data-theme="dark"] .leaflet-control-zoom a,
+    html[data-theme="dark"] .leaflet-bar a { background: var(--rl-surface); color: var(--dk-text); border-color: var(--rl-border); }
+    html[data-theme="dark"] .leaflet-popup-content-wrapper,
+    html[data-theme="dark"] .leaflet-popup-tip { background: var(--rl-surface); color: var(--dk-text); }
+    html[data-theme="dark"] .leaflet-control-attribution { background: rgba(27, 30, 40, 0.8) !important; color: var(--dk-muted); }
+    html[data-theme="dark"] .leaflet-control-attribution a { color: #8fb4f0; }
+
+    /* Map name labels: light text on a dark halo (the light theme's white
+       halo + light text was unreadable). Reads on the dark basemap and on
+       every status fill. */
+    html[data-theme="dark"] .gis-muni-label {
+        color: #e9ebf2;
+        text-shadow: 0 1px 2px rgba(10, 12, 20, 0.95), 0 -1px 2px rgba(10, 12, 20, 0.95),
+            1px 0 2px rgba(10, 12, 20, 0.95), -1px 0 2px rgba(10, 12, 20, 0.95);
+    }
+    html[data-theme="dark"] .gis-brgy-label {
+        color: #ffffff;
+        text-shadow: 0 0 2px #0b0d14, 0 0 2px #0b0d14, 0 0 3px #0b0d14, 0 0 3px #0b0d14,
+            1px 0 2px #0b0d14, -1px 0 2px #0b0d14, 0 1px 2px #0b0d14, 0 -1px 2px #0b0d14;
+    }
+
+    /* Scrollbars follow color-scheme; thin custom ones get a dark thumb. */
+    html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #3a3f52; }
+    html[data-theme="dark"] ::-webkit-scrollbar-track { background: transparent; }
+}
