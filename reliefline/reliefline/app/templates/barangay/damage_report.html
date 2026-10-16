@@ -75,7 +75,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
 
-        {% call filter_panel(chips, url_for(EP, tab='history'), hidden={'tab': 'history'}, summary=(decided_reports|length) ~ ' report' ~ ('s' if decided_reports|length != 1 else '')) %}
+        {% call filter_panel(chips, url_for(EP, tab='history'), hidden={'tab': 'history'}, summary=(decided_reports|length) ~ ' report' ~ ('s' if decided_reports|length != 1 else ''), export_url=url_for('barangay.damage_report_export', **fargs)) %}
             {{ fp_search('q', search_query, 'Search report ID...') }}
             {% call fp_select('Status', 'status', 'check-circle') %}
                 <option value="all">All statuses</option>
@@ -91,7 +91,6 @@
             {% endcall %}
             {{ fp_date_range('Date Submitted', 'date_from', date_from, 'date_to', date_to) }}
         {% endcall %}
-        <div class="fp-export-row"><a href="{{ url_for('barangay.damage_report_export', **fargs) }}" class="btn-outline">{{ icon('download', 14) }} Export</a></div>
 
         <section class="panel rr-table-panel">
             {% if decided_reports %}

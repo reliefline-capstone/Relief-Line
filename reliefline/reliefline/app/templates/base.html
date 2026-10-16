@@ -22,6 +22,15 @@
             } catch (e) {}
         })();
     </script>
+    {# Dark mode (sidebar toggle, see bottom of this file): applied before
+       first paint so a dark page never flashes white. The public pages
+       (landing, login, help...) override this block empty - they keep
+       their own look. #}
+    {% block theme_init %}
+    <script>
+        try { if (localStorage.getItem('rl_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}
+    </script>
+    {% endblock %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- One typeface, everywhere: Inter is drawn specifically for on-screen
@@ -46,6 +55,9 @@
          card surfaces, sidebar, type stack) win over the per-page sheets
          above. Visual only; see theme.css header. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_version('css/theme.css') }}">
+    <!-- Dark mode: each sheet above carries its own generated dark twins
+         (scripts/gen_dark_css.py); this one holds the hand-written rest. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark.css') }}?v={{ asset_version('css/dark.css') }}">
 </head>
 <body>
     {% block content %}{% endblock %}
@@ -104,6 +116,22 @@
             var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
             try { localStorage.setItem('reliefline_sidebar_collapsed', collapsed ? '1' : '0'); } catch (err) {}
         });
+        // Dark Mode switch in every role's sidebar.
+        function syncThemeSwitch() {
+            var on = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.querySelectorAll('[data-theme-toggle]').forEach(function (b) { b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+        }
+        syncThemeSwitch();
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('[data-theme-toggle]')) return;
+            e.preventDefault();
+            var root = document.documentElement;
+            var dark = root.getAttribute('data-theme') !== 'dark';
+            if (dark) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
+            syncThemeSwitch();
+            try { localStorage.setItem('rl_theme', dark ? 'dark' : 'light'); } catch (err) {}
+            window.dispatchEvent(new CustomEvent('rl-themechange', { detail: { dark: dark } }));
+        });
     </script>
     <!-- Blank the page title while printing: browsers print it in the page
          header ("Barangay Reports - ReliefLine"). The @page margins in
@@ -114,6 +142,107 @@
             var saved = null;
             window.addEventListener('beforeprint', function () { saved = document.title; document.title = ' '; });
             window.addEventListener('afterprint', function () { if (saved !== null) document.title = saved; });
+        })();
+    </script>
+    <!-- Filter panels (_filter_panel.html) apply themselves: a dropdown or
+         date change submits right away, the search box after a short pause
+         in typing (or Enter). After that reload the caret goes back into
+         the search box so typing can simply carry on. -->
+    <script>
+        (function () {
+            var KEY = 'rl_fp_refocus';
+            document.querySelectorAll('form[data-fp-auto]').forEach(function (form) {
+                var timer = null;
+                function go(fromSearch) {
+                    try { sessionStorage.setItem(KEY, fromSearch ? '1' : ''); } catch (e) {}
+                    form.submit();
+                }
+                form.addEventListener('change', function (e) {
+                    if (e.target.matches('input[type="text"]')) return;   // search: handled below
+                    go(false);
+                });
+                var search = form.querySelector('.fp-field-search input[type="text"]');
+                if (search) {
+                    search.addEventListener('input', function () {
+                        clearTimeout(timer);
+                        timer = setTimeout(function () { go(true); }, 700);
+                    });
+                    var refocus = false;
+                    try { refocus = sessionStorage.getItem(KEY) === '1'; sessionStorage.removeItem(KEY); } catch (e) {}
+                    if (refocus) {
+                        search.focus();
+                        var n = search.value.length;
+                        search.setSelectionRange(n, n);
+                    }
+                }
+            });
+        })();
+    </script>
+    <!-- Short first-column values in data tables (IDs like "RR-2026-084")
+         are kept on one line on a phone (dashboard.css .td-nowrap) - a
+         narrow column otherwise broke them at every hyphen. Longer text
+         (warehouse names, descriptions) still wraps normally. -->
+    <script>
+        // Judged per rendered line, so "RR-2026-084" over a small "Brgy. Anonas"
+        // sub-line still counts as short.
+        document.querySelectorAll('.dashboard-main table tbody td:first-child').forEach(function (td) {
+            var longest = Math.max.apply(null, (td.innerText || '').split('\n').map(function (l) { return l.trim().length; }));
+            if (longest <= 20) td.classList.add('td-nowrap');
+        });
+    </script>
+    <!-- An "x" at the end of every search box (placeholder "Search...")
+         while it has text. Clearing a search the server already applied
+         (a GET form whose value came from the URL) reloads without it; a
+         live, client-side search just re-filters via its 'input' listener.
+         The GIS map search has its own clear button. -->
+    <script>
+        (function () {
+            var SEL = 'input[type="text"][placeholder^="Search"]:not(#gis-search-input), input[type="search"]';
+            function attach(input) {
+                if (input.dataset.searchX) return;
+                input.dataset.searchX = '1';
+                // The "x" sits in the input's own box (icon + input); when the
+                // input shares its parent with other controls, give it one.
+                var host = input.parentNode;
+                var crowded = Array.prototype.some.call(host.children, function (c) {
+                    return c !== input && c.tagName.toLowerCase() !== 'svg';
+                });
+                if (crowded) {
+                    host = document.createElement('span');
+                    host.className = 'search-x-wrap';
+                    input.parentNode.insertBefore(host, input);
+                    host.appendChild(input);
+                }
+                host.classList.add('search-x-host');
+                input.classList.add('has-search-x');
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'search-x';
+                btn.title = 'Clear search';
+                btn.setAttribute('aria-label', 'Clear search');
+                btn.innerHTML = '&times;';
+                input.insertAdjacentElement('afterend', btn);
+                function sync() { btn.hidden = !input.value; }
+                input.addEventListener('input', sync);
+                sync();
+                btn.addEventListener('click', function () {
+                    var applied = input.name && input.defaultValue && input.form && (input.form.method || 'get').toLowerCase() === 'get';
+                    input.value = '';
+                    sync();
+                    if (applied) { input.form.submit(); return; }
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.focus();
+                });
+            }
+            function scan(root) {
+                if (root.matches && root.matches(SEL)) attach(root);
+                if (root.querySelectorAll) root.querySelectorAll(SEL).forEach(attach);
+            }
+            scan(document);
+            // Search boxes drawn later (e.g. inside GIS map cards).
+            new MutationObserver(function (muts) {
+                muts.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) scan(n); }); });
+            }).observe(document.body, { childList: true, subtree: true });
         })();
     </script>
     <!-- Report Print buttons ([data-print-pdf]): print the server-generated

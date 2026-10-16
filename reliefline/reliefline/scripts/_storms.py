@@ -1,10 +1,9 @@
 """
 Storm names -> typhoon_calendar keys, read straight from a relief report's
-"Name of Typhoon" column. The relief reports are the ONLY basis for the
-typhoon calendar (2026-10-03, on request - the earlier researched 36-storm
-list was removed): a report naming "Luis & Maymay & Neneng & Pilandok" links
-to luis_2026, maymay_2026, neneng_2026 and pilandok_2026, and each of those
-becomes a calendar storm (see scripts/typhoon_calendar_from_reports.py).
+"Name of Typhoon" column: a report naming "Luis & Maymay & Neneng &
+Pilandok" links to luis_2026, maymay_2026, neneng_2026 and pilandok_2026,
+each of which must be on the PAGASA storm list
+(scripts/typhoon_calendar_pagasa.py).
 
 "Habagat" (the southwest monsoon) is not a named storm and is dropped.
 """

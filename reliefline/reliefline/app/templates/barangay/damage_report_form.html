@@ -20,8 +20,10 @@
 
         <section class="page-header">
             <div>
-                <a href="{{ url_for('barangay.damage_report') }}" class="wizard-cancel">{{ icon('chevron-left', 14) }} Cancel</a>
-                <h2>{{ 'Edit ' + report.ref if report else 'New Barangay Report' }}</h2>
+                <div class="wh-title-row">
+                    <a href="{{ url_for('barangay.damage_report') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+                    <h2>{{ 'Edit ' + report.ref if report else 'New Barangay Report' }}</h2>
+                </div>
                 <p>Brgy. {{ barangay.barangay_name }} · {{ default_event.event_name if default_event else 'Standing Request' }}</p>
             </div>
             {% if not report or report.status == 'draft' %}
@@ -63,7 +65,7 @@
 
             <!-- Step 1: Basic Info -->
             <section class="panel wizard-step" data-step="1">
-                <div class="panel-header"><h3>{{ icon('map-pin', 18, '#0f2547') }} Basic Information</h3></div>
+                <div class="panel-header"><h3>Basic Information</h3></div>
                 <p class="form-hint">Confirm the identifying details below, then continue.</p>
                 <div class="autofill-box">
                     <div class="autofill-grid">
@@ -104,7 +106,7 @@
 
             <!-- Step 2: Incident -->
             <section class="panel wizard-step" data-step="2" hidden>
-                <div class="panel-header"><h3>{{ icon('cloud-lightning', 18, '#0f2547') }} Incident Details</h3></div>
+                <div class="panel-header"><h3>Incident Details</h3></div>
                 <p class="form-hint">
                     This report is for the <strong>typhoon-related event</strong> selected in Step 1{% if event_options|length == 1 %} ({{ event_options[0].event_name }}){% endif %}.
                     When did the impact happen in your barangay?
@@ -130,7 +132,7 @@
 
             <!-- Step 3: Barangay Data -->
             <section class="panel wizard-step" data-step="3" hidden>
-                <div class="panel-header"><h3>{{ icon('alert-triangle', 18, '#0f2547') }} Barangay Assessment</h3></div>
+                <div class="panel-header"><h3>Barangay Assessment</h3></div>
                 <p class="form-hint">Check off which of your registered families were affected - families, individuals, PWD, and senior citizen counts are totalled automatically.</p>
 
                 {% if families %}
@@ -265,7 +267,7 @@
 
             <!-- Step 4: Evidence -->
             <section class="panel wizard-step" data-step="4" hidden>
-                <div class="panel-header"><h3>{{ icon('file-text', 18, '#0f2547') }} Supporting Evidence</h3></div>
+                <div class="panel-header"><h3>Supporting Evidence</h3></div>
                 <p class="form-hint">Upload photos of affected areas and damaged houses.</p>
                 <label for="photo_files" class="upload-dropzone">
                     <div class="qa-icon" style="background:#eaf0fd; width:52px; height:52px; margin:0 auto 10px;">{{ icon('file-text', 22, '#2c5aa0') }}</div>
@@ -288,7 +290,7 @@
 
             <!-- Step 5: Review & Submit -->
             <section class="panel wizard-step" data-step="5" hidden>
-                <div class="panel-header"><h3>{{ icon('check-circle', 18, '#0f2547') }} Review &amp; Submit</h3></div>
+                <div class="panel-header"><h3>Review &amp; Submit</h3></div>
                 <p class="form-hint">Review all information before submitting. Once submitted, this report cannot be edited unless returned by MSWDO/CSWDO.</p>
                 <div class="review-grid">
                     <div class="review-box">
@@ -312,10 +314,6 @@
                         <div class="review-row"><span>Photos</span><strong id="rv-photo-count"></strong></div>
                         <div class="review-row" style="display:block;"><span>Remarks</span><p id="rv-remarks" style="margin:4px 0 0; font-size:12px; color:#333;"></p></div>
                     </div>
-                </div>
-                <div class="wizard-important-note">
-                    {{ icon('alert-triangle', 14, '#b7791f') }}
-                    <span><strong>Important:</strong> Once submitted, this report will be sent to MSWDO/CSWDO for verification. You will only be able to edit it if MSWDO/CSWDO returns it for correction. Make sure all information is accurate.</span>
                 </div>
                 <div class="wizard-nav">
                     <button type="button" class="btn-outline wizard-back">{{ icon('chevron-left', 14) }} Back</button>

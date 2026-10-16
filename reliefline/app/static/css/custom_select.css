@@ -197,9 +197,9 @@
     html[data-theme="dark"] .csel-list { background: #1c1f29; border: 1px solid #3a3e4e; border-radius: 10px; }
     html[data-theme="dark"] .csel-option { border-radius: 6px; color: #d1d1d1; }
     html[data-theme="dark"] .csel-option.csel-placeholder { color: #8a94a6; }
-    html[data-theme="dark"] .csel-option:hover, html[data-theme="dark"] .csel-option.is-active { background: #221e3f; color: #dedede; }
+    html[data-theme="dark"] .csel-option:hover, html[data-theme="dark"] .csel-option.is-active { background: #1f2136; color: #dedede; }
     html[data-theme="dark"] .csel-option.is-selected { color: #a6a0e6; }
-    html[data-theme="dark"] .csel-option.is-selected:hover, html[data-theme="dark"] .csel-option.is-selected.is-active { background: #221e3f; }
+    html[data-theme="dark"] .csel-option.is-selected:hover, html[data-theme="dark"] .csel-option.is-selected.is-active { background: #1f2136; }
     html[data-theme="dark"] .csel-option svg { color: #a6a0e6; }
     html[data-theme="dark"] .csel-option[aria-disabled="true"] { color: #cdcfe0; }
     html[data-theme="dark"] .dash-period-date .csel-trigger { border: none; background: none; color: #a6a0e6; }

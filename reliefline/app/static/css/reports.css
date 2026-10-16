@@ -443,11 +443,11 @@
     html[data-theme="dark"] .rpt-table td { border-bottom: 1px solid #383c4c; color: #d1d1d1; }
     html[data-theme="dark"] .rpt-table tbody tr:nth-child(even) { background: #1e212b; }
     html[data-theme="dark"] .format-tag { border-radius: 5px; }
-    html[data-theme="dark"] .format-tag.pdf { background: #40211d; color: #e1847a; }
-    html[data-theme="dark"] .format-tag.excel { background: #223d2e; color: #7ae1a5; }
+    html[data-theme="dark"] .format-tag.pdf { background: #38252b; color: #e1847a; }
+    html[data-theme="dark"] .format-tag.excel { background: #213936; color: #7ae1a5; }
     html[data-theme="dark"] .btn-mini { border: 1px solid #3a3e4e; background: #1c1f29; border-radius: 6px; color: #d1d1d1; }
-    html[data-theme="dark"] .btn-mini:hover { background: #242437; }
-    html[data-theme="dark"] .rpt-filterbar { background: #221e3f; border: 1px solid #372e60; border-radius: 10px; }
+    html[data-theme="dark"] .btn-mini:hover { background: #202334; }
+    html[data-theme="dark"] .rpt-filterbar { background: #1f2136; border: 1px solid #372e60; border-radius: 10px; }
     html[data-theme="dark"] .rpt-filter-chips { color: #d1d1d1; }
     html[data-theme="dark"] .rpt-chip { background: #1c1f29; border: 1px solid #372e60; border-radius: 6px; color: #a6a0e6; }
     html[data-theme="dark"] .rpt-edit-filters { color: #a6a0e6; }
@@ -469,20 +469,20 @@
     html[data-theme="dark"] .rpt-doc-meta { color: #c0c0c0; }
     html[data-theme="dark"] .rpt-doc-meta span { color: #8a94a6; }
     html[data-theme="dark"] .rpt-doc-meta strong { color: #dedede; }
-    html[data-theme="dark"] .rpt-doc-strip { background: #221e3f; border-radius: 8px; color: #d1d1d1; }
+    html[data-theme="dark"] .rpt-doc-strip { background: #1f2136; border-radius: 8px; color: #d1d1d1; }
     html[data-theme="dark"] .rpt-doc-strip strong { color: #a6a0e6; }
     html[data-theme="dark"] .rpt-status-ready { color: #7ae1a5; }
     html[data-theme="dark"] .rpt-doc-title { color: #a6a0e6; }
     html[data-theme="dark"] .rpt-table thead tr { background: #5347ce; }
     html[data-theme="dark"] .rpt-table thead th { color: #ffffff; }
     html[data-theme="dark"] .rpt-status-pill { border-radius: 12px; }
-    html[data-theme="dark"] .rpt-status-approved, html[data-theme="dark"] .rpt-status-released, html[data-theme="dark"] .rpt-status-delivered { background: #223d2e; color: #7ae1a5; }
-    html[data-theme="dark"] .rpt-status-pending, html[data-theme="dark"] .rpt-status-preparing { background: #44361c; color: #f4bd67; }
-    html[data-theme="dark"] .rpt-status-rejected, html[data-theme="dark"] .rpt-status-delayed { background: #40211d; color: #e1847a; }
-    html[data-theme="dark"] .rpt-status-partially-approved { background: #221e3f; color: #a6a0e6; }
-    html[data-theme="dark"] .rpt-status-loaded { background: #221e3f; color: #a6a0e6; }
-    html[data-theme="dark"] .rpt-status-dispatched { background: #241c41; color: #a6a0e6; }
-    html[data-theme="dark"] .rpt-status-in-transit { background: #422f1d; color: #d5ae86; }
+    html[data-theme="dark"] .rpt-status-approved, html[data-theme="dark"] .rpt-status-released, html[data-theme="dark"] .rpt-status-delivered { background: #213936; color: #7ae1a5; }
+    html[data-theme="dark"] .rpt-status-pending, html[data-theme="dark"] .rpt-status-preparing { background: #38322b; color: #f4bd67; }
+    html[data-theme="dark"] .rpt-status-rejected, html[data-theme="dark"] .rpt-status-delayed { background: #38252b; color: #e1847a; }
+    html[data-theme="dark"] .rpt-status-partially-approved { background: #1f2136; color: #a6a0e6; }
+    html[data-theme="dark"] .rpt-status-loaded { background: #1f2136; color: #a6a0e6; }
+    html[data-theme="dark"] .rpt-status-dispatched { background: #212136; color: #a6a0e6; }
+    html[data-theme="dark"] .rpt-status-in-transit { background: #382e2b; color: #d5ae86; }
     html[data-theme="dark"] .rpt-notes { color: #d1d1d1; }
     html[data-theme="dark"] .rpt-notes strong { color: #a6a0e6; }
     html[data-theme="dark"] .rpt-lh { border-bottom: 2px solid #b8bbc5; color: #dedede; }
@@ -495,5 +495,5 @@
     html[data-theme="dark"] .rpt-sig-position { color: #d1d1d1; }
     html[data-theme="dark"] .rpt-doc-footer { color: #8a94a6; }
     html[data-theme="dark"] .rpt-tally-box { color: #8a94a6; }
-    html[data-theme="dark"] .rpt-total-row td { border-top: 2px solid #3c4051; background: #242437; }
+    html[data-theme="dark"] .rpt-total-row td { border-top: 2px solid #3c4051; background: #202334; }
 }

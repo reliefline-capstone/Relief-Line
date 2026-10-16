@@ -55,13 +55,13 @@ def info(text_):
 app = create_app()
 with app.app_context():
     print("Data")
-    # The calendar is built only from the relief reports - see
-    # scripts/typhoon_calendar_from_reports.py.
+    # The calendar is the PAGASA-checked 2021-2026 storm list - see
+    # scripts/typhoon_calendar_pagasa.py.
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import typhoon_calendar_from_reports as _calendar
+    import typhoon_calendar_pagasa as _calendar
     expected_keys = set(_calendar.derive())
     db_keys = set(db.session.execute(text("SELECT typhoon_key FROM typhoon_calendar")).scalars())
-    check(f"typhoon_calendar = exactly the storms named in the relief reports ({len(expected_keys)})",
+    check(f"typhoon_calendar = exactly the PAGASA storm list ({len(expected_keys)})",
           db_keys == expected_keys, f"extra {sorted(db_keys - expected_keys)}, missing {sorted(expected_keys - db_keys)}")
     n_ref_events = db.session.execute(text(
         "SELECT COUNT(*) FROM disaster_events WHERE is_reference = 1")).scalar()

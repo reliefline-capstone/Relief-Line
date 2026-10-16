@@ -23,6 +23,7 @@
         <strong>{% if l.source_type == 'damaged_return' %}Returned - Damaged{% elif l.source_type == 'expired' %}{% if l.item_type == 'food_pack_expired' %}{{ 'Expired - Cleared' if l.delta < 0 else 'Expired - Flagged' }}{% else %}{{ 'Expired - Removed' if l.delta < 0 else 'Expired - Restocked' }}{% endif %}{% else %}{{ l.source_type|capitalize }}{% endif %}</strong>
         <span>{{ l.reason or '-' }}</span>
         {% if has_breakdown %}<span class="link-manage">View breakdown →</span>{% endif %}
+        {% if l.proof_photo_list %}<span class="link-manage" role="button" tabindex="0" data-open-modal="bi-proof-{{ l.log_id }}" style="cursor:pointer;">{{ icon('camera', 12) }} View proof ({{ l.proof_photo_list|length }}) →</span>{% endif %}
     </div>
     <div class="wh-movement-amount">
         <strong class="{{ 'text-red' if l.delta < 0 else 'text-green' }}">{{ '+' if l.delta > 0 }}{{ "{:,}".format(l.delta) }}</strong>
@@ -42,6 +43,23 @@
             <div class="wh-info-row"><span>Received in good condition</span><strong class="text-green">{{ "{:,}".format(rec.good_count) }}</strong></div>
             <div class="wh-info-row"><span>Short / missing</span><strong class="{{ 'text-red' if rec.shortage_count }}">{{ "{:,}".format(rec.shortage_count) }}</strong></div>
             <div class="wh-info-row"><span>Damaged (returned to CSWDO)</span><strong class="{{ 'text-red' if rec.damaged_count }}">{{ "{:,}".format(rec.damaged_count) }}</strong></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% if l.proof_photo_list %}
+<div class="rd-modal-overlay" id="bi-proof-{{ l.log_id }}" hidden>
+    <div class="rd-modal" style="max-width:560px;">
+        <div class="rd-modal-header">
+            <h3>{{ icon('camera', 18, '#0f2547') }} Distribution Proof</h3>
+            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+        </div>
+        <p class="form-hint">{{ l.reason or 'Distribution' }} · {{ "{:,}".format(-l.delta) }} food pack{{ 's' if -l.delta != 1 }} · {{ l.created_at|ph_time('%b %d, %Y · %I:%M %p') if l.created_at }}</p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin-top:10px;">
+            {% for name in l.proof_photo_list %}
+            {% set photo_url = url_for('static', filename='uploads/barangay_distributions/' ~ l.log_id ~ '/' ~ name) %}
+            <a href="{{ photo_url }}" target="_blank" title="Open full size"><img src="{{ photo_url }}" alt="Distribution proof photo" loading="lazy" style="width:100%; height:140px; object-fit:cover; border-radius:8px; border:1px solid #e3e7ef;"></a>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -88,6 +106,9 @@
         <section class="panel">
             <div class="panel-header">
                 <h3>Movement History</h3>
+                {# Excel export of the Type/Date filters currently applied below. #}
+                {% set export_args = {'type': type_filter if type_filter != 'all' else None, 'date_from': date_from or None, 'date_to': date_to or None} %}
+                <a href="{{ url_for('barangay.inventory_movements_export', **export_args) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
             </div>
             {% set EP = 'barangay.inventory' %}
             {% set type_labels = {'delivery': 'Received', 'distribution': 'Distributed', 'damaged_return': 'Returned - Damaged', 'expired': 'Expired / Restocked'} %}
@@ -95,7 +116,7 @@
             {% set chips = [] %}
             {% if fargs.type %}{% set _ = chips.append({'label': 'Type', 'value': type_labels.get(type_filter, type_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'type': None})}) %}{% endif %}
             {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
-            {% call filter_panel(chips, url_for(EP)) %}
+            {% call filter_panel(chips, url_for(EP), compact=True) %}
                 {% call fp_select('Type', 'type', 'activity') %}
                     <option value="all">All types</option>
                     {% for key, label in type_labels.items() %}
@@ -137,7 +158,7 @@
                     {% if p == page %}
                     <span class="page-btn active">{{ p }}</span>
                     {% else %}
-                    <a href="{{ f_url(EP, fargs, {'page': p}) }}" class="page-btn">{{ p }}</a>
+                    <a href="{{ f_url(EP, fargs, {'page': p}) }}" class="page-btn{{ ' page-btn-far' if (p - page)|abs > 1 }}">{{ p }}</a>
                     {% endif %}
                     {% endfor %}
                     {% if page < total_pages %}
@@ -152,7 +173,6 @@
         <section class="panel wh-table-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Food Pack Batches</h3>
-                <span class="rd-sub">Shelf-life tracking per delivery - {{ near_expiry_days }} days or less to expiry is flagged Near Expiry.</span>
             </div>
             <table class="wh-table wh-batches-table">
                 <thead>
@@ -206,7 +226,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry reflects whichever component (usually the rice) spoils first - the whole batch is pulled together once it does, since a sealed pack isn't unbundled to save the canned goods.</p>
+            <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry is the first item in the pack to expire; the whole batch is pulled when it does.</p>
         </section>
 
     </main>
@@ -216,7 +236,7 @@
     <div class="rd-modal">
         <div class="rd-modal-header"><h3>Record Distribution</h3>
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
-        <form method="POST" action="{{ url_for('barangay.inventory_record') }}" class="settings-form">
+        <form method="POST" action="{{ url_for('barangay.inventory_record') }}" class="settings-form" enctype="multipart/form-data">
             <div class="form-row">
                 <label for="bi-d-family">Family (optional)</label>
                 <select name="family_id" id="bi-d-family">
@@ -236,6 +256,10 @@
             <div class="form-row">
                 <label for="bi-d-reason">Note (optional)</label>
                 <input type="text" name="reason" id="bi-d-reason" placeholder="e.g. Distributed at evacuation center, Purok 3">
+            </div>
+            <div class="form-row">
+                <label for="bi-d-proof">Photo proof (optional)</label>
+                <input type="file" name="proof_photos" id="bi-d-proof" accept=".jpg,.jpeg,.png" multiple>
             </div>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">Record</button>

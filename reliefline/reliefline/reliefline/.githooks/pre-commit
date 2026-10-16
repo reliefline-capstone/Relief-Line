@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Keeps reliefline/database/reliefline_db.sql in sync with your live MariaDB/
+# MySQL on every commit, so `git push` always hands groupmates a working
+# snapshot of the current schema + data - .devcontainer/setup.sh loads this
+# exact file to provision a fresh database for anyone who opens the project.
+#
+# Works both inside the devcontainer (MariaDB, user "reliefline") and on a
+# local Windows/XAMPP checkout (MySQL, user "root", no password). No-ops
+# (does nothing, never blocks the commit) when mysqldump or the database
+# aren't reachable. Enabled per-checkout via:
+#     git config core.hooksPath .githooks
+# (done automatically by .devcontainer/setup.sh; run it once by hand on a
+# plain local clone.)
+set -euo pipefail
+
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DUMP_FILE="$PROJECT_DIR/reliefline/database/reliefline_db.sql"
+DB_NAME="reliefline_db"
+DB_HOST="127.0.0.1"
+
+# --- locate every mysqldump worth trying ------------------------------------
+# A PATH hit is not necessarily the right one: a Homebrew MySQL 8/9 client
+# (common on macOS once anything else installs mysql-client) can't load the
+# older mysql_native_password auth plugin that a real XAMPP/MariaDB server
+# uses, so it fails to authenticate against it while a same-vendor binary
+# succeeds. Rather than trust the first name found on PATH, collect every
+# candidate binary and let the credential probe below pick whichever one
+# actually authenticates.
+DUMP_BINS=()
+if command -v mysqldump >/dev/null 2>&1; then
+    DUMP_BINS+=("$(command -v mysqldump)")
+fi
+for candidate in \
+    "/Applications/XAMPP/xamppfiles/bin/mysqldump" \
+    "/opt/lampp/bin/mysqldump" \
+    "/c/xampp/mysql/bin/mysqldump.exe" \
+    "/d/program files/xamp/mysql/bin/mysqldump.exe" \
+    "/d/xampp/mysql/bin/mysqldump.exe" \
+    "/c/Program Files/MySQL/MySQL Server 8.0/bin/mysqldump.exe" \
+    "/c/Program Files/MariaDB 11.4/bin/mysqldump.exe"
+do
+    [ -x "$candidate" ] || continue
+    already_listed=0
+    for existing in "${DUMP_BINS[@]:-}"; do
+        [ "$existing" = "$candidate" ] && already_listed=1 && break
+    done
+    [ "$already_listed" -eq 0 ] && DUMP_BINS+=("$candidate")
+done
+[ "${#DUMP_BINS[@]}" -gt 0 ] || exit 0
+
+# --- pick the first (binary, credential) pair that actually authenticates ---
+# (a real dump probe - mysqladmin ping reports "alive" even on auth failure)
+# format: "user|password"
+CANDIDATES=("reliefline|reliefline_dev_pw" "root|")
+DUMP_BIN=""
+DB_USER=""
+DB_PASS=""
+for bin in "${DUMP_BINS[@]}"; do
+    for cand in "${CANDIDATES[@]}"; do
+        u="${cand%%|*}"
+        p="${cand#*|}"
+        if "$bin" -u "$u" ${p:+-p"$p"} -h "$DB_HOST" --no-data --skip-dump-date \
+            "$DB_NAME" >/dev/null 2>&1; then
+            DUMP_BIN="$bin"; DB_USER="$u"; DB_PASS="$p"; break 2
+        fi
+    done
+done
+[ -n "$DB_USER" ] || exit 0
+
+# --- dump and stage ---------------------------------------------------------
+"$DUMP_BIN" -u "$DB_USER" ${DB_PASS:+-p"$DB_PASS"} -h "$DB_HOST" "$DB_NAME" > "$DUMP_FILE"
+git add "$DUMP_FILE"

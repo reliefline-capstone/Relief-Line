@@ -94,13 +94,23 @@ def from_hls(h, l, s, a):
 NEUTRAL_HUE = 228 / 360   # the app's blue-grey
 
 
+SURFACE = (28, 31, 41)      # #1c1f29 - the dark card surface tints sit on
+
+
 def map_bg(c):
     r, g, b, a = c
     h, l, s = hls((r, g, b))
     if l >= 0.8:
         if s < 0.3 or l > 0.975:          # white / grey surfaces
             return from_hls(NEUTRAL_HUE, 0.135 + (1 - l) * 0.55, 0.18, a)
-        return from_hls(h, 0.17 + (1 - l) * 0.3, s * 0.45, a)   # pale tints
+        # Pale tints (badges, highlighted rows, icon boxes): a thin wash of
+        # the hue over the dark surface - just enough to read as "amber" or
+        # "green", never a loud coloured block.
+        tr, tg, tb = (v * 255 for v in colorsys.hls_to_rgb(h, 0.55, min(s, 0.75)))
+        # Near-white tints (whole highlighted rows, hover fills) get half the
+        # wash of badge-strength tints - a full-width band reads much louder.
+        k = 0.07 if l >= 0.96 else 0.14
+        return fmt(*(SURFACE[i] * (1 - k) + (tr, tg, tb)[i] * k for i in range(3)), a)
     return fmt(r, g, b, a)                 # accents / dark fills stay
 
 

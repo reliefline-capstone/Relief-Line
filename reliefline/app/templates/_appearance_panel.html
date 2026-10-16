@@ -1,0 +1,25 @@
+{% from "_macros.html" import icon with context %}
+{# Profile Settings - Appearance (every role). The Dark Mode switch is just a
+   [data-theme-toggle] button: base.html flips html[data-theme], saves it in
+   this browser (localStorage) and keeps aria-checked in sync. #}
+<section class="panel">
+    <div class="panel-header">
+        <h3>Appearance</h3>
+    </div>
+    <div class="settings-panel-body">
+        <div class="settings-form">
+            <button type="button" class="appearance-row" role="switch" aria-checked="false" data-theme-toggle>
+                <span class="appearance-icon">{{ icon('moon', 18) }}</span>
+                <span class="appearance-text">
+                    <strong>Dark Mode</strong>
+                    <span>Darker colours that are easier on the eyes at night.</span>
+                </span>
+                <span class="theme-switch" aria-hidden="true"><span class="theme-switch-knob"></span></span>
+            </button>
+        </div>
+        <aside class="settings-aside">
+            <h4>About this setting</h4>
+            <p>Saved on this device and browser only. Printed reports and receipts always use the light layout.</p>
+        </aside>
+    </div>
+</section>

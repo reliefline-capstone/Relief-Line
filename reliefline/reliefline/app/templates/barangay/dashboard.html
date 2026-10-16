@@ -79,7 +79,7 @@
 
             <section class="panel">
                 <div class="panel-header">
-                    <h3>{{ icon('users', 18, '#0f2547') }} Current Situation</h3>
+                    <h3>Current Situation</h3>
                 </div>
                 {% if not primary_event %}
                 <p class="empty-note">There is no active typhoon event right now.</p>
@@ -87,35 +87,31 @@
                 <div class="info-grid">
                     <div class="info-box">
                         <span>Affected Families</span>
-                        <strong>{{ "{:,}".format(affected_families) }}</strong>
+                        <strong>{{ "{:,}".format(event_totals.affected_families) }}</strong>
                     </div>
                     <div class="info-box">
                         <span>Affected Individuals</span>
-                        <strong>{{ "{:,}".format(latest_report.affected_individuals if latest_report else 0) }}</strong>
+                        <strong>{{ "{:,}".format(event_totals.affected_individuals) }}</strong>
                     </div>
                     <div class="info-box">
                         <span>Totally Damaged Houses</span>
-                        <strong>{{ "{:,}".format(latest_report.totally_damaged_houses if latest_report else 0) }}</strong>
+                        <strong>{{ "{:,}".format(event_totals.totally_damaged_houses) }}</strong>
                     </div>
                     <div class="info-box">
                         <span>Partially Damaged Houses</span>
-                        <strong>{{ "{:,}".format(latest_report.partially_damaged_houses if latest_report else 0) }}</strong>
+                        <strong>{{ "{:,}".format(event_totals.partially_damaged_houses) }}</strong>
                     </div>
                 </div>
                 <p class="form-hint" style="margin-top:12px;">
-                    {% if standing_verified %}
-                    These figures are from your latest Barangay Report for this event, as reviewed by MSWDO/CSWDO.
-                    {% else %}
-                    These figures are from your latest submitted Barangay Report and are still awaiting MSWDO/CSWDO review.
-                    {% endif %}
-                    To update them, submit a new <a href="{{ url_for('barangay.new_damage_report') }}">Barangay Report</a>.
+                    Totals for the whole {{ primary_event.event_name }} event, from {{ event_totals.reports }} submitted Barangay Report{{ '' if event_totals.reports == 1 else 's' }}.
+                    To add to them, submit a new <a href="{{ url_for('barangay.new_damage_report') }}">Barangay Report</a>.
                 </p>
                 {% endif %}
             </section>
 
             <section class="panel">
                 <div class="panel-header">
-                    <h3>{{ icon('map-pin', 18, '#0f2547') }} Barangay Profile</h3>
+                    <h3>Barangay Profile</h3>
                 </div>
                 <div class="info-grid">
                     <div class="info-box">
@@ -189,7 +185,7 @@
         <!-- Active Alerts -->
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
-                <h3>{{ icon('bell', 18, '#0f2547') }} Active Alerts for Brgy. {{ barangay.barangay_name }}</h3>
+                <h3>Active Alerts for Brgy. {{ barangay.barangay_name }}</h3>
                 <a href="{{ url_for('barangay.notifications') }}" class="link-manage">View All →</a>
             </div>
             {% for item in recent_alerts %}

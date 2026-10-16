@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, photo_viewer with context %}
 {% from "_filter_panel.html" import filter_panel, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Barangay Inventory - ReliefLine{% endblock %}
@@ -23,7 +23,7 @@
         <strong>{% if l.source_type == 'damaged_return' %}Returned - Damaged{% elif l.source_type == 'expired' %}{% if l.item_type == 'food_pack_expired' %}{{ 'Expired - Cleared' if l.delta < 0 else 'Expired - Flagged' }}{% else %}{{ 'Expired - Removed' if l.delta < 0 else 'Expired - Restocked' }}{% endif %}{% else %}{{ l.source_type|capitalize }}{% endif %}</strong>
         <span>{{ l.reason or '-' }}</span>
         {% if has_breakdown %}<span class="link-manage">View breakdown →</span>{% endif %}
-        {% if l.proof_photo_list %}<span class="link-manage" role="button" tabindex="0" data-open-modal="bi-proof-{{ l.log_id }}" style="cursor:pointer;">{{ icon('camera', 12) }} View proof ({{ l.proof_photo_list|length }}) →</span>{% endif %}
+        {% if l.proof_photo_list %}<span class="proof-chip" role="button" tabindex="0" data-open-modal="bi-proof-{{ l.log_id }}">{{ icon('camera', 12) }} {{ l.proof_photo_list|length }} photo{{ 's' if l.proof_photo_list|length != 1 }}</span>{% endif %}
     </div>
     <div class="wh-movement-amount">
         <strong class="{{ 'text-red' if l.delta < 0 else 'text-green' }}">{{ '+' if l.delta > 0 }}{{ "{:,}".format(l.delta) }}</strong>
@@ -49,17 +49,18 @@
 {% endif %}
 {% if l.proof_photo_list %}
 <div class="rd-modal-overlay" id="bi-proof-{{ l.log_id }}" hidden>
-    <div class="rd-modal" style="max-width:560px;">
+    <div class="rd-modal" style="max-width:600px;">
         <div class="rd-modal-header">
-            <h3>{{ icon('camera', 18, '#0f2547') }} Distribution Proof</h3>
+            <h3>Distribution Proof</h3>
             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
         </div>
-        <p class="form-hint">{{ l.reason or 'Distribution' }} · {{ "{:,}".format(-l.delta) }} food pack{{ 's' if -l.delta != 1 }} · {{ l.created_at|ph_time('%b %d, %Y · %I:%M %p') if l.created_at }}</p>
-        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin-top:10px;">
-            {% for name in l.proof_photo_list %}
-            {% set photo_url = url_for('static', filename='uploads/barangay_distributions/' ~ l.log_id ~ '/' ~ name) %}
-            <a href="{{ photo_url }}" target="_blank" title="Open full size"><img src="{{ photo_url }}" alt="Distribution proof photo" loading="lazy" style="width:100%; height:140px; object-fit:cover; border-radius:8px; border:1px solid #e3e7ef;"></a>
-            {% endfor %}
+        {% set photo_urls = [] %}
+        {% for name in l.proof_photo_list %}{% set _ = photo_urls.append(url_for('static', filename='uploads/barangay_distributions/' ~ l.log_id ~ '/' ~ name)) %}{% endfor %}
+        {{ photo_viewer(photo_urls, 'Distribution proof photo') }}
+        <div class="wh-info-rows" style="margin-top:14px;">
+            <div class="wh-info-row"><span>Given to</span><strong>{{ l.reason or 'Residents' }}</strong></div>
+            <div class="wh-info-row"><span>Food packs</span><strong>{{ "{:,}".format(-l.delta) }}</strong></div>
+            <div class="wh-info-row"><span>Recorded</span><strong>{{ l.created_at|ph_time('%b %d, %Y · %I:%M %p') if l.created_at }}</strong></div>
         </div>
     </div>
 </div>
@@ -258,11 +259,18 @@
                 <input type="text" name="reason" id="bi-d-reason" placeholder="e.g. Distributed at evacuation center, Purok 3">
             </div>
             <div class="form-row">
-                <label for="bi-d-proof">Photo proof (optional)</label>
-                <input type="file" name="proof_photos" id="bi-d-proof" accept=".jpg,.jpeg,.png" multiple>
+                {# Required - Record stays disabled until a photo is picked (also enforced in inventory_record). #}
+                <label>Photo proof *</label>
+                <label for="bi-d-proof" class="upload-dropzone">
+                    <span class="upload-dropzone-icon">{{ icon('camera', 22) }}</span>
+                    <strong data-default="Tap to upload photo proof">Tap to upload photo proof</strong>
+                    <span>JPG or PNG · multiple photos allowed</span>
+                    <input type="file" name="proof_photos" id="bi-d-proof" accept=".jpg,.jpeg,.png" multiple hidden>
+                </label>
+                <div class="upload-previews" id="bi-d-proof-previews" hidden></div>
             </div>
             <div class="rd-modal-actions">
-                <button type="submit" class="btn-decision btn-partial">Record</button>
+                <button type="submit" class="btn-decision btn-partial" id="bi-d-submit" disabled title="Attach a photo first">Record</button>
                 <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
             </div>
         </form>
@@ -313,6 +321,43 @@
             var suggested = opt ? opt.dataset.suggested : '';
             if (suggested) amountInput.value = suggested;
         });
+    }
+
+    // Photo proof dropzone: "N photos selected" + thumbnails, and a Remove link.
+    var proof = document.getElementById('bi-d-proof');
+    var previews = document.getElementById('bi-d-proof-previews');
+    if (proof && previews) {
+        var zone = proof.closest('.upload-dropzone');
+        var label = zone.querySelector('strong');
+        function render() {
+            var n = proof.files.length;
+            label.textContent = n ? n + ' photo' + (n > 1 ? 's' : '') + ' selected - tap to change' : label.dataset.default;
+            zone.classList.toggle('has-file', n > 0);
+            var submit = document.getElementById('bi-d-submit');
+            if (submit) { submit.disabled = !n; submit.title = n ? '' : 'Attach a photo first'; }
+            previews.innerHTML = '';
+            Array.prototype.forEach.call(proof.files, function (f) {
+                var img = document.createElement('img');
+                img.alt = f.name;
+                img.title = f.name;
+                img.src = URL.createObjectURL(f);
+                img.onload = function () { URL.revokeObjectURL(img.src); };
+                previews.appendChild(img);
+            });
+            if (n) {
+                var clear = document.createElement('button');
+                clear.type = 'button';
+                clear.className = 'upload-clear';
+                clear.textContent = 'Remove';
+                clear.addEventListener('click', function () { proof.value = ''; render(); });
+                previews.appendChild(clear);
+            }
+            previews.hidden = !n;
+        }
+        proof.addEventListener('change', render);
+        // Closing the modal without recording also forgets the picked photos.
+        var form = proof.form;
+        if (form) form.addEventListener('reset', function () { setTimeout(render, 0); });
     }
 })();
 </script>

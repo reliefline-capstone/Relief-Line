@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon with context %}
+{% from "_filter_panel.html" import filter_panel, fp_select, fp_date_range, f_url with context %}
+
+{% block title %}Distribution History{% if barangay %} - {{ barangay.barangay_name }}{% endif %} - ReliefLine{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
+<style>
+    .bd-proof-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .bd-proof-thumbs img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid #e3e7ef; display: block; }
+    .bd-no-proof { font-size: 12px; color: #8a94a6; }
+    html[data-theme="dark"] .bd-proof-thumbs img { border: 1px solid #393d4d; border-radius: 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    {% set active_page = 'gis_map' %}
+    {% include "cswdo/_sidebar.html" %}
+
+    <main class="dashboard-main">
+
+        <div class="page-header">
+            <div>
+                <div class="wh-title-row">
+                    <a href="{{ url_for('cswdo.gis_map', barangay_id=barangay.barangay_id) if barangay else url_for('cswdo.gis_map') }}" class="wh-back-btn" title="Back to GIS Map" aria-label="Back to GIS Map">{{ icon('arrow-left', 18) }}</a>
+                    <h2>Distribution History{% if barangay %} - Brgy. {{ barangay.barangay_name }}{% endif %}</h2>
+                </div>
+                <p>Food packs the barangay recorded as handed out to residents, with the photo proof they attached.</p>
+            </div>
+        </div>
+
+        {% set EP = 'cswdo.barangay_distribution_history' %}
+        {% set proof_labels = {'with': 'With photo proof', 'without': 'Without photo proof'} %}
+        {% set fargs = {'barangay_id': barangay.barangay_id if barangay else None, 'proof': proof_filter if proof_filter != 'all' else None,
+                        'date_from': date_from or None, 'date_to': date_to or None} %}
+        {% set chips = [] %}
+        {% if fargs.proof %}{% set _ = chips.append({'label': 'Proof', 'value': proof_labels.get(proof_filter, proof_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'proof': None})}) %}{% endif %}
+        {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
+
+        {% call filter_panel(chips, url_for(EP, barangay_id=barangay.barangay_id if barangay else None), summary=(logs|length) ~ ' distribution' ~ ('s' if logs|length != 1 else '')) %}
+            {% call fp_select('Barangay', 'barangay_id', 'map-pin') %}
+                <option value="">Select a barangay</option>
+                {% for b in barangay_options %}
+                <option value="{{ b.barangay_id }}" {{ 'selected' if barangay and b.barangay_id == barangay.barangay_id }}>{{ b.barangay_name }}</option>
+                {% endfor %}
+            {% endcall %}
+            {% call fp_select('Proof', 'proof', 'camera') %}
+                <option value="all">All distributions</option>
+                {% for key, label in proof_labels.items() %}
+                <option value="{{ key }}" {{ 'selected' if proof_filter == key }}>{{ label }}</option>
+                {% endfor %}
+            {% endcall %}
+            {{ fp_date_range('Date', 'date_from', date_from, 'date_to', date_to) }}
+        {% endcall %}
+
+        {% if not barangay %}
+        <section class="panel"><p class="empty-note">Select a barangay to see its distribution history.</p></section>
+        {% else %}
+
+        <section class="stat-cards stat-cards-4">
+            <div class="stat-card">
+                <div class="stat-icon orange">{{ icon('truck', 18, '#e67e22') }}</div>
+                <span class="stat-value">{{ "{:,}".format(total_packs) }}</span>
+                <span class="stat-label">Food Packs Distributed</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
+                <span class="stat-value">{{ "{:,}".format(families_reached) }}</span>
+                <span class="stat-label">Named Families Reached</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">{{ icon('camera', 18, '#3867d6') }}</div>
+                <span class="stat-value">{{ with_proof }} / {{ logs|length }}</span>
+                <span class="stat-label">With Photo Proof</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">{{ icon('package', 18, '#20bf6b') }}</div>
+                <span class="stat-value">{{ "{:,}".format(on_hand) if on_hand is not none else '-' }}</span>
+                <span class="stat-label">Food Packs On Hand Now</span>
+            </div>
+        </section>
+
+        <section class="panel wh-table-panel" style="margin-top:16px;">
+            <div class="panel-header"><h3>Distributions</h3></div>
+            <table class="wh-table">
+                <thead>
+                    <tr><th>DATE</th><th>DISTRIBUTED TO / NOTE</th><th>PACKS</th><th>PHOTO PROOF</th><th>RECORDED BY</th></tr>
+                </thead>
+                <tbody>
+                    {% for l in logs %}
+                    <tr>
+                        <td>{{ l.created_at|ph_time('%b %d, %Y') if l.created_at }}<span class="wh-sub">{{ l.created_at|ph_time('%I:%M %p') if l.created_at }}</span></td>
+                        <td>
+                            <strong>{{ l.family.family_name if l.family else 'Bulk / no specific family' }}</strong>
+                            <span class="wh-sub">{{ l.reason or '-' }}</span>
+                        </td>
+                        <td><strong class="text-red">{{ "{:,}".format(-l.delta) }}</strong></td>
+                        <td>
+                            {% if l.proof_photo_list %}
+                            <div class="bd-proof-thumbs">
+                                {% for name in l.proof_photo_list %}
+                                {% set photo_url = url_for('static', filename='uploads/barangay_distributions/' ~ l.log_id ~ '/' ~ name) %}
+                                <a href="{{ photo_url }}" target="_blank" title="Open full size"><img src="{{ photo_url }}" alt="Distribution proof photo" loading="lazy"></a>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span class="bd-no-proof">No photo</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ l.updated_by_user.name if l.updated_by_user else '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="empty-note" style="text-align:center; padding:24px;">
+                        {% if proof_filter != 'all' or date_from or date_to %}No distribution matches the selected filters.
+                        {% else %}This barangay hasn't recorded any distribution yet.{% endif %}
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}

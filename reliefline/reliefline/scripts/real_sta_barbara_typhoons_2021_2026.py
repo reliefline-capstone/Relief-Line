@@ -20,8 +20,8 @@ Unaffected barangays are 0 rows - CONFIRMED zeros, loaded as 0 (they count
 toward the share fit like Urdaneta's and Calasiao's zeros).
 
 Each report links to every storm its "Name of Typhoon" column names (see
-_storms.py; the typhoon calendar is built from these reports - see
-scripts/typhoon_calendar_from_reports.py) - one relief_events row each, not
+_storms.py; every named storm must be on the PAGASA storm list - see
+scripts/typhoon_calendar_pagasa.py) - one relief_events row each, not
 a per-storm split the source data can't support. Combined reports:
   Luis & Maymay & Neneng & Pilandok (2026) -> luis_2026, maymay_2026,
                                      neneng_2026, pilandok_2026

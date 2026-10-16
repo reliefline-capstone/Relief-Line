@@ -133,17 +133,22 @@
                         <td>{% if f.senior_count %}<span class="fam-count-badge fam-count-senior">{{ f.senior_count }}</span>{% else %}<span class="fam-count-zero">0</span>{% endif %}</td>
                         <td>{% if f.children_count %}<span class="fam-count-badge fam-count-child">{{ f.children_count }}</span>{% else %}<span class="fam-count-zero">0</span>{% endif %}</td>
                         <td>{{ f.contact_number or '-' }}</td>
-                        <td style="display:flex; gap:6px;">
-                            {% if not show_archived %}
-                            <button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-family-modal-{{ f.family_id }}">Edit</button>
-                            {% endif %}
-                            <form method="POST" action="{{ url_for('barangay.family_profile_archive', family_id=f.family_id, archived='1' if show_archived else none) }}" style="display:inline;">
-                                <button type="submit" class="admin-btn admin-btn-outline">{{ 'Restore' if show_archived else 'Archive' }}</button>
-                            </form>
-                            {% if show_archived %}
-                            <form method="POST" action="{{ url_for('barangay.family_profile_delete', family_id=f.family_id) }}" id="delete-family-form-{{ f.family_id }}"></form>
-                            <button type="button" class="admin-btn admin-btn-outline-danger" data-open-modal="delete-family-modal-{{ f.family_id }}">Delete</button>
-                            {% endif %}
+                        {# The flex row lives on an inner div - display:flex on the <td>
+                           itself stops it being a table cell, so its height and row
+                           lines no longer lined up with the rest of the row. #}
+                        <td>
+                            <div class="admin-row-actions">
+                                {% if not show_archived %}
+                                <button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-family-modal-{{ f.family_id }}">Edit</button>
+                                {% endif %}
+                                <form method="POST" action="{{ url_for('barangay.family_profile_archive', family_id=f.family_id, archived='1' if show_archived else none) }}" style="display:inline;">
+                                    <button type="submit" class="admin-btn admin-btn-outline">{{ 'Restore' if show_archived else 'Archive' }}</button>
+                                </form>
+                                {% if show_archived %}
+                                <form method="POST" action="{{ url_for('barangay.family_profile_delete', family_id=f.family_id) }}" id="delete-family-form-{{ f.family_id }}"></form>
+                                <button type="button" class="admin-btn admin-btn-outline-danger" data-open-modal="delete-family-modal-{{ f.family_id }}">Delete</button>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% else %}

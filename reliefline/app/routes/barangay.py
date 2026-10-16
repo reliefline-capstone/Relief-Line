@@ -1841,6 +1841,11 @@ def inventory_record():
     if err:
         flash(err, "error")
         return redirect(url_for("barangay.inventory"))
+    # Every distribution needs a photo of the hand-over as proof (same rule
+    # as mark_family_received).
+    if not proof_files:
+        flash("Attach a photo of the hand-over to record this distribution.", "error")
+        return redirect(url_for("barangay.inventory"))
 
     err = _record_barangay_distribution(
         barangay.barangay_id, amount, reason,
@@ -1891,6 +1896,11 @@ def mark_family_received(report_id, raf_id):
     proof_files, err = _distribution_proof_files()
     if err:
         flash(err, "error")
+        return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
+    # A family is only marked as having received its packs with a photo of
+    # the hand-over as proof.
+    if not proof_files:
+        flash(f"Attach a photo of the hand-over to mark {raf.family_name} as received.", "error")
         return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
 
     err = _record_barangay_distribution(

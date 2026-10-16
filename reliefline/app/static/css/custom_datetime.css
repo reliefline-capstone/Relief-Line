@@ -289,14 +289,14 @@
     html[data-theme="dark"] .cdt-popup { background: #1c1f29; border: 1px solid #3a3e4e; border-radius: 10px; }
     html[data-theme="dark"] .cdt-cal-title { color: #93a4c8; }
     html[data-theme="dark"] .cdt-cal-title-btn { border: none; background: none; border-radius: 7px; }
-    html[data-theme="dark"] .cdt-cal-title-btn:hover { background: #221e3f; color: #a6a0e6; }
+    html[data-theme="dark"] .cdt-cal-title-btn:hover { background: #1f2136; color: #a6a0e6; }
     html[data-theme="dark"] .cdt-nav { border: none; border-radius: 7px; background: none; color: #b1b5c2; }
     html[data-theme="dark"] .cdt-nav:hover { background: #222531; color: #a6a0e6; }
     html[data-theme="dark"] .cdt-dow { color: #8a94a6; }
     html[data-theme="dark"] .cdt-day { border: none; border-radius: 8px; background: none; color: #93a4c8; }
-    html[data-theme="dark"] .cdt-day:hover { background: #221e3f; }
+    html[data-theme="dark"] .cdt-day:hover { background: #1f2136; }
     html[data-theme="dark"] .cdt-day.is-outside { color: #cdcfe0; }
-    html[data-theme="dark"] .cdt-day.is-today { background: #221e3f; color: #a6a0e6; }
+    html[data-theme="dark"] .cdt-day.is-today { background: #1f2136; color: #a6a0e6; }
     html[data-theme="dark"] .cdt-day.is-selected, html[data-theme="dark"] .cdt-day.is-selected:hover { background: #5347ce; color: #ffffff; }
     html[data-theme="dark"] .cdt-day.is-disabled { color: #d3d8e0; background: none; }
     html[data-theme="dark"] .cdt-cal-foot { border-top: 1px solid #373b4b; }
@@ -308,6 +308,6 @@
     html[data-theme="dark"] .cdt-col:last-child { border-right: none; }
     html[data-theme="dark"] .cdt-col::-webkit-scrollbar-thumb { background: #272a38; border-radius: 3px; }
     html[data-theme="dark"] .cdt-col-item { border-radius: 7px; color: #d1d1d1; }
-    html[data-theme="dark"] .cdt-col-item:hover { background: #221e3f; color: #dedede; }
+    html[data-theme="dark"] .cdt-col-item:hover { background: #1f2136; color: #dedede; }
     html[data-theme="dark"] .cdt-col-item.is-selected { background: #5347ce; color: #ffffff; }
 }

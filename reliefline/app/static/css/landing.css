@@ -325,7 +325,11 @@ html { scroll-behavior: smooth; }
 .lp-btn-secondary:hover { background: #e2e6ee; }
 
 /* ---- Shared section layout ---- */
-.lp-section { padding: 80px 28px; }
+/* overflow-x: clip - decorative layers like .lp-about-showcase::before
+   (inset -9% past the column) otherwise poked ~50px past the viewport on
+   1024-1280px screens and gave the whole page a sideways scroll. clip (not
+   hidden) leaves the vertical bleed and position: sticky untouched. */
+.lp-section { padding: 80px 28px; overflow-x: clip; }
 .lp-section-alt { background: var(--lp-bg-alt); }
 
 /* Three-Level Architecture: a relief-operations photo behind the cards,

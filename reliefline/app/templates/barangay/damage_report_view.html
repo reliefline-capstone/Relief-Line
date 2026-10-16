@@ -198,12 +198,13 @@
                     {% elif report.status == 'fulfilled' %}
                     <form method="POST" action="{{ url_for('barangay.mark_family_received', report_id=report.report_id, raf_id=rf.id) }}" class="fam-distribute-action" enctype="multipart/form-data">
                         <input type="number" name="packs_given" min="1" value="{{ rf.suggested_packs }}" class="fam-distribute-packs" title="Food packs given">
-                        <label class="fam-proof-btn" title="Attach photo proof (optional)">
-                            {{ icon('camera', 14) }} <span class="fam-proof-label">Photo</span>
+                        {# Photo proof is required - Mark Received stays disabled until one is attached (also enforced in mark_family_received). #}
+                        <label class="fam-proof-btn" title="Attach a photo of the hand-over (required)">
+                            {{ icon('camera', 14) }} <span class="fam-proof-label">Add Photo *</span>
                             <input type="file" name="proof_photos" accept=".jpg,.jpeg,.png" multiple hidden
-                                   onchange="this.previousElementSibling.textContent = this.files.length ? this.files.length + ' photo' + (this.files.length > 1 ? 's' : '') : 'Photo'; this.parentElement.classList.toggle('has-file', this.files.length > 0);">
+                                   onchange="var n = this.files.length; this.previousElementSibling.textContent = n ? n + ' photo' + (n > 1 ? 's' : '') : 'Add Photo *'; this.parentElement.classList.toggle('has-file', n > 0); var b = this.form.querySelector('.fam-mark-received-btn'); b.disabled = !n; b.title = n ? '' : 'Attach a photo first';">
                         </label>
-                        <button type="submit" class="fam-mark-received-btn">Mark Received</button>
+                        <button type="submit" class="fam-mark-received-btn" disabled title="Attach a photo first">Mark Received</button>
                     </form>
                     {% else %}
                     <span class="fam-distribute-action fam-distribute-waiting">Not yet delivered</span>

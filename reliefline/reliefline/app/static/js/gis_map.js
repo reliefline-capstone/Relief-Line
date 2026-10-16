@@ -850,6 +850,7 @@ document.addEventListener('DOMContentLoaded', function () {
         search: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
         chevronRight: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
         close: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+        camera: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
         chevronLeft: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
     };
 
@@ -867,6 +868,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<button type="button" class="btn-outline dd-full-width" data-external="barangay-reports" data-lgu="' + escapeHtml(lgu) + '"' +
             (barangayName ? ' data-barangay="' + escapeHtml(barangayName) + '"' : '') +
             ' style="justify-content:center; margin-top:10px;">' + ICON.clipboard + ' View Barangay Reports</button>';
+    }
+
+    // Barangay detail only (CSWDO/MSWDO) - this barangay's own hand-outs to
+    // residents with their photo proof (cswdo.barangay_distribution_history).
+    function barangayDistributionsButtonHtml(barangayId) {
+        if (!GIS_CONFIG.barangayDistributionsUrl || !barangayId) return '';
+        return '<button type="button" class="btn-outline dd-full-width" data-external="barangay-distributions" data-barangay-id="' + barangayId + '"' +
+            ' style="justify-content:center; margin-top:10px;">' + ICON.camera + ' View Distribution History</button>';
     }
 
     function renderOverviewPanel() {
@@ -943,8 +952,7 @@ document.addEventListener('DOMContentLoaded', function () {
             '<div class="dd-summary-row"><span>Food Packs Requested</span><strong>' + fmt(relief.requested) + '</strong></div>' +
             '<div class="dd-summary-row"><span>Food Packs Approved</span><strong>' + fmt(relief.approved) + '</strong></div>' +
             '<div class="dd-summary-row"><span>Food Packs Released</span><strong class="text-green">' + fmt(relief.released) + '</strong></div>' +
-            '<div class="dd-summary-row"><span>Remaining Need</span><strong class="text-red">' + fmt(relief.remaining) + '</strong></div>' +
-            '<div class="dd-summary-row"><span>Delivery Progress</span><strong>' + relief.progress_pct + '%</strong></div>';
+            '<div class="dd-summary-row"><span>Remaining Need</span><strong class="text-red">' + fmt(relief.remaining) + '</strong></div>';
     }
 
     function renderMunicipalityPanel(lgu) {
@@ -972,13 +980,6 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '</section>';
 
         html += '<section class="panel"><div class="panel-header"><h3>Relief Statistics</h3></div>' + reliefRows(m.relief) + '</section>';
-
-        html += '<section class="panel"><div class="panel-header"><h3>Demand &amp; Allocation</h3></div>';
-        html += '<div class="dd-summary-row"><span>Predicted Demand</span><strong>' + fmt(m.predicted_demand) + '</strong></div>';
-        html += '<div class="dd-summary-row"><span>Available Allocation</span><strong>' + fmt(m.relief.approved) + '</strong></div>';
-        html += '<div class="dd-summary-row"><span>Shortage</span><strong class="' + (m.shortage > 0 ? 'text-red' : 'text-green') + '">' + fmt(m.shortage) + '</strong></div>';
-        html += '<div class="dd-summary-row"><span>Allocation Status</span><span class="badge-status badge-status-' + (m.shortage > 0 ? 'pending' : 'released') + '">' + escapeHtml(m.allocation_status) + '</span></div>';
-        html += '</section>';
 
         if (IS_MUNI_ONLY) {
             html += '<section class="panel">';
@@ -1010,7 +1011,6 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '<section class="panel"><div class="panel-header"><h3>Warehouse Information</h3></div>';
         if (m.warehouse) {
             html += '<div class="dd-summary-row"><span>Assigned Warehouse</span><strong>' + escapeHtml(m.warehouse.name) + '</strong></div>';
-            html += '<div class="dd-summary-row"><span>Approx. Distance</span><strong>' + (m.warehouse.distance_km != null ? (m.warehouse.distance_km < 0.5 ? 'Same municipality' : '~' + m.warehouse.distance_km + ' km') : '-') + '</strong></div>';
             html += '<div class="dd-summary-row"><span>Current Stock</span><strong>' + (m.warehouse.food_pack_qty != null ? fmt(m.warehouse.food_pack_qty) + ' / ' + fmt(m.warehouse.capacity) + ' packs' : '-') + '</strong></div>';
         } else {
             html += '<p class="empty-note">No warehouse data available.</p>';
@@ -1104,17 +1104,28 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!b.distribution_history.length) {
             html += '<p class="empty-note">No distribution records for this barangay yet.</p>';
         } else {
+            // Latest 3 only; View All goes to the CSWDO Deliveries page filtered
+            // to this barangay, or (PSWDO - its Distribution page leaves out
+            // CSWDO-sourced deliveries) reveals the rest of the rows in place.
             html += '<table class="wh-table"><thead><tr><th>DATE</th><th>PACKS</th><th>STATUS</th></tr></thead><tbody>';
-            b.distribution_history.forEach(function (d) {
-                html += '<tr><td>' + escapeHtml(d.date) + '</td><td>' + fmt(d.packs) + '</td>' +
+            b.distribution_history.forEach(function (d, i) {
+                html += '<tr' + (i >= 3 ? ' class="gis-dist-extra" hidden' : '') + '><td>' + escapeHtml(d.date) + '</td><td>' + fmt(d.packs) + '</td>' +
                     '<td><span class="badge-status badge-status-' + d.status + '">' + escapeHtml(d.status_label) + '</span></td></tr>';
             });
             html += '</tbody></table>';
+            if (GIS_CONFIG.deliveriesUrl) {
+                html += '<button type="button" class="btn-outline dd-full-width" data-external="barangay-deliveries" data-barangay-id="' + state.barangayId + '"' +
+                    ' style="justify-content:center; margin-top:10px;">View All</button>';
+            } else if (b.distribution_history.length > 3) {
+                html += '<button type="button" class="btn-outline dd-full-width" data-gis-dist-expand' +
+                    ' style="justify-content:center; margin-top:10px;">View All (' + b.distribution_history.length + ')</button>';
+            }
         }
         html += '</section>';
 
         html += '<section class="panel">';
         html += barangayReportsButtonHtml(b.lgu, b.name);
+        html += barangayDistributionsButtonHtml(state.barangayId);
         html += '</section>';
         return html;
     }
@@ -1455,6 +1466,12 @@ document.addEventListener('DOMContentLoaded', function () {
             setLevel(level, lgu, barangayId ? parseInt(barangayId, 10) : null, barangayName);
             return;
         }
+        var expandEl = e.target.closest('[data-gis-dist-expand]');
+        if (expandEl) {
+            expandEl.closest('section').querySelectorAll('.gis-dist-extra').forEach(function (tr) { tr.hidden = false; });
+            expandEl.remove();
+            return;
+        }
         var extEl = e.target.closest('[data-external]');
         if (extEl) {
             var lguVal = extEl.getAttribute('data-lgu');
@@ -1463,6 +1480,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (kind === 'barangay-reports' && GIS_CONFIG.barangayReportsUrl) {
                 var brgy = extEl.getAttribute('data-barangay');
                 window.location.href = GIS_CONFIG.barangayReportsUrl + (brgy ? '?tab=all&q=' + encodeURIComponent(brgy) : '');
+            } else if (kind === 'barangay-deliveries' && GIS_CONFIG.deliveriesUrl) {
+                window.location.href = GIS_CONFIG.deliveriesUrl + '?barangay_id=' + encodeURIComponent(extEl.getAttribute('data-barangay-id'));
+            } else if (kind === 'barangay-distributions' && GIS_CONFIG.barangayDistributionsUrl) {
+                window.location.href = GIS_CONFIG.barangayDistributionsUrl + '?barangay_id=' + encodeURIComponent(extEl.getAttribute('data-barangay-id'));
             } else if (kind === 'report') {
                 window.location.href = '/pswdo/gis-map/municipality/' + encodeURIComponent(lguVal) + '/report.csv' + (eventId ? '?event_id=' + eventId : '');
             }

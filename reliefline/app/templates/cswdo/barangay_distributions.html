@@ -1,18 +1,13 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, photo_viewer with context %}
 {% from "_filter_panel.html" import filter_panel, fp_select, fp_date_range, f_url with context %}
 
-{% block title %}Distribution History{% if barangay %} - {{ barangay.barangay_name }}{% endif %} - ReliefLine{% endblock %}
+{% block title %}Family Distributions{% if barangay %} - {{ barangay.barangay_name }}{% endif %} - ReliefLine{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
-<style>
-    .bd-proof-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
-    .bd-proof-thumbs img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid #e3e7ef; display: block; }
-    .bd-no-proof { font-size: 12px; color: #8a94a6; }
-    html[data-theme="dark"] .bd-proof-thumbs img { border: 1px solid #393d4d; border-radius: 6px; }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -27,7 +22,7 @@
             <div>
                 <div class="wh-title-row">
                     <a href="{{ url_for('cswdo.gis_map', barangay_id=barangay.barangay_id) if barangay else url_for('cswdo.gis_map') }}" class="wh-back-btn" title="Back to GIS Map" aria-label="Back to GIS Map">{{ icon('arrow-left', 18) }}</a>
-                    <h2>Distribution History{% if barangay %} - Brgy. {{ barangay.barangay_name }}{% endif %}</h2>
+                    <h2>Family Distributions{% if barangay %} - Brgy. {{ barangay.barangay_name }}{% endif %}</h2>
                 </div>
                 <p>Food packs the barangay recorded as handed out to residents, with the photo proof they attached.</p>
             </div>
@@ -101,12 +96,12 @@
                         <td><strong class="text-red">{{ "{:,}".format(-l.delta) }}</strong></td>
                         <td>
                             {% if l.proof_photo_list %}
-                            <div class="bd-proof-thumbs">
-                                {% for name in l.proof_photo_list %}
-                                {% set photo_url = url_for('static', filename='uploads/barangay_distributions/' ~ l.log_id ~ '/' ~ name) %}
-                                <a href="{{ photo_url }}" target="_blank" title="Open full size"><img src="{{ photo_url }}" alt="Distribution proof photo" loading="lazy"></a>
+                            <button type="button" class="bd-proof-thumbs" data-open-modal="bd-proof-{{ l.log_id }}" title="View photo proof">
+                                {% for name in l.proof_photo_list[:3] %}
+                                <img src="{{ url_for('static', filename='uploads/barangay_distributions/' ~ l.log_id ~ '/' ~ name) }}" alt="Distribution proof photo" loading="lazy">
                                 {% endfor %}
-                            </div>
+                                {% if l.proof_photo_list|length > 3 %}<span class="bd-proof-more">+{{ l.proof_photo_list|length - 3 }}</span>{% endif %}
+                            </button>
                             {% else %}
                             <span class="bd-no-proof">No photo</span>
                             {% endif %}
@@ -122,8 +117,32 @@
                 </tbody>
             </table>
         </section>
+
+        {% for l in logs if l.proof_photo_list %}
+        <div class="rd-modal-overlay" id="bd-proof-{{ l.log_id }}" hidden>
+            <div class="rd-modal" style="max-width:600px;">
+                <div class="rd-modal-header">
+                    <h3>Distribution Proof</h3>
+                    <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+                </div>
+                {% set photo_urls = [] %}
+                {% for name in l.proof_photo_list %}{% set _ = photo_urls.append(url_for('static', filename='uploads/barangay_distributions/' ~ l.log_id ~ '/' ~ name)) %}{% endfor %}
+                {{ photo_viewer(photo_urls, 'Distribution proof photo') }}
+                <div class="wh-info-rows" style="margin-top:14px;">
+                    <div class="wh-info-row"><span>Given to</span><strong>{{ l.family.family_name if l.family else 'Bulk / no specific family' }}</strong></div>
+                    {% if l.reason %}<div class="wh-info-row"><span>Note</span><strong>{{ l.reason }}</strong></div>{% endif %}
+                    <div class="wh-info-row"><span>Food packs</span><strong>{{ "{:,}".format(-l.delta) }}</strong></div>
+                    <div class="wh-info-row"><span>Recorded</span><strong>{{ l.created_at|ph_time('%b %d, %Y · %I:%M %p') if l.created_at }}{% if l.updated_by_user %} · {{ l.updated_by_user.name }}{% endif %}</strong></div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
         {% endif %}
 
     </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 {% endblock %}

@@ -149,18 +149,20 @@
                         <td>{{ r.event.event_name if r.event else '-' }}</td>
                         <td>{{ r.submitted_at.strftime('%b %d, %Y · %I:%M %p') if r.submitted_at else '-' }}</td>
                         <td><span class="badge-status badge-status-{{ r.status }}"><i class="priority-dot"></i> {{ status_labels.get(r.status, r.status) }}</span></td>
-                        <td style="display:flex; gap:8px; align-items:center;">
-                            {% if r.status != 'draft' %}
-                            <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
-                            {% endif %}
-                            {% if r.status in ('draft', 'returned') %}
-                            <a href="{{ url_for('barangay.edit_damage_report', report_id=r.report_id) }}" class="btn-view-sm btn-sm-blue" style="text-decoration:none;">{{ icon('file-text', 12, 'white') }} {{ 'Resume' if r.status == 'draft' else 'Edit' }}</a>
-                            {% endif %}
-                            {% if r.status == 'draft' %}
-                            <form method="POST" action="{{ url_for('barangay.delete_damage_report', report_id=r.report_id) }}" class="draft-delete-form" data-ref="{{ r.ref }}">
-                                <button type="submit" class="btn-view-sm btn-sm-danger" style="cursor:pointer;">{{ icon('trash-2', 12, 'white') }} Delete</button>
-                            </form>
-                            {% endif %}
+                        <td>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                {% if r.status != 'draft' %}
+                                <a href="{{ url_for('barangay.view_damage_report', report_id=r.report_id) }}" class="btn-view">{{ icon('eye', 14) }} View</a>
+                                {% endif %}
+                                {% if r.status in ('draft', 'returned') %}
+                                <a href="{{ url_for('barangay.edit_damage_report', report_id=r.report_id) }}" class="btn-view-sm btn-sm-blue" style="text-decoration:none;">{{ icon('file-text', 12, 'white') }} {{ 'Resume' if r.status == 'draft' else 'Edit' }}</a>
+                                {% endif %}
+                                {% if r.status == 'draft' %}
+                                <form method="POST" action="{{ url_for('barangay.delete_damage_report', report_id=r.report_id) }}" class="draft-delete-form" data-ref="{{ r.ref }}">
+                                    <button type="submit" class="btn-view-sm btn-sm-danger" style="cursor:pointer;">{{ icon('trash-2', 12, 'white') }} Delete</button>
+                                </form>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

@@ -24,10 +24,22 @@
             if (!officeSelect) return bp.querySelector('[data-bp-office]');
             return bp.querySelector('[data-bp-office="' + officeSelect.value + '"]');
         }
+        var totalBar = bp.querySelector('.bp-total');
         function refresh() {
             var manual = isManual();
             body.hidden = !manual;
+            if (totalBar) totalBar.hidden = !manual;
+            // Selected-mode card + batches with packs taken get highlighted.
+            bp.querySelectorAll('.bp-seg').forEach(function (seg) {
+                seg.classList.toggle('is-on', seg.querySelector('input').checked);
+            });
+            bp.querySelectorAll('.bp-batch').forEach(function (card) {
+                var q = card.querySelector('.bp-qty');
+                card.classList.toggle('is-taken', !!q && (parseInt(q.value, 10) || 0) > 0);
+            });
             var active = activeOffice();
+            var pickHint = bp.querySelector('[data-bp-pick-office]');
+            if (pickHint) pickHint.hidden = !manual || !!active;
             bp.querySelectorAll('[data-bp-office]').forEach(function (g) {
                 var on = manual && g === active;
                 g.hidden = !on;

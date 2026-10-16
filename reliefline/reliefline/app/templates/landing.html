@@ -11,6 +11,8 @@
 <!-- Marketing page only - no auth actions flash here (sign-in lives on
      /login now), so base.html's corner toast is suppressed rather than
      pulling in dashboard.css just to style it. -->
+{# Public page: keeps its own light look, no dark mode. #}
+{% block theme_init %}{% endblock %}
 {% block global_flash %}{% endblock %}
 
 {% block content %}

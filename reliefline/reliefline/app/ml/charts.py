@@ -119,6 +119,20 @@ def cover_chart(months, stock):
                      for i, m in enumerate(months)],
         "expected_pts": " ".join(f"{x(i):.1f},{y(v):.1f}" for i, v in enumerate(cum_e)),
         "p90_pts": " ".join(f"{x(i):.1f},{y(v):.1f}" for i, v in enumerate(cum_p)),
+        # Shaded range between the two scenarios (P90 line out, expected line
+        # back) and a soft fill under the expected line. Overlaid, not stacked:
+        # every line is still read from zero.
+        "band_pts": " ".join([f"{x(i):.1f},{y(v):.1f}" for i, v in enumerate(cum_p)] +
+                             [f"{x(i):.1f},{y(v):.1f}" for i, v in reversed(list(enumerate(cum_e)))]),
+        "area_expected_pts": " ".join([f"{x(i):.1f},{y(v):.1f}" for i, v in enumerate(cum_e)] +
+                                      [f"{x(n):.1f},{y(0):.1f}", f"{x(0):.1f},{y(0):.1f}"]),
+        # One hover point per month end, for the dots and the tooltip.
+        "points": [{"x": round(x(i), 1), "ye": round(y(cum_e[i]), 1), "yp": round(y(cum_p[i]), 1),
+                    "hit_x": round(x(i - 1), 1), "hit_w": round(step_x, 1),
+                    "label": f"End of {full_month_name(i - 1)}",
+                    "expected": _fmt(cum_e[i]), "p90": _fmt(cum_p[i]),
+                    "left_expected": int(round(stock - cum_e[i])), "left_p90": int(round(stock - cum_p[i]))}
+                   for i in range(1, n + 1)],
         "short_expected_pts": shortfall(cum_e, cross_e),
         "short_p90_pts": shortfall(cum_p, cross_p),
         "end_x": round(x(n), 1),

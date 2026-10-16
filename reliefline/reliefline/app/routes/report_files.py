@@ -152,7 +152,7 @@ def generate_pdf(report):
     area_label = "Barangay" if lh["office"] == "Office of the Punong Barangay" else "Municipality"
     meta = [
         ("Coverage", report["coverage"]),
-        ("Typhoon Event", report["event_name"]),
+        (report.get("event_label", "Typhoon Event"), report["event_name"]),
         (area_label, report["municipality_label"]),
         ("Date Generated", report["date_generated"].strftime("%B %d, %Y")),
         ("No. of Records", report["record_count"]),
@@ -242,7 +242,7 @@ def generate_excel(report):
     area_label = "Barangay" if lh["office"] == "Office of the Punong Barangay" else "Municipality"
     meta_lines = [
         f"Coverage: {report['coverage']}",
-        f"Typhoon Event: {report['event_name']}",
+        f"{report.get('event_label', 'Typhoon Event')}: {report['event_name']}",
         f"{area_label}: {report['municipality_label']}",
         f"Date Generated: {report['date_generated'].strftime('%B %d, %Y')}",
         f"No. of Records: {report['record_count']}",

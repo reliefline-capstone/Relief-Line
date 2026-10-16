@@ -46,8 +46,8 @@ class DisasterEvent(db.Model):
                        default="province", server_default="province")
     city_municipality = db.Column(db.String(100), nullable=True)
 
-    # True only for the historical-calendar rows (one per storm named in a
-    # real relief report) seeded by scripts/typhoon_calendar_from_reports.py
+    # True only for the historical-calendar rows (one per storm on the
+    # PAGASA 2021-2026 list) seeded by scripts/typhoon_calendar_pagasa.py
     # (status='ended', scope='province')
     # - kept out of every staff-facing event picker (see the is_reference=False
     # filters in cswdo.py/reports.py/barangay.py/pswdo.py) so 2021-2026

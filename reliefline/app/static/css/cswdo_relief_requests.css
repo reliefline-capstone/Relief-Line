@@ -388,7 +388,7 @@
 @media screen {
     html[data-theme="dark"] .btn-primary { background: #5347ce; color: #ffffff; border: none; border-radius: 8px; }
     html[data-theme="dark"] .btn-primary:hover { background: #4436b4; }
-    html[data-theme="dark"] .pill-draft { background: #44361c; color: #e7b873; }
+    html[data-theme="dark"] .pill-draft { background: #38322b; color: #e7b873; }
     html[data-theme="dark"] .badge-status-draft { background: #222530; color: #aeb0b9; }
     html[data-theme="dark"] .rr-muni-banner { background: linear-gradient(135deg, #5347ce, #4436b4); color: #ffffff; border-radius: 12px 12px 0 0; }
     html[data-theme="dark"] .rr-muni-body { background: #1c1f29; border-radius: 0 0 12px 12px; }
@@ -397,7 +397,7 @@
     html[data-theme="dark"] .rr-panel-header p { color: #8a94a6; }
     html[data-theme="dark"] .rr-panel-flush > .rr-table { border-top: 1px solid #383c4c; }
     html[data-theme="dark"] .rr-panel-flush > .rr-table:first-child { border-top: none; }
-    html[data-theme="dark"] .badge-verified { background: #223d2e; color: #7ae1a5; border-radius: 10px; }
+    html[data-theme="dark"] .badge-verified { background: #213936; color: #7ae1a5; border-radius: 10px; }
     html[data-theme="dark"] .rr-empty-eligible { color: #8a94a6; }
     html[data-theme="dark"] .rr-field label { color: #d1d1d1; }
     html[data-theme="dark"] .rr-field .required { color: #e1847a; }
@@ -405,18 +405,18 @@
     html[data-theme="dark"] .rr-priority-option label { border: 1px solid #3a3e4e; border-radius: 10px; color: #c9c9c9; }
     html[data-theme="dark"] .rr-priority-option input:checked + label { border-color: currentColor; }
     html[data-theme="dark"] .rr-priority-option.priority-high label { color: #e1847a; }
-    html[data-theme="dark"] .rr-priority-option.priority-high input:checked + label { background: #40211d; }
+    html[data-theme="dark"] .rr-priority-option.priority-high input:checked + label { background: #38252b; }
     html[data-theme="dark"] .rr-priority-option.priority-medium label { color: #f4bd67; }
-    html[data-theme="dark"] .rr-priority-option.priority-medium input:checked + label { background: #44361c; }
+    html[data-theme="dark"] .rr-priority-option.priority-medium input:checked + label { background: #38322b; }
     html[data-theme="dark"] .rr-priority-option.priority-low label { color: #7ae1a5; }
-    html[data-theme="dark"] .rr-priority-option.priority-low input:checked + label { background: #223d2e; }
+    html[data-theme="dark"] .rr-priority-option.priority-low input:checked + label { background: #213936; }
     html[data-theme="dark"] .rr-priority-dot { border-radius: 50%; background: currentColor; }
     html[data-theme="dark"] .rr-field .rr-dropzone { border: 1.5px dashed #3d4253; border-radius: 10px; background: #1e212b; }
-    html[data-theme="dark"] .rr-field .rr-dropzone:hover, html[data-theme="dark"] .rr-field .rr-dropzone.is-dragover { border-color: #5347ce; background: #231e3d; }
-    html[data-theme="dark"] .rr-dropzone-icon { border-radius: 10px; background: #221e3f; }
+    html[data-theme="dark"] .rr-field .rr-dropzone:hover, html[data-theme="dark"] .rr-field .rr-dropzone.is-dragover { border-color: #5347ce; background: #202136; }
+    html[data-theme="dark"] .rr-dropzone-icon { border-radius: 10px; background: #1f2136; }
     html[data-theme="dark"] .rr-dropzone strong { color: #dedede; }
     html[data-theme="dark"] .rr-dropzone-hint { color: #8a94a6; }
-    html[data-theme="dark"] .rr-file-list li { color: #b1b5c2; background: #242437; border: 1px solid #373b4b; border-radius: 8px; }
+    html[data-theme="dark"] .rr-file-list li { color: #b1b5c2; background: #202334; border: 1px solid #373b4b; border-radius: 8px; }
     html[data-theme="dark"] .rr-file-list li svg { color: #a6a0e6; }
     html[data-theme="dark"] .rr-file-list li span { color: #8a94a6; }
     html[data-theme="dark"] .btn-submit-request { background: #5347ce; color: #ffffff; border-radius: 8px; }
@@ -427,9 +427,9 @@
     html[data-theme="dark"] .rr-track-card { background: #1c1f29; border: 1px solid #383c4c; border-radius: 12px; }
     html[data-theme="dark"] .rr-track-head-title strong { color: #dedede; }
     html[data-theme="dark"] .rr-track-status { border-radius: 999px; background: #222530; color: #aeb0b9; }
-    html[data-theme="dark"] .rr-track-pending .rr-track-status { background: #44361c; color: #e7b873; }
-    html[data-theme="dark"] .rr-track-approved .rr-track-status, html[data-theme="dark"] .rr-track-partially_approved .rr-track-status, html[data-theme="dark"] .rr-track-fulfilled .rr-track-status { background: #223d2e; color: #7ae1a5; }
-    html[data-theme="dark"] .rr-track-rejected .rr-track-status { background: #40211d; color: #e1847a; }
+    html[data-theme="dark"] .rr-track-pending .rr-track-status { background: #38322b; color: #e7b873; }
+    html[data-theme="dark"] .rr-track-approved .rr-track-status, html[data-theme="dark"] .rr-track-partially_approved .rr-track-status, html[data-theme="dark"] .rr-track-fulfilled .rr-track-status { background: #213936; color: #7ae1a5; }
+    html[data-theme="dark"] .rr-track-rejected .rr-track-status { background: #38252b; color: #e1847a; }
     html[data-theme="dark"] .rr-track-figures { color: #8a94a6; }
     html[data-theme="dark"] .rr-handler-row { background: #1e212b; border-top: 1px solid #373b4b; }
     html[data-theme="dark"] .rr-handler-row span { color: #8a94a6; }
@@ -443,7 +443,7 @@
     html[data-theme="dark"] .rr-step.done .rr-step-body strong, html[data-theme="dark"] .rr-step.current .rr-step-body strong, html[data-theme="dark"] .rr-step.rejected .rr-step-body strong { color: #dedede; }
     html[data-theme="dark"] .rr-step-body span { color: #8a94a6; }
     html[data-theme="dark"] .rr-step-body .rr-reject-tag { color: #e1847a; }
-    html[data-theme="dark"] .rr-reject-note { background: #40211d; color: #e1847a; border-radius: 8px; }
+    html[data-theme="dark"] .rr-reject-note { background: #38252b; color: #e1847a; border-radius: 8px; }
     html[data-theme="dark"] .rr-side-panel { background: #1c1f29; border-radius: 12px; }
     html[data-theme="dark"] .rr-side-panel h4 { color: #8a94a6; }
     html[data-theme="dark"] .rr-side-row { border-bottom: 1px solid #383c4c; }

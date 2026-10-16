@@ -10,7 +10,7 @@
    Screen only - printing always stays light.
    ============================================================ */
 
-/* Sidebar "Dark Mode" row: moon + label + an on/off switch at the end. */
+/* Dark Mode on/off switch (Profile Settings > Appearance, _appearance_panel.html). */
 .theme-switch {
     position: relative;
     flex-shrink: 0;
@@ -31,7 +31,6 @@
 }
 html[data-theme="dark"] .theme-switch { background: #5347ce; }
 html[data-theme="dark"] .theme-switch-knob { transform: translateX(16px); }
-html.sidebar-collapsed .theme-toggle .sidebar-label { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
     .theme-switch, .theme-switch-knob { transition: none; }
 }
@@ -108,6 +107,14 @@ html.sidebar-collapsed .theme-toggle .sidebar-label { display: none !important; 
     html[data-theme="dark"] .leaflet-popup-tip { background: var(--rl-surface); color: var(--dk-text); }
     html[data-theme="dark"] .leaflet-control-attribution { background: rgba(27, 30, 40, 0.8) !important; color: var(--dk-muted); }
     html[data-theme="dark"] .leaflet-control-attribution a { color: #8fb4f0; }
+
+    /* Greeting banner: the light theme's bright indigo wash glared on a dark
+       page - same hues, deeper. */
+    html[data-theme="dark"] .greeting-banner {
+        background:
+            radial-gradient(80% 150% at 88% -40%, rgba(136, 124, 253, 0.22) 0%, rgba(136, 124, 253, 0) 55%),
+            linear-gradient(135deg, #2f2a6b 0%, #3a3283 100%);
+    }
 
     /* Map name labels: light text on a dark halo (the light theme's white
        halo + light text was unreadable). Reads on the dark basemap and on

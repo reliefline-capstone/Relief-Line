@@ -178,7 +178,7 @@
 
             <section class="panel map-panel">
                 <div class="panel-header">
-                    <h3>{{ icon('map', 18, '#0f2547') }} GIS Map - {{ lgu or 'Your Municipality' }}</h3>
+                    <h3>GIS Map - {{ lgu or 'Your Municipality' }}</h3>
                     <div class="map-legend">
                         <span><i class="legend-dot normal"></i> Low</span>
                         <span><i class="legend-dot monitoring"></i> Medium</span>
@@ -288,11 +288,12 @@
                     <a href="{{ url_for('cswdo.notifications') }}" class="link-manage">View All →</a>
                 </div>
                 {% for act in recent_activities %}
-                <div class="activity-row">
-                    <div class="activity-icon">{{ icon('check-circle', 14, '#27ae60') }}</div>
+                {% set m = notif_meta(act.action_type) %}
+                <div class="alert-row">
+                    {{ icon(m.icon, 16, m.color) }}
                     <div>
-                        <span class="activity-time">{{ act.created_at.strftime('%H:%M') }}</span>
-                        <span class="activity-desc">{{ act.description }}</span>
+                        <strong>{{ act.description }}</strong>
+                        <span>{{ act.created_at|ph_time }}</span>
                     </div>
                 </div>
                 {% else %}

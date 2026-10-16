@@ -456,11 +456,11 @@
     html[data-theme="dark"] .pa-fill-low { background: #27ae60; }
     html[data-theme="dark"] .pa-fill-unrated { background: #272a38; }
     html[data-theme="dark"] .pa-rank-toggle { background: #232632; border: 1px solid #393d4d; border-radius: 8px; color: #a6a0e6; }
-    html[data-theme="dark"] .pa-rank-toggle:hover { background: #292f37; border-color: #3d4153; }
+    html[data-theme="dark"] .pa-rank-toggle:hover { background: #272d3c; border-color: #3d4153; }
     html[data-theme="dark"] .pa-wh-card { border: 1px solid #393d4d; border-radius: 10px; background: #1f222d; }
-    html[data-theme="dark"] .pa-wh-healthy { border-color: #375843; background: #243729; }
-    html[data-theme="dark"] .pa-wh-moderate { border-color: #64552b; background: #3f351c; }
-    html[data-theme="dark"] .pa-wh-low { border-color: #62332d; background: #3c221f; }
+    html[data-theme="dark"] .pa-wh-healthy { border-color: #375843; background: #202a2e; }
+    html[data-theme="dark"] .pa-wh-moderate { border-color: #64552b; background: #2a292a; }
+    html[data-theme="dark"] .pa-wh-low { border-color: #62332d; background: #2a222a; }
     html[data-theme="dark"] .pa-wh-qty { color: #a6a0e6; }
     html[data-theme="dark"] .pa-wh-card-bottom { color: #c0c0c0; }
     html[data-theme="dark"] .pmb-stockpile strong { color: #dedede; }
@@ -484,14 +484,14 @@
     html[data-theme="dark"] .pa-month-hit:hover, html[data-theme="dark"] .pa-month-hit:focus-visible { fill: rgba(143, 191, 254, 0.1); }
     html[data-theme="dark"] .pa-month-hit.active { fill: rgba(143, 191, 254, 0.18); stroke: #8fbffe; }
     html[data-theme="dark"] .pa-month-detail { background: #1e202b; border: 1px solid #394456; border-radius: 10px; }
-    html[data-theme="dark"] .pa-bar-band { fill: #192a43; }
-    html[data-theme="dark"] .pa-bar-band-peak { fill: #1b2d46; }
+    html[data-theme="dark"] .pa-bar-band { fill: #1e2636; }
+    html[data-theme="dark"] .pa-bar-band-peak { fill: #202d43; }
     html[data-theme="dark"] .pa-legend { color: #a4a8b8; }
     html[data-theme="dark"] .pa-legend i { border-radius: 3px; }
     html[data-theme="dark"] .pa-legend .lg-exp { background: #4896fe; }
     html[data-theme="dark"] .pa-legend .lg-p90 { border-radius: 0; border-top: 2px dashed #0f2547; }
-    html[data-theme="dark"] .pa-legend .lg-wet { background: #192a43; border: 1px solid #24406b; }
-    html[data-theme="dark"] .pa-legend .lg-peak { background: #1b2d46; border: 1px solid #24416b; }
+    html[data-theme="dark"] .pa-legend .lg-wet { background: #1e2636; border: 1px solid #24406b; }
+    html[data-theme="dark"] .pa-legend .lg-peak { background: #202d43; border: 1px solid #24416b; }
     html[data-theme="dark"] .pa-stock-tiles .pa-decision-tile { border: 1px solid #3d4552; border-radius: 10px; background: #1e212c; }
     html[data-theme="dark"] .pa-stock-tiles .pa-decision-tile > .rd-sub:first-child { color: #aeb1bf; }
     html[data-theme="dark"] .pa-stock-tiles .pa-decision-tile strong { color: #78a2e3; }
@@ -536,7 +536,7 @@
     html[data-theme="dark"] .pa-legend .lg-line-actual { background: #1a2233; }
     html[data-theme="dark"] .pa-legend .lg-cross { border-radius: 50%; border: 2px solid #1a2233; background: #1c1f29; }
     html[data-theme="dark"] .pa-legend .lg-over { border-radius: 50%; background: #e74c3c; }
-    html[data-theme="dark"] .pa-bar-p90 { fill: #293243; stroke: #78a2e3; }
+    html[data-theme="dark"] .pa-bar-p90 { fill: #232c3f; stroke: #78a2e3; }
     html[data-theme="dark"] .pa-bar-grid-zero { stroke: #b9c2d3; }
     html[data-theme="dark"] .pa-axis-title { fill: #a4a8b8; }
     html[data-theme="dark"] .pa-bar-value-p90 { fill: #78a2e3; }
@@ -547,7 +547,7 @@
     html[data-theme="dark"] .pa-season-peak { fill: #71a1ea; }
     html[data-theme="dark"] .pa-now-band { fill: none; stroke: none; }
     html[data-theme="dark"] .pa-now-tag { fill: #7faeee; }
-    html[data-theme="dark"] .pa-legend .lg-p90-bar { background: #293243; border: 1.5px solid #0f2547; }
+    html[data-theme="dark"] .pa-legend .lg-p90-bar { background: #232c3f; border: 1.5px solid #0f2547; }
     html[data-theme="dark"] .pa-bar-grid { stroke: #232632; }
     html[data-theme="dark"] .pa-bar-grid-zero { stroke: #303445; }
     html[data-theme="dark"] .pa-bar-col { fill: #8fbffe; }
@@ -555,13 +555,13 @@
     html[data-theme="dark"] .pa-bar-value { fill: #bfc1cc; }
     html[data-theme="dark"] .pa-bar-value-p90 { fill: #7f9fdc; }
     html[data-theme="dark"] .pa-bar-band { fill: #1f222d; }
-    html[data-theme="dark"] .pa-bar-band-peak { fill: #1a2b44; }
+    html[data-theme="dark"] .pa-bar-band-peak { fill: #202c43; }
     html[data-theme="dark"] .pa-month-hit:hover, html[data-theme="dark"] .pa-month-hit:focus-visible { fill: rgba(127, 159, 220, 0.06); }
     html[data-theme="dark"] .pa-month-hit.active { fill: rgba(143, 191, 254, 0.12); stroke: #8fbffe; }
     html[data-theme="dark"] .pa-legend .lg-p90-bar { background: #1e3a6e; border: none; }
     html[data-theme="dark"] .pa-legend .lg-exp, html[data-theme="dark"] .pa-legend .lg-p90-bar { border-radius: 3px 3px 0 0; }
     html[data-theme="dark"] .pa-legend .lg-wet { background: #1f222d; border-color: #24406b; }
-    html[data-theme="dark"] .pa-legend .lg-peak { background: #1a2b44; border-color: #284167; }
+    html[data-theme="dark"] .pa-legend .lg-peak { background: #202c43; border-color: #284167; }
     html[data-theme="dark"] .pa-area-band { fill: rgba(127, 159, 220, 0.07); stroke: none; }
     html[data-theme="dark"] .pa-area-exp { stroke: none; }
     html[data-theme="dark"] .pa-line-p90 { stroke: #7f9fdc; }
@@ -572,11 +572,11 @@
     html[data-theme="dark"] .pa-hover-hit { fill: transparent; }
     html[data-theme="dark"] .pa-end-label { fill: #7f9fdc; }
     html[data-theme="dark"] .pa-stock-pill rect { stroke: none; }
-    html[data-theme="dark"] .pa-stock-pill-healthy rect { fill: #273a2f; }
+    html[data-theme="dark"] .pa-stock-pill-healthy rect { fill: #253536; }
     html[data-theme="dark"] .pa-stock-pill-healthy text { fill: #7cdfa6; }
-    html[data-theme="dark"] .pa-stock-pill-warning rect { fill: #42301d; }
+    html[data-theme="dark"] .pa-stock-pill-warning rect { fill: #382f2b; }
     html[data-theme="dark"] .pa-stock-pill-warning text { fill: #f1ab6a; }
-    html[data-theme="dark"] .pa-stock-pill-critical rect { fill: #40211d; }
+    html[data-theme="dark"] .pa-stock-pill-critical rect { fill: #38252b; }
     html[data-theme="dark"] .pa-stock-pill-critical text { fill: #e48177; }
     html[data-theme="dark"] .pa-legend .lg-band { border-radius: 2px; background: rgba(30, 58, 110, 0.14); }
     html[data-theme="dark"] .pa-legend .lg-p90 { border-top-color: #1e3a6e; }

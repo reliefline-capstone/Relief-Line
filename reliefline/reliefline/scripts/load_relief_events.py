@@ -40,7 +40,7 @@ from app.extensions import db
 import real_calasiao_typhoons_2021_2026 as calasiao_new
 import real_sta_barbara_typhoons_2021_2026 as sta_barbara_new
 import real_urdaneta_typhoons_2021_2026 as urdaneta_new
-import typhoon_calendar_from_reports as calendar
+import typhoon_calendar_pagasa as calendar
 
 
 def _barangay_index():
@@ -95,7 +95,7 @@ def _upsert_relief_event(lgu, label, report_date, source_file, is_raw, notes, ty
             "SELECT 1 FROM typhoon_calendar WHERE typhoon_key = :k"), {"k": key}).scalar()
         if not exists:
             raise KeyError(f"typhoon_key {key!r} not found in typhoon_calendar - "
-                            f"see scripts/typhoon_calendar_from_reports.py")
+                            f"see scripts/typhoon_calendar_pagasa.py")
         db.session.execute(text(
             "INSERT INTO relief_event_typhoons (relief_event_id, typhoon_key) VALUES (:id, :k)"
         ), {"id": relief_event_id, "k": key})
@@ -180,9 +180,9 @@ def _drop_retired_sources():
 
 
 def load_all():
-    # The typhoon calendar is built from these same reports (every storm a
-    # report names) - synced before the events link to it, and storms no
-    # report names any more are pruned after.
+    # The typhoon calendar is the PAGASA-checked 2021-2026 list (every storm
+    # these reports name must be on it) - synced before the events link to
+    # it, and storms no longer on the list are pruned after.
     calendar.sync()
     _drop_retired_sources()
     print("Loading real relief-event modules...")
@@ -190,8 +190,8 @@ def load_all():
     load_new_module(sta_barbara_new, "Santa Barbara")
     load_new_module(urdaneta_new, "Urdaneta City")
     n_pruned = calendar.prune()
-    print(f"typhoon_calendar: {len(calendar.derive())} storms from the relief reports"
-          + (f", {n_pruned} no longer named in any report removed" if n_pruned else ""))
+    print(f"typhoon_calendar: {len(calendar.derive())} storms from the PAGASA list"
+          + (f", {n_pruned} no longer listed removed" if n_pruned else ""))
     db.session.commit()
 
 

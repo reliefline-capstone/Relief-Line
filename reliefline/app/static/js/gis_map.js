@@ -19,17 +19,35 @@ document.addEventListener('DOMContentLoaded', function () {
         unrated: '#5d6d7e',
     };
     var TIER_RANK = { critical: 4, high: 3, medium: 2, low: 1, unrated: 0 };
+    // Dark mode (html[data-theme="dark"]): the dark outlines above vanish on
+    // the dimmed basemap and on their own fills, so borders switch to light
+    // tints of the same hues. Restyled live on the 'rl-themechange' event.
+    var TIER_BORDER_COLORS_DARK = {
+        critical: '#f5a49b',
+        high: '#f8c27a',
+        medium: '#f7e08a',
+        low: '#9ee8bb',
+        unrated: '#c3cad6',
+    };
+    function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
-    // zoomAnimation: false - .dashboard-layout applies a CSS `zoom` scale
-    // (base.css, --ui-scale) to this whole page. Leaflet's animated zoom
-    // transitions position markers/layers with a CSS transform computed in
-    // its own pixel space, and that math doesn't account for an ancestor's
-    // `zoom` scale - each zoom step compounds a small offset, which is
-    // exactly the "warehouse pin drifts off its real spot" symptom reported
-    // on this page. Disabling the animation makes every zoom step reproject
-    // markers from their actual lat/lng instead of transforming the old
-    // frame, so they stay pinned to the right spot at any zoom level.
-    var map = L.map('gis-map', { zoomControl: false, zoomAnimation: false }).setView([15.98, 120.45], 11);
+    // Smooth, Google-Maps-style zoom. The page's CSS `zoom` (base.css
+    // --ui-scale) is cancelled on #gis-map itself (gis_map.css, "Smooth
+    // zoom"), so Leaflet sees a net scale of 1 and its zoom animation no
+    // longer drifts markers off their spot - the reason it used to be off.
+    //   zoomSnap 0          - any fractional level, so the wheel glides
+    //                         instead of jumping a whole level per notch
+    //   wheelPxPerZoomLevel - wheel distance for one level (higher = gentler)
+    //   wheelDebounceTime   - react to the wheel almost immediately
+    //   zoomDelta 0.5       - +/- buttons and keyboard step half a level
+    var map = L.map('gis-map', {
+        zoomControl: false,
+        zoomAnimation: true,
+        zoomSnap: 0,
+        zoomDelta: 0.5,
+        wheelPxPerZoomLevel: 110,
+        wheelDebounceTime: 10,
+    }).setView([15.98, 120.45], 11);
     // Fixed stacking for the vector layers, independent of the order they
     // happen to be (re)added in: municipalities in the default overlay pane
     // (z 400), barangays above them, delivery routes above both. Before,
@@ -98,10 +116,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function provinceStyle(feature) {
         var isTarget = feature.properties.is_target;
         if (!isTarget) {
+            var dark = isDark();
             if (state.lgu && state.lgu === feature.properties.name) {
-                return { color: '#374151', weight: 3, fillColor: '#9aa0ae', fillOpacity: 0.7 };
+                return dark
+                    ? { color: '#e4e6ee', weight: 3, fillColor: '#5b6275', fillOpacity: 0.55 }
+                    : { color: '#374151', weight: 3, fillColor: '#9aa0ae', fillOpacity: 0.7 };
             }
-            return { color: '#6b7280', weight: 1.2, fillColor: '#c3c7d1', fillOpacity: 0.5 };
+            return dark
+                ? { color: '#9aa3b5', weight: 1.2, fillColor: '#3a3f52', fillOpacity: 0.35 }
+                : { color: '#6b7280', weight: 1.2, fillColor: '#c3c7d1', fillOpacity: 0.5 };
         }
         // className is set once when the layer/path DOM element is first
         // created (Leaflet doesn't re-apply it on a later setStyle() -
@@ -114,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var fillColor = '#5347ce';
         // CSWDO/MSWDO: dark green outline around their own city/town - sits
         // with the green barangay fills instead of a clashing purple line.
-        var borderColor = '#145a32';
+        var borderColor = isDark() ? '#9ee8bb' : '#145a32';
         if (IS_MUNI_ONLY) {
             var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === feature.properties.lgu; }) : null;
             var tier = muni ? muni.status_tier : 'unrated';
@@ -122,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Border is that same status color, darker - not the fixed
             // purple every status used to get - so a critical (red) study
             // area outlines in dark red, a low (green) one in dark green, etc.
-            borderColor = TIER_BORDER_COLORS[tier];
+            borderColor = (isDark() ? TIER_BORDER_COLORS_DARK : TIER_BORDER_COLORS)[tier];
         }
         return {
             color: borderColor,
@@ -227,7 +250,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 // color-only change was easy to miss on a shape this small
                 // at province zoom; the fill covers the whole shape, so its
                 // change reads immediately as "this one, right here".
-                layer.on('mouseover', function () { layer.setStyle({ weight: 2, color: '#4b5563', fillColor: '#9aa0ac', fillOpacity: 0.65 }); });
+                layer.on('mouseover', function () {
+                    layer.setStyle(isDark()
+                        ? { weight: 2, color: '#e4e6ee', fillColor: '#5b6275', fillOpacity: 0.55 }
+                        : { weight: 2, color: '#4b5563', fillColor: '#9aa0ac', fillOpacity: 0.65 });
+                });
                 // mouseout resets via provinceStyle so a currently-selected
                 // no-data municipality keeps its selected look.
                 layer.on('mouseout', function () { layer.setStyle(provinceStyle(feature)); });
@@ -393,6 +420,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     barangayLabelLayer.on('add', updateBarangayLabelVisibility);
     map.on('zoomend moveend', updateBarangayLabelVisibility);
+
+    window.addEventListener('rl-themechange', function () {
+        provinceLayer.setStyle(provinceStyle);
+        if (typeof barangayLayer !== 'undefined') barangayLayer.eachLayer(function (l) { barangayLayer.resetStyle(l); });
+    });
 
     var barangayLayer = L.geoJSON(null, {
         pane: 'barangayPane',
@@ -872,10 +904,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Barangay detail only (CSWDO/MSWDO) - this barangay's own hand-outs to
     // residents with their photo proof (cswdo.barangay_distribution_history).
+    // Named "Family Distributions" so it isn't confused with the panel's own
+    // "Distribution History" (deliveries from this office to the barangay).
     function barangayDistributionsButtonHtml(barangayId) {
         if (!GIS_CONFIG.barangayDistributionsUrl || !barangayId) return '';
         return '<button type="button" class="btn-outline dd-full-width" data-external="barangay-distributions" data-barangay-id="' + barangayId + '"' +
-            ' style="justify-content:center; margin-top:10px;">' + ICON.camera + ' View Distribution History</button>';
+            ' style="justify-content:center; margin-top:10px;">' + ICON.camera + ' View Family Distributions</button>';
     }
 
     function renderOverviewPanel() {

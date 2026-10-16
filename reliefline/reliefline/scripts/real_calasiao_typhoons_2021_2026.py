@@ -15,8 +15,8 @@ Before that, the old 25-typhoon version of this module (a much larger scale)
 and real_calasiao_reports_2025.py were replaced - see git history.
 
 Each report links to every storm its "Name of Typhoon" column names (see
-_storms.py; the typhoon calendar is built from these reports - see
-scripts/typhoon_calendar_from_reports.py). Combined reports:
+_storms.py; every named storm must be on the PAGASA storm list - see
+scripts/typhoon_calendar_pagasa.py). Combined reports:
   Luis & Maymay & Neneng & Pilandok (2026) -> luis_2026, maymay_2026,
                                      neneng_2026, pilandok_2026
   Nando & Opong     (Sep 2025) -> nando_2025, opong_2025

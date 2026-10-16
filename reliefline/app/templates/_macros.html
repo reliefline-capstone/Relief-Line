@@ -2,6 +2,30 @@
 <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="{{ color }}" stroke-width="{{ stroke_width }}" stroke-linecap="round" stroke-linejoin="round">{{ ICONS[name]|safe }}</svg>
 {% endmacro %}
 
+{# Photo viewer for proof photos: one large photo, prev/next + "1 / 3" when
+   there are several, a thumbnail strip, and an open-full-size link. The
+   stepping is wired once for every viewer in base.html ([data-pv]). #}
+{% macro photo_viewer(urls, alt='Photo') %}
+<div class="pv" data-pv>
+    <div class="pv-stage">
+        <img class="pv-main" src="{{ urls[0] }}" alt="{{ alt }}" loading="lazy">
+        {% if urls|length > 1 %}
+        <button type="button" class="pv-nav pv-prev" data-pv-step="-1" aria-label="Previous photo">{{ icon('chevron-left', 20) }}</button>
+        <button type="button" class="pv-nav pv-next" data-pv-step="1" aria-label="Next photo">{{ icon('chevron-right', 20) }}</button>
+        <span class="pv-count"><span data-pv-index>1</span> / {{ urls|length }}</span>
+        {% endif %}
+        <a class="pv-open" href="{{ urls[0] }}" target="_blank" rel="noopener" title="Open full size">{{ icon('maximize', 15) }}</a>
+    </div>
+    {% if urls|length > 1 %}
+    <div class="pv-thumbs">
+        {% for u in urls %}
+        <button type="button" class="pv-thumb{{ ' is-active' if loop.first }}" data-pv-go="{{ loop.index0 }}" aria-label="Photo {{ loop.index }}"><img src="{{ u }}" alt="" loading="lazy"></button>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
 {# Optional "which batches go out" choice for a food-pack dispatch form.
    Default mode is automatic (nearest expiry first - the server's FEFO);
    "Choose batches" lists the warehouse's active batches with a quantity box
@@ -13,37 +37,50 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/batch_picker.css') }}?v={{ asset_version('css/batch_picker.css') }}">
 <div class="bp" data-bp{% if office_select %} data-bp-office-select="{{ office_select }}"{% endif %}>
     <span class="bp-label">Food pack batches</span>
-    <div class="bp-mode">
-        <label><input type="radio" name="batch_mode" value="auto" checked> Automatic <small>(nearest expiry first)</small></label>
-        <label><input type="radio" name="batch_mode" value="manual"> Choose batches</label>
+    <div class="bp-mode" role="radiogroup" aria-label="How to pick batches">
+        <label class="bp-seg">
+            <input type="radio" name="batch_mode" value="auto" checked>
+            <span class="bp-seg-title">{{ icon('clock', 14) }} Automatic</span>
+            <small>Nearest expiry goes out first</small>
+        </label>
+        <label class="bp-seg">
+            <input type="radio" name="batch_mode" value="manual">
+            <span class="bp-seg-title">{{ icon('list', 14) }} Choose batches</span>
+            <small>Pick which packs to send</small>
+        </label>
     </div>
     <div class="bp-body" hidden>
+        <p class="bp-empty" data-bp-pick-office hidden>Pick the warehouse above to see its batches.</p>
         {% set today = ph_today() %}
         {% for oid in office_ids %}
         {% set batches = pickable_food_pack_batches(oid) %}
         <div class="bp-office" data-bp-office="{{ oid }}">
-            {% if batches %}
-            <table class="bp-table">
-                <thead><tr><th>Received</th><th>Expires</th><th>Contents</th><th>Left</th><th>Take</th></tr></thead>
-                <tbody>
-                {% for b in batches %}
-                <tr>
-                    <td>{{ b.received_date.strftime('%b %d, %Y') }}</td>
-                    <td class="{{ 'bp-expired' if b.expiration_date < today else ('bp-near' if (b.expiration_date - today).days <= 30 else '') }}">{{ b.expiration_date.strftime('%b %d, %Y') }}</td>
-                    <td class="bp-contents">{{ b.items|map(attribute='label')|join(', ') or 'Standard food pack' }}</td>
-                    <td>{{ "{:,}".format(b.quantity_remaining) }}</td>
-                    <td><input type="number" name="batch_qty_{{ b.batch_id }}" min="0" max="{{ b.quantity_remaining }}" placeholder="0" class="bp-qty" disabled></td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+            {% for b in batches %}
+            {% set days = (b.expiration_date - today).days %}
+            <div class="bp-batch">
+                <div class="bp-batch-main">
+                    <div class="bp-batch-top">
+                        <strong>Received {{ b.received_date.strftime('%b %d, %Y') }}</strong>
+                        <span class="bp-exp {{ 'bp-expired' if days < 0 else ('bp-near' if days <= 30 else '') }}">
+                            {% if days < 0 %}Expired {{ b.expiration_date.strftime('%b %d, %Y') }}{% else %}Expires {{ b.expiration_date.strftime('%b %d, %Y') }} · {{ days }} day{{ 's' if days != 1 }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="bp-chips">
+                        {% for it in b.items %}<span class="bp-chip">{{ it.label }}</span>{% else %}<span class="bp-chip">Standard food pack</span>{% endfor %}
+                    </div>
+                </div>
+                <label class="bp-take">
+                    <span>{{ "{:,}".format(b.quantity_remaining) }} left</span>
+                    <input type="number" name="batch_qty_{{ b.batch_id }}" min="0" max="{{ b.quantity_remaining }}" placeholder="0" class="bp-qty" aria-label="Packs to take from this batch" disabled>
+                </label>
+            </div>
             {% else %}
             <p class="bp-empty">No food pack batches on record in this warehouse.</p>
-            {% endif %}
+            {% endfor %}
         </div>
         {% endfor %}
-        <p class="bp-total">Chosen: <strong data-bp-total>0</strong> <span data-bp-target></span></p>
     </div>
+    <p class="bp-total" hidden>Chosen <strong data-bp-total>0</strong> <span data-bp-target></span></p>
 </div>
 <script src="{{ url_for('static', filename='js/batch_picker.js') }}?v={{ asset_version('js/batch_picker.js') }}"></script>
 {% endmacro %}

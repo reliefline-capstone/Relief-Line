@@ -161,6 +161,9 @@
 }
 
 .btn-decision:active { transform: translateY(0); }
+/* Disabled until the form is ready (e.g. Record Distribution waits for a
+   proof photo): faded, no lift, not clickable. */
+.btn-decision:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
 /* Brightened to match the app's usual success/danger accents (badges,
    pills, etc. elsewhere all use #1e8449 / #c0392b) - the previous muted
@@ -502,10 +505,10 @@ html.rd-modal-open { overflow: hidden; }
     html[data-theme="dark"] .rd-stock-preview strong { color: #dedede; }
     html[data-theme="dark"] .rd-danger { color: #e1847a; }
     html[data-theme="dark"] .rd-info-grid span { color: #8a94a6; }
-    html[data-theme="dark"] .rd-stat-tile { background: #242437; border-radius: 10px; }
+    html[data-theme="dark"] .rd-stat-tile { background: #202334; border-radius: 10px; }
     html[data-theme="dark"] .rd-stat-icon { background: #1c1f29; border-radius: 50%; }
     html[data-theme="dark"] .rd-stat-tile span { color: #8a94a6; }
-    html[data-theme="dark"] .rd-inventory-block { background: #242437; border-radius: 10px; }
+    html[data-theme="dark"] .rd-inventory-block { background: #202334; border-radius: 10px; }
     html[data-theme="dark"] .btn-decision { border-radius: 10px; color: #ffffff; }
     html[data-theme="dark"] .btn-approve-full { background: #1e8449; }
     html[data-theme="dark"] .btn-approve-full:hover { background: #196f3d; }
@@ -525,11 +528,11 @@ html.rd-modal-open { overflow: hidden; }
     html[data-theme="dark"] .rd-urgency-fill { background: linear-gradient(90deg, #e74c3c, #e67e22); }
     html[data-theme="dark"] .rd-urgency-row strong { color: #e1847a; }
     html[data-theme="dark"] .rd-forecast, html[data-theme="dark"] .rd-deadline { border-radius: 10px; }
-    html[data-theme="dark"] .rd-forecast-good { background: #223d2e; color: #7ae1a5; }
-    html[data-theme="dark"] .rd-forecast-bad { background: #40211d; color: #e1847a; }
-    html[data-theme="dark"] .rd-deadline-today { background: #40211d; color: #e1847a; }
-    html[data-theme="dark"] .rd-deadline-overdue { background: #40211d; color: #e1847a; }
-    html[data-theme="dark"] .rd-deadline-upcoming { background: #44361c; color: #f4bd67; }
+    html[data-theme="dark"] .rd-forecast-good { background: #213936; color: #7ae1a5; }
+    html[data-theme="dark"] .rd-forecast-bad { background: #38252b; color: #e1847a; }
+    html[data-theme="dark"] .rd-deadline-today { background: #38252b; color: #e1847a; }
+    html[data-theme="dark"] .rd-deadline-overdue { background: #38252b; color: #e1847a; }
+    html[data-theme="dark"] .rd-deadline-upcoming { background: #38322b; color: #f4bd67; }
     html[data-theme="dark"] .rd-modal-overlay { background: rgba(83, 71, 206, 0.5); }
     html[data-theme="dark"] .rd-modal { background: #1c1f29; border-radius: 14px; }
     html[data-theme="dark"] .rd-modal::-webkit-scrollbar-thumb { background: #2c303f; border-radius: 3px; }
@@ -540,14 +543,14 @@ html.rd-modal-open { overflow: hidden; }
     html[data-theme="dark"] .rd-modal-declare .rd-modal-body::-webkit-scrollbar-track { background: transparent; }
     html[data-theme="dark"] .rd-modal-declare .rd-modal-actions { border-top: 1px solid #373b4b; }
     html[data-theme="dark"] .rd-modal-banner { border-radius: 10px; }
-    html[data-theme="dark"] .rd-modal-banner-success { background: #223d2e; color: #7ae1a5; }
-    html[data-theme="dark"] .rd-modal-banner-danger { background: #40211d; color: #e1847a; }
+    html[data-theme="dark"] .rd-modal-banner-success { background: #213936; color: #7ae1a5; }
+    html[data-theme="dark"] .rd-modal-banner-danger { background: #38252b; color: #e1847a; }
     html[data-theme="dark"] .rd-modal form label { color: #d1d1d1; }
     html[data-theme="dark"] .rd-modal form select, html[data-theme="dark"] .rd-modal form input, html[data-theme="dark"] .rd-modal form textarea { border: 1px solid #3a3e4e; border-radius: 8px; outline: none; }
-    html[data-theme="dark"] .rd-amount-tile { background: #242437; border-radius: 10px; }
-    html[data-theme="dark"] .rd-amount-highlight { background: #221e3f; }
+    html[data-theme="dark"] .rd-amount-tile { background: #202334; border-radius: 10px; }
+    html[data-theme="dark"] .rd-amount-highlight { background: #1f2136; }
     html[data-theme="dark"] .rd-amount-highlight strong { color: #a6a0e6; }
-    html[data-theme="dark"] .transfer-calc-preview { background: #242437; border: 1px solid #393d4d; border-radius: 10px; }
+    html[data-theme="dark"] .transfer-calc-preview { background: #202334; border: 1px solid #393d4d; border-radius: 10px; }
     html[data-theme="dark"] .tcp-label { color: #b1b5c2; }
     html[data-theme="dark"] .tcp-flow { color: #8a94a6; }
     html[data-theme="dark"] .tcp-flow strong { color: #dedede; }

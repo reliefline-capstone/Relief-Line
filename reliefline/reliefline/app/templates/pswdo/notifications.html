@@ -36,7 +36,7 @@
 
         <section class="panel">
             <div class="notif-panel-header">
-                <h3>{{ icon('bell', 18, '#0f2547') }}
+                <h3>
                     {%- for cat in categories if cat.value == category_filter %} {{ cat.label }}{% endfor %} Notifications</h3>
             </div>
 
@@ -74,7 +74,7 @@
                     {% if p == page %}
                     <span class="page-btn active">{{ p }}</span>
                     {% else %}
-                    <a href="{{ url_for('pswdo.notifications', page=p, category=category_filter) }}" class="page-btn">{{ p }}</a>
+                    <a href="{{ url_for('pswdo.notifications', page=p, category=category_filter) }}" class="page-btn{{ ' page-btn-far' if (p - page)|abs > 1 }}">{{ p }}</a>
                     {% endif %}
                     {% endfor %}
                     {% if page < total_pages %}

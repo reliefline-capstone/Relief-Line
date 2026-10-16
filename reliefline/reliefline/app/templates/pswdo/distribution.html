@@ -77,7 +77,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
 
-        {% call filter_panel(chips, url_for(EP), summary=(records|length) ~ ' distribution' ~ ('s' if records|length != 1 else '')) %}
+        {% call filter_panel(chips, url_for(EP), summary=(records|length) ~ ' distribution' ~ ('s' if records|length != 1 else ''), export_url=url_for('pswdo.export_distribution', **fargs)) %}
             {{ fp_search('q', search_query, 'Search distribution ID or municipality...') }}
             {% call fp_select('Municipality', 'municipality', 'map-pin') %}
                 <option value="all">All municipalities</option>
@@ -93,7 +93,6 @@
             {% endcall %}
             {{ fp_date_range('Distribution Date', 'date_from', date_from, 'date_to', date_to) }}
         {% endcall %}
-        <div class="fp-export-row"><a href="{{ url_for('pswdo.export_distribution', **fargs) }}" class="btn-outline">{{ icon('download', 14) }} Export</a></div>
 
         <!-- Table -->
         <section class="panel rr-table-panel">
