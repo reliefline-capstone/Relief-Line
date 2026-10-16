@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import os
+import re
 import shutil
 import zipfile
 from datetime import date, datetime, timedelta
@@ -983,23 +984,50 @@ def _letterhead(user, barangay):
     from app.routes.report_data import build_letterhead
     return build_letterhead(user, barangay=barangay)
 
+def _rds_row(family, packs):
+    """One beneficiary row of the DSWD Relief Distribution Sheet
+    (print_family_list.html). The registry only keeps a family label
+    ("Dela Cruz Family") and the head's name, so LAST comes from the label
+    and FIRST from head_name (minus the surname if it was typed in full);
+    MIDDLE / EXT. / birthday stay blank for the barangay to fill in by hand.
+    No. of dependents = household members other than the head."""
+    last = re.sub(r"\s+family$", "", (family.family_name or "").strip(), flags=re.I)
+    first = (family.head_name or "").strip()
+    if last and first.lower().endswith(" " + last.lower()):
+        first = first[: -len(last)].strip()
+    return {
+        "last_name": last,
+        "first_name": first,
+        "dependents": max((family.member_count or 0) - 1, 0),
+        "packs": packs,
+    }
+
+
+def _rds_header(barangay, event=None):
+    """The form's header fields. Disaster type/date only when the sheet is
+    printed from a report tied to an event; otherwise left blank."""
+    disaster_type = occurred_on = ""
+    if event is not None:
+        disaster_type = f"{(event.event_type or 'other').title()} - {event.event_name}"
+        occurred_on = event.start_date.strftime("%B %d, %Y") if event.start_date else ""
+    return {
+        "region": "Region I (Ilocos Region)",
+        "province": "Pangasinan",
+        "city": barangay.city_municipality,
+        "barangay": barangay.barangay_name,
+        "disaster_type": disaster_type,
+        "occurred_on": occurred_on,
+    }
+
+
 def _family_print_rows(families):
-    """Normalizes either Family (manual selection) or ReportAffectedFamily
-    (a report's checklist) rows into plain dicts for print_family_list.html
-    - the two models don't share every column (Family has purok/contact,
-    ReportAffectedFamily doesn't). Shows the actual packs_given once a
-    report-linked family has already been marked received, else the
+    """RDS rows for a report's ReportAffectedFamily checklist - the actual
+    packs_given once a family has already been marked received, else the
     suggested figure (1 + PWD + senior)."""
-    return [{
-        "family_name": f.family_name,
-        "head_name": getattr(f, "head_name", None),
-        "purok": getattr(f, "purok", None),
-        "member_count": f.member_count,
-        "pwd_count": f.pwd_count,
-        "senior_count": f.senior_count,
-        "children_count": f.children_count,
-        "packs": f.packs_given if getattr(f, "received", False) else f.suggested_packs,
-    } for f in families]
+    return [
+        _rds_row(f, f.packs_given if f.received else f.suggested_packs)
+        for f in families
+    ]
 
 
 @barangay_bp.route("/family-profiles/print")
@@ -1048,16 +1076,12 @@ def print_families_generate():
     rows = []
     for f in families:
         packs = request.form.get(f"packs_{f.family_id}", type=int)
-        rows.append({
-            "family_name": f.family_name, "head_name": f.head_name, "purok": f.purok,
-            "packs": packs if packs and packs > 0 else f.suggested_packs,
-        })
+        rows.append(_rds_row(f, packs if packs and packs > 0 else f.suggested_packs))
 
     return render_template(
         "barangay/print_family_list.html",
-        barangay=barangay, title="Distribution Announcement",
-        subtitle=f"Manually selected - {len(families)} famil{'y' if len(families) == 1 else 'ies'}",
-        rows=rows, generated_at=ph_now(),
+        barangay=barangay, title="Relief Distribution Sheet",
+        rows=rows, rds=_rds_header(barangay),
         letterhead=_letterhead(current_user, barangay=barangay),
     )
 
@@ -1076,9 +1100,9 @@ def print_report_families(report_id):
 
     return render_template(
         "barangay/print_family_list.html",
-        barangay=report.barangay, title="Distribution Announcement",
-        subtitle=f"{report.ref}{' - ' + report.event.event_name if report.event else ''}",
-        rows=_family_print_rows(report.affected_families_list), generated_at=ph_now(),
+        barangay=report.barangay, title="Relief Distribution Sheet",
+        rows=_family_print_rows(report.affected_families_list),
+        rds=_rds_header(report.barangay, report.event),
         letterhead=_letterhead(current_user, barangay=report.barangay),
     )
 

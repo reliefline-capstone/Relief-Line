@@ -8,6 +8,48 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}?v={{ asset_version('css/reports.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/barangay.css') }}?v={{ asset_version('css/barangay.css') }}">
+{# DSWD Relief Distribution Sheet (RDS) - kept inline (not in reports.css)
+   so scripts/gen_dark_css.py never generates a dark variant: this is a
+   paper form and stays black-on-white in either theme. #}
+<style>
+    /* Top/bottom page margin comes from .dashboard-main's print padding (see
+       dashboard.css), same as every other printable page. */
+    @page { size: letter landscape; margin: 0 8mm; }
+    .rds-sheet.rpt-document { background: #fff; color: #111; font-family: Calibri, "Segoe UI", Arial, sans-serif; }
+    .rds-head { text-align: center; line-height: 1.35; margin-bottom: 10px; }
+    .rds-head div { font-size: 14px; }
+    .rds-head strong { display: block; font-size: 14px; letter-spacing: 0.3px; }
+    .rds-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; margin-bottom: 8px; }
+    .rds-field { display: flex; align-items: flex-end; gap: 6px; font-size: 12.5px; font-weight: 700; padding: 2px 0; }
+    .rds-field span { white-space: nowrap; }
+    .rds-field em { flex: 1; min-width: 60px; border-bottom: 1px solid #111; font-style: normal; font-weight: 400; padding: 0 4px; min-height: 17px; }
+    .rds-wrap { overflow-x: auto; }
+    .rds-table { width: 100%; min-width: 980px; border-collapse: collapse; table-layout: fixed; font-size: 12px; color: #111; }
+    .rds-table th, .rds-table td { border: 1px solid #333; padding: 4px 5px; background: #fff; color: #111; }
+    .rds-table th { font-size: 11px; font-weight: 700; text-align: center; line-height: 1.25; vertical-align: middle; }
+    .rds-table tbody td { height: 30px; vertical-align: middle; }
+    .rds-table td.rds-c { text-align: center; }
+    .rds-table td.rds-no { font-weight: 700; }
+    .rds-table tr.rds-total td { font-weight: 700; }
+    @media screen and (max-width: 700px) {
+        .rds-fields { grid-template-columns: 1fr; }
+        .rds-head div, .rds-head strong { font-size: 12.5px; }
+    }
+    @media print {
+        .rds-sheet .rds-head div, .rds-sheet .rds-head strong { font-size: 12.5px; }
+        .rds-wrap { overflow: visible; }
+        .rds-table { min-width: 0; font-size: 10.5px; }
+        .rds-table th { font-size: 9.5px; }
+        /* Tighter than other reports so a 12-row sheet and its signatories
+           fit on one landscape page. */
+        .dashboard-main, html.sidebar-collapsed .dashboard-main { padding: 9mm 4mm !important; }
+        .rds-table tbody td { height: 24px; padding-top: 2px; padding-bottom: 2px; }
+        .rds-table thead { display: table-header-group; }
+        .rds-table tr { break-inside: avoid; }
+        .rds-sheet .rpt-signatures { break-inside: avoid; margin-top: 18px; }
+        .rds-sheet .rpt-sig-label { margin-bottom: 20px; }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -18,56 +60,90 @@
 
     <main class="dashboard-main">
 
-
         <section class="rpt-export-row fam-print-topbar">
             <a href="{{ url_for('barangay.family_profiles') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
             <button type="button" class="btn-export btn-export-print" onclick="window.print()">{{ icon('list', 14, 'white') }} Print</button>
         </section>
 
-        <section class="rpt-document" id="report-document">
-            {% set lh = letterhead %}
-            {% set doc_title = title %}
-            {% set doc_meta = [
-                ("Barangay", barangay.barangay_name),
-                ("No. of Families", rows|length),
-                ("Total Food Packs", "{:,}".format(rows|sum(attribute='packs'))),
-                ("Date Generated", generated_at.strftime('%B %d, %Y')),
-            ] %}
-            {% include "_report_letterhead.html" %}
+        <section class="rpt-document rds-sheet" id="report-document">
+            <header class="rds-head">
+                <div>Republic of the Philippines</div>
+                <div>Department of Social Welfare and Development</div>
+                <strong>RELIEF DISTRIBUTION SHEET (RDS)</strong>
+            </header>
 
-            <h3 class="rpt-doc-title">FAMILIES TO RECEIVE FOOD PACKS</h3>
+            <div class="rds-fields">
+                <div>
+                    <div class="rds-field"><span>REGION:</span><em>{{ rds.region }}</em></div>
+                    <div class="rds-field"><span>PROVINCE:</span><em>{{ rds.province }}</em></div>
+                    <div class="rds-field"><span>CITY/MUNICIPALITY:</span><em>{{ rds.city }}</em></div>
+                    <div class="rds-field"><span>BARANGAY:</span><em>{{ rds.barangay }}</em></div>
+                </div>
+                <div>
+                    <div class="rds-field"><span>NAME OF EVACUATION CENTER:</span><em></em></div>
+                    <div class="rds-field"><span>TYPE OF DISASTER:</span><em>{{ rds.disaster_type }}</em></div>
+                    <div class="rds-field"><span>DATE OF OCCURRENCE:</span><em>{{ rds.occurred_on }}</em></div>
+                    <div class="rds-field"><span>DATE OF RELIEF DISTRIBUTION:</span><em></em></div>
+                </div>
+            </div>
 
-            {% if rows %}
-            <div class="rpt-table-wrap">
-                <table class="rpt-table">
+            <div class="rds-wrap">
+                <table class="rds-table">
+                    <colgroup>
+                        <col style="width:4%"><col style="width:11%"><col style="width:11%"><col style="width:10%"><col style="width:5%">
+                        <col style="width:5%"><col style="width:4%"><col style="width:4%">
+                        <col style="width:8%"><col style="width:10%"><col style="width:9%"><col style="width:19%">
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th>FAMILY NAME</th><th>HOUSEHOLD HEAD</th><th>PUROK</th>
-                            <th>PACKS</th><th>RECEIVED</th>
+                            <th rowspan="2">NO.</th>
+                            <th colspan="4">NAME OF BENEFICIARY</th>
+                            <th colspan="3">BIRTHDAY</th>
+                            <th rowspan="2">NO. OF<br>DEPENDENT/<br>(S)</th>
+                            <th colspan="2">ASSISTANCE PROVIDED</th>
+                            <th rowspan="2">SIGNATURE/<br>THUMBMARK<br>Received FNI in<br>Good Condition</th>
+                        </tr>
+                        <tr>
+                            <th>LAST</th><th>FIRST</th><th>MIDDLE</th><th>EXT.</th>
+                            <th>YYYY</th><th>MM</th><th>DD</th>
+                            <th>Kind<br>/type</th><th>Quantity<br>/unit</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for r in rows %}
                         <tr>
-                            <td>{{ r.family_name }}</td>
-                            <td>{{ r.head_name or '-' }}</td>
-                            <td>{{ r.purok or '-' }}</td>
-                            <td>{{ r.packs }}</td>
-                            <td class="rpt-tally-box">&#9633;</td>
+                            <td class="rds-no">{{ loop.index }}.</td>
+                            <td>{{ r.last_name }}</td>
+                            <td>{{ r.first_name }}</td>
+                            <td></td><td></td>
+                            <td></td><td></td><td></td>
+                            <td class="rds-c">{{ r.dependents }}</td>
+                            <td class="rds-c">Family Food Pack</td>
+                            <td class="rds-c">{{ r.packs }} pack{{ 's' if r.packs != 1 }}</td>
+                            <td></td>
                         </tr>
                         {% endfor %}
-                        <tr class="rpt-total-row">
-                            <td colspan="3"><strong>TOTAL</strong></td>
-                            <td><strong>{{ "{:,}".format(rows|sum(attribute='packs')) }}</strong></td>
+                        {# Blank numbered rows so the sheet is never shorter than
+                           the paper form - extra walk-in beneficiaries can be
+                           written in by hand. #}
+                        {% for _ in range([12 - rows|length, 0]|max) %}
+                        <tr>
+                            <td class="rds-no">{{ rows|length + loop.index }}.</td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        {% endfor %}
+                        {% set total = rows|sum(attribute='packs') %}
+                        <tr class="rds-total">
+                            <td colspan="9"></td>
+                            <td class="rds-c">TOTAL</td>
+                            <td class="rds-c">{{ "{:,}".format(total) }} pack{{ 's' if total != 1 }}</td>
                             <td></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            {% else %}
-            <p class="empty-note">No families to list.</p>
-            {% endif %}
 
+            {% set lh = letterhead %}
             {% include "_report_signatures.html" %}
         </section>
 
