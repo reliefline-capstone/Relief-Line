@@ -196,8 +196,13 @@
                         </form>
                     </div>
                     {% elif report.status == 'fulfilled' %}
-                    <form method="POST" action="{{ url_for('barangay.mark_family_received', report_id=report.report_id, raf_id=rf.id) }}" class="fam-distribute-action">
+                    <form method="POST" action="{{ url_for('barangay.mark_family_received', report_id=report.report_id, raf_id=rf.id) }}" class="fam-distribute-action" enctype="multipart/form-data">
                         <input type="number" name="packs_given" min="1" value="{{ rf.suggested_packs }}" class="fam-distribute-packs" title="Food packs given">
+                        <label class="fam-proof-btn" title="Attach photo proof (optional)">
+                            {{ icon('camera', 14) }} <span class="fam-proof-label">Photo</span>
+                            <input type="file" name="proof_photos" accept=".jpg,.jpeg,.png" multiple hidden
+                                   onchange="this.previousElementSibling.textContent = this.files.length ? this.files.length + ' photo' + (this.files.length > 1 ? 's' : '') : 'Photo'; this.parentElement.classList.toggle('has-file', this.files.length > 0);">
+                        </label>
                         <button type="submit" class="fam-mark-received-btn">Mark Received</button>
                     </form>
                     {% else %}

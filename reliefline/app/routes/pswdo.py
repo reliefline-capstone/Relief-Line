@@ -743,6 +743,39 @@ def _stock_recommendations(warehouses):
     return recommendations
 
 
+DEFAULT_SAFETY_RESERVE_PCT = 10
+
+
+def _safety_reserve(lgu, horizon_months, forecast=None):
+    """Policy safety reserve on top of the model's stockpile - the
+    recommendation layer, NOT part of the forecast (ml_predict.forecast_lgu
+    stays exactly what the data predicts, so its accuracy can still be
+    evaluated honestly).
+
+    The forecaster gives 0 for months with no typhoon on record (Dec-Jun in
+    the PAGASA calendar), but a short record isn't proof of zero risk and
+    monsoon/LPA flooding still happens. So each zero-forecast month in the
+    horizon gets a reserve of `pct`% of the LGU's per-storm P90, where `pct`
+    is the LGU's CSWDO/MSWDO office setting (Office.safety_reserve_pct,
+    default 10). Months the model already forecasts demand for get nothing
+    extra - their own stockpile is far larger than any reserve.
+
+    Returns None without a trained model, else
+    {pct, per_month, zero_months: ["Dec 2026", ...], total, stockpile, recommended}."""
+    f = forecast or ml_predict.forecast_lgu(lgu, horizon_months)
+    if not f:
+        return None
+    office = Office.query.filter_by(office_type="cswdo", area_covered=lgu).first()
+    pct = office.safety_reserve_pct if office and office.safety_reserve_pct is not None else DEFAULT_SAFETY_RESERVE_PCT
+    per_month = int(round(f["per_event_p90"] * pct / 100))
+    zero_months = [f"{m['label']} {m['year']}" for m in f["months"] if m["projected_packs"] == 0]
+    total = per_month * len(zero_months)
+    return {
+        "pct": pct, "per_month": per_month, "zero_months": zero_months, "total": total,
+        "stockpile": f["horizon_p90"], "recommended": f["horizon_p90"] + total,
+    }
+
+
 def _forecast_recommendations(warehouses, horizon_months=6, audience="pswdo"):
     """Forecast-driven stock recommendations, one per municipal (CSWDO)
     warehouse: compares its food-pack stock with the model's month-by-month
@@ -768,7 +801,10 @@ def _forecast_recommendations(warehouses, horizon_months=6, audience="pswdo"):
         if not f or not f["months"]:
             continue
         stock = int(w["food_pack_qty"])
-        stockpile, expected = int(f["horizon_p90"]), int(f["horizon_total"])
+        # Recommended stockpile = the model's P90 stockpile + the office's
+        # safety reserve for zero-forecast months (see _safety_reserve).
+        reserve = _safety_reserve(lgu, horizon_months, f)
+        stockpile, expected = int(reserve["recommended"]), int(f["horizon_total"])
         if stock >= stockpile:
             continue
 
@@ -788,8 +824,11 @@ def _forecast_recommendations(warehouses, horizon_months=6, audience="pswdo"):
             rec_type, title = "warning", f"{lgu} stock is {shortfall:,} packs short of the recommended stockpile"
             summary = (f"{stock:,} packs on hand covers the expected {expected:,} packs over the next "
                        f"{horizon_months} months, but a bad season would run out{' in ' + run_p if run_p else ''}.")
+        reserve_note = (f" (includes a {reserve['total']:,}-pack safety reserve for "
+                        f"{len(reserve['zero_months'])} zero-forecast month{'s' if len(reserve['zero_months']) != 1 else ''})"
+                        if reserve["total"] else "")
         recs.append({"type": rec_type, "lgu": lgu, "title": title, "summary": summary,
-                     "detail": f"{summary} {action} to reach {stockpile:,}."})
+                     "detail": f"{summary} {action} to reach {stockpile:,}{reserve_note}."})
     recs.sort(key=lambda r: 0 if r["type"] == "critical" else 1)
     return recs
 
@@ -1180,20 +1219,80 @@ def _take_from_batches(batches, quantity):
     return lots
 
 
-def _deduct_food_pack_batches(office_id, quantity):
+def _batch_picks_from_form(office_id, quantity):
+    """The dispatch forms' optional "Choose batches" mode (see the
+    batch_picker macro in _macros.html): with batch_mode=manual, each
+    batch_qty_<batch_id> field says how many packs to take from that batch of
+    `office_id`'s warehouse. Returns (picks, error) - picks is
+    {batch_id: qty} or None for the default nearest-expiry-first (FEFO) mode;
+    error is a message to flash when the picks don't belong to this
+    warehouse, exceed a batch, or don't add up to `quantity`. Call it BEFORE
+    touching any stock."""
+    if request.form.get("batch_mode") != "manual":
+        return None, None
+    picks = {}
+    for key, raw in request.form.items():
+        if not key.startswith("batch_qty_"):
+            continue
+        try:
+            batch_id, qty = int(key[len("batch_qty_"):]), int(raw or 0)
+        except ValueError:
+            return None, "Enter whole numbers for the packs taken from each batch."
+        if qty < 0:
+            return None, "Packs taken from a batch can't be negative."
+        if qty:
+            picks[batch_id] = qty
+    if not picks:
+        return None, "Choose at least one batch, or switch back to automatic (nearest expiry first)."
+    batches = {b.batch_id: b for b in FoodPackBatch.query.filter(
+        FoodPackBatch.batch_id.in_(picks), FoodPackBatch.office_id == office_id,
+        FoodPackBatch.status == "active",
+    ).all()}
+    if set(batches) != set(picks):
+        return None, "A selected batch isn't available in this warehouse any more - reload and choose again."
+    for batch_id, qty in picks.items():
+        b = batches[batch_id]
+        if qty > b.quantity_remaining:
+            return None, (f"The batch received {b.received_date.strftime('%b %d, %Y')} only has "
+                          f"{b.quantity_remaining:,} packs left.")
+    total = sum(picks.values())
+    if total != quantity:
+        return None, f"The packs chosen from batches ({total:,}) must add up to the quantity ({quantity:,})."
+    return picks, None
+
+
+def _deduct_food_pack_batches(office_id, quantity, picks=None):
     """Call wherever Food Packs leave an office's stock (dispatch to a
     barangay, transfer to another office): takes `quantity` from the office's
     active batches, nearest expiration first, so the Food Pack Batches panel
     drops the moment stock goes out and always adds up to on-hand. Returns
     the lots as a JSON string to store on the transfer/distribution record -
     the receiving side rebuilds its batches from it (see _lots_from_json),
-    so shelf life travels with the stock. Does not commit."""
+    so shelf life travels with the stock. Does not commit.
+
+    `picks` ({batch_id: qty}, already validated by _batch_picks_from_form)
+    takes exactly those amounts from exactly those batches instead - the
+    staff's own choice of which packs go out."""
     if not quantity or quantity <= 0:
         return None
     batches = FoodPackBatch.query.filter_by(office_id=office_id, status="active").filter(
         FoodPackBatch.quantity_remaining > 0
     ).all()
-    return json.dumps(_take_from_batches(batches, quantity))
+    if not picks:
+        return json.dumps(_take_from_batches(batches, quantity))
+    lots = []
+    for b in batches:
+        if b.batch_id in picks:
+            lots += _take_from_batches([b], picks[b.batch_id])
+    return json.dumps(lots)
+
+
+def _pickable_food_pack_batches(office_id):
+    """Active batches with packs left, in the FEFO order the automatic mode
+    would use - what the batch_picker macro lists for `office_id`."""
+    return _batch_take_order(FoodPackBatch.query.filter_by(office_id=office_id, status="active").filter(
+        FoodPackBatch.quantity_remaining > 0
+    ).all())
 
 
 def _lots_from_json(raw, limit, fallback_date=None):
@@ -1528,9 +1627,9 @@ def dashboard():
     # Affected families + municipalities - straight from what the barangays
     # reported for the active event(s), across the 3 target LGUs. No severity
     # grading and no approval gate (same basis as the CSWDO/MSWDO dashboard):
-    # any barangay with a non-draft report counts, and a barangay that filed
-    # more than one report for an event is counted once, on its latest report,
-    # so an updated figure replaces the earlier one instead of stacking.
+    # any submitted (non-draft, non-declined) report counts, and the family
+    # total is the sum of EVERY such report for the whole event - a barangay's
+    # later reports add to its earlier ones.
     total_affected_families = 0
     affected_municipalities = set()
     if active_events:
@@ -1539,20 +1638,11 @@ def dashboard():
             Barangay, Barangay.barangay_id == BarangayReport.barangay_id
         ).filter(
             BarangayReport.event_id.in_(event_ids),
-            BarangayReport.status != "draft",
+            BarangayReport.status.notin_(("draft", "declined")),
             Barangay.city_municipality.in_(TARGET_LGUS),
-        ).order_by(
-            BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
         ).all()
-        latest_by_barangay = {}
-        for rep in event_reports:
-            latest_by_barangay.setdefault(rep.barangay_id, rep)
-        total_affected_families = sum(
-            (r.affected_families or 0) for r in latest_by_barangay.values()
-        )
-        affected_municipalities = {
-            r.barangay.city_municipality for r in latest_by_barangay.values()
-        }
+        total_affected_families = sum((r.affected_families or 0) for r in event_reports)
+        affected_municipalities = {r.barangay.city_municipality for r in event_reports}
 
     # Burn rate - derived from the same per-LGU SARIMAX forecast the full
     # Recommendations page uses (ml_predict.forecast_lgu), instead of live
@@ -2255,6 +2345,10 @@ def warehouse_stock_transfer_page():
         if not source_inventory or source_inventory.quantity_available < quantity:
             flash("Source warehouse does not have enough food pack stock for this transfer.", "error")
             return redirect(url_for("pswdo.warehouse_stock_transfer_page"))
+        picks, err = _batch_picks_from_form(from_office_id, quantity)
+        if err:
+            flash(err, "error")
+            return redirect(url_for("pswdo.warehouse_stock_transfer_page"))
 
         dest_inventory = WarehouseInventory.query.filter_by(
             office_id=to_office_id, item_type="food_pack"
@@ -2271,7 +2365,7 @@ def warehouse_stock_transfer_page():
         # Batches follow the stock: nearest-expiry packs leave the source depot
         # and arrive at the destination with their own dates intact.
         for received_date, qty, specs in _lots_from_json(
-                _deduct_food_pack_batches(from_office_id, quantity), quantity, ph_today()):
+                _deduct_food_pack_batches(from_office_id, quantity, picks), quantity, ph_today()):
             _create_food_pack_batch(to_office_id, qty, received_date, current_user.user_id, specs)
 
         db.session.add(WarehouseTransfer(
@@ -2499,12 +2593,20 @@ def _gis_config():
     instead of hardcoding routes in gis_map.js. Each URL is None for the role
     that shouldn't see that action, and gis_map.js hides the button entirely:
       - barangayReportsUrl: CSWDO only - reviewing barangay reports is entirely
-        a CSWDO/MSWDO responsibility; PSWDO has no barangay-report page."""
+        a CSWDO/MSWDO responsibility; PSWDO has no barangay-report page.
+      - barangayDistributionsUrl: CSWDO only - a barangay's distribution
+        history (hand-outs + photo proof), opened per barangay."""
     is_pswdo = current_user.role in ("pswdo_admin", "system_admin")
     scope = _gis_scope_lgus()
     return {
         "role": current_user.role,
         "barangayReportsUrl": None if is_pswdo else url_for("cswdo.damage_assessment"),
+        # CSWDO only - monitoring a barangay's hand-outs to residents (and the
+        # photo proof behind them) is the city/municipal office's job.
+        "barangayDistributionsUrl": None if is_pswdo else url_for("cswdo.barangay_distribution_history"),
+        # CSWDO only - the barangay panel's delivery "View All" (Deliveries page
+        # filtered by barangay_id); PSWDO expands the panel's own list instead.
+        "deliveriesUrl": None if is_pswdo else url_for("cswdo.deliveries"),
         "defaultLgu": scope[0] if len(scope) == 1 else None,
     }
 
@@ -3185,6 +3287,10 @@ def approve_relief_request(batch_id):
     if quantity > available:
         flash(f"{depot.office_name} only has {available:,} food packs available.", "error")
         return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
+    picks, err = _batch_picks_from_form(depot.office_id, quantity)
+    if err:
+        flash(err, "error")
+        return redirect(url_for("pswdo.relief_request_detail", batch_id=batch_id))
 
     src.quantity_available -= quantity
     src.updated_by = current_user.user_id
@@ -3193,7 +3299,7 @@ def approve_relief_request(batch_id):
         item_type="food_pack", quantity=quantity, batch_id=batch.batch_id,
         status="pending", dispatch_status="preparing",
         requested_by=current_user.user_id,
-        batch_lots=_deduct_food_pack_batches(depot.office_id, quantity),
+        batch_lots=_deduct_food_pack_batches(depot.office_id, quantity, picks),
     )
     db.session.add(transfer)
     db.session.add(WarehouseStockLog(
@@ -3275,6 +3381,10 @@ def direct_allocation():
     if quantity > available:
         flash(f"{depot.office_name} only has {available:,} food packs available.", "error")
         return redirect(url_for("pswdo.relief_requests"))
+    picks, err = _batch_picks_from_form(depot.office_id, quantity)
+    if err:
+        flash(err, "error")
+        return redirect(url_for("pswdo.relief_requests"))
 
     src.quantity_available -= quantity
     src.updated_by = current_user.user_id
@@ -3285,7 +3395,7 @@ def direct_allocation():
         issued_by=current_user.user_id, issued_at=ph_now(),
         note=request.form.get("remarks", "").strip() or "Proactive pre-positioning",
         requested_by=current_user.user_id,
-        batch_lots=_deduct_food_pack_batches(depot.office_id, quantity),
+        batch_lots=_deduct_food_pack_batches(depot.office_id, quantity, picks),
     )
     db.session.add(transfer)
     db.session.add(WarehouseStockLog(
@@ -3433,9 +3543,9 @@ def recommendations_page():
     # (for the shortage/coverage comparison against what's on hand right
     # now); "stockpile_total" is the full horizon, PSWDO's actual
     # pre-positioning target.
-    horizon_months = request.args.get("months", 6, type=int)
+    horizon_months = request.args.get("months", 12, type=int)
     if horizon_months not in (3, 6, 9, 12):
-        horizon_months = 6
+        horizon_months = 12
 
     municipalities = []
     total_demand = total_shortage = total_stockpile = 0

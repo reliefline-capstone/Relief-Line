@@ -813,6 +813,12 @@
     white-space: nowrap; flex-shrink: 0;
 }
 .fam-mark-received-btn:hover { background: #196f3d; }
+.fam-proof-btn {
+    display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; cursor: pointer;
+    border: 1px dashed #b8c2d3; border-radius: 6px; font-size: 13px; font-weight: 600; color: #5a6478; background: #fff;
+}
+.fam-proof-btn:hover { border-color: #6c5ce7; color: #6c5ce7; }
+.fam-proof-btn.has-file { border-style: solid; border-color: #1e8449; color: #1e8449; background: #eafaf1; }
 /* Same missing-.btn-view-sm issue for the "Undo" button next to a
    received tag. */
 .fam-undo-btn {
@@ -1035,6 +1041,9 @@
     html[data-theme="dark"] .fam-distribute-packs { border: 1px solid #3c4051; border-radius: 6px; }
     html[data-theme="dark"] .fam-mark-received-btn { background: #1e8449; color: #ffffff; border: none; border-radius: 6px; }
     html[data-theme="dark"] .fam-mark-received-btn:hover { background: #196f3d; }
+    html[data-theme="dark"] .fam-proof-btn { border: 1px dashed #43475a; border-radius: 6px; color: #adb1bf; background: #1c1f29; }
+    html[data-theme="dark"] .fam-proof-btn:hover { border-color: #6c5ce7; color: #a79df1; }
+    html[data-theme="dark"] .fam-proof-btn.has-file { border-style: solid; border-color: #1e8449; color: #7ae1a5; background: #223c2e; }
     html[data-theme="dark"] .fam-undo-btn { background: #1c1f29; color: #d1d1d1; border: 1px solid #3a3e4e; border-radius: 6px; }
     html[data-theme="dark"] .fam-undo-btn:hover { background: #242437; }
     html[data-theme="dark"] .fam-received-tag { color: #7ae1a5; }

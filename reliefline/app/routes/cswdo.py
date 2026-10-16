@@ -47,7 +47,7 @@ from app.routes.pswdo import (
     _gis_scope_lgus, _gis_config,
     _parse_stock_source, _slugify, _full_stock_movements,
     _shelf_status, _sync_food_pack_batches, NEAR_EXPIRY_DAYS,
-    _create_food_pack_batch, _deduct_food_pack_batches, _lots_from_json, _refreshed_batch_items,
+    _create_food_pack_batch, _deduct_food_pack_batches, _batch_picks_from_form, _pickable_food_pack_batches, _lots_from_json, _refreshed_batch_items,
     _parse_food_pack_contents, _parse_item_expiration, _parse_expiration_date, _plan_expiration,
 )
 from app.models.warehouse import WarehouseStockLog
@@ -344,28 +344,21 @@ def dashboard():
 
     # Affected barangays + families - straight from what the barangays reported
     # for the current active event (this LGU only). No severity grading and no
-    # approval gate: any barangay with a non-draft report for the event counts,
-    # and the family total is the plain sum of those reports as filed. A barangay
-    # that filed more than one report for the event is counted once, on its
-    # latest report, so an updated figure replaces the earlier one instead of
-    # stacking on top of it.
+    # approval gate: any barangay with a submitted (non-draft, non-declined)
+    # report for the event counts once toward affected barangays, and the
+    # family total is the sum of EVERY such report for the whole event - a
+    # barangay's later reports add to its earlier ones (same basis as the
+    # barangay dashboard's Current Situation totals).
     affected_barangays_count = 0
     total_affected_families = 0
     if primary_event and event_barangay_ids:
         event_reports = BarangayReport.query.filter(
             BarangayReport.event_id == primary_event.event_id,
             BarangayReport.barangay_id.in_(event_barangay_ids),
-            BarangayReport.status != "draft",
-        ).order_by(
-            BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
+            BarangayReport.status.notin_(("draft", "declined")),
         ).all()
-        latest_by_barangay = {}
-        for rep in event_reports:
-            latest_by_barangay.setdefault(rep.barangay_id, rep)
-        affected_barangays_count = len(latest_by_barangay)
-        total_affected_families = sum(
-            (r.affected_families or 0) for r in latest_by_barangay.values()
-        )
+        affected_barangays_count = len({r.barangay_id for r in event_reports})
+        total_affected_families = sum((r.affected_families or 0) for r in event_reports)
 
     # Municipal food-pack stock - own office only (province-wide warehouse
     # management stays a PSWDO responsibility; see Table 10 of the manuscript).
@@ -552,6 +545,54 @@ def gis_map():
     )
 
 
+@cswdo_bp.route("/barangay-distributions")
+@login_required
+@role_required("cswdo_admin", "system_admin")
+def barangay_distribution_history():
+    """Read-only monitoring view of one barangay's hand-outs to residents -
+    every 'distribution' row of its BarangayStockLog, with the optional photo
+    proof the barangay attached (see app.routes.barangay._save_distribution_proof).
+    Opened from the GIS map's barangay panel; scoped to this office's own
+    municipality (same _gis_scope_lgus boundary as the map)."""
+    from app.models.barangay_inventory import BarangayStockLog
+
+    scope_lgus = _gis_scope_lgus()
+    barangay_options = (
+        Barangay.query.filter(Barangay.city_municipality.in_(scope_lgus))
+        .order_by(Barangay.barangay_name).all()
+        if scope_lgus else []
+    )
+    barangay_id = request.args.get("barangay_id", type=int)
+    barangay = next((b for b in barangay_options if b.barangay_id == barangay_id), None)
+    if barangay_id and not barangay:
+        abort(404)
+
+    proof_filter = request.args.get("proof", "all")
+    date_from, date_to = date_range(request.args)
+    logs = []
+    if barangay:
+        q = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id, source_type="distribution")
+        if proof_filter == "with":
+            q = q.filter(BarangayStockLog.proof_photos.isnot(None))
+        elif proof_filter == "without":
+            q = q.filter(BarangayStockLog.proof_photos.is_(None))
+        if date_from:
+            q = q.filter(db.func.date(BarangayStockLog.created_at) >= date_from)
+        if date_to:
+            q = q.filter(db.func.date(BarangayStockLog.created_at) <= date_to)
+        logs = q.order_by(BarangayStockLog.created_at.desc(), BarangayStockLog.log_id.desc()).all()
+
+    return render_template(
+        "cswdo/barangay_distributions.html",
+        barangay=barangay, barangay_options=barangay_options, logs=logs,
+        total_packs=sum(-l.delta for l in logs),
+        with_proof=sum(1 for l in logs if l.proof_photo_list),
+        families_reached=len({l.family_id for l in logs if l.family_id}),
+        on_hand=food_pack_on_hand(barangay.barangay_id) if barangay else None,
+        proof_filter=proof_filter, date_from=iso(date_from), date_to=iso(date_to),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Relief Requests inbox - barangay Relief Requests come here. CSWDO/MSWDO
 # reviews each, approves + fulfils from its OWN municipal warehouse (creates
@@ -666,7 +707,7 @@ def damage_assessment():
     )
 
 
-def _fulfil_barangay_request(report, quantity, office):
+def _fulfil_barangay_request(report, quantity, office, picks=None):
     """Create the AllocationRecord + its DistributionRecord for an approved
     barangay Relief Request, and deduct the fulfilling CSWDO warehouse. The
     barangay's own inventory is bumped later, when it confirms receipt."""
@@ -699,7 +740,7 @@ def _fulfil_barangay_request(report, quantity, office):
         barangay_id=report.barangay_id, allocation_id=alloc.allocation_id,
         quantity_released=quantity, distribution_date=ph_today(),
         dispatch_status="preparing", submitted_by=current_user.user_id,
-        batch_lots=_deduct_food_pack_batches(office.office_id, quantity),
+        batch_lots=_deduct_food_pack_batches(office.office_id, quantity, picks),
     )
     db.session.add(dist)
 
@@ -714,7 +755,7 @@ def _fulfil_barangay_request(report, quantity, office):
     return alloc, None
 
 
-def _push_proactive_allocation(barangay, quantity, office, event, remarks):
+def _push_proactive_allocation(barangay, quantity, office, event, remarks, picks=None):
     """CSWDO/MSWDO pushing food packs to a barangay proactively - no
     BarangayReport behind it (source='cswdo_direct'). Same warehouse-check +
     AllocationRecord + DistributionRecord shape as _fulfil_barangay_request;
@@ -750,7 +791,7 @@ def _push_proactive_allocation(barangay, quantity, office, event, remarks):
         barangay_id=barangay.barangay_id, allocation_id=alloc.allocation_id,
         quantity_released=quantity, distribution_date=ph_today(),
         dispatch_status="preparing", submitted_by=current_user.user_id,
-        batch_lots=_deduct_food_pack_batches(office.office_id, quantity),
+        batch_lots=_deduct_food_pack_batches(office.office_id, quantity, picks),
     )
     db.session.add(dist)
 
@@ -815,7 +856,12 @@ def proactive_allocate():
         flash("Add a short justification for this proactive allocation (no barangay request backs it, so this is the record of why).", "error")
         return _redirect(event_id)
 
-    alloc, error = _push_proactive_allocation(barangay, quantity, office, event, remarks)
+    picks, error = _batch_picks_from_form(office.office_id, quantity)
+    if error:
+        flash(error, "error")
+        return _redirect(event_id)
+
+    alloc, error = _push_proactive_allocation(barangay, quantity, office, event, remarks, picks)
     if error:
         flash(error, "error")
         return _redirect(event_id)
@@ -907,7 +953,12 @@ def approve_relief_request(report_id):
         flash("Enter the number of food packs to allocate.", "error")
         return redirect(url_for("cswdo.damage_assessment"))
 
-    alloc, error = _fulfil_barangay_request(report, quantity, office)
+    picks, error = _batch_picks_from_form(office.office_id, quantity)
+    if error:
+        flash(error, "error")
+        return redirect(url_for("cswdo.damage_assessment"))
+
+    alloc, error = _fulfil_barangay_request(report, quantity, office, picks)
     if error:
         db.session.rollback()
         flash(error, "error")

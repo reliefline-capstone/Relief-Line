@@ -8,6 +8,10 @@ class Office(db.Model):
     office_type = db.Column(db.Enum("pswdo", "cswdo"), nullable=False)
     area_covered = db.Column(db.String(100), nullable=False)
     capacity_food_pack = db.Column(db.Integer, default=20000)
+    # Policy setting, not a model output: the monthly safety reserve this
+    # office keeps for months the forecaster gives 0 (no typhoon on record),
+    # as a % of its LGU's per-storm P90 - see app.routes.pswdo._safety_reserve.
+    safety_reserve_pct = db.Column(db.Integer, nullable=False, default=10, server_default=db.text("10"))
 
     # Warehouse "General Information" fields - optional since not every office
     # (e.g. plain CSWDO administrative offices) doubles as a staffed storage site.

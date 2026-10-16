@@ -269,6 +269,29 @@
 .pa-stock-tiles .pa-decision-tile strong { font-size: 22px; line-height: 1.2; color: #0f2547; }
 .pa-stock-tiles .pa-decision-tile strong + .rd-sub { font-size: 13px; color: #6b7280; }
 
+/* Safety reserve (policy layer on top of the forecast) - chart bar, note + office setting. */
+.pa-bar-reserve { fill: #f6c56b; stroke: #c98a12; stroke-width: 1.2; stroke-dasharray: 4 3; }
+.pa-bar-value.pa-bar-value-reserve { fill: #a06a06; }
+.pa-legend .lg-reserve, .pa-tooltip .lg-reserve { background: #f6c56b; border: 1.2px dashed #c98a12; border-radius: 3px 3px 0 0; }
+.pa-reserve-note {
+    margin: 8px auto 4px; padding: 6px 14px; max-width: 960px;
+    border: 1px solid transparent; border-radius: 10px;
+}
+.pa-reserve-note[open] { padding: 10px 14px; border-color: #e3e8f0; background: #fbfcfe; }
+.pa-reserve-note summary {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    cursor: pointer; list-style: none; font-size: 13px; color: #5b6475;
+}
+.pa-reserve-note summary::-webkit-details-marker { display: none; }
+.pa-reserve-note summary strong { color: #3d4451; }
+.pa-reserve-more { color: #5347ce; font-weight: 600; }
+.pa-reserve-more::after { content: " \25BE"; }
+.pa-reserve-note[open] .pa-reserve-more::after { content: " \25B4"; }
+.pa-reserve-body { margin: 8px 0 0; }
+.pa-reserve-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: #5b6475; }
+.pa-reserve-form label { font-weight: 600; color: #3d4451; }
+.pa-reserve-form input[type="number"] { width: 72px; padding: 6px 8px; border: 1px solid #d8dee9; border-radius: 6px; font-size: 13px; background: #fff; }
+
 .pa-bar-value {
     fill: #1a2233;
     font-size: 13px;
@@ -473,6 +496,17 @@
     html[data-theme="dark"] .pa-stock-tiles .pa-decision-tile > .rd-sub:first-child { color: #aeb1bf; }
     html[data-theme="dark"] .pa-stock-tiles .pa-decision-tile strong { color: #78a2e3; }
     html[data-theme="dark"] .pa-stock-tiles .pa-decision-tile strong + .rd-sub { color: #a9acb7; }
+    html[data-theme="dark"] .pa-bar-reserve { fill: #f6c56b; stroke: #f2c369; }
+    html[data-theme="dark"] .pa-bar-value.pa-bar-value-reserve { fill: #f9c462; }
+    html[data-theme="dark"] .pa-legend .lg-reserve, html[data-theme="dark"] .pa-tooltip .lg-reserve { background: #f6c56b; border: 1.2px dashed #c98a12; border-radius: 3px 3px 0 0; }
+    html[data-theme="dark"] .pa-reserve-note { border: 1px solid transparent; border-radius: 10px; }
+    html[data-theme="dark"] .pa-reserve-note[open] { border-color: #3d4552; background: #1d202a; }
+    html[data-theme="dark"] .pa-reserve-note summary { color: #aeb1bf; }
+    html[data-theme="dark"] .pa-reserve-note summary strong { color: #c0c3ce; }
+    html[data-theme="dark"] .pa-reserve-more { color: #a6a0e6; }
+    html[data-theme="dark"] .pa-reserve-form { color: #aeb1bf; }
+    html[data-theme="dark"] .pa-reserve-form label { color: #c0c3ce; }
+    html[data-theme="dark"] .pa-reserve-form input[type="number"] { border: 1px solid #3c4051; border-radius: 6px; background: #1c1f29; }
     html[data-theme="dark"] .pa-bar-value { fill: #93a4c8; }
     html[data-theme="dark"] .pa-bar-label { fill: #8a94a6; }
     html[data-theme="dark"] .pa-model-panel, html[data-theme="dark"] .pa-decision-logic { border-top: 1px solid #373b4b; }

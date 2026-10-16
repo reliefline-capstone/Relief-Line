@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, batch_picker with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Barangay Reports - ReliefLine{% endblock %}
@@ -53,11 +53,41 @@
                 </div>
 
                 {% if rep.affected_families_list %}
-                <p class="form-hint" style="margin:12px 0 6px;">Affected families ({{ rep.affected_families_list|length }})</p>
+                <div class="fam-recv-wrap">
+                <p class="form-hint" style="margin:12px 0 6px;">Affected families ({{ rep.affected_families_list|length }}){% set n_recv = rep.affected_families_list|selectattr('received')|list|length %}{% if n_recv %} · <span class="fam-recv-count">{{ n_recv }} received</span>{% endif %}</p>
                 <div style="display:flex; flex-wrap:wrap; gap:6px;">
                     {% for rf in rep.affected_families_list %}
-                    <span class="fam-badge" title="{% if rf.head_name %}Head: {{ rf.head_name }} - {% endif %}{{ rf.member_count }} members{% if rf.pwd_count %}, {{ rf.pwd_count }} PWD{% endif %}{% if rf.senior_count %}, {{ rf.senior_count }} senior{% endif %}">{{ rf.family_name }} ({{ rf.member_count }})</span>
+                    {% set fam_title = ('Head: ' ~ rf.head_name ~ ' - ' if rf.head_name else '') ~ rf.member_count ~ ' members' ~ (', ' ~ rf.pwd_count ~ ' PWD' if rf.pwd_count else '') ~ (', ' ~ rf.senior_count ~ ' senior' if rf.senior_count else '') %}
+                    {% if rf.received %}
+                    {# Green = the barangay marked this family as having received its packs; click for the hand-out details + photo proof. #}
+                    <button type="button" class="fam-badge fam-badge-received" title="{{ fam_title }} · Received - click for details"
+                            onclick="var p = document.getElementById('fam-recv-{{ rf.id }}'); var open = p.hidden; this.closest('.fam-recv-wrap').querySelectorAll('.fam-recv-panel').forEach(function (x) { x.hidden = true; }); p.hidden = !open;">
+                        {{ icon('check', 11) }} {{ rf.family_name }} ({{ rf.member_count }})
+                    </button>
+                    {% else %}
+                    <span class="fam-badge" title="{{ fam_title }}">{{ rf.family_name }} ({{ rf.member_count }})</span>
+                    {% endif %}
                     {% endfor %}
+                </div>
+                {% for rf in rep.affected_families_list if rf.received %}
+                {% set dlog = rf.distribution_log %}
+                <div class="fam-recv-panel" id="fam-recv-{{ rf.id }}" hidden>
+                    <div class="fam-recv-head">
+                        <strong>{{ rf.family_name }}</strong>
+                        <span>received {{ "{:,}".format(rf.packs_given) }} food pack{{ 's' if rf.packs_given != 1 }}{% if rf.received_at %} · {{ rf.received_at.strftime('%b %d, %Y %I:%M %p') }}{% endif %}{% if rf.received_by_user %} · recorded by {{ rf.received_by_user.name }}{% endif %}</span>
+                    </div>
+                    {% if dlog and dlog.proof_photo_list %}
+                    <div class="fam-recv-photos">
+                        {% for name in dlog.proof_photo_list %}
+                        {% set photo_url = url_for('static', filename='uploads/barangay_distributions/' ~ dlog.log_id ~ '/' ~ name) %}
+                        <a href="{{ photo_url }}" target="_blank" title="Open full size"><img src="{{ photo_url }}" alt="Photo proof - {{ rf.family_name }}" loading="lazy"></a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="fam-recv-none">No photo proof attached for this hand-out.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
                 </div>
                 {% endif %}
 
@@ -106,6 +136,7 @@
                             {%- if r.requested %}Prefilled with the barangay's request of {{ "{:,}".format(r.requested) }} · {% endif -%}
                             your warehouse: {{ "{:,}".format(on_hand) }} on hand</span>
                     </div>
+                    {{ batch_picker([current_user.office.office_id] if current_user.office else []) }}
                     <div class="form-row">
                         <label for="rr-r-{{ rep.report_id }}">Remarks (optional)</label>
                         <textarea name="review_remarks" id="rr-r-{{ rep.report_id }}" rows="2"></textarea>

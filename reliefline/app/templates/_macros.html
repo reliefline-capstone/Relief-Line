@@ -2,6 +2,52 @@
 <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="{{ color }}" stroke-width="{{ stroke_width }}" stroke-linecap="round" stroke-linejoin="round">{{ ICONS[name]|safe }}</svg>
 {% endmacro %}
 
+{# Optional "which batches go out" choice for a food-pack dispatch form.
+   Default mode is automatic (nearest expiry first - the server's FEFO);
+   "Choose batches" lists the warehouse's active batches with a quantity box
+   each (batch_qty_<id>), which must add up to the form's `quantity` field -
+   see app.routes.pswdo._batch_picks_from_form. `office_ids` is one office
+   (CSWDO) or every selectable depot (PSWDO); with several, `office_select`
+   names the form's warehouse <select> and only that depot's batches show. #}
+{% macro batch_picker(office_ids, office_select=None) %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/batch_picker.css') }}?v={{ asset_version('css/batch_picker.css') }}">
+<div class="bp" data-bp{% if office_select %} data-bp-office-select="{{ office_select }}"{% endif %}>
+    <span class="bp-label">Food pack batches</span>
+    <div class="bp-mode">
+        <label><input type="radio" name="batch_mode" value="auto" checked> Automatic <small>(nearest expiry first)</small></label>
+        <label><input type="radio" name="batch_mode" value="manual"> Choose batches</label>
+    </div>
+    <div class="bp-body" hidden>
+        {% set today = ph_today() %}
+        {% for oid in office_ids %}
+        {% set batches = pickable_food_pack_batches(oid) %}
+        <div class="bp-office" data-bp-office="{{ oid }}">
+            {% if batches %}
+            <table class="bp-table">
+                <thead><tr><th>Received</th><th>Expires</th><th>Contents</th><th>Left</th><th>Take</th></tr></thead>
+                <tbody>
+                {% for b in batches %}
+                <tr>
+                    <td>{{ b.received_date.strftime('%b %d, %Y') }}</td>
+                    <td class="{{ 'bp-expired' if b.expiration_date < today else ('bp-near' if (b.expiration_date - today).days <= 30 else '') }}">{{ b.expiration_date.strftime('%b %d, %Y') }}</td>
+                    <td class="bp-contents">{{ b.items|map(attribute='label')|join(', ') or 'Standard food pack' }}</td>
+                    <td>{{ "{:,}".format(b.quantity_remaining) }}</td>
+                    <td><input type="number" name="batch_qty_{{ b.batch_id }}" min="0" max="{{ b.quantity_remaining }}" placeholder="0" class="bp-qty" disabled></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="bp-empty">No food pack batches on record in this warehouse.</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <p class="bp-total">Chosen: <strong data-bp-total>0</strong> <span data-bp-target></span></p>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/batch_picker.js') }}?v={{ asset_version('js/batch_picker.js') }}"></script>
+{% endmacro %}
+
 {% macro prediction_disclaimer() %}
 <div class="pa-disclaimer">
     {{ icon('info', 13, '#8a94a6') }}

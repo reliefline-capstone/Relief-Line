@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, batch_picker with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range with context %}
 {# This page's URL with every current filter kept, `over` changing some of
    them (None drops one). #}
@@ -161,6 +161,7 @@
             </div>
             <div class="form-row"><label for="pp-qty">Quantity *</label><input type="number" name="quantity" id="pp-qty" min="1" required data-transfer-qty></div>
             <div class="transfer-calc-preview" data-transfer-preview hidden></div>
+            {{ batch_picker(depots|map(attribute='office.office_id')|list, 'fulfilling_office_id') }}
             <div class="form-row"><label for="pp-note">Note</label><input type="text" name="remarks" id="pp-note" placeholder="e.g. Ahead of forecast landfall"></div>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">Pre-position</button>

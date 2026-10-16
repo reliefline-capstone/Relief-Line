@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon, prediction_disclaimer with context %}
+{% from "_macros.html" import icon, prediction_disclaimer, batch_picker with context %}
 
 {% block title %}Stock Transfer - ReliefLine{% endblock %}
 
@@ -82,6 +82,8 @@
                             <input type="text" name="reason" id="reason" placeholder="Optional">
                         </div>
                     </div>
+
+                    {{ batch_picker(warehouses|map(attribute='office.office_id')|list, 'from_office_id') }}
 
                     <div class="wh-transfer-preview" id="transfer-preview" hidden>
                         <div class="wh-transfer-preview-col">

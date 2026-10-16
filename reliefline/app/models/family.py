@@ -97,3 +97,18 @@ class ReportAffectedFamily(db.Model):
     @property
     def suggested_packs(self):
         return 1 + (self.pwd_count or 0) + (self.senior_count or 0)
+
+    @property
+    def distribution_log(self):
+        """The BarangayStockLog written when this family was marked received
+        (app.routes.barangay.mark_family_received) - carries the packs and any
+        photo proof. Matched on family + the "<family> - <report ref>" reason
+        that route writes; the latest one wins, so an Undo + re-mark points at
+        the current record. None when not received (or no log found)."""
+        if not self.received:
+            return None
+        from app.models.barangay_inventory import BarangayStockLog
+        return BarangayStockLog.query.filter_by(
+            barangay_id=self.report.barangay_id, source_type="distribution",
+            family_id=self.family_id, reason=f"{self.family_name} - {self.report.ref}",
+        ).order_by(BarangayStockLog.log_id.desc()).first()

@@ -80,9 +80,17 @@ class BarangayStockLog(db.Model):
     family_id = db.Column(
         db.Integer, db.ForeignKey("barangay_families.family_id", ondelete="SET NULL"), nullable=True
     )
+    # Optional photo proof of a 'distribution' (comma-separated filenames under
+    # static/uploads/barangay_distributions/<log_id>/) - see
+    # app.routes.barangay._save_distribution_proof.
+    proof_photos = db.Column(db.String(500), nullable=True)
     updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
     barangay = db.relationship("Barangay", backref="stock_logs")
+
+    @property
+    def proof_photo_list(self):
+        return [n for n in (self.proof_photos or "").split(",") if n]
     updated_by_user = db.relationship("User", foreign_keys=[updated_by])
     family = db.relationship("Family")

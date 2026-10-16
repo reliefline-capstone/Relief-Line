@@ -548,6 +548,20 @@ BARANGAY_REPORT_TYPES = {
         "description": "Complete history of food pack deliveries received by this barangay.",
         "icon": "truck",
     },
+    "stock_movements": {
+        "title": "Stock Movement History",
+        "description": "Every food pack movement in this barangay's inventory - received, distributed, adjusted, expired.",
+        "icon": "package",
+    },
+}
+
+# Same wording the barangay Inventory page's Movement History uses.
+BARANGAY_STOCK_SOURCE_LABELS = {
+    "delivery": "Received",
+    "distribution": "Distributed",
+    "adjustment": "Adjustment",
+    "damaged_return": "Returned - Damaged",
+    "expired": "Expired",
 }
 
 BARANGAY_REPORT_STATUS_LABELS = {
@@ -634,9 +648,56 @@ def _build_barangay_relief_deliveries(barangay, filters):
     }
 
 
+def _build_barangay_stock_movements(barangay, filters):
+    from app.models.barangay_inventory import BarangayStockLog
+
+    q = BarangayStockLog.query.filter(
+        BarangayStockLog.barangay_id == barangay.barangay_id,
+        BarangayStockLog.created_at >= filters["start_date"],
+    )
+    # Stock logs carry no event_id of their own (a hand-out or recount isn't
+    # tied to a typhoon), so an event filter narrows to the event's date span.
+    event = filters["event"]
+    if event:
+        q = q.filter(db.func.date(BarangayStockLog.created_at) >= event.start_date)
+        if event.end_date:
+            q = q.filter(db.func.date(BarangayStockLog.created_at) <= event.end_date)
+    logs = q.order_by(BarangayStockLog.created_at.desc(), BarangayStockLog.log_id.desc()).all()
+    return _barangay_stock_movement_table(logs)
+
+
+def _barangay_stock_movement_table(logs):
+    """{columns, rows, notes} for a list of BarangayStockLog rows - shared by
+    the Reports page's Stock Movement History and the Inventory page's
+    Movement History export."""
+    rows = []
+    for i, l in enumerate(logs, start=1):
+        label = BARANGAY_STOCK_SOURCE_LABELS.get(l.source_type, l.source_type.title())
+        if l.source_type == "expired":  # same split as the Inventory page's Movement History
+            if l.item_type == "food_pack_expired":
+                label = "Expired - Cleared" if l.delta < 0 else "Expired - Flagged"
+            else:
+                label = "Expired - Removed" if l.delta < 0 else "Expired - Restocked"
+        details = l.reason or "-"
+        if l.family and l.family.family_name not in details:
+            details = f"{details} · {l.family.family_name}" if l.reason else l.family.family_name
+        rows.append([
+            i, l.created_at.strftime("%b %d, %Y %I:%M %p") if l.created_at else "-",
+            label, l.item_name, f"{l.delta:+,}", details,
+            f"{len(l.proof_photo_list)} photo{'s' if len(l.proof_photo_list) != 1 else ''}" if l.proof_photo_list else "-",
+            l.updated_by_user.name if l.updated_by_user else "-",
+        ])
+
+    return {
+        "columns": ["#", "Date", "Movement", "Item", "Quantity", "Details", "Photo Proof", "Recorded By"],
+        "rows": rows,
+    }
+
+
 BARANGAY_BUILDERS = {
     "damage_reports": _build_barangay_damage_reports,
     "relief_deliveries": _build_barangay_relief_deliveries,
+    "stock_movements": _build_barangay_stock_movements,
 }
 
 
@@ -657,6 +718,35 @@ def build_barangay_report(report_type, barangay, filters, user=None):
         "notes": data.get("notes"),
         "coverage": coverage,
         "event_name": filters["event"].event_name if filters["event"] else "All Events",
+        "municipality_label": f"Brgy. {barangay.barangay_name}, {barangay.city_municipality}",
+        "date_generated": ph_now(),
+        "prepared_by": user.name if user else "Barangay User",
+        "prepared_by_role": ROLE_LABELS.get(user.role, user.role) if user else "Barangay User",
+        "letterhead": build_letterhead(user, barangay=barangay),
+    }
+
+
+def build_barangay_movement_export(barangay, logs, type_label, date_from, date_to, user=None):
+    """Inventory page Movement History export - same report shape as
+    build_barangay_report(), driven by that page's own Type/Date filters
+    (already applied to `logs`) instead of the Reports page's event/days."""
+    info = BARANGAY_REPORT_TYPES["stock_movements"]
+    data = _barangay_stock_movement_table(logs)
+    if date_from or date_to:
+        coverage = f"{_fmt_date(date_from) if date_from else 'Start'} to {_fmt_date(date_to) if date_to else 'Present'}"
+    else:
+        coverage = "All Time"
+    return {
+        "report_type": "stock_movements",
+        "title": info["title"],
+        "description": info["description"],
+        "columns": data["columns"],
+        "rows": data["rows"],
+        "record_count": len(data["rows"]),
+        "notes": data.get("notes"),
+        "coverage": coverage,
+        "event_label": "Movement Type",
+        "event_name": type_label,
         "municipality_label": f"Brgy. {barangay.barangay_name}, {barangay.city_municipality}",
         "date_generated": ph_now(),
         "prepared_by": user.name if user else "Barangay User",

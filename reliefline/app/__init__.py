@@ -33,6 +33,13 @@ def create_app():
 
     app.jinja_env.globals["asset_version"] = asset_version
 
+    def pickable_food_pack_batches(office_id):
+        # Lazy import - app.routes.pswdo imports models/extensions at load time.
+        from app.routes.pswdo import _pickable_food_pack_batches
+        return _pickable_food_pack_batches(office_id) if office_id else []
+    # Used by the batch_picker macro (_macros.html) on every dispatch form.
+    app.jinja_env.globals["pickable_food_pack_batches"] = pickable_food_pack_batches
+
     from app.models.user import User
     from app.models.office import Office
     from app.models.barangay import Barangay

@@ -4,7 +4,7 @@ import json
 import os
 import shutil
 import zipfile
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from app.utils.timezone import ph_now, ph_today
 
@@ -263,32 +263,37 @@ def dashboard():
         # event and so has no primary_event of its own at all.
         province_event = blocking_event_for_province()
 
-    # Current Standing - this barangay's status for the active event. Prefer
-    # the MSWDO-synced BarangayDisasterStatus (set once a report is approved);
-    # before that, fall back to the barangay's own latest submitted report so
-    # the panel reflects what was filed instead of showing 0 next to the
-    # affected-individuals / damaged-houses figures pulled from that same
-    # report.
-    status_row = None
-    latest_report = None
+    # Reports that count toward the affected-families figures: anything the
+    # barangay actually sent to MSWDO/CSWDO, minus ones MSWDO/CSWDO declined.
+    counted_reports = BarangayReport.query.filter(
+        BarangayReport.barangay_id == barangay.barangay_id,
+        BarangayReport.status.notin_(("draft", "declined")),
+    )
+
+    # Affected Families card - daily running total, event or not: the sum of
+    # every report submitted today (PH time), resetting at 12:00 AM.
+    today_start = datetime.combine(ph_today(), datetime.min.time())
+    affected_families = sum(
+        r.affected_families or 0 for r in counted_reports.filter(
+            BarangayReport.submitted_at >= today_start,
+            BarangayReport.submitted_at < today_start + timedelta(days=1),
+        ).all()
+    )
+
+    # Current Situation - whole-event totals across every report submitted
+    # for the active event.
+    event_totals = None
     if primary_event:
-        status_row = BarangayDisasterStatus.query.filter_by(
-            barangay_id=barangay.barangay_id, event_id=primary_event.event_id
-        ).first()
-        latest_report = BarangayReport.query.filter(
-            BarangayReport.barangay_id == barangay.barangay_id,
-            BarangayReport.event_id == primary_event.event_id,
-            BarangayReport.status != "draft",
-        ).order_by(BarangayReport.created_at.desc()).first()
-    if status_row:
-        affected_families = status_row.affected_families
-        standing_verified = True
-    elif latest_report:
-        affected_families = latest_report.affected_families
-        standing_verified = False
-    else:
-        affected_families = 0
-        standing_verified = False
+        event_reports = counted_reports.filter(
+            BarangayReport.event_id == primary_event.event_id
+        ).all()
+        event_totals = {
+            "reports": len(event_reports),
+            "affected_families": sum(r.affected_families or 0 for r in event_reports),
+            "affected_individuals": sum(r.affected_individuals or 0 for r in event_reports),
+            "totally_damaged_houses": sum(r.totally_damaged_houses or 0 for r in event_reports),
+            "partially_damaged_houses": sum(r.partially_damaged_houses or 0 for r in event_reports),
+        }
 
     # My damage reports - needing attention (submitted/returned) vs. all-time count
     my_reports = _own_submitted_reports(barangay.barangay_id)
@@ -330,9 +335,7 @@ def dashboard():
         primary_event=primary_event,
         province_event=province_event,
         affected_families=affected_families,
-        status_row=status_row,
-        latest_report=latest_report,
-        standing_verified=standing_verified,
+        event_totals=event_totals,
         pending_reports_count=len(pending_reports),
         returned_reports_count=len(returned_reports),
         recent_reports=recent_reports,
@@ -1535,18 +1538,7 @@ def inventory():
     received = sum(l.delta for l in all_logs if l.delta > 0)
     given_out = sum(-l.delta for l in all_logs if l.delta < 0)
 
-    type_filter = request.args.get("type", "all")
-    date_from, date_to = date_range(request.args)
-    legacy = arg_date(request.args, "date")  # old single-day ?date= links
-    if legacy and not (date_from or date_to):
-        date_from = date_to = legacy
-    logs_q = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id)
-    if type_filter != "all":
-        logs_q = logs_q.filter(BarangayStockLog.source_type == type_filter)
-    if date_from:
-        logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) >= date_from)
-    if date_to:
-        logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) <= date_to)
+    logs_q, type_filter, date_from, date_to = _inventory_movements_query(barangay)
     per_page = 20
     total_logs = logs_q.count()
     total_pages = max((total_logs + per_page - 1) // per_page, 1)
@@ -1585,6 +1577,57 @@ def inventory():
         type_filter=type_filter, date_from=iso(date_from), date_to=iso(date_to),
         batch_rows=batch_rows, near_expiry_days=NEAR_EXPIRY_DAYS, shelf_status_fn=_shelf_status,
         page=page, total_pages=total_pages, per_page=per_page, total_logs=total_logs,
+    )
+
+
+def _inventory_movements_query(barangay):
+    """Movement History query with the Inventory page's Type/Date filters
+    applied - shared by the page itself and its PDF/Excel export, so an
+    export always matches what the filtered list shows."""
+    type_filter = request.args.get("type", "all")
+    date_from, date_to = date_range(request.args)
+    legacy = arg_date(request.args, "date")  # old single-day ?date= links
+    if legacy and not (date_from or date_to):
+        date_from = date_to = legacy
+    logs_q = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id)
+    if type_filter != "all":
+        logs_q = logs_q.filter(BarangayStockLog.source_type == type_filter)
+    if date_from:
+        logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) >= date_from)
+    if date_to:
+        logs_q = logs_q.filter(db.func.date(BarangayStockLog.created_at) <= date_to)
+    return logs_q, type_filter, date_from, date_to
+
+
+INVENTORY_MOVEMENT_TYPE_LABELS = {
+    "delivery": "Received", "distribution": "Distributed",
+    "damaged_return": "Returned - Damaged", "expired": "Expired / Restocked",
+}
+
+
+@barangay_bp.route("/inventory/movements/export")
+@login_required
+@role_required("barangay_user")
+def inventory_movements_export():
+    """Movement History export - always Excel."""
+    from app.routes.report_data import build_barangay_movement_export
+    from app.routes.report_files import generate_file
+
+    fmt = "excel"
+    barangay = _own_barangay_or_404()
+    logs_q, type_filter, date_from, date_to = _inventory_movements_query(barangay)
+    logs = logs_q.order_by(BarangayStockLog.created_at.desc(), BarangayStockLog.log_id.desc()).all()
+    type_label = "All Types" if type_filter == "all" else INVENTORY_MOVEMENT_TYPE_LABELS.get(type_filter, type_filter.title())
+    report = build_barangay_movement_export(barangay, logs, type_label, date_from, date_to, current_user)
+    # Not logged to Recent Reports: a ReportLog re-download rebuilds from
+    # event/days filters only, so it couldn't reproduce this Type/Date-filtered
+    # export. Reports > Stock Movement History is the logged equivalent.
+    content, _pages = generate_file(report, fmt)
+
+    filename = f"stock_movements_{ph_now().strftime('%Y%m%d')}.{REPORTS_EXTENSIONS[fmt]}"
+    return Response(
+        content, mimetype=REPORTS_MIME_TYPES[fmt],
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 
@@ -1683,7 +1726,39 @@ def inventory_resolve_expired_batch(batch_id):
     return redirect(url_for("barangay.inventory"))
 
 
-def _record_barangay_distribution(barangay_id, amount, reason, family_id=None):
+DISTRIBUTION_PROOF_EXTENSIONS = {"jpg", "jpeg", "png"}
+
+
+def _distribution_proof_files():
+    """Optional photo proof attached to a distribution form (input name
+    "proof_photos"). Returns (files, error) - error is set when any attached
+    file isn't an image, so the caller can bail before touching stock."""
+    files = [f for f in request.files.getlist("proof_photos") if f and f.filename]
+    for f in files:
+        ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else ""
+        if ext not in DISTRIBUTION_PROOF_EXTENSIONS:
+            return [], "Proof photos must be JPG or PNG images."
+    return files, None
+
+
+def _save_distribution_proof(log, files):
+    """Saves the proof photos under static/uploads/barangay_distributions/<log_id>/
+    and records their names on the log. `log` must already have a log_id."""
+    if not files:
+        return
+    upload_dir = os.path.join(current_app.root_path, "static", "uploads", "barangay_distributions", str(log.log_id))
+    os.makedirs(upload_dir, exist_ok=True)
+    saved = []
+    for f in files:
+        safe_name = secure_filename(f.filename)
+        if not safe_name or safe_name in saved:
+            continue
+        f.save(os.path.join(upload_dir, safe_name))
+        saved.append(safe_name)
+    log.proof_photos = ",".join(saved) or None
+
+
+def _record_barangay_distribution(barangay_id, amount, reason, family_id=None, proof_files=None):
     """The one place barangay stock ever decreases (see inventory_record's
     docstring) - shared by the manual "Record Distribution" form on the
     Inventory page and the per-family "Mark Received" checklist on a
@@ -1695,6 +1770,9 @@ def _record_barangay_distribution(barangay_id, amount, reason, family_id=None):
     went to - set by either caller - so a family's distribution history is
     always the same one query (BarangayStockLog.family_id) regardless of
     whether the pack was tied to a report or handed out ad hoc.
+
+    `proof_files` (from _distribution_proof_files) are optional photo proof
+    that the packs were actually handed out, saved against the new log row.
 
     Returns an error message string when there isn't enough stock on hand
     (caller should flash it and bail without committing), or None on
@@ -1713,11 +1791,15 @@ def _record_barangay_distribution(barangay_id, amount, reason, family_id=None):
     # drops right away and keeps adding up to on hand.
     _take_from_batches(BarangayFoodPackBatch.query.filter_by(
         barangay_id=barangay_id, status="active").filter(BarangayFoodPackBatch.quantity_remaining > 0).all(), amount)
-    db.session.add(BarangayStockLog(
+    log = BarangayStockLog(
         barangay_id=barangay_id, item_type="food_pack", item_name="Food Packs",
         delta=-amount, source_type="distribution", reason=reason, family_id=family_id,
         updated_by=current_user.user_id,
-    ))
+    )
+    db.session.add(log)
+    if proof_files:
+        db.session.flush()  # need log_id for the upload folder
+        _save_distribution_proof(log, proof_files)
     return None
 
 
@@ -1755,7 +1837,15 @@ def inventory_record():
     if not reason:
         reason = f"Distributed to {family.family_name}" if family else "Distributed to residents"
 
-    err = _record_barangay_distribution(barangay.barangay_id, amount, reason, family_id=family.family_id if family else None)
+    proof_files, err = _distribution_proof_files()
+    if err:
+        flash(err, "error")
+        return redirect(url_for("barangay.inventory"))
+
+    err = _record_barangay_distribution(
+        barangay.barangay_id, amount, reason,
+        family_id=family.family_id if family else None, proof_files=proof_files,
+    )
     if err:
         flash(err, "error")
         return redirect(url_for("barangay.inventory"))
@@ -1798,8 +1888,14 @@ def mark_family_received(report_id, raf_id):
         flash("Enter a number of packs greater than zero.", "error")
         return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
 
+    proof_files, err = _distribution_proof_files()
+    if err:
+        flash(err, "error")
+        return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
+
     err = _record_barangay_distribution(
-        report.barangay_id, packs, f"{raf.family_name} - {report.ref}", family_id=raf.family_id
+        report.barangay_id, packs, f"{raf.family_name} - {report.ref}",
+        family_id=raf.family_id, proof_files=proof_files,
     )
     if err:
         flash(err, "error")

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, batch_picker with context %}
 
 {% block title %}{{ batch.ref }} - ReliefLine{% endblock %}
 
@@ -110,6 +110,7 @@
                         </select>
                     </div>
                     <div class="transfer-calc-preview" data-transfer-preview hidden></div>
+                    {{ batch_picker(depots|map(attribute='office.office_id')|list, 'fulfilling_office_id') }}
                     <div class="form-row"><label for="ap-remarks">Remarks</label><textarea name="remarks" id="ap-remarks" rows="2"></textarea></div>
                     <div class="rd-modal-actions">
                         <button type="submit" class="btn-decision btn-approve-full">Approve &amp; Create Transfer</button>

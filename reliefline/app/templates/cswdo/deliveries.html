@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon with context %}
+{% from "_macros.html" import icon, batch_picker with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
 
 {% block title %}Deliveries - ReliefLine{% endblock %}
@@ -176,6 +176,7 @@
                         <input type="number" name="quantity" id="dv-am-quantity" min="1" required>
                         <span class="form-hint">Your warehouse: {{ "{:,}".format(total_food_packs) }} on hand</span>
                     </div>
+                    {{ batch_picker([current_user.office.office_id] if current_user.office else []) }}
                     <div class="form-row">
                         <label for="dv-am-remarks">Justification *</label>
                         <textarea name="remarks" id="dv-am-remarks" rows="2" required
