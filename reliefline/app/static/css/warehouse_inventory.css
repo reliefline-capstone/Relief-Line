@@ -260,6 +260,9 @@
     font-variant-numeric: tabular-nums;
 }
 .wh-table tbody td strong { font-weight: 700; color: #1f2a44; }
+/* Movement quantities: + green, - red (beats the dark-navy default above) */
+.wh-table tbody td strong.text-green { color: #27ae60; }
+.wh-table tbody td strong.text-red { color: #c0392b; }
 
 /* Stock Transfers list: Type is a quiet category label, the route is
    the row's readable body text, Packs is the figure that stands out. */
@@ -944,6 +947,8 @@
     html[data-theme="dark"] .wh-table tr:last-child td { border-bottom: none; }
     html[data-theme="dark"] .wh-table tbody td:first-child { color: #caccd5; }
     html[data-theme="dark"] .wh-table tbody td strong { color: #8fa1cc; }
+    html[data-theme="dark"] .wh-table tbody td strong.text-green { color: #7ae1a5; }
+    html[data-theme="dark"] .wh-table tbody td strong.text-red { color: #e1847a; }
     html[data-theme="dark"] .wh-table-transfers tbody td:nth-child(2) { color: #a9acb7; }
     html[data-theme="dark"] .wh-table-transfers tbody td:nth-child(3) { color: #c1c4ce; }
     html[data-theme="dark"] .wh-sub { color: #9aa1ae; }

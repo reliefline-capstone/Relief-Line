@@ -276,36 +276,25 @@
                 </div>
 
                 <div class="pa-metrics">
-                    <div class="pa-metric pa-blue">
-                        <span>ESTIMATED NEED</span>
-                        <strong>{{ "{:,}".format(estimated_need) }}</strong>
+                    <div class="pa-metric pa-green">
+                        <span>CURRENT STOCK</span>
+                        <strong>{{ "{:,}".format(total_food_packs) }}</strong>
                         <span class="pa-sub">food packs</span>
                     </div>
-                    <div class="pa-metric pa-green">
-                        <span>CURRENT STOCKS</span>
-                        <strong>{{ "{:,}".format(total_food_packs) }}</strong>
-                        <span class="pa-sub">available</span>
+                    <div class="pa-metric pa-blue">
+                        <span>PROJECTED DEMAND</span>
+                        <strong>{{ "{:,}".format(projected_demand) }}</strong>
+                        <span class="pa-sub">this month</span>
                     </div>
-                    <div class="pa-metric pa-green">
-                        <span>REMAINING</span>
-                        <strong>{{ "{:,}".format(remaining_after_3days) }}</strong>
-                        <span class="pa-sub">after 3 days</span>
-                    </div>
-                </div>
-
-                <div class="pa-burn-row">
-                    <div>
-                        <span class="pa-burn-label">{{ icon('activity', 12) }} BURN RATE</span>
-                        <strong>~{{ burn_rate|int }} packs / day</strong>
-                    </div>
-                    <div class="pa-burn-good">
-                        <span class="pa-burn-label">{{ icon('calendar', 12) }} GOOD FOR</span>
-                        <strong>{% if days_remaining %}{{ days_remaining|int }}+ Days{% else %}N/A{% endif %}</strong>
+                    <div class="pa-metric pa-blue">
+                        <span>12-MONTH STOCKPILE</span>
+                        <strong>{{ "{:,}".format(stockpile_12mo) }}</strong>
+                        <span class="pa-sub">recommended</span>
                     </div>
                 </div>
 
                 <h4 class="pa-rec-title">SYSTEM RECOMMENDATIONS</h4>
-                {% for rec in recommendations %}
+                {% for rec in recommendations[:2] %}
                 <div class="recommendation-row rec-{{ rec.type }}">
                     {% if rec.type == 'info' %}{{ icon('arrow-right', 14) }}{% elif rec.type == 'warning' %}{{ icon('alert-triangle', 14) }}{% else %}{{ icon('alert-triangle', 14) }}{% endif %}
                     <div>

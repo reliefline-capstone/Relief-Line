@@ -20,7 +20,7 @@
         <span>{{ icon('arrow-right', 14) }}</span>
     </div>
     <div class="wh-movement-text">
-        <strong>{% if l.source_type == 'damaged_return' %}Returned - Damaged{% elif l.source_type == 'expired' %}{% if l.item_type == 'food_pack_expired' %}{{ 'Expired - Cleared' if l.delta < 0 else 'Expired - Flagged' }}{% else %}{{ 'Expired - Removed' if l.delta < 0 else 'Expired - Restocked' }}{% endif %}{% else %}{{ l.source_type|capitalize }}{% endif %}</strong>
+        <strong>{{ stock_log_label(l.item_type, l.delta, l.source_type, l.reason) or l.source_type|capitalize }}</strong>
         <span>{{ l.reason or '-' }}</span>
         {% if has_breakdown %}<span class="link-manage">View breakdown →</span>{% endif %}
         {% if l.proof_photo_list %}<span class="proof-chip" role="button" tabindex="0" data-open-modal="bi-proof-{{ l.log_id }}">{{ icon('camera', 12) }} {{ l.proof_photo_list|length }} photo{{ 's' if l.proof_photo_list|length != 1 }}</span>{% endif %}
@@ -112,7 +112,7 @@
                 <a href="{{ url_for('barangay.inventory_movements_export', **export_args) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
             </div>
             {% set EP = 'barangay.inventory' %}
-            {% set type_labels = {'delivery': 'Received', 'distribution': 'Distributed', 'damaged_return': 'Returned - Damaged', 'expired': 'Expired / Restocked'} %}
+            {% set type_labels = {'delivery': 'Received', 'distribution': 'Distributed', 'damaged_return': 'Damaged - Returned to Warehouse', 'expired': 'Expired Food Packs'} %}
             {% set fargs = {'type': type_filter if type_filter != 'all' else None, 'date_from': date_from or None, 'date_to': date_to or None} %}
             {% set chips = [] %}
             {% if fargs.type %}{% set _ = chips.append({'label': 'Type', 'value': type_labels.get(type_filter, type_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'type': None})}) %}{% endif %}

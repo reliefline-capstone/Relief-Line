@@ -26,7 +26,7 @@
 
         {% set EP = 'pswdo.warehouse_stock_movements' %}
         {% set type_labels = {'released': 'Released', 'transferred_out': 'Transferred Out', 'transferred_in': 'Transferred In',
-                              'received': 'Received', 'returned_damaged': 'Returned - Damaged', 'damaged_resolved': 'Damaged - Resolved'} %}
+                              'received': 'Received', 'returned_damaged': 'Damaged - Added to Damaged Food Packs', 'damaged_resolved': 'Damaged/Expired - Removed or Disposed'} %}
         {% set fargs = {'office_id': office_filter, 'type': type_filter if type_filter != 'all' else None, 'q': search_query or None,
                         'date_from': date_from or None, 'date_to': date_to or None} %}
         {% set chips = [] %}

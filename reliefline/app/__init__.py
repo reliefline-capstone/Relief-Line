@@ -16,6 +16,8 @@ def create_app():
     app.jinja_env.filters["ph_time"] = ph_time
     app.jinja_env.globals["ph_now"] = ph_now
     app.jinja_env.globals["ph_today"] = ph_today
+    from app.utils.stock_labels import stock_log_label
+    app.jinja_env.globals["stock_log_label"] = stock_log_label
     from app.models.disaster_event import EVENT_CATEGORIES
     app.jinja_env.globals["EVENT_CATEGORIES"] = EVENT_CATEGORIES
 

@@ -12,6 +12,7 @@ from datetime import date, datetime, timedelta
 from flask import current_app
 
 from app.utils.timezone import ph_now, ph_today
+from app.utils.stock_labels import stock_log_label
 
 from app.extensions import db
 from app.models.barangay import Barangay
@@ -560,8 +561,8 @@ BARANGAY_STOCK_SOURCE_LABELS = {
     "delivery": "Received",
     "distribution": "Distributed",
     "adjustment": "Adjustment",
-    "damaged_return": "Returned - Damaged",
-    "expired": "Expired",
+    "damaged_return": "Damaged - Returned to Warehouse",
+    "expired": "Expired Food Packs",
 }
 
 BARANGAY_REPORT_STATUS_LABELS = {
@@ -672,12 +673,9 @@ def _barangay_stock_movement_table(logs):
     Movement History export."""
     rows = []
     for i, l in enumerate(logs, start=1):
-        label = BARANGAY_STOCK_SOURCE_LABELS.get(l.source_type, l.source_type.title())
-        if l.source_type == "expired":  # same split as the Inventory page's Movement History
-            if l.item_type == "food_pack_expired":
-                label = "Expired - Cleared" if l.delta < 0 else "Expired - Flagged"
-            else:
-                label = "Expired - Removed" if l.delta < 0 else "Expired - Restocked"
+        # Same wording as the Inventory page's Movement History.
+        label = (stock_log_label(l.item_type, l.delta, l.source_type, l.reason)
+                 or BARANGAY_STOCK_SOURCE_LABELS.get(l.source_type, l.source_type.title()))
         details = l.reason or "-"
         if l.family and l.family.family_name not in details:
             details = f"{details} · {l.family.family_name}" if l.reason else l.family.family_name

@@ -1625,7 +1625,7 @@ def _inventory_movements_query(barangay):
 
 INVENTORY_MOVEMENT_TYPE_LABELS = {
     "delivery": "Received", "distribution": "Distributed",
-    "damaged_return": "Returned - Damaged", "expired": "Expired / Restocked",
+    "damaged_return": "Damaged - Returned to Warehouse", "expired": "Expired Food Packs",
 }
 
 

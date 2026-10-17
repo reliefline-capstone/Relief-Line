@@ -53,6 +53,9 @@ from app.routes.pswdo import (
 from app.models.warehouse import WarehouseStockLog
 from app.models.food_pack_batch import FoodPackBatch, FoodPackBatchItem, FoodPackComponent
 
+# Stock-in sources a CSWDO can tag - PSWDO's set plus City/Municipal supply.
+CSWDO_STOCK_SOURCES = ("standard", "donation", "dswd", "municipal")
+
 # CSWDO's own link targets for notification "View" buttons - deliberately NOT
 # the pswdo.* links NOTIFICATION_LINK_BUILDERS (app/routes/pswdo.py) resolves
 # to, since those point at pages role_required("pswdo_admin", "system_admin")
@@ -2247,7 +2250,7 @@ def municipal_inventory_add():
         flash("Enter a valid item name and quantity.", "error")
         return redirect(url_for("cswdo.municipal_inventory"))
 
-    source_type, donor_name, source_error = _parse_stock_source(request.form)
+    source_type, donor_name, source_error = _parse_stock_source(request.form, CSWDO_STOCK_SOURCES)
     if source_error:
         flash(source_error, "error")
         return redirect(url_for("cswdo.municipal_inventory"))
@@ -2309,7 +2312,7 @@ def municipal_inventory_update(inventory_id):
     # (incoming stock); a decrease is a manual correction (recount, spoilage).
     source_type, donor_name = "standard", None
     if delta > 0:
-        source_type, donor_name, source_error = _parse_stock_source(request.form)
+        source_type, donor_name, source_error = _parse_stock_source(request.form, CSWDO_STOCK_SOURCES)
         if source_error:
             flash(source_error, "error")
             return redirect(url_for("cswdo.municipal_inventory"))

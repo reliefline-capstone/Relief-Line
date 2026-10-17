@@ -53,9 +53,10 @@ class WarehouseStockLog(db.Model):
     # app.routes.pswdo._sync_food_pack_batches) when a FoodPackBatch passes
     # its expiration_date - moved into the separate "food_pack_expired"
     # item_type, kept apart from "food_pack_damaged" so the cause stays
-    # distinguishable.
-    source_type = db.Column(db.Enum("standard", "donation", "returned_damaged", "expired"), nullable=False,
-                             default="standard", server_default="standard")
+    # distinguishable. "dswd" is a DSWD-supplied restock (PSWDO or CSWDO);
+    # "municipal" is a City/Municipal LGU-funded restock (CSWDO only).
+    source_type = db.Column(db.Enum("standard", "donation", "dswd", "municipal", "returned_damaged", "expired"),
+                             nullable=False, default="standard", server_default="standard")
     donor_name = db.Column(db.String(150), nullable=True)
     updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
@@ -66,6 +67,11 @@ class WarehouseStockLog(db.Model):
     @property
     def is_donation(self):
         return self.source_type == "donation"
+
+    @property
+    def source_label(self):
+        """Movement-history label for a manual restock's source."""
+        return {"donation": "Donation", "dswd": "DSWD Supply", "municipal": "City/Municipal Supply"}.get(self.source_type)
 
     @property
     def is_damaged_return(self):

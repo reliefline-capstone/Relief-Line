@@ -11,6 +11,7 @@ from flask_login import login_required, current_user
 from datetime import date, datetime
 
 from app.utils.timezone import ph_now, ph_today
+from app.utils.stock_labels import stock_log_label
 from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.utils.decorators import role_required
@@ -1370,15 +1371,16 @@ def _slugify(text):
     return slug or "item"
 
 
-def _parse_stock_source(form):
+def _parse_stock_source(form, allowed=("standard", "donation", "dswd")):
     """Shared by warehouse_inventory_add and warehouse_inventory_update - one
     dispatch point for turning the "Source" field on either modal into
     (source_type, donor_name, error). A donation entry needs a named donor/
     agency so the tracking is actually useful (per the manuscript's "tracks
     incoming relief supplies including special donations from external
-    agencies"); anything else defaults to a routine "standard" restock."""
+    agencies"); anything else defaults to a routine "standard" restock.
+    `allowed` is the office's source options - CSWDO adds "municipal"."""
     source_type = form.get("source_type", "standard").strip()
-    if source_type not in ("standard", "donation"):
+    if source_type not in allowed:
         source_type = "standard"
 
     donor_name = None
@@ -1475,16 +1477,10 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
                 context = f"Donated by {log.donor_name}" + (f" - {log.reason}" if log.reason else "")
             else:
                 context = base_context
-            if log.is_damaged_return:
-                direction = "Returned - Damaged"
-            elif log.is_expired:
-                # Internal transfer, not new stock: the "+" half of an expired
-                # pack being flagged or replaced with fresh stock.
-                direction = "Expired - Flagged" if log.item_type == "food_pack_expired" else "Expired - Restocked"
-            elif log.is_donation:
-                direction = "Received - Donation"
-            else:
-                direction = "Received"
+            # Expired/damaged moves are internal shifts between Food Packs and
+            # the Expired/Damaged buckets, not new stock - see stock_log_label.
+            direction = (stock_log_label(log.item_type, log.delta, log.source_type, log.reason)
+                         or (f"Received - {log.source_label}" if log.source_label else "Received"))
             movements.append({
                 "office_id": log.office_id,
                 "office_name": log.office.office_name,
@@ -1494,6 +1490,30 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
                 "when": log.created_at.date(),
                 "sort_at": log.created_at,
                 "is_donation": log.is_donation,
+            })
+
+    if type_filter == "all":
+        # The "-" half of _sync_food_pack_batches' expiry move: usable Food
+        # Packs going down by what was just flagged into Food Packs (Expired).
+        # Without it the ledger shows only the "+ Added to Expired Food Packs" row.
+        removed_q = WarehouseStockLog.query.filter(
+            WarehouseStockLog.office_id.in_(office_ids),
+            WarehouseStockLog.item_type == "food_pack",
+            WarehouseStockLog.source_type == "expired",
+            WarehouseStockLog.delta < 0,
+        )
+        if filter_date:
+            removed_q = removed_q.filter(db.func.date(WarehouseStockLog.created_at) == filter_date)
+        for log in removed_q.all():
+            movements.append({
+                "office_id": log.office_id,
+                "office_name": log.office.office_name,
+                "direction": stock_log_label(log.item_type, log.delta, log.source_type, log.reason),
+                "qty": log.delta,
+                "context": f"{-log.delta:,} food packs removed from usable stock after passing their expiration date",
+                "when": log.created_at.date(),
+                "sort_at": log.created_at,
+                "is_donation": False,
             })
 
     if type_filter in ("all", "damaged_resolved"):
@@ -1510,7 +1530,7 @@ def _full_stock_movements(office_ids, type_filter="all", date_str=""):
         if filter_date:
             resolved_q = resolved_q.filter(db.func.date(WarehouseStockLog.created_at) == filter_date)
         for log in resolved_q.order_by(WarehouseStockLog.created_at.desc(), WarehouseStockLog.log_id.desc()).all():
-            direction = "Expired - Resolved" if log.item_type == "food_pack_expired" else "Damaged - Resolved"
+            direction = stock_log_label(log.item_type, log.delta, log.source_type, log.reason)
             movements.append({
                 "office_id": log.office_id,
                 "office_name": log.office.office_name,
@@ -1644,23 +1664,15 @@ def dashboard():
         total_affected_families = sum((r.affected_families or 0) for r in event_reports)
         affected_municipalities = {r.barangay.city_municipality for r in event_reports}
 
-    # Burn rate - derived from the same per-LGU SARIMAX forecast the full
-    # Recommendations page uses (ml_predict.forecast_lgu), instead of live
-    # active-event reports, so this preview can never read "all healthy"
-    # while the full page (Full view ->) shows real projected shortages.
-    # The model projects off historical seasonality regardless of whether an
-    # event is currently declared - see app.ml.predict module doc.
-    monthly_demand = sum(
-        (forecast["months"][0]["projected_packs"] if forecast and forecast["months"] else 0)
-        for forecast in (ml_predict.forecast_lgu(lgu, 1) for lgu in TARGET_LGUS)
-    )
-    next_month = now.month + 1 if now.month < 12 else 1
-    next_year = now.year if now.month < 12 else now.year + 1
-    days_in_next_month = calendar.monthrange(next_year, next_month)[1]
-    burn_rate = round(monthly_demand / days_in_next_month, 0) if monthly_demand > 0 else 0
-    days_remaining = round(total_food_packs / burn_rate, 1) if burn_rate > 0 else None
-    estimated_need = int(burn_rate * 3) if burn_rate > 0 else 0  # 3-day estimated need
-    remaining_after_3days = max(total_food_packs - estimated_need, 0)
+    # Projected demand this month + 12-month recommended stockpile - the same
+    # per-LGU forecast the full Recommendations page uses (ml_predict.forecast_lgu,
+    # default 12-month horizon), so this preview always matches Full view ->.
+    projected_demand = stockpile_12mo = 0
+    for lgu in TARGET_LGUS:
+        forecast = ml_predict.forecast_lgu(lgu, 12)
+        if forecast:
+            projected_demand += forecast["months"][0]["projected_packs"] if forecast["months"] else 0
+            stockpile_12mo += forecast["horizon_p90"]
 
     # Low stock warehouses - same "Low" health rating the Warehouse Inventory
     # page shows in red: food-pack stock below the moderate % of capacity
@@ -1708,10 +1720,8 @@ def dashboard():
         affected_municipalities_count=len(affected_municipalities),
         total_target_lgus=len(TARGET_LGUS),
         low_stock_warehouses=low_stock_warehouses,
-        burn_rate=burn_rate,
-        days_remaining=days_remaining,
-        estimated_need=estimated_need,
-        remaining_after_3days=remaining_after_3days,
+        projected_demand=projected_demand,
+        stockpile_12mo=stockpile_12mo,
         recommendations=recommendations,
         recent_activities=recent_activities,
         weather_cities=TARGET_LGUS,
