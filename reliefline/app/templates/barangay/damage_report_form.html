@@ -1,3 +1,5 @@
+{# Page: /barangay/damage-report/new and /barangay/damage-report/<id>/edit - The barangay report form. #}
+{# A 5-step form: basic info, incident details, affected families, photos, then review and submit. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -17,7 +19,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title (New Report, or Edit + report number) with the Save Draft button. #}
         <section class="page-header">
             <div>
                 <div class="wh-title-row">
@@ -40,6 +42,7 @@
         </div>
         {% endif %}
 
+        {# Step tracker at the top: shows which of the 5 steps you're on, with a progress bar. #}
         <div class="panel wizard-stepper-panel">
             <div class="wizard-stepper" id="wizard-stepper">
                 {% for s in [
@@ -60,10 +63,11 @@
             </div>
         </div>
 
+        {# The whole report form. 'Save Draft' and 'Submit' both send this form. #}
         <form method="POST" action="{{ url_for('barangay.submit_damage_report') }}" enctype="multipart/form-data" id="damage-report-form" class="wizard-form">
             <input type="hidden" name="report_id" value="{{ report.report_id if report else '' }}">
 
-            <!-- Step 1: Basic Info -->
+            {# Step 1 - Basic Information: barangay details (filled in automatically) and which disaster event. #}
             <section class="panel wizard-step" data-step="1">
                 <div class="panel-header"><h3>Basic Information</h3></div>
                 <p class="form-hint">Confirm the identifying details below, then continue.</p>
@@ -104,7 +108,7 @@
                 <div class="wizard-nav"><span></span><button type="button" class="btn-primary wizard-next">Next {{ icon('arrow-right', 14, 'white') }}</button></div>
             </section>
 
-            <!-- Step 2: Incident -->
+            {# Step 2 - Incident Details: date, time, flood level and damage to houses. #}
             <section class="panel wizard-step" data-step="2" hidden>
                 <div class="panel-header"><h3>Incident Details</h3></div>
                 <p class="form-hint">
@@ -130,7 +134,8 @@
                 </div>
             </section>
 
-            <!-- Step 3: Barangay Data -->
+            {# Step 3 - Barangay Assessment: tick the affected families from Family Profiles (or type totals), #}
+            {# with filters by purok and category; counts of people, PWDs, seniors and children update automatically. #}
             <section class="panel wizard-step" data-step="3" hidden>
                 <div class="panel-header"><h3>Barangay Assessment</h3></div>
                 <p class="form-hint">Check off which of your registered families were affected - families, individuals, PWD, and senior citizen counts are totalled automatically.</p>
@@ -181,7 +186,7 @@
                     </label>
                     {% endfor %}
                 </div>
-                </div><!-- /.fam-checklist-frame -->
+                </div>
                 <div class="fam-checklist-hint-row">
                     <p class="fam-checklist-hint" id="fam-checklist-hint"></p>
                     <span class="fam-scroll-hint" id="fam-scroll-hint" hidden>{{ icon('chevron-down', 12) }} Scroll to view more</span>
@@ -249,6 +254,7 @@
                         <span class="form-hint">If you have an estimate of how many food packs your barangay needs, enter it here.</span>
                     </div>
 
+                    {# Suggested food packs box, based on the ticked families. #}
                     <div class="step3-predict-card" id="fam-suggest-box" hidden>
                         <div class="step3-predict-info">
                             <span class="step3-predict-eyebrow">{{ icon('package', 14, 'white') }} Suggestion</span>
@@ -265,7 +271,7 @@
                 </div>
             </section>
 
-            <!-- Step 4: Evidence -->
+            {# Step 4 - Supporting Evidence: upload photos of the damage. #}
             <section class="panel wizard-step" data-step="4" hidden>
                 <div class="panel-header"><h3>Supporting Evidence</h3></div>
                 <p class="form-hint">Upload photos of affected areas and damaged houses.</p>
@@ -288,7 +294,7 @@
                 </div>
             </section>
 
-            <!-- Step 5: Review & Submit -->
+            {# Step 5 - Review & Submit: everything entered, to check before sending. #}
             <section class="panel wizard-step" data-step="5" hidden>
                 <div class="panel-header"><h3>Review &amp; Submit</h3></div>
                 <p class="form-hint">Review all information before submitting. Once submitted, this report cannot be edited unless returned by MSWDO/CSWDO.</p>
@@ -333,6 +339,7 @@
     var totalSteps = steps.length;
     var current = 1;
 
+    // Shows one step of the report form and highlights it in the step tracker at the top.
     function showStep(n) {
         steps.forEach(function (el) {
             el.hidden = (parseInt(el.dataset.step, 10) !== n);
@@ -349,18 +356,16 @@
         document.getElementById('wizard-pct').textContent = pct + '% complete';
         current = n;
         if (n === totalSteps) populateReview();
-        // .fam-checklist has 0 scrollHeight/clientHeight while its wizard step
-        // is hidden (display:none), so the scroll-hint's initial computation
-        // at page load sees "nothing to scroll" - recompute once this step
-        // is actually visible and laid out.
         if (typeof updateFamScrollHint === 'function') updateFamScrollHint();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // The form step currently shown.
     function currentStepEl() {
         return steps.find(function (el) { return parseInt(el.dataset.step, 10) === current; });
     }
 
+    // Checks the current step is filled in correctly before moving to the next one.
     function validateCurrentStep() {
         var el = currentStepEl();
         var invalid = el.querySelector(':invalid');
@@ -384,6 +389,7 @@
         return true;
     }
 
+    // Reads a number from a field (0 if empty).
     function num(id) { return parseInt((document.getElementById(id) || {}).value || '0', 10) || 0; }
 
     document.querySelectorAll('.wizard-next').forEach(function (btn) {
@@ -396,26 +402,20 @@
         btn.addEventListener('click', function () { if (current > 1) showStep(current - 1); });
     });
 
+    // Reads a field's text (or the selected option's text for dropdowns).
     function textOf(id) {
         var el = document.getElementById(id);
         return el ? (el.tagName === 'SELECT' ? el.options[el.selectedIndex].text : el.value) : '';
     }
 
-    // fam-sum-pwd/senior/children only exist when the barangay has
-    // registered families to check off (they sit inside Step 3's
-    // families-present branch) - a manual-only barangay never renders
-    // them, so this can't assume getElementById() succeeds the way
-    // textOf() does for the always-present form fields above.
+    // Reads an element's text.
     function contentOf(id) {
         var el = document.getElementById(id);
         return el ? el.textContent : '';
     }
 
+    // Fills the final 'Review' step with everything entered, so the user can check before submitting.
     function populateReview() {
-        // Typhoon Event is a radio group (see .event-radio-group), not a
-        // single element with its own id, so it can't use textOf() like
-        // the plain inputs below - only present at all when more than one
-        // active event exists (event_options|length > 1 in the template).
         var checkedEvent = document.querySelector('.event-radio-group input[name="event_id"]:checked');
         if (checkedEvent) {
             var nameEl = checkedEvent.closest('.event-radio-option').querySelector('.event-radio-name');
@@ -443,11 +443,6 @@
         });
     }
 
-    // --- Step 3: Family checklist / manual entry -----------------------
-    // Drives the hidden affected_families/affected_individuals fields
-    // (the ones actually submitted) from either the checked Family
-    // Profiles or the manual fallback inputs - see
-    // app.routes.barangay._apply_affected_families for the server side.
     var famCheckboxes = Array.prototype.slice.call(document.querySelectorAll('.fam-checkbox'));
     var manualToggle = document.getElementById('fam-manual-toggle');
     var manualFamiliesInput = document.getElementById('manual_affected_families');
@@ -469,6 +464,7 @@
     var famChecklistEl = document.getElementById('fam-checklist');
     var famScrollHint = document.getElementById('fam-scroll-hint');
 
+    // Shows a 'scroll for more' hint when the family checklist has more families below.
     function updateFamScrollHint() {
         if (!famChecklistEl || !famScrollHint) return;
         var hasMore = famChecklistEl.scrollHeight - famChecklistEl.scrollTop - famChecklistEl.clientHeight > 4;
@@ -476,23 +472,24 @@
     }
     if (famChecklistEl) famChecklistEl.addEventListener('scroll', updateFamScrollHint);
 
+    // Sets an element's text.
     function setText(id, val) {
         var el = document.getElementById(id);
         if (el) el.textContent = val;
     }
 
+    // Warns if the number of individuals is less than the number of families.
     function updateIndividualsHint(families, individuals) {
         var hint = document.getElementById('individuals-hint');
         if (!hint) return;
         hint.classList.toggle('hint-error', individuals < families);
     }
 
+    // Recounts the affected families, individuals, PWDs, seniors and children
+    // from the ticked families (or uses the typed totals in manual mode).
     function recomputeFamilyCounts() {
         var isManual = !!(manualToggle && manualToggle.checked);
         if (entryModeField) entryModeField.value = isManual ? 'manual' : 'checklist';
-        // The Affected Families/Individuals boxes stay visible either way -
-        // in checklist mode they're read-only and mirror the checked-off
-        // totals live; switching to manual mode unlocks them for typing.
         if (manualFamiliesInput) manualFamiliesInput.readOnly = !isManual;
         if (manualIndividualsInput) manualIndividualsInput.readOnly = !isManual;
 
@@ -502,10 +499,6 @@
             if (familiesField) familiesField.value = mf;
             if (individualsField) individualsField.value = mi;
             if (suggestBox) suggestBox.hidden = true;
-            // No checklist selection to tally PWD/senior/children from in
-            // manual mode - zero these out instead of leaving whatever was
-            // last computed from a checklist selection made before the
-            // toggle was switched on.
             setText('fam-sum-pwd', 0);
             setText('fam-sum-senior', 0);
             setText('fam-sum-children', 0);
@@ -539,7 +532,6 @@
             selectAll.checked = visibleCbs.length > 0 && visibleCbs.every(function (cb) { return cb.checked; });
         }
 
-
         if (suggestBox && suggestText && suggestUseBtn) {
             var suggested = famCount + pwd + senior;
             suggestBox.hidden = false;
@@ -549,7 +541,7 @@
         }
     }
 
-    // --- Step 3: search + purok/category filters for the checklist ------
+    // Filters the family checklist by name search, purok and category (PWD, senior...).
     function applyFamFilter() {
         if (!famRows.length) return;
         var q = famSearch ? famSearch.value.trim().toLowerCase() : '';

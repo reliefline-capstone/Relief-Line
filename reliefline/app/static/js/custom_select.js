@@ -1,15 +1,5 @@
-// Replaces every plain <select> on the page with a custom-styled dropdown.
-// Loaded globally (base.html) so every page gets this without needing
-// template-by-template changes - see custom_select.css for why (a native
-// select's open listbox can't be restyled with CSS at all).
-//
-// The original <select> is kept in the DOM (visually hidden, not removed)
-// so name/value form submission, `required` validation, and any existing
-// `select.addEventListener('change', ...)` wiring elsewhere in the
-// codebase (admin.js's role-field toggle, relief_request_detail.js's
-// transfer-calc preview, weather_widget.js's Declare Event modal, etc.)
-// keep working completely unchanged - this only adds a visual layer on
-// top and forwards real `change`/`input` events onto the original select.
+// Custom dropdown menus used across the app.
+// They replace the browser's built-in dropdowns so they look the same everywhere and match dark mode.
 (function () {
     'use strict';
 
@@ -20,19 +10,8 @@
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
         'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
-    // Inside a modal, .csel-list renders in normal document flow instead of
-    // overlaying (see .rd-modal .csel-list in custom_select.css) - opening
-    // it there pushes the rest of the form (hint text, Resolve/Cancel)
-    // down and the modal card genuinely grows to fit it, up to .rd-modal's
-    // own max-height: 90vh/overflow-y: auto cap. That's what a short list
-    // (e.g. 3 Resolution options) needs to show every option at once with
-    // no scrollbar and no overlap, without hand-computing available space -
-    // trying to fit the list into whatever gap happened to exist below the
-    // trigger in the modal's *pre-open* layout was exactly what forced a
-    // shorter max-height (and its scrollbar) than the options actually
-    // needed. Outside a modal (e.g. a toolbar filter), it still overlays
-    // via position: absolute, so picking a value there doesn't reflow
-    // whatever sits below it in the page.
+    // Places the dropdown list below the field, or above it if there isn't room,
+    // so it always fits on the screen.
     function positionList(wrap, list, trigger) {
         if (trigger.closest('.rd-modal')) return;
         var rect = trigger.getBoundingClientRect();
@@ -46,6 +25,7 @@
         list.style.maxHeight = Math.max(minListHeight, Math.min(maxListHeight, openUpward ? spaceAbove : spaceBelow)) + 'px';
     }
 
+    // Closes a dropdown.
     function closeDropdown(wrap) {
         wrap.classList.remove('is-open');
         var list = wrap.cselList;
@@ -58,12 +38,14 @@
         if (trigger) trigger.setAttribute('aria-expanded', 'false');
     }
 
+    // Closes every open dropdown except the given one.
     function closeAllExcept(exceptWrap) {
         document.querySelectorAll('.csel-wrap.is-open').forEach(function (w) {
             if (w !== exceptWrap) closeDropdown(w);
         });
     }
 
+    // Highlights an option in the list (for keyboard use) and scrolls it into view.
     function setActive(list, option) {
         list.querySelectorAll('.csel-option').forEach(function (o) { o.classList.remove('is-active'); });
         if (option) {
@@ -72,6 +54,7 @@
         }
     }
 
+    // Opens a dropdown (and closes any other open dropdown).
     function openDropdown(wrap) {
         if (wrap.classList.contains('is-disabled')) return;
         closeAllExcept(wrap);
@@ -87,6 +70,7 @@
         setActive(list, active);
     }
 
+    // Shows the selected option's text on the dropdown button.
     function refreshTriggerLabel(wrap) {
         var select = wrap.querySelector('.csel-native');
         var valueEl = wrap.querySelector('.csel-trigger .csel-value');
@@ -94,8 +78,6 @@
         if (!select || !valueEl) return;
         var opt = select.options[select.selectedIndex];
         valueEl.textContent = opt ? opt.textContent : '';
-        // In a filter bar the default first option ("All ...", value '' or
-        // 'all') reads muted like an empty date, so only a real filter is dark.
         var isDefault = !!opt && (opt.value === '' || (!!wrap.closest('.fp') && select.selectedIndex === 0));
         valueEl.classList.toggle('csel-placeholder', isDefault);
         if (list) {
@@ -105,6 +87,7 @@
         }
     }
 
+    // Selects an option, updates the real form field, and tells the page it changed.
     function selectOption(wrap, optionEl) {
         var select = wrap.querySelector('.csel-native');
         if (!select || optionEl.getAttribute('aria-disabled') === 'true') return;
@@ -119,10 +102,12 @@
         if (trigger) trigger.focus();
     }
 
+    // Turns a normal dropdown into the custom dropdown
+    // (supports mouse, keyboard and touch; skips dropdowns marked to keep the default).
     function enhance(select) {
-        if (select.closest('.csel-wrap')) return; // already enhanced
-        if ('noCustomSelect' in select.dataset) return; // explicit opt-out
-        if (select.hidden) return; // a hidden <select> must not get a visible custom trigger
+        if (select.closest('.csel-wrap')) return;
+        if ('noCustomSelect' in select.dataset) return;
+        if (select.hidden) return;
 
         var wrap = document.createElement('div');
         wrap.className = 'csel-wrap' + (select.disabled ? ' is-disabled' : '');
@@ -130,7 +115,7 @@
         select.parentNode.insertBefore(wrap, select);
         wrap.appendChild(select);
         select.classList.add('csel-native');
-        select.tabIndex = -1; // keyboard interaction goes through the trigger button
+        select.tabIndex = -1;
 
         var trigger = document.createElement('button');
         trigger.type = 'button';
@@ -190,13 +175,8 @@
             }
         });
 
-        // Keeps the widget in sync if something else on the page sets
-        // select.value directly and fires 'change' itself.
         select.addEventListener('change', function () { refreshTriggerLabel(wrap); });
 
-        // Native constraint validation (`required`) still fires on the
-        // hidden select - surface it visually on the trigger instead of
-        // leaving no visible cue near the widget the user actually sees.
         select.addEventListener('invalid', function () {
             trigger.classList.add('csel-invalid');
             trigger.focus();
@@ -213,14 +193,6 @@
         document.querySelectorAll('.csel-wrap.is-open').forEach(closeDropdown);
     });
 
-    // A modal closing (Escape, backdrop click, or its own close button -
-    // relief_request_detail.js sets .hidden straight on the overlay for
-    // Escape, no click event for the listener above to catch) while one of
-    // its own dropdowns is open would otherwise leave that dropdown's
-    // is-open/aria-expanded state stale for next time the same modal opens,
-    // even though .csel-list itself is invisible along with the rest of
-    // the hidden modal now (it's a normal descendant, not something
-    // escaped to <body> that could be left stranded on screen).
     document.querySelectorAll('.rd-modal-overlay').forEach(function (overlay) {
         new MutationObserver(function () {
             if (overlay.hidden) {

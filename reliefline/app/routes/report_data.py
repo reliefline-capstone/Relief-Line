@@ -1,13 +1,8 @@
-"""
-Data-builder functions for the Reports feature. Each builder pulls real rows
-from the same tables/helpers the rest of the app already uses (no synthetic
-report numbers) and returns a plain {columns, rows, ...} dict, so a single
-generic template/PDF/Excel renderer can present any of the 7 report types
-without a per-type template.
-"""
+# Collects the data for every PDF/Excel report.
+
 import os
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from flask import current_app
 
@@ -31,19 +26,8 @@ from app.routes.prediction import _barangay_snapshot
 from app.utils.roles import ROLE_LABELS
 
 
-# ---------------------------------------------------------------------------
-# Letterhead + signatories, following the standard Philippine LGU document
-# format: a centered "Republic of the Philippines / Province / City or
-# Municipality / Barangay" block, the issuing office, and signatories whose
-# approving authority matches the level that issued the report
-# (Province -> Governor, City/Municipality -> Mayor, Barangay -> Punong
-# Barangay). Shared by report_view.html, the PDF/Excel files and the family
-# list print sheet.
-# ---------------------------------------------------------------------------
-
+# The official name forms of a municipality (e.g. 'Urdaneta City' -> 'City of Urdaneta').
 def lgu_names(lgu):
-    """("CITY OF URDANETA", "City") for "Urdaneta City"; ("MUNICIPALITY OF
-    CALASIAO", "Municipal") for "Calasiao"."""
     name = (lgu or "").strip()
     lowered = name.lower()
     if lowered.endswith(" city"):
@@ -53,9 +37,6 @@ def lgu_names(lgu):
     return f"Municipality of {name}", "Municipal"
 
 
-# Official seals shown on the letterhead (paths under app/static). The
-# issuing LGU's own logo sits on the left and the provincial seal on the
-# right; a province-level report has just the provincial seal, on the left.
 PROVINCE_SEAL = "img/province-seal.png"
 LGU_LOGOS = {
     "Urdaneta City": "img/lgu/urdaneta.png",
@@ -64,6 +45,7 @@ LGU_LOGOS = {
 }
 
 
+# Which official seals go on the left and right of the letterhead.
 def _seals(lgu=None):
     logo = LGU_LOGOS.get(lgu) if lgu else None
     if logo:
@@ -71,36 +53,33 @@ def _seals(lgu=None):
     return {"logo_left": PROVINCE_SEAL, "logo_right": None}
 
 
+# Turns a name into a simple file-name form (e.g. 'Santa Barbara' -> 'santa-barbara').
 def _slug(text):
     return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
 
 
+# Finds a barangay's own seal image, if one exists in the app's files.
 def barangay_logo(barangay):
-    """Static path of the barangay's own seal - img/barangay/<lgu>/<name>.png
-    (e.g. img/barangay/urdaneta-city/anonas.png) - or None if there isn't one."""
     rel = f"img/barangay/{_slug(barangay.city_municipality)}/{_slug(barangay.barangay_name)}.png"
     return rel if os.path.exists(os.path.join(current_app.static_folder, *rel.split("/"))) else None
 
 
+# The seals for a barangay letterhead (barangay seal + municipal seal).
 def _barangay_seals(barangay):
-    """Barangay letterhead: its own seal left, its city/municipality's right.
-    Without a barangay seal on file it falls back to the LGU layout."""
     logo = barangay_logo(barangay)
     if logo:
         return {"logo_left": logo, "logo_right": LGU_LOGOS.get(barangay.city_municipality) or PROVINCE_SEAL}
     return _seals(barangay.city_municipality)
 
 
+# The blank 'Prepared By' signature line.
 def _preparer(user, fallback_position):
-    # Left blank on purpose - whoever prepares the printed copy writes their
-    # own name and position on the line, rather than it being prefilled with
-    # the account that happened to generate the file.
     return {"label": "Prepared By", "name": "", "position": "Signature over Printed Name"}
 
 
+# Builds the report letterhead: 'Republic of the Philippines', province, municipality/barangay,
+# the office name, seals and signature lines.
 def build_letterhead(user=None, barangay=None):
-    """Letterhead for a report issued by `user` - the barangay's own when
-    `barangay` is given, else the CSWDO/MSWDO's LGU, else the province."""
     lines = ["Republic of the Philippines", "Province of Pangasinan"]
     if barangay is not None:
         lgu_line, _ = lgu_names(barangay.city_municipality)
@@ -182,43 +161,26 @@ REPORT_TYPES = {
 }
 
 
+# Formats a date for reports (e.g. October 23, 2026).
 def _fmt_date(d):
     return d.strftime("%b %d, %Y") if d else "-"
 
 
+# Reads the report period filter (last 7, 30 or 90 days, or all time).
 def _parse_days(raw):
-    """Value 'all' means no time frame (every record on file); anything else
-    must be one of the 3 supported windows or it falls back to 30. Kept as a
-    plain string/int union (not always int) so 'all' survives a ReportLog's
-    stored filters_json round-trip on re-download."""
-    if raw is None:
-        return 30
-    if raw == "all":
+    if raw is None or raw == "all":
         return "all"
     try:
         days = int(raw)
     except (TypeError, ValueError):
-        return 30
-    return days if days in (7, 30, 90) else 30
+        return "all"
+    return days if days in (7, 30, 90) else "all"
 
 
+# Reads all report filters (event, municipality, period) and works out the date range.
 def resolve_filters(args):
-    """Shared filter parsing for the Reports listing page and every report type."""
     event_id = args.get("event_id", type=int)
-    if event_id:
-        event = DisasterEvent.query.get(event_id)
-    elif "event_id" in args:
-        # The event dropdown's "All Events" option submits event_id="" - an
-        # explicit choice to clear the filter, not "no selection made yet".
-        # Falling back to the active event here would make that option
-        # unselectable whenever a disaster event happens to be active.
-        event = None
-    else:
-        # No event param at all (e.g. a fresh visit to the Reports page) -
-        # default to whichever disaster event is currently active, if any.
-        event = DisasterEvent.query.filter_by(status="active").order_by(
-            DisasterEvent.start_date.desc()
-        ).first()
+    event = DisasterEvent.query.get(event_id) if event_id else None
 
     municipality = args.get("municipality", "all")
     if municipality not in TARGET_LGUS:
@@ -234,18 +196,12 @@ def resolve_filters(args):
         "municipality": municipality,
         "lgus": lgus,
         "days": days,
-        # date.min acts as "no lower bound" everywhere start_date is used in
-        # a >= comparison, so "All Time" needs no special-casing in builders.
         "start_date": ph_today() - timedelta(days=days) if days != "all" else date.min,
     }
 
 
+# Collects the data for the Relief Requests report (requests, quantities, statuses).
 def _build_relief_requests(filters):
-    """Barangay Reports - same rows/columns as the CSV export on the Barangay
-    Reports page (app.routes.cswdo.damage_assessment_export), just scoped to
-    every municipality in filters["lgus"] instead of one CSWDO's own LGU, plus
-    a leading Municipality column so a province-wide run stays readable.
-    """
     q = BarangayReport.query.join(Barangay).filter(
         Barangay.city_municipality.in_(filters["lgus"]),
         BarangayReport.status != "draft",
@@ -281,6 +237,7 @@ def _build_relief_requests(filters):
     }
 
 
+# Collects the data for the Distribution report (deliveries to barangays).
 def _build_distribution(filters):
     q = DistributionRecord.query.join(Barangay).filter(
         Barangay.city_municipality.in_(filters["lgus"]),
@@ -310,6 +267,7 @@ def _build_distribution(filters):
     }
 
 
+# Collects the data for the Warehouse Inventory report (stock in each warehouse).
 def _build_warehouse_inventory(filters):
     active_events = DisasterEvent.query.filter_by(status="active").order_by(
         DisasterEvent.start_date.desc()
@@ -341,6 +299,7 @@ def _build_warehouse_inventory(filters):
     }
 
 
+# Collects the data for the Stock Movement report (stock in and out).
 def _build_stock_movement(filters):
     all_offices, _, _ = _load_warehouses()
     if filters["municipality"] != "all":
@@ -364,6 +323,8 @@ def _build_stock_movement(filters):
     }
 
 
+# Collects the data for the Municipality Summary report
+# (affected families and food packs per municipality).
 def _build_municipality_summary(filters):
     rows = []
     for i, lgu in enumerate(filters["lgus"], start=1):
@@ -393,6 +354,8 @@ def _build_municipality_summary(filters):
     }
 
 
+# Collects the data for the Typhoon Event Summary report
+# (key numbers for one disaster event).
 def _build_typhoon_summary(filters):
     event = filters["event"]
     if not event:
@@ -443,6 +406,7 @@ def _build_typhoon_summary(filters):
     return {"columns": ["Metric", "Value"], "rows": rows}
 
 
+# Collects the data for the Analytics report (each barangay's status and relief received).
 def _build_analytics(filters):
     barangays = Barangay.query.filter(Barangay.city_municipality.in_(filters["lgus"])).order_by(
         Barangay.city_municipality, Barangay.barangay_name
@@ -487,17 +451,11 @@ BUILDERS = {
     "analytics": _build_analytics,
 }
 
-# PSWDO's own Reports page (app.routes.pswdo.warehouse_reports) only offers
-# the report types that map to a feature actually in the PSWDO sidebar -
-# Warehouse Inventory, Stock Transfers (the stock_movement builder - covers
-# inter-warehouse transfers, the closest existing match) and Recommendations
-# (the analytics/Predictive Analytics builder). "Barangay Reports",
-# "Deliveries Report", "Municipality Summary" and "Typhoon Event Summary"
-# belong to features PSWDO doesn't have (those are CSWDO/MSWDO's, via
-# app.routes.cswdo's own reports blueprint) - CSWDO keeps all of REPORT_TYPES.
 PSWDO_REPORT_TYPES = ("warehouse_inventory", "stock_movement", "analytics")
 
 
+# Builds any PSWDO/CSWDO report by its type:
+# title, letterhead, table columns and rows, and notes.
 def build_report(report_type, filters, user=None):
     if report_type not in REPORT_TYPES:
         return None
@@ -528,16 +486,6 @@ def build_report(report_type, filters, user=None):
     }
 
 
-# ---------------------------------------------------------------------------
-# Barangay-scoped reports - same generic {columns, rows, ...} contract as
-# build_report() above, so report_files.generate_file() and a report_view.html
-# need no changes, but scoped to a single barangay_id instead of a list of
-# municipalities. Kept as a separate dict/builder set (rather than folding
-# into REPORT_TYPES/BUILDERS) because a barangay has no warehouse of its own,
-# so the warehouse-centric report types above (inventory, stock movement,
-# analytics) don't have a meaningful barangay-scoped equivalent.
-# ---------------------------------------------------------------------------
-
 BARANGAY_REPORT_TYPES = {
     "damage_reports": {
         "title": "Barangay Report History",
@@ -556,7 +504,6 @@ BARANGAY_REPORT_TYPES = {
     },
 }
 
-# Same wording the barangay Inventory page's Movement History uses.
 BARANGAY_STOCK_SOURCE_LABELS = {
     "delivery": "Received",
     "distribution": "Distributed",
@@ -576,19 +523,10 @@ BARANGAY_REPORT_STATUS_LABELS = {
 }
 
 
+# Reads the barangay report filters (event and period).
 def resolve_barangay_filters(args):
-    """Same shape as resolve_filters(), minus the municipality/lgus concept -
-    a barangay is always scoped to itself, never to a query-param choice."""
     event_id = args.get("event_id", type=int)
-    if event_id:
-        event = DisasterEvent.query.get(event_id)
-    elif "event_id" in args:
-        # Explicit "All Events" choice - see resolve_filters() above.
-        event = None
-    else:
-        event = DisasterEvent.query.filter_by(status="active").order_by(
-            DisasterEvent.start_date.desc()
-        ).first()
+    event = DisasterEvent.query.get(event_id) if event_id else None
 
     days = _parse_days(args.get("days"))
 
@@ -600,6 +538,7 @@ def resolve_barangay_filters(args):
     }
 
 
+# Collects the data for the barangay's Reports report (its situation reports).
 def _build_barangay_damage_reports(barangay, filters):
     q = BarangayReport.query.filter(
         BarangayReport.barangay_id == barangay.barangay_id,
@@ -623,6 +562,7 @@ def _build_barangay_damage_reports(barangay, filters):
     }
 
 
+# Collects the data for the barangay's Relief Deliveries report (deliveries received).
 def _build_barangay_relief_deliveries(barangay, filters):
     q = DistributionRecord.query.filter(
         DistributionRecord.barangay_id == barangay.barangay_id,
@@ -649,6 +589,7 @@ def _build_barangay_relief_deliveries(barangay, filters):
     }
 
 
+# Collects the data for the barangay's Stock Movements report.
 def _build_barangay_stock_movements(barangay, filters):
     from app.models.barangay_inventory import BarangayStockLog
 
@@ -656,8 +597,6 @@ def _build_barangay_stock_movements(barangay, filters):
         BarangayStockLog.barangay_id == barangay.barangay_id,
         BarangayStockLog.created_at >= filters["start_date"],
     )
-    # Stock logs carry no event_id of their own (a hand-out or recount isn't
-    # tied to a typhoon), so an event filter narrows to the event's date span.
     event = filters["event"]
     if event:
         q = q.filter(db.func.date(BarangayStockLog.created_at) >= event.start_date)
@@ -667,13 +606,10 @@ def _build_barangay_stock_movements(barangay, filters):
     return _barangay_stock_movement_table(logs)
 
 
+# Builds the rows of the barangay stock movement table.
 def _barangay_stock_movement_table(logs):
-    """{columns, rows, notes} for a list of BarangayStockLog rows - shared by
-    the Reports page's Stock Movement History and the Inventory page's
-    Movement History export."""
     rows = []
     for i, l in enumerate(logs, start=1):
-        # Same wording as the Inventory page's Movement History.
         label = (stock_log_label(l.item_type, l.delta, l.source_type, l.reason)
                  or BARANGAY_STOCK_SOURCE_LABELS.get(l.source_type, l.source_type.title()))
         details = l.reason or "-"
@@ -699,6 +635,8 @@ BARANGAY_BUILDERS = {
 }
 
 
+# Builds any barangay report by its type:
+# title, letterhead, table columns and rows, and notes.
 def build_barangay_report(report_type, barangay, filters, user=None):
     if report_type not in BARANGAY_REPORT_TYPES:
         return None
@@ -724,10 +662,8 @@ def build_barangay_report(report_type, barangay, filters, user=None):
     }
 
 
+# Builds the barangay stock movement Excel export (with the filters used).
 def build_barangay_movement_export(barangay, logs, type_label, date_from, date_to, user=None):
-    """Inventory page Movement History export - same report shape as
-    build_barangay_report(), driven by that page's own Type/Date filters
-    (already applied to `logs`) instead of the Reports page's event/days."""
     info = BARANGAY_REPORT_TYPES["stock_movements"]
     data = _barangay_stock_movement_table(logs)
     if date_from or date_to:

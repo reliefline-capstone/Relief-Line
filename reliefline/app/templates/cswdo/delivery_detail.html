@@ -1,3 +1,5 @@
+{# Page: /cswdo/deliveries/<id> - One delivery (CSWDO/MSWDO). #}
+{# Its progress steps, details, confirmations, and buttons to move it forward or send replacement packs. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, validation_attachments with context %}
 
@@ -18,7 +20,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Delivery number and status, with the Receipt button. #}
         <div class="page-header">
             <div>
                 <div class="wh-title-row">
@@ -43,7 +45,7 @@
         </div>
         {% endif %}
 
-        <!-- Lifecycle stepper -->
+        {# Progress steps: preparing, loaded, issued, in transit, delivered/confirmed. #}
         <section class="panel dd-stepper-panel">
             <div class="dd-stepper">
                 {% for step in dispatch_steps %}
@@ -57,6 +59,7 @@
         </section>
 
         <div class="main-grid">
+            {# Delivery details: barangay, packs, dates, from which report. #}
             <section class="panel">
                 <div class="panel-header"><h3>Delivery</h3></div>
                 <div class="dd-kv-list">
@@ -78,6 +81,7 @@
             </section>
 
             <div class="dd-side-col">
+            {# Confirmations: who released it, who received it, condition, and any missing/damaged packs. #}
             <section class="panel">
                 <div class="panel-header"><h3>Confirmations</h3></div>
 
@@ -127,6 +131,8 @@
                 </div>
             </section>
 
+            {# Update Delivery: buttons for the next step, confirm issuance (with arrival time), #}
+            {# and send replacement packs for missing or damaged ones. #}
             <section class="panel">
                 <div class="panel-header"><h3>Update Delivery</h3></div>
                 {% if rec.is_validated %}

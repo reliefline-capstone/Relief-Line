@@ -1,3 +1,5 @@
+{# Layout for the public information pages (Help, Contact, Privacy, Terms): #}
+{# the province header, a white content card in the middle, and the footer links. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -6,11 +8,11 @@
 {% block page_css %}{% endblock %}
 {% endblock %}
 
-{# Public page: keeps its own light look, no dark mode. #}
 {% block theme_init %}{% endblock %}
 {% block content %}
 <div class="login-page">
 
+    {# Background picture with the province header bar on top. #}
     <div class="hero">
         <div class="hero-overlay"></div>
 
@@ -40,6 +42,7 @@
                     <p class="brand-location-sm">Province of Pangasinan</p>
                 </div>
 
+                {# The white card where each public page puts its own text. #}
                 <div class="login-card static-page-card">
                     {% block page_content %}{% endblock %}
                 </div>
@@ -48,6 +51,7 @@
         </div>
     </div>
 
+    {# Footer with links to the other public pages. #}
     <footer class="page-footer">
         <span>© 2026 Province of Pangasinan. All rights reserved.</span>
         <nav>

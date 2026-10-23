@@ -1,15 +1,5 @@
-"""Delivery receipts - one printable, read-only page per food-pack delivery, so
-everyone on the chain can see exactly what was handed over: who sent it, who
-received it, how many packs, what condition, and what was inside them with each
-item's expiration date.
+# Printable receipts for transfers and deliveries.
 
-Two kinds of delivery:
-  * transfer     - PSWDO depot -> CSWDO warehouse (WarehouseTransfer)
-  * distribution - CSWDO warehouse -> barangay (DistributionRecord)
-
-Visible to the sending and receiving side of each delivery (plus PSWDO/system
-admins, who oversee everything). Nothing here writes to the database.
-"""
 from datetime import date as _date
 import json
 
@@ -27,11 +17,8 @@ receipts_bp = Blueprint("receipts", __name__)
 RECEIPT_ROLES = ("pswdo_admin", "cswdo_admin", "barangay_user", "system_admin")
 
 
+# Gets the food pack batch details (items and expiration dates) ready to print on a receipt.
 def _lots_for_display(raw):
-    """Turns a stored batch_lots JSON (see pswdo._deduct_food_pack_batches)
-    into what the receipt shows: [{qty, received, earliest, status, items:
-    [{name, qty_label, expires, status}]}]. Empty list for deliveries
-    dispatched before batch details were recorded."""
     if not raw:
         return []
     components = {c.component_id: c for c in FoodPackComponent.query.all()}
@@ -59,6 +46,8 @@ def _lots_for_display(raw):
     return sorted(lots, key=lambda l: (l["earliest"] is None, l["earliest"] or _date.max))
 
 
+# Page: /receipts/transfer/<int:transfer_id> - Printable receipt for a stock transfer between warehouses
+# (only the sending or receiving office can open it).
 @receipts_bp.route("/transfer/<int:transfer_id>")
 @login_required
 def transfer_receipt(transfer_id):
@@ -94,6 +83,8 @@ def transfer_receipt(transfer_id):
     )
 
 
+# Page: /receipts/distribution/<int:distribution_id> - Printable delivery receipt for food packs sent to a barangay
+# (only the barangay, its supplying office, or PSWDO can open it).
 @receipts_bp.route("/distribution/<int:distribution_id>")
 @login_required
 def distribution_receipt(distribution_id):
@@ -121,6 +112,7 @@ def distribution_receipt(distribution_id):
     if alloc and alloc.event:
         source_line += f" - {alloc.event.event_name}"
 
+    # The delivery's reference number, e.g. D-2026-015.
     def _ref(r):
         return f"D-{r.distribution_date.year}-{r.distribution_id:03d}"
 

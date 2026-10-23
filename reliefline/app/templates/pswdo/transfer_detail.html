@@ -1,3 +1,5 @@
+{# Page: /pswdo/transfers/<id> - One stock transfer (PSWDO). #}
+{# Its progress, details, and the Dispatch button. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -17,7 +19,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Transfer number and status, with the View Receipt button. #}
         <div class="page-header">
             <div>
                 <div class="wh-title-row">
@@ -31,6 +33,7 @@
             <a href="{{ url_for('receipts.transfer_receipt', transfer_id=t.transfer_id) }}" class="btn-outline btn-outline-accent">{{ icon('file-text', 14) }} View Receipt</a>
         </div>
 
+        {# Progress steps: preparing, in transit, received. #}
         <section class="panel dd-stepper-panel">
             <div class="dd-stepper">
                 {% for s in steps %}
@@ -44,6 +47,7 @@
         </section>
 
         <div class="main-grid">
+            {# Details: from, to, packs, dates, and the receiving office's check (complete/partial/damaged). #}
             <section class="panel">
                 <div class="panel-header"><h3>Details</h3></div>
                 <div class="dd-kv-list">
@@ -58,6 +62,7 @@
                 </div>
             </section>
 
+            {# Update: dispatch the transfer with an expected arrival date. #}
             <section class="panel">
                 <div class="panel-header"><h3>Update</h3></div>
                 {% if t.status == 'completed' %}

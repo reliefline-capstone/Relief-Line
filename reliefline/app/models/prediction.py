@@ -1,5 +1,9 @@
+# Database tables: saved forecasts and model accuracy scores.
+
 from app.extensions import db
 
+# Database table 'prediction_logs': saved forecast results per barangay,
+# with the inputs that produced them (for record keeping).
 class PredictionLog(db.Model):
     __tablename__ = "prediction_logs"
 
@@ -11,6 +15,8 @@ class PredictionLog(db.Model):
     model_version = db.Column(db.String(50), default="v1.0")
 
 
+# Database table 'model_metrics': accuracy scores of each trained forecast model,
+# so you can see how well each version predicted past typhoons.
 class ModelMetrics(db.Model):
     __tablename__ = "model_metrics"
 
@@ -21,27 +27,12 @@ class ModelMetrics(db.Model):
     mape = db.Column(db.Numeric(10, 4), nullable=True)
     r_squared = db.Column(db.Numeric(10, 4), nullable=True)
     training_samples = db.Column(db.Integer, nullable=True)
-    # Rolling-origin backtest extras (SARIMAX forecaster): WAPE, the share of
-    # backtest months where actual demand stayed at/below the P90 safety stock
-    # (should be ~0.90), and the same WAPE for the seasonal-naive benchmark.
     wape = db.Column(db.Numeric(10, 4), nullable=True)
     p90_coverage = db.Column(db.Numeric(6, 4), nullable=True)
     naive_wape = db.Column(db.Numeric(10, 4), nullable=True)
-    # Error of the 12-month total (what a stockpile decision uses), model vs
-    # the seasonal-naive benchmark. 0.23 = the 12-month total is off by ~23%.
     total12_err = db.Column(db.Numeric(10, 4), nullable=True)
     naive_total12_err = db.Column(db.Numeric(10, 4), nullable=True)
     trained_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
-    # Two-stage forecaster (v9+): leave-one-typhoon-out MAE for the share
-    # model's two baselines (equal 1/N split, each barangay's average
-    # historical share) - `mae` above is the model's own LOTO-CV MAE. All the
-    # SARIMAX-era columns above stay NULL for v9+ rows rather than forcing a
-    # fake mapping onto metrics that don't apply to an event-based model.
     mae_baseline_equal_split = db.Column(db.Numeric(10, 4), nullable=True)
     mae_baseline_avg_share = db.Column(db.Numeric(10, 4), nullable=True)
-    # Packs-unit LOTO-CV of the full pipeline (share x that fold's severity.expected
-    # vs. real food_packs_given), pooled across every (barangay, held-out typhoon)
-    # pair - the "worst LGU" figure, same convention as `mae` above. rmse/mape/
-    # r_squared (SARIMAX-era columns, above) are REUSED here rather than adding new
-    # ones, since they sat NULL and unused for every v9+ row until now.
     mae_packs = db.Column(db.Numeric(10, 4), nullable=True)

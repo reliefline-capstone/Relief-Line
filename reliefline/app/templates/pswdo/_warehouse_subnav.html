@@ -1,8 +1,6 @@
+{# Shared piece: the breadcrumb path at the top of the warehouse pages #}
+{# (e.g. Warehouses > Urdaneta Warehouse > Inventory). #}
 {% from "_macros.html" import icon with context %}
-<!-- Page header nav: a back button to the parent page + the current page's
-     title. `crumbs` = [parent, current]; only the parent's url and the
-     current label/status are shown (no directory-style trail). Pass just
-     [parent] for a back button alone (the page shows its own title). -->
 {% if crumbs %}
 {% set back = crumbs|first %}
 {% set current = crumbs|last %}

@@ -1,3 +1,5 @@
+{# Page: /pswdo/warehouse-inventory - Warehouse Management overview (PSWDO). #}
+{# All warehouses on a map and in a table, with stock levels and recent movements. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, prediction_disclaimer with context %}
 
@@ -16,14 +18,12 @@
     {% set active_page = 'warehouse_inventory' %}
     {% include "pswdo/_sidebar.html" %}
 
-    <!-- Main content -->
     <main class="dashboard-main">
-
 
         {% set crumbs = [] %}
         {% include "pswdo/_warehouse_subnav.html" %}
 
-        <!-- Page title -->
+        {# Page title with the Add Warehouse button. #}
         <section class="page-header">
             <div>
                 <h2>Warehouse Management</h2>
@@ -34,7 +34,7 @@
             </div>
         </section>
 
-        <!-- Stat cards -->
+        {# 4 number cards: total warehouses, total food packs, low-stock warehouses, transfers today. #}
         <section class="stat-cards wh-stat-cards">
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('building', 18, '#3867d6') }}</div>
@@ -58,7 +58,7 @@
             </div>
         </section>
 
-        <!-- Warehouse Map -->
+        {# Warehouse Map: where each warehouse is, colored by stock health. #}
         <section class="panel wh-map-panel">
             <div class="panel-header">
                 <h3>Warehouse Map</h3>
@@ -71,9 +71,9 @@
             <div id="warehouse-map" class="wh-map"></div>
         </section>
 
-        <!-- Warehouse Overview + side panels -->
         <div class="main-grid" style="margin-top: 16px;">
 
+            {# Warehouse Overview table: warehouse, location, stock, capacity, fill level, status, View button. #}
             <section class="panel wh-table-panel" id="warehouse-overview">
                 <div class="panel-header">
                     <h3>Warehouse Overview</h3>
@@ -128,6 +128,7 @@
             </section>
 
             <aside class="wh-side-col">
+                {# Recent Stock Movements across all warehouses. #}
                 <section class="panel" id="recent-movements">
                     <div class="panel-header">
                         <h3>Recent Stock Movements</h3>
@@ -157,7 +158,7 @@
     </main>
 </div>
 
-<!-- Add Warehouse modal -->
+{# 'Add Warehouse' pop-up form. #}
 <div class="rd-modal-overlay" id="add-warehouse-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">

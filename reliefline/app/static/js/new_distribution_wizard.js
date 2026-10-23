@@ -1,3 +1,5 @@
+// PSWDO 'New Distribution' pop-up: the 2-step form to schedule a food pack delivery
+// (step 1: choose the approved request, step 2: delivery details).
 document.addEventListener('DOMContentLoaded', function () {
     var modal = document.getElementById('new-distribution-modal');
     var form = document.getElementById('new-distribution-form');
@@ -14,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var submitBtn = document.getElementById('nd-submit-btn');
     var stockWarning = document.getElementById('nd-stock-warning');
 
+    // Shows step 1 or step 2 of the 'New Distribution' form and updates the step dots.
     function goToStep(step) {
         panel1.hidden = step !== 1;
         panel2.hidden = step !== 2;
@@ -22,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Clears the form and goes back to step 1 (when the pop-up is closed or reopened).
     function resetWizard() {
         goToStep(1);
         form.reset();
@@ -56,9 +60,6 @@ document.addEventListener('DOMContentLoaded', function () {
             opt.classList.add('is-selected');
             hiddenAllocationId.value = radio.value;
 
-            // The double-check is here first, before submit - create_distribution()
-            // still re-verifies server-side since stock can move again before the
-            // form is actually submitted.
             var stockOk = opt.dataset.stockOk === 'true';
             submitBtn.disabled = !stockOk;
             stockWarning.hidden = stockOk;

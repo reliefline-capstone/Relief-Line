@@ -1,8 +1,5 @@
-{# Official LGU letterhead for printable documents (see
-   report_data.build_letterhead). Expects `lh` (letterhead dict),
-   `doc_title`, and `doc_meta` - a list of (label, value) pairs shown
-   under the title. The issuing LGU's seal sits left of the centered text,
-   the provincial seal right; an empty slot keeps the text centered. #}
+{# Shared piece: the official letterhead at the top of every on-screen report #}
+{# (Republic of the Philippines, province, office name, seals, report title and details). #}
 <header class="rpt-lh">
     <div class="rpt-lh-seal">{% if lh.logo_left %}<img src="{{ url_for('static', filename=lh.logo_left) }}" alt="">{% endif %}</div>
     <div class="rpt-lh-text">

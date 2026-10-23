@@ -1,14 +1,5 @@
-// Custom calendar + time pickers that replace the browser-native
-// <input type="date"> / <input type="time"> popups. Same rationale and
-// pattern as custom_select.js: the native picker's calendar / spinner is
-// drawn by the OS, unstyleable, and looks nothing like the rest of the UI.
-//
-// The original input is kept in the DOM (visually hidden, tabindex -1) so
-// name/value submission, `required`, `min`/`max` and every existing
-// `change` listener keep working untouched - this only adds a visual layer
-// and writes back a valid value string ("YYYY-MM-DD" / "HH:MM").
-//
-// Opt out on a specific field with `data-no-custom-picker`.
+// Custom date and time pickers used across the app.
+// They replace the browser's built-in pickers so they look the same on every computer and phone.
 (function () {
     'use strict';
 
@@ -18,6 +9,7 @@
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     var WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
+    // Builds a small icon (calendar, clock or arrow).
     function svg(inner) {
         return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
             'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
@@ -28,8 +20,10 @@
     var CHEV_L = svg('<polyline points="15 18 9 12 15 6"/>');
     var CHEV_R = svg('<polyline points="9 18 15 12 9 6"/>');
 
+    // Adds a leading zero to a number (e.g. 7 -> 07).
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
+    // Reads a date written like 2026-10-23.
     function parseISO(s) {
         if (!s) return null;
         var p = String(s).split('-');
@@ -37,25 +31,25 @@
         var d = new Date(+p[0], +p[1] - 1, +p[2]);
         return isNaN(d.getTime()) ? null : d;
     }
+    // Writes a date like 2026-10-23 (the format forms send to the server).
     function toISO(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+    // The same date at midnight (so only the day is compared, not the time).
     function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    // True if two dates are the same day.
     function sameDay(a, b) {
         return a && b && a.getFullYear() === b.getFullYear() &&
             a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
     }
 
+    // Closes every open picker except the given one.
     function closeAll(except) {
         document.querySelectorAll('.cdt-wrap.is-open').forEach(function (w) {
             if (w !== except) close(w);
         });
     }
 
-    // The popup is position:fixed and (while open) parented to <body> - the
-    // page's .dashboard-main keeps a retained transform from its entrance
-    // animation, which would otherwise make it the containing block for
-    // position:fixed and throw the coordinates off. Moving to <body> also
-    // means no scrollable modal / table wrapper can clip the calendar.
     var openWrap = null;
+    // Keeps the open picker right next to its field when the page scrolls or resizes.
     function reposition() {
         if (!openWrap) return;
         var trig = openWrap._trig, pop = openWrap._pop;
@@ -70,6 +64,7 @@
     window.addEventListener('scroll', reposition, true);
     window.addEventListener('resize', reposition);
 
+    // Closes a picker.
     function close(wrap) {
         wrap.classList.remove('is-open');
         var pop = wrap._pop, trig = wrap._trig;
@@ -79,6 +74,7 @@
         trig.setAttribute('aria-expanded', 'false');
         if (openWrap === wrap) openWrap = null;
     }
+    // Opens a picker (and closes any other open picker).
     function open(wrap) {
         if (wrap.classList.contains('is-disabled')) return;
         closeAll(wrap);
@@ -93,6 +89,7 @@
         reposition();
     }
 
+    // Saves the picked value into the real form field, so the form sends it.
     function commit(input, value) {
         if (input.value === value) return;
         input.value = value;
@@ -100,6 +97,7 @@
         input.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
+    // Builds the shared picker frame around a field: the button you click and the pop-up.
     function baseWrap(input, kind, opts) {
         opts = opts || {};
         var wrap = document.createElement('div');
@@ -111,10 +109,6 @@
 
         var trigger, icon = null;
         if (opts.typeable) {
-            // A real text input - lets someone type the value directly
-            // (e.g. "2:30 PM") instead of only picking from the popup. The
-            // clock/calendar icon can't live inside an <input>'s markup, so
-            // it's a separate, click-through sibling laid over it.
             trigger = document.createElement('input');
             trigger.type = 'text';
             trigger.className = 'cdt-trigger cdt-trigger-typeable';
@@ -156,9 +150,6 @@
                 if (e.key === 'Escape' && wrap.classList.contains('is-open')) { e.preventDefault(); trigger.blur(); }
                 else if (e.key === 'Enter') { e.preventDefault(); if (opts.onCommitText) opts.onCommitText(); }
             });
-            // Selecting a popup item moves focus away from the input, which
-            // would otherwise blur (and close) it before the item's own
-            // click handler runs - keep focus on the input instead.
             popup.addEventListener('mousedown', function (e) { e.preventDefault(); });
         } else {
             trigger.addEventListener('click', function () {
@@ -186,41 +177,39 @@
         return { wrap: wrap, trigger: trigger, popup: popup, icon: icon };
     }
 
-    // ---------------------------------------------------------------- DATE
-    // Three levels: days (a month's grid), months (a year's 12 months) and
-    // years (a 12-year page). The header title steps up a level (days ->
-    // months -> years); picking a year steps down to its months, a month
-    // down to its days. The arrows page within the current level. Fields
-    // marked `data-year-first` (expiration dates, usually a year or more
-    // out) open on the year page when empty, so it's year -> month -> day
-    // instead of clicking "next month" a dozen times.
+    // Turns a date field into the custom calendar picker
+    // (day, month and year views; respects the earliest/latest allowed dates).
     function enhanceDate(input) {
         var b = baseWrap(input, 'date');
         var minD = parseISO(input.getAttribute('min'));
         var maxD = parseISO(input.getAttribute('max'));
         var yearFirst = input.hasAttribute('data-year-first');
-        var view = null;   // first day of the month (days level) / any day in the year
-        var mode = null;   // 'days' | 'months' | 'years'
-        var yearPage = null; // first year shown on the years page
+        var view = null;
+        var mode = null;
+        var yearPage = null;
 
+        // The currently picked date.
         function selected() { return parseISO(input.value); }
+        // True if a day is allowed (between the earliest and latest allowed dates).
         function inRange(d) {
             var s = startOfDay(d);
             if (minD && s < startOfDay(minD)) return false;
             if (maxD && s > startOfDay(maxD)) return false;
             return true;
         }
-        // A whole month / year is selectable if any of its days is in range.
+        // True if a month is allowed.
         function monthInRange(y, m) {
             if (minD && new Date(y, m + 1, 0) < startOfDay(minD)) return false;
             if (maxD && new Date(y, m, 1) > startOfDay(maxD)) return false;
             return true;
         }
+        // True if a year is allowed.
         function yearInRange(y) {
             if (minD && y < minD.getFullYear()) return false;
             if (maxD && y > maxD.getFullYear()) return false;
             return true;
         }
+        // Shows the picked date on the picker button (e.g. 'Oct 23, 2026').
         function syncLabel() {
             var d = selected();
             b.trigger.innerHTML = '<span class="cdt-value' + (d ? '' : ' cdt-placeholder') + '">' +
@@ -228,6 +217,7 @@
                 '</span>' + CAL_ICON;
         }
 
+        // Builds the top of the calendar: the title and the previous/next arrows.
         function head(title, prevLabel, nextLabel, upLabel) {
             return '<div class="cdt-cal-head">' +
                 '<button type="button" class="cdt-nav" data-nav="-1" aria-label="' + prevLabel + '">' + CHEV_L + '</button>' +
@@ -237,6 +227,7 @@
                 '<button type="button" class="cdt-nav" data-nav="1" aria-label="' + nextLabel + '">' + CHEV_R + '</button>' +
                 '</div>';
         }
+        // Builds the bottom of the calendar: the 'Clear' and 'Today' buttons.
         function foot() {
             return '<div class="cdt-cal-foot">' +
                 '<button type="button" class="cdt-foot-btn" data-action="clear">Clear</button>' +
@@ -244,6 +235,7 @@
                 '</div>';
         }
 
+        // Draws the calendar in its current view (days, months or years).
         function render() {
             var sel = selected();
             var today = startOfDay(new Date());
@@ -256,8 +248,6 @@
             var html = '';
 
             if (mode === 'years') {
-                // Starts one year back, so this year and the next ten or so
-                // (where expiration dates land) are all on the first page.
                 if (yearPage === null) yearPage = y - 1;
                 var first = yearPage;
                 html += head(first + ' ' + String.fromCharCode(8211) + ' ' + (first + 11), 'Previous years', 'Next years', null);
@@ -310,8 +300,6 @@
             var nav = e.target.closest('[data-nav]');
             if (nav) {
                 var step = +nav.dataset.nav;
-                // Rebuild from year/month numbers instead of setMonth() on
-                // the existing date, so paging can never skip or bounce.
                 if (mode === 'years') yearPage += 12 * step;
                 else if (mode === 'months') view = new Date(view.getFullYear() + step, view.getMonth(), 1);
                 else view = new Date(view.getFullYear(), view.getMonth() + step, 1);
@@ -364,17 +352,13 @@
             }
         });
 
-        // Each opening starts fresh at the right level for the field's value.
+        // Resets the calendar to the picked date's month each time it opens.
         b.wrap._onOpen = function () { view = null; mode = null; yearPage = null; };
         input.addEventListener('change', function () { view = null; mode = null; syncLabel(); });
         syncLabel();
     }
 
-    // Accepts what someone would naturally type: "2:30 PM", "2:30PM",
-    // "14:30" (24h), "2 PM" / "14" (hour only, minutes default to 0).
-    // Returns null for anything it can't confidently parse - the caller
-    // just leaves the field's last valid value in place rather than
-    // guessing wrong.
+    // Reads a time the user typed, like '2:30 pm' or '14:30'.
     function parseTypedTime(text) {
         var m = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i.exec((text || '').trim());
         if (!m) return null;
@@ -390,10 +374,12 @@
         return null;
     }
 
-    // ---------------------------------------------------------------- TIME
+    // Turns a time field into the custom time picker (hour, minute, AM/PM columns).
+    // The user can also type the time.
     function enhanceTime(input) {
-        var state = { h: null, m: null, p: null }; // h 1-12, m 0-59, p AM/PM
+        var state = { h: null, m: null, p: null };
 
+        // Reads the field's current time into the picker.
         function fromValue() {
             var v = input.value || '';
             if (!/^\d{2}:\d{2}/.test(v)) { state = { h: null, m: null, p: null }; return; }
@@ -402,6 +388,7 @@
             state.h = H % 12 || 12;
             state.m = M;
         }
+        // Saves the picked time into the real form field (in 24-hour format).
         function writeIfReady() {
             if (state.h == null) return;
             var mm = state.m == null ? 0 : state.m;
@@ -409,13 +396,12 @@
             var H = p === 'PM' ? (state.h % 12) + 12 : (state.h % 12);
             commit(input, pad(H) + ':' + pad(mm));
         }
+        // Shows the picked time in the field (e.g. '2:30 PM').
         function syncLabel() {
             b.trigger.value = state.h != null ?
                 (state.h + ':' + pad(state.m == null ? 0 : state.m) + ' ' + (state.p || 'AM')) : '';
         }
-        // Runs when the user types directly into the field instead of (or
-        // alongside) picking from the columns - on blur or Enter, not on
-        // every keystroke, so it never fights an in-progress edit.
+        // Saves a time the user typed in (or clears it if left empty).
         function commitTypedText() {
             var raw = b.trigger.value.trim();
             if (!raw) {
@@ -424,8 +410,6 @@
             } else {
                 var parsed = parseTypedTime(raw);
                 if (parsed) { state = parsed; writeIfReady(); }
-                // Unparseable text: fall through and re-render the last
-                // good value below, rather than accepting garbage.
             }
             syncLabel();
             if (b.wrap._render) b.wrap._render();
@@ -436,6 +420,7 @@
             onCommitText: commitTypedText,
         });
 
+        // Builds one column of the time picker (hours, minutes, or AM/PM).
         function column(name, items, current, fmt) {
             var h = '<ul class="cdt-col" data-col="' + name + '">';
             items.forEach(function (it) {
@@ -445,6 +430,7 @@
             });
             return h + '</ul>';
         }
+        // Draws the time picker with the current choice highlighted.
         function render() {
             var hrs = [], mins = [], i;
             for (i = 1; i <= 12; i++) hrs.push(i);
@@ -481,6 +467,7 @@
         syncLabel();
     }
 
+    // Turns a date or time field into its custom picker (skips fields marked to keep the default).
     function enhance(input) {
         if (input.closest('.cdt-wrap')) return;
         if ('noCustomPicker' in input.dataset) return;
@@ -491,11 +478,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('input[type="date"], input[type="time"]').forEach(enhance);
     });
-    // Outside-click close. Checks the event's path as it was when the click
-    // happened, not e.target's current ancestors: clicking a calendar arrow
-    // re-renders the popup, which detaches the clicked button, so by the
-    // time the click reached here e.target.closest('.cdt-popup') was null
-    // and the calendar closed itself on every month change.
     document.addEventListener('click', function (e) {
         var path = e.composedPath ? e.composedPath() : [];
         for (var i = 0; i < path.length; i++) {

@@ -1,3 +1,5 @@
+{# Page: /pswdo/distribution/completed - Completed Deliveries (PSWDO). #}
+{# All food pack deliveries that reached their barangays. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -18,7 +20,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the Export Report button. #}
         <section class="page-header">
             <div>
                 <div class="wh-title-row">
@@ -32,6 +34,7 @@
             </div>
         </section>
 
+        {# 3 number cards: total deliveries, food packs delivered, municipalities served. #}
         <section class="stat-cards stat-cards-3">
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('check-circle', 18, '#1e8449') }}</div>
@@ -50,6 +53,7 @@
             </div>
         </section>
 
+        {# Delivery History table: distribution ID, municipality, packs, date, received by, condition, View button. #}
         <section class="panel rr-table-panel">
             <div class="panel-header" style="padding: 16px 20px 0;">
                 <h3>Delivery History</h3>

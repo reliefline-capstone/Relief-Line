@@ -1,10 +1,10 @@
-// Behaviour for the batch_picker macro (templates/_macros.html). The macro
-// can render several times on one page (one per review modal) and each copy
-// includes this file, so it wires every picker once and then never again.
+// Batch picker on every 'send stock' form.
+// Lets the user send food packs automatically (soonest-to-expire first) or pick the batches by hand.
 (function () {
     if (window.__batchPickerLoaded) return;
     window.__batchPickerLoaded = true;
 
+    // Sets up one batch picker on a form (runs only once per picker).
     function init(bp) {
         if (bp.__bpReady) return;
         bp.__bpReady = true;
@@ -16,20 +16,23 @@
         var officeSelect = selectName && form ? form.querySelector('[name="' + selectName + '"]') : null;
         var qtyInput = form ? form.querySelector('[name="quantity"]') : null;
 
+        // True if the user chose to pick the batches by hand.
         function isManual() {
             var r = bp.querySelector('input[name="batch_mode"]:checked');
             return r && r.value === 'manual';
         }
+        // The batch list for the warehouse currently chosen on the form.
         function activeOffice() {
             if (!officeSelect) return bp.querySelector('[data-bp-office]');
             return bp.querySelector('[data-bp-office="' + officeSelect.value + '"]');
         }
         var totalBar = bp.querySelector('.bp-total');
+        // Updates the picker: shows or hides the batch list,
+        // and totals the packs chosen from each batch so it matches the quantity being sent.
         function refresh() {
             var manual = isManual();
             body.hidden = !manual;
             if (totalBar) totalBar.hidden = !manual;
-            // Selected-mode card + batches with packs taken get highlighted.
             bp.querySelectorAll('.bp-seg').forEach(function (seg) {
                 seg.classList.toggle('is-on', seg.querySelector('input').checked);
             });
@@ -43,7 +46,6 @@
             bp.querySelectorAll('[data-bp-office]').forEach(function (g) {
                 var on = manual && g === active;
                 g.hidden = !on;
-                // Only the shown warehouse's boxes are submitted.
                 g.querySelectorAll('.bp-qty').forEach(function (inp) { inp.disabled = !on; });
             });
             var total = 0;
@@ -53,8 +55,6 @@
             targetEl.textContent = target ? 'of ' + target.toLocaleString() + ' packs' : '';
             var mismatch = manual && total !== target;
             bp.classList.toggle('bp-mismatch', mismatch);
-            // Blocks submitting until the chosen batches add up (the server
-            // checks again regardless).
             if (qtyInput) qtyInput.setCustomValidity(mismatch ? 'The packs chosen from batches must add up to this quantity.' : '');
         }
         bp.addEventListener('input', refresh);
@@ -64,6 +64,7 @@
         refresh();
     }
 
+    // Sets up every batch picker on the page.
     function initAll() { document.querySelectorAll('[data-bp]').forEach(init); }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAll);
     else initAll();

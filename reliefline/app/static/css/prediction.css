@@ -1,14 +1,13 @@
-/* Demand-forecast bar fills, by priority tier (distinct from the
-   warehouse-health fill-* classes already in dashboard.css - same visual
-   language, different meaning, so kept as separate classes to avoid a name
-   collision on this page where both appear together). */
+/* Styles for the Predictive Analytics and Recommendations pages: */
+/* forecast charts, tooltips, warehouse cards, barangay breakdown tables and model accuracy panel. */
+/* Progress bar colors by priority. (Not used on any page right now.) */
 .pa-fill-critical { background: #e74c3c; }
 .pa-fill-high { background: #e67e22; }
 .pa-fill-medium { background: #f1c40f; }
 .pa-fill-low { background: #27ae60; }
 .pa-fill-unrated { background: #e3e4ec; }
 
-/* Barangay Priority Ranking - collapsed to the top 5 until "View all" */
+/* 'Show more' for the priority ranking list. (Not used on any page right now.) */
 .pa-rank-extra { display: none; }
 [data-ranking].is-expanded .pa-rank-extra { display: flex; }
 
@@ -32,14 +31,10 @@
 .pa-rank-toggle svg { transition: transform 0.15s ease; }
 [data-ranking].is-expanded .pa-rank-toggle svg { transform: rotate(180deg); }
 
-/* CSWDO scope covers a single municipality, so "Demand Forecast by
-   Municipality" is always one row - pairing it with the long Barangay
-   Priority Ranking in a 2-column grid left a wall of blank space. Stack
-   the panels full-width instead; PSWDO (province-wide, many municipalities)
-   keeps the side-by-side .dash-grid-even layout. */
+/* Single-column layout (CSWDO/MSWDO view). */
 .pa-grid-stack { grid-template-columns: 1fr; }
 
-/* Warehouse Stock Forecast cards */
+/* Warehouse Stock vs Forecast cards (Healthy, Moderate, Low). */
 .pa-wh-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -80,11 +75,7 @@
     margin-top: 4px;
 }
 
-/* Per-Municipality Breakdown (pswdo/recommendations.html) - Stockpile column.
-   Overrides relief_requests.css's generic .rr-table td:last-child rule
-   (right-align + nowrap, meant for that other table's Actions column), since
-   this column landed last here too but needs the expected-value line to wrap
-   onto its own row instead of being squeezed onto one line. */
+/* Recommendations: stockpile column and expandable barangay rows per municipality. */
 .rr-table-wrap .rr-table td.pmb-stockpile {
     text-align: left;
     white-space: normal;
@@ -99,11 +90,6 @@
     margin-top: 2px;
 }
 
-/* Per-Municipality Breakdown - expandable barangay detail row. The detail
-   row's single <td> is both the row's first AND last child, so it inherits
-   BOTH relief_requests.css's first-child (bold/dark) and last-child
-   (right-align/nowrap) rules meant for normal data cells - neutralize both,
-   this cell just wraps a nested table. */
 .pmb-row { cursor: pointer; }
 .pmb-row-arrow {
     display: inline-flex;
@@ -124,11 +110,6 @@
     padding: 4px 16px 16px !important;
 }
 
-/* table-layout: fixed + explicit column widths (via <colgroup> in the
-   template) - "auto" layout let the long "N-MONTH STOCKPILE" header text
-   claim a disproportionate share of the row's width, stranding it far to
-   the right of its own column's actual (left-aligned) data. Fixed layout
-   makes header and data always share the same column boundary. */
 .pmb-barangay-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .pmb-barangay-table th {
     text-align: left;
@@ -149,14 +130,6 @@
 .pmb-barangay-table td:nth-child(3) {
     font-variant-numeric: tabular-nums;
 }
-/* This nested table's <td>s are still descendants of the outer .rr-table,
-   so relief_requests.css's positional rules (first-child bold/dark,
-   nth-child(3) purple, last-child right-align/nowrap - all meant for the
-   outer table's own columns) match here too, at equal specificity, and
-   relief_requests.css loads AFTER this file - so a same-specificity reset
-   here would lose the cascade. One extra class (.pmb-detail-cell, the
-   nested table's own ancestor) makes this strictly more specific instead
-   of relying on load order. */
 .rr-table-wrap .rr-table .pmb-detail-cell .pmb-barangay-table td {
     text-align: left;
     white-space: normal;
@@ -164,7 +137,7 @@
     font-weight: 400;
 }
 
-/* Historical trend - line chart (inline SVG, no chart library) */
+/* Line chart parts: lines, grid, labels. (Not used on any page right now.) */
 .pa-line-chart {
     width: 100%;
     max-width: 760px;
@@ -206,7 +179,7 @@
     font-family: inherit;
 }
 
-/* Forecast - bar chart (inline SVG, same no-library pattern as the line chart above) */
+/* Bar chart parts: bars, grid, stock line, clickable months, wet/peak season bands. */
 .pa-bar-chart {
     width: 100%;
     max-width: 760px;
@@ -228,8 +201,6 @@
     rx: 4;
 }
 
-/* Safety-stock (P90) outline behind the expected-demand bar, and the
-   shaded wet-season / peak-typhoon month bands. */
 .pa-stock-line {
     fill: none;
     stroke: #0f2547;
@@ -248,6 +219,7 @@
 .pa-month-detail[hidden] { display: none; }
 .pa-bar-band { fill: #eef5ff; }
 .pa-bar-band-peak { fill: #dcebff; }
+/* Chart legends (expected, stockpile, wet season...). */
 .pa-legend {
     display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center;
     font-size: 12.5px; color: #6b7588; margin: 6px 0 2px;
@@ -257,6 +229,7 @@
 .pa-legend .lg-p90 { width: 18px; height: 0; border-radius: 0; border-top: 2px dashed #0f2547; vertical-align: 3px; }
 .pa-legend .lg-wet { background: #eef5ff; border: 1px solid #cfe2ff; }
 .pa-legend .lg-peak { background: #dcebff; border: 1px solid #b9d6ff; }
+/* Stock decision tiles. */
 .pa-stock-tiles { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 12px auto 4px; }
 .pa-stock-tiles .pa-decision-tile {
     max-width: 300px; flex: 1 1 200px;
@@ -282,7 +255,7 @@
     font-family: inherit;
 }
 
-/* Model performance + decision logic */
+/* Model Performance panel: rows of accuracy numbers. */
 .pa-model-panel, .pa-decision-logic {
     margin-top: 18px;
     padding-top: 14px;
@@ -300,7 +273,7 @@
 .pa-model-rows span { font-size: 11px; color: #8a94a6; }
 .pa-model-rows strong { font-size: 13px; }
 
-/* One row per municipality inside a Model Performance tile. */
+/* Municipality lists inside tiles. */
 .pa-tile-lgus { list-style: none; margin: 2px 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .pa-tile-lgus li { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .pa-tile-lgus small { font-size: 11px; font-weight: 400; color: #8a94a6; }
@@ -317,8 +290,7 @@
     color: #8a94a6;
 }
 
-
-/* Line charts: will the stock last / actual vs forecast */
+/* Chart lines and colors: expected, P90/stockpile, actual, stock levels, shortage areas. */
 .pa-axis { fill: #8a94a6; font-size: 12px; font-family: inherit; }
 .pa-line-exp { fill: none; stroke: #4896fe; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
 .pa-line-p90 { fill: none; stroke: #0f2547; stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; }
@@ -332,8 +304,6 @@
 .pa-stock-warning-text { fill: #b9651a; }
 .pa-stock-critical-text { fill: #c0392b; }
 .pa-cross-dot { fill: #fff; stroke: #1a2233; stroke-width: 2.5; }
-/* "Will the stock last?": area where demand is above the stock on hand -
-   light for the bad season, stronger where even normal demand runs short. */
 .pa-short-p90 { fill: rgba(231, 76, 60, 0.10); }
 .pa-short-exp { fill: rgba(231, 76, 60, 0.22); }
 .pa-end-label { font-size: 12px; font-weight: 700; font-family: inherit; fill: #0f2547; }
@@ -349,7 +319,7 @@
 .pa-legend .lg-cross { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #1a2233; background: #fff; }
 .pa-legend .lg-over { width: 11px; height: 11px; border-radius: 50%; background: #e74c3c; }
 
-/* Projected Demand chart - grouped bars (expected vs recommended stockpile) */
+/* Wide forecast bar chart: P90 bars, values, season tags, 'now' band. */
 .pa-bar-chart-wide { max-width: 980px; }
 .pa-bar-p90 { fill: #c9d6ee; stroke: #0f2547; stroke-width: 1.5; rx: 4; }
 .pa-bar-grid-zero { stroke: #b9c2d3; }
@@ -365,7 +335,6 @@
 .pa-now-tag { fill: #1d6fe0; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; font-family: inherit; }
 .pa-legend .lg-p90-bar { background: #c9d6ee; border: 1.5px solid #0f2547; width: 12px; height: 12px; }
 
-/* ---- Chart polish: softer grid, rounded bars, area fills, hover layer ---- */
 .pa-bar-grid { stroke: #edf0f5; stroke-dasharray: 3 4; }
 .pa-bar-grid-zero { stroke: #c9d1de; stroke-dasharray: none; }
 .pa-bar-col { fill: #4896fe; rx: 0; }
@@ -381,6 +350,7 @@
 .pa-legend .lg-wet { background: #f3f8ff; border-color: #d6e6ff; }
 .pa-legend .lg-peak { background: #e6f0ff; border-color: #bcd5fb; }
 
+/* 'How long will stock last' chart: areas, lines, points, crosshair and stock pills. */
 .pa-area-band { fill: rgba(30, 58, 110, 0.07); stroke: none; }
 .pa-area-exp { stroke: none; }
 .pa-line-exp { stroke-width: 2.5; }
@@ -402,6 +372,7 @@
 .pa-legend .lg-band { width: 14px; height: 10px; border-radius: 2px; background: rgba(30, 58, 110, 0.14); }
 .pa-legend .lg-p90 { border-top-color: #1e3a6e; }
 
+/* Chart tooltip (appears when hovering a month). */
 .pa-chart-host { position: relative; }
 .pa-tooltip {
     position: absolute; z-index: 5; pointer-events: none; min-width: 190px;
@@ -422,7 +393,6 @@
 .pa-tooltip .lg-p90-bar { background: #1e3a6e; }
 .pa-tooltip .lg-p90 { height: 0; border-top: 2px dashed #1e3a6e; border-radius: 0; }
 .pa-tooltip .lg-line-exp, .pa-tooltip .lg-line-stock { height: 3px; }
-/* White halo so end-of-line totals stay readable over lines and dots. */
 .pa-end-label { paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
 
 /* ===== DARK MODE - generated by scripts/gen_dark_css.py from the rules above. Do not edit below this line; rerun the script. ===== */

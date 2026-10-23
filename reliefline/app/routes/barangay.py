@@ -1,3 +1,5 @@
+# Barangay user pages: reports, family profiles, deliveries, inventory, reports.
+
 import csv
 import io
 import json
@@ -5,7 +7,7 @@ import os
 import re
 import shutil
 import zipfile
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from app.utils.timezone import ph_now, ph_today
 
@@ -17,7 +19,6 @@ from app.extensions import db
 from app.utils.decorators import role_required
 from app.models.office import Office
 from app.models.disaster_event import DisasterEvent
-from app.models.barangay_status import BarangayDisasterStatus
 from app.utils.disaster_events import (
     resolve_effective_event, event_covers_barangay, relevant_active_events_query,
     blocking_event_for_province, events_covering_barangay,
@@ -28,20 +29,11 @@ from app.models.barangay_inventory import BarangayInventory, BarangayStockLog
 from app.models.allocation import AllocationRecord
 from app.models.validation import DistributionRecord
 from app.models.warehouse import WarehouseInventory, WarehouseStockLog
-from app.models.food_pack_batch import FoodPackComponent, BarangayFoodPackBatch, BarangayFoodPackBatchItem
+from app.models.food_pack_batch import BarangayFoodPackBatch, BarangayFoodPackBatchItem
 from app.models.activity_log import ActivityLog
 from app.models.user import User
 from app.utils import weather as weather_service
 
-# Reused from the PSWDO route module so a status label, priority tier, or
-# notification icon never drifts between the PSWDO/CSWDO screens and this
-# barangay-facing one - see app/routes/pswdo.py for the source of truth.
-# _shelf_status/NEAR_EXPIRY_DAYS/_lots_from_json/_take_from_batches back the new
-# barangay-tier Food Pack Batches panel below - _shelf_status is pure (no DB
-# writes) so it's reused as-is rather than duplicated, and
-# _lots_from_json rebuilds the barangay's batches from what the fulfilling
-# CSWDO office deducted at dispatch, and _take_from_batches (model-agnostic)
-# deducts nearest-expiry-first when the barangay hands packs out.
 from app.utils.filters import arg_date, date_range, in_range, iso
 from app.routes.pswdo import (
     DISPATCH_STATUS_LABELS, NOTIFICATION_META, DEFAULT_NOTIFICATION_META,
@@ -63,33 +55,15 @@ REPORT_STATUS_LABELS = {
     "fulfilled": "Fulfilled",
 }
 
-# Reports the barangay has nothing left to act on - MSWDO/CSWDO has decided
-# them: "verified" (situation acknowledged, no allocation), "approved"
-# (accepted, delivery scheduled), "fulfilled" (delivery confirmed received),
-# "declined" (rejected). These fill the History tab. Open items the barangay
-# still works on are draft / pending / returned.
 DECIDED_REPORT_STATUSES = ("verified", "approved", "fulfilled", "declined")
-# "Accepted" = the report was taken as valid, whether or not packs followed.
 ACCEPTED_REPORT_STATUSES = ("verified", "approved", "fulfilled")
 
-# The barangay's priority tier is COMPUTED server-side from the reported
-# impact (see _compute_severity) - never graded by hand. It stays an internal
-# signal only: it drives the GIS map colours, the CSWDO priority list, and the
-# BarangayDisasterStatus row, but it is not shown on the report itself. The
-# 4-tier vocabulary matches PRIORITY_BY_STATUS (app/routes/pswdo.py).
 
-
+# Rates how serious a barangay's situation is, using points for damaged houses and affected families.
+# More points = higher level: Normal, Monitoring, Needs Assistance, or High Priority.
 def _compute_severity(*, affected_families=0, affected_individuals=0,
                       totally_damaged_houses=0, partially_damaged_houses=0,
                       roofs_damaged=0):
-    """Derive the priority tier from what was actually reported. Point-based,
-    capped per factor:
-
-      housing     totally-damaged houses (heavier) + partial + roofs damaged
-      population  affected families reported
-
-    Tiers: >=42 Critical · >=24 High · >=10 Moderate · else Low.
-    """
     score = 0.0
 
     total_dmg = totally_damaged_houses or 0
@@ -126,6 +100,7 @@ def _compute_severity(*, affected_families=0, affected_individuals=0,
     return "normal"
 
 
+# The logged-in user's barangay (shows an error if the account has no barangay).
 def _own_barangay_or_404():
     barangay = current_user.barangay
     if not barangay:
@@ -133,28 +108,16 @@ def _own_barangay_or_404():
     return barangay
 
 
+# The active disaster event that covers this barangay, if any.
 def _active_event(barangay):
-    """This barangay's effective event - its own town's CSWDO-declared local
-    event if active AND this barangay is one of the ones it covers, else
-    PSWDO's province-wide event, else None (see app.utils.disaster_events).
-    A barangay left unchecked out of its town's local event simply has no
-    active event, even while that event is running for the rest of the town."""
     event, applicable_barangay_ids = resolve_effective_event(barangay.city_municipality)
     if event and not event_covers_barangay(applicable_barangay_ids, barangay.barangay_id):
         return None
     return event
 
 
+# Limits notifications to this barangay only.
 def _own_activity_scope():
-    """This barangay's own ActivityLog rows - the single source of truth the
-    dashboard's Active Alerts panel, the full Notifications page, and its
-    mark-as-read actions all read from, so all three always agree.
-
-    Also restricted to NOTIFICATION_META's known operational action_types
-    (same allowlist as app.routes.pswdo.notifications) - barangay_id is
-    already None on every System Administration row (logins, user/office/
-    barangay management), so this is belt-and-suspenders rather than fixing
-    a live leak, but keeps the exclusion explicit instead of incidental."""
     barangay = current_user.barangay
     if not barangay:
         return None
@@ -162,28 +125,23 @@ def _own_activity_scope():
     return db.and_(ActivityLog.barangay_id == barangay.barangay_id, ActivityLog.action_type.in_(known_types))
 
 
+# Blocks opening a notification that belongs to another barangay.
 def _assert_own_activity(log):
     barangay = current_user.barangay
     if not barangay or log.barangay_id != barangay.barangay_id:
         abort(403)
 
 
+# Clicking a report notification opens the Barangay Report page.
 def _damage_report_notification_link(log):
-    # No report_id FK on ActivityLog, so - same fallback pattern as PSWDO's
-    # _relief_request_submitted_link when it can't resolve an exact record -
-    # this opens the Barangay Report page in general rather than one report.
     return url_for("barangay.damage_report")
 
 
+# Clicking a delivery notification opens the Relief Monitoring page.
 def _relief_monitoring_notification_link(log):
-    # Allocation/distribution notifications all resolve to this barangay's
-    # single Relief Monitoring list (no per-record detail route exists yet).
     return url_for("barangay.relief_monitoring")
 
 
-# Mirrors app.routes.pswdo.NOTIFICATION_LINK_BUILDERS so every notification
-# here is clickable the same way PSWDO/CSWDO notifications are, instead of
-# only exposing a "Mark as Read" action.
 NOTIFICATION_LINK_BUILDERS = {
     "damage_report_submitted": _damage_report_notification_link,
     "damage_report_returned": _damage_report_notification_link,
@@ -199,12 +157,10 @@ NOTIFICATION_LINK_BUILDERS = {
 }
 
 
-# On the barangay side the "distribution" category is presented as
-# "Relief Monitoring" (matches the sidebar page of the same name) - the
-# shared NOTIFICATION_META label ("Deliveries") is CSWDO/PSWDO wording.
 NOTIFICATION_CATEGORY_LABELS = {"distribution": "Relief Monitoring"}
 
 
+# Gets one notification ready for display: icon, color, category and link.
 def _notification_view(log):
     meta = NOTIFICATION_META.get(log.action_type, DEFAULT_NOTIFICATION_META)
     link_fn = NOTIFICATION_LINK_BUILDERS.get(log.action_type)
@@ -216,25 +172,22 @@ def _notification_view(log):
     }
 
 
+# All of this barangay's reports (including drafts), newest first.
 def _own_reports_all(barangay_id):
-    """Every report this barangay has ever started, including drafts -
-    what the Damage Report page's own Dashboard/History tabs read from."""
     return BarangayReport.query.filter_by(barangay_id=barangay_id).order_by(
         BarangayReport.created_at.desc()
     ).all()
 
 
+# This barangay's submitted reports (drafts not included), newest first.
 def _own_submitted_reports(barangay_id):
-    """Reports this barangay has actually sent to MSWDO/CSWDO (excludes
-    drafts still being filled out) - used anywhere outside the Damage Report
-    page itself, so an in-progress draft never shows up as if it were real,
-    reviewable activity (main Dashboard, Reports, Affected Families, CSV export)."""
     return BarangayReport.query.filter(
         BarangayReport.barangay_id == barangay_id,
         BarangayReport.status != "draft",
     ).order_by(BarangayReport.created_at.desc()).all()
 
 
+# Finds a report, but only if it belongs to this barangay.
 def _get_own_report_or_404(report_id):
     report = BarangayReport.query.get_or_404(report_id)
     barangay = current_user.barangay
@@ -243,6 +196,8 @@ def _get_own_report_or_404(report_id):
     return report
 
 
+# Page: /barangay/dashboard - Barangay main dashboard: the active disaster event, report status,
+# incoming deliveries, food packs on hand, notifications and weather.
 @barangay_bp.route("/dashboard")
 @login_required
 @role_required("barangay_user")
@@ -251,28 +206,17 @@ def dashboard():
     barangay = _own_barangay_or_404()
 
     primary_event = _active_event(barangay)
-    # Visibility only - PSWDO's province-wide event, if one is ALSO active
-    # while this barangay's own town has a local event in effect (whether or
-    # not this barangay is one it covers). primary_event above still drives
-    # this dashboard's own figures; this is purely so the barangay isn't
-    # unaware PSWDO has separately declared.
     province_event = None
     if primary_event and primary_event.scope == "municipality":
         province_event = blocking_event_for_province()
     elif not primary_event:
-        # Also surface it when this barangay was left out of its town's local
-        # event and so has no primary_event of its own at all.
         province_event = blocking_event_for_province()
 
-    # Reports that count toward the affected-families figures: anything the
-    # barangay actually sent to MSWDO/CSWDO, minus ones MSWDO/CSWDO declined.
     counted_reports = BarangayReport.query.filter(
         BarangayReport.barangay_id == barangay.barangay_id,
         BarangayReport.status.notin_(("draft", "declined")),
     )
 
-    # Affected Families card - daily running total, event or not: the sum of
-    # every report submitted today (PH time), resetting at 12:00 AM.
     today_start = datetime.combine(ph_today(), datetime.min.time())
     affected_families = sum(
         r.affected_families or 0 for r in counted_reports.filter(
@@ -281,8 +225,6 @@ def dashboard():
         ).all()
     )
 
-    # Current Situation - whole-event totals across every report submitted
-    # for the active event.
     event_totals = None
     if primary_event:
         event_reports = counted_reports.filter(
@@ -296,13 +238,11 @@ def dashboard():
             "partially_damaged_houses": sum(r.partially_damaged_houses or 0 for r in event_reports),
         }
 
-    # My damage reports - needing attention (submitted/returned) vs. all-time count
     my_reports = _own_submitted_reports(barangay.barangay_id)
     pending_reports = [r for r in my_reports if r.status in ("pending", "returned")]
     returned_reports = [r for r in my_reports if r.status == "returned"]
     recent_reports = my_reports[:4]
 
-    # Food packs allocated to this barangay for the active event
     food_packs_allocated = 0
     if primary_event:
         food_packs_allocated = sum(
@@ -311,17 +251,15 @@ def dashboard():
             ).all()
         )
 
-    # Relief deliveries - this barangay's own distributions, most recent first
     my_distributions = DistributionRecord.query.filter_by(barangay_id=barangay.barangay_id).order_by(
         DistributionRecord.distribution_date.desc()
     ).limit(5).all()
     in_transit_count = len([d for d in my_distributions if d.dispatch_status in ("dispatched", "in_transit")])
     awaiting_confirmation = [
         d for d in my_distributions
-        if d.dispatch_status in ("dispatched", "in_transit", "delayed", "delivered") and d.status != "confirmed"
+        if d.dispatch_status in ("dispatched", "in_transit", "delivered") and d.status != "confirmed"
     ]
 
-    # Active alerts - this barangay's own recent activity, read or unread
     recent_alerts = []
     scope = _own_activity_scope()
     if scope is not None:
@@ -351,21 +289,17 @@ def dashboard():
     )
 
 
+# Page: /barangay/dashboard/weather - Sends the weather data for the barangay's dashboard widget (its municipality's weather).
 @barangay_bp.route("/dashboard/weather")
 @login_required
 @role_required("barangay_user")
 def dashboard_weather():
-    """JSON feed for the dashboard's Weather & Typhoon Watch widget - this
-    barangay's own city/municipality only."""
     barangay = _own_barangay_or_404()
     city = barangay.city_municipality
     return weather_service.get_dashboard_snapshot([city] if city else [])
 
 
-# ---------------------------------------------------------------------------
-# Damage Report
-# ---------------------------------------------------------------------------
-
+# Saves the photos attached to a barangay report (only allowed image types).
 def _save_report_upload(report):
     files = [f for f in request.files.getlist("photo_files") if f and f.filename]
     if not files:
@@ -384,9 +318,8 @@ def _save_report_upload(report):
         report.photo_paths = ",".join(saved)
 
 
+# Applies the event and date filters to the report history list.
 def _report_history_extra_filters(reports):
-    """Event + submitted-date filters shared by the Report History tab and
-    its CSV export. Returns (filtered reports, template context)."""
     event_filter = request.args.get("event_id", type=int)
     date_from, date_to = date_range(request.args)
     if event_filter:
@@ -395,6 +328,8 @@ def _report_history_extra_filters(reports):
     return reports, {"event_filter": event_filter, "date_from": iso(date_from), "date_to": iso(date_to)}
 
 
+# Page: /barangay/damage-report - Barangay Report page: create situation reports for the CSWDO/MSWDO,
+# see open drafts, and track past reports and their review status.
 @barangay_bp.route("/damage-report")
 @login_required
 @role_required("barangay_user")
@@ -405,17 +340,12 @@ def damage_report():
 
     all_reports = _own_reports_all(barangay.barangay_id)
 
-    # The Active Event Report tab owns the open items (draft/pending/returned)
-    # for the CURRENT event (or ones not yet tied to any event). Everything
-    # else - decided reports and anything left open on an event that has since
-    # ended - belongs in History, so a report the barangay can no longer act
-    # on is still visible for the record instead of disappearing.
     active_event_ids = (primary_event.event_id, None) if primary_event else (None,)
 
+    # True if a report is for the current event and still open (draft, pending or returned).
     def _is_active_open(r):
         return r.event_id in active_event_ids and r.status in ("draft", "pending", "returned")
 
-    # Stat cards are all-time and identical on both tabs.
     ctx = {
         "barangay": barangay, "primary_event": primary_event, "tab": tab,
         "status_labels": REPORT_STATUS_LABELS,
@@ -430,7 +360,6 @@ def damage_report():
         search_query = request.args.get("q", "").strip().lower()
         status_filter = request.args.get("status", "all")
         history_reports = [r for r in all_reports if not _is_active_open(r)]
-        # Only offer filter options for statuses that actually appear here.
         history_statuses = [
             (s, REPORT_STATUS_LABELS.get(s, s.title()))
             for s in ("pending", "returned", "verified", "approved", "declined", "fulfilled")
@@ -454,10 +383,6 @@ def damage_report():
             **extra,
         })
     else:
-        # Active Event Report tab - open items (draft/submitted/returned) for
-        # the active event, PLUS standing ones not yet tied to any event
-        # (event_id IS NULL) - a draft started before PSWDO declared an event
-        # still needs a way back in.
         open_reports = [r for r in all_reports if _is_active_open(r)]
         returned_reports = [r for r in open_reports if r.status == "returned"]
 
@@ -471,6 +396,7 @@ def damage_report():
     return render_template("barangay/damage_report.html", **ctx)
 
 
+# Download: /barangay/damage-report/export - Downloads the barangay's reviewed reports as a CSV (spreadsheet) file.
 @barangay_bp.route("/damage-report/export")
 @login_required
 @role_required("barangay_user")
@@ -507,6 +433,7 @@ def damage_report_export():
     )
 
 
+# Page: /barangay/damage-report/<int:report_id>/view - Shows one report and its review status.
 @barangay_bp.route("/damage-report/<int:report_id>/view")
 @login_required
 @role_required("barangay_user")
@@ -519,25 +446,15 @@ def view_damage_report(report_id):
     )
 
 
+# Gets everything the report form needs:
+# the events to choose from, the family checklist, and any saved values.
 def _report_form_context(barangay, report=None):
-    # Events this barangay may file under - normally just the one effective
-    # event (see _active_event), but when a CSWDO-declared local event and
-    # PSWDO's province-wide event are BOTH active at once, this barangay is
-    # entitled to either (see app.utils.disaster_events) - let the filer
-    # choose instead of silently picking one.
     event_options = events_covering_barangay(barangay.city_municipality, barangay.barangay_id)
-    # A report already tied to an event that has since ended keeps that
-    # event selectable (and as the default) so editing a draft never
-    # silently reassigns it to whatever happens to be active now.
     default_event = (report.event if report and report.event else None) or _active_event(barangay)
     if report and report.event and report.event not in event_options:
         event_options = [report.event] + event_options
     default_event_id = default_event.event_id if default_event else None
 
-    # Families available for the checklist. A report being edited may cite
-    # a family that's since been archived - keep it selectable/visible on
-    # THIS report's form so its checked state (and counts) aren't silently
-    # dropped, even though it no longer shows up when starting a new report.
     families_q = Family.query.filter_by(barangay_id=barangay.barangay_id, is_active=True)
     if report:
         cited_ids = [rf.family_id for rf in report.affected_families_list if rf.family_id]
@@ -548,14 +465,8 @@ def _report_form_context(barangay, report=None):
             )
     families = families_q.order_by(Family.purok, Family.family_name).all()
     selected_family_ids = {rf.family_id for rf in report.affected_families_list} if report else set()
-    # A report filed before this feature (or saved via the manual fallback)
-    # has affected_families/individuals but no checklist rows - default it
-    # back into manual mode so its existing numbers aren't blanked out.
     manual_mode = bool(report and not report.affected_families_list and (report.affected_families or report.affected_individuals))
 
-    # "Submitted By" defaults to the barangay captain - the active barangay
-    # account here whose designation says Captain / Punong Barangay - and
-    # stays editable. A report being edited keeps the name it was saved with.
     captain = User.query.filter(
         User.barangay_id == barangay.barangay_id, User.is_active.is_(True),
         db.or_(User.designation.ilike("%captain%"), User.designation.ilike("%punong%"),
@@ -578,6 +489,7 @@ def _report_form_context(barangay, report=None):
     }
 
 
+# Page: /barangay/damage-report/new - Opens a blank report form.
 @barangay_bp.route("/damage-report/new")
 @login_required
 @role_required("barangay_user")
@@ -586,6 +498,8 @@ def new_damage_report():
     return render_template("barangay/damage_report_form.html", **_report_form_context(barangay))
 
 
+# Page: /barangay/damage-report/<int:report_id>/edit - Opens a report for editing.
+# Verified (reviewed) reports are locked and can't be edited.
 @barangay_bp.route("/damage-report/<int:report_id>/edit")
 @login_required
 @role_required("barangay_user")
@@ -597,18 +511,15 @@ def edit_damage_report(report_id):
     return render_template("barangay/damage_report_form.html", **_report_form_context(report.barangay, report))
 
 
+# Action: /barangay/damage-report/<int:report_id>/delete - Deletes a draft report and its photos. Submitted reports stay on record.
 @barangay_bp.route("/damage-report/<int:report_id>/delete", methods=["POST"])
 @login_required
 @role_required("barangay_user")
 def delete_damage_report(report_id):
-    # Already gone (double-click, form resubmit, deleted in another tab) -
-    # treat as done instead of showing a raw 404 page.
     if not db.session.get(BarangayReport, report_id):
         flash("That draft was already deleted.", "info")
         return redirect(url_for("barangay.damage_report"))
     report = _get_own_report_or_404(report_id)
-    # Only drafts can be deleted - a submitted report stays on record so the
-    # MSWDO review trail and any allocation tied to it are never orphaned.
     if report.status != "draft":
         flash("Only a draft can be deleted. Submitted reports stay on record.", "error")
         return redirect(url_for("barangay.damage_report"))
@@ -623,19 +534,9 @@ def delete_damage_report(report_id):
     return redirect(url_for("barangay.damage_report"))
 
 
+# Saves the report's affected families: either ticked from the Family Profiles checklist,
+# or typed in manually as totals.
 def _apply_affected_families(report):
-    """Fills affected_families/affected_individuals (+ the PWD/senior/
-    children breakdown) either from the Family Profiles checklist (the
-    normal path - see app.models.family.Family) or, when the barangay has
-    no registered profiles yet (or explicitly opts out via the "enter
-    manually" toggle - see damage_report_form.html), from the legacy
-    hand-typed number fields.
-
-    entry_mode="checklist" replaces report.affected_families_list wholesale
-    with a fresh snapshot of the checked families (see
-    app.models.family.ReportAffectedFamily) so editing a family profile
-    later never rewrites this report's already-submitted numbers.
-    """
     entry_mode = request.form.get("entry_mode", "checklist")
 
     if entry_mode == "manual":
@@ -650,10 +551,6 @@ def _apply_affected_families(report):
     family_ids = request.form.getlist("family_ids", type=int)
     families = []
     if family_ids:
-        # no_autoflush - report may be a brand-new, not-yet-fully-populated
-        # BarangayReport still pending in the session (required columns like
-        # submitted_by_name are filled in later in _apply_report_form); this
-        # query must not trigger an autoflush that tries to INSERT it early.
         with db.session.no_autoflush:
             families = Family.query.filter(
                 Family.barangay_id == report.barangay_id,
@@ -676,6 +573,7 @@ def _apply_affected_families(report):
     report.affected_children = sum(f.children_count for f in families)
 
 
+# Copies the report form (date, time, flood level, damage, people affected, notes) into the report.
 def _apply_report_form(report):
     incident_date = request.form.get("incident_date", "")
     if incident_date:
@@ -690,8 +588,6 @@ def _apply_report_form(report):
         except ValueError:
             pass
 
-    # Roofs Damaged / Wind Signal are no longer collected - the form dropped
-    # them. Left inert on new reports; old rows keep whatever they had.
     report.roofs_damaged = 0
     report.wind_signal = None
 
@@ -699,9 +595,6 @@ def _apply_report_form(report):
     report.totally_damaged_houses = request.form.get("totally_damaged_houses", type=int) or 0
     report.partially_damaged_houses = request.form.get("partially_damaged_houses", type=int) or 0
 
-    # Priority tier is derived, never hand-picked (see _compute_severity) - an
-    # internal signal for the GIS map / CSWDO priority list, not shown on the
-    # report.
     report.flood_level = _compute_severity(
         affected_families=report.affected_families,
         affected_individuals=report.affected_individuals,
@@ -710,9 +603,6 @@ def _apply_report_form(report):
         roofs_damaged=report.roofs_damaged,
     )
 
-    # Optional barangay-stated food-pack request. Left at 0 when blank - it is
-    # only decision support for CSWDO/MSWDO, never a binding figure (see
-    # app.routes.cswdo._relief_request_row / approve_relief_request).
     report.requested_food_packs = request.form.get("requested_food_packs", type=int) or 0
     if report.requested_food_packs < 0:
         report.requested_food_packs = 0
@@ -722,13 +612,8 @@ def _apply_report_form(report):
     report.submitted_by_designation = request.form.get("submitted_by_designation", "").strip() or current_user.designation
 
 
+# Picks which disaster event the report is for (the one chosen, if allowed).
 def _resolve_submitted_event_id(barangay, report):
-    """Validates the event_id the filer picked in damage_report_form.html's
-    Step 1 dropdown (see _report_form_context) against what this barangay may
-    actually file under - the province event, its own town's covered local
-    event, or (if editing) whatever event this report is already tied to.
-    Falls back to the auto-resolved default rather than trusting a tampered
-    or stale form value outright."""
     submitted = request.form.get("event_id", type=int)
     options = events_covering_barangay(barangay.city_municipality, barangay.barangay_id)
     allowed_ids = {e.event_id for e in options}
@@ -736,24 +621,15 @@ def _resolve_submitted_event_id(barangay, report):
         allowed_ids.add(report.event_id)
     if submitted and submitted in allowed_ids:
         return submitted
-    # Fall back to the most specific option (events_covering_barangay lists
-    # the local event before the province one) rather than trusting a
-    # tampered/stale value - NOT _active_event, which returns None for a
-    # barangay excluded from its town's local event even when the province
-    # event still applies to it.
     return options[0].event_id if options else None
 
 
+# Loads the report being edited, or starts a new one.
 def _get_or_create_report(barangay, report_id, event_id):
     if report_id:
         report = _get_own_report_or_404(report_id)
         if report.status not in ("draft", "pending", "returned"):
             abort(403)
-        # Follows whatever event the filer has selected as of this save - a
-        # report started before any event was active (or before PSWDO/CSWDO
-        # declared) picks one up once available, and a filer who initially
-        # chose one of two simultaneously-applicable events may switch to the
-        # other while still editable (see _resolve_submitted_event_id).
         if event_id is not None and report.event_id != event_id:
             report.event_id = event_id
         return report, False
@@ -762,6 +638,7 @@ def _get_or_create_report(barangay, report_id, event_id):
     return report, True
 
 
+# Action: /barangay/damage-report/save-draft - Saves a report as a draft (not yet sent to the CSWDO/MSWDO).
 @barangay_bp.route("/damage-report/save-draft", methods=["POST"])
 @login_required
 @role_required("barangay_user")
@@ -769,20 +646,9 @@ def save_damage_report_draft():
     barangay = _own_barangay_or_404()
     report_id = request.form.get("report_id", type=int)
     existing = _get_own_report_or_404(report_id) if report_id else None
-    # Uses whichever event the filer picked in Step 1 (see
-    # _resolve_submitted_event_id) - normally just the one event that
-    # applies, but a barangay covered by both its town's local event and
-    # PSWDO's province-wide one gets to choose. Leaves this report
-    # standalone (event_id=None) if no event applies at all - filing no
-    # longer requires PSWDO to have declared anything first.
     event_id = _resolve_submitted_event_id(barangay, existing)
 
     report, is_new = _get_or_create_report(barangay, report_id, event_id)
-    # Once a report has left draft state (sent to MSWDO/CSWDO as "pending", or
-    # bounced back as "returned"), editing it must not quietly demote it back
-    # to "draft" - that would pull it out of the CSWDO review queue / drop its
-    # place in the resubmission trail. Only a still-draft (or brand-new)
-    # report can be saved as a draft.
     if not is_new and report.status != "draft":
         flash(f"{report.ref} has already been submitted and can't be saved as a draft again. Use Submit instead.", "error")
         return redirect(url_for("barangay.edit_damage_report", report_id=report.report_id))
@@ -798,6 +664,8 @@ def save_damage_report_draft():
     return redirect(url_for("barangay.edit_damage_report", report_id=report.report_id))
 
 
+# Action: /barangay/damage-report/submit - Submits a report to the CSWDO/MSWDO for review.
+# The name of the person submitting is required.
 @barangay_bp.route("/damage-report/submit", methods=["POST"])
 @login_required
 @role_required("barangay_user")
@@ -821,8 +689,6 @@ def submit_damage_report():
 
     was_returned = report.status == "returned"
     report.submitted_at = ph_now()
-    # Resubmitting a returned report puts it back in the review queue -
-    # review_remarks/reviewed_by/reviewed_at are left as history of the prior review.
     report.status = "pending"
 
     db.session.flush()
@@ -841,14 +707,11 @@ def submit_damage_report():
     return redirect(url_for("barangay.damage_report"))
 
 
+# Action: /barangay/damage-report/<int:report_id>/unsubmit - Pulls a submitted report back to draft (only while it hasn't been reviewed yet).
 @barangay_bp.route("/damage-report/<int:report_id>/unsubmit", methods=["POST"])
 @login_required
 @role_required("barangay_user")
 def unsubmit_damage_report(report_id):
-    """Pulls a report back out of the MSWDO/CSWDO review queue into draft, in
-    case the barangay submitted too early and wants to fix something first.
-    Only while it's still "pending" - once a reviewer has acted (verified/
-    approved/declined/returned), the decision is on record and stands."""
     report = _get_own_report_or_404(report_id)
     if report.status != "pending":
         flash("Only a report that's still awaiting review can be unsubmitted.", "error")
@@ -868,14 +731,7 @@ def unsubmit_damage_report(report_id):
     return redirect(url_for("barangay.edit_damage_report", report_id=report.report_id))
 
 
-# ---------------------------------------------------------------------------
-# Family Profiles - the barangay's own resident registry (panelist-requested
-# "profiling" addition). One row per household: member/PWD/senior/children
-# counts. This registry is the checklist a Barangay Report is now built
-# from - see app.models.family.Family / ReportAffectedFamily and
-# _apply_affected_families above.
-# ---------------------------------------------------------------------------
-
+# Finds a family, but only if it belongs to this barangay.
 def _get_own_family_or_404(family_id):
     barangay = _own_barangay_or_404()
     family = Family.query.filter_by(family_id=family_id, barangay_id=barangay.barangay_id).first()
@@ -884,6 +740,8 @@ def _get_own_family_or_404(family_id):
     return family
 
 
+# Copies the family form (name, head, purok, contact, members, PWDs, seniors, children)
+# into the family profile.
 def _apply_family_form(family):
     family.family_name = request.form.get("family_name", "").strip()
     family.head_name = request.form.get("head_name", "").strip() or None
@@ -895,6 +753,8 @@ def _apply_family_form(family):
     family.children_count = max(0, request.form.get("children_count", type=int) or 0)
 
 
+# Page: /barangay/family-profiles - Family Profiles page: the barangay's list of registered families (active or archived).
+# Used as a checklist when filing reports and when giving out food packs.
 @barangay_bp.route("/family-profiles")
 @login_required
 @role_required("barangay_user")
@@ -902,11 +762,6 @@ def family_profiles():
     barangay = _own_barangay_or_404()
     show_archived = request.args.get("archived") == "1"
 
-    # Search/purok/category are all filtered client-side (see #fam-search
-    # etc. in family_profiles.html, same pattern as the Barangay Report
-    # wizard's family checklist) - the full list always renders so clearing
-    # a filter doesn't need a round trip, and the stat cards below stay
-    # fixed totals instead of fluctuating with whatever's currently searched.
     families = Family.query.filter_by(barangay_id=barangay.barangay_id, is_active=(not show_archived))
     families = families.order_by(Family.purok, Family.family_name).all()
 
@@ -922,6 +777,7 @@ def family_profiles():
     )
 
 
+# Action: /barangay/family-profiles/add - Adds a new family profile.
 @barangay_bp.route("/family-profiles/add", methods=["POST"])
 @login_required
 @role_required("barangay_user")
@@ -938,6 +794,7 @@ def family_profile_add():
     return redirect(url_for("barangay.family_profiles"))
 
 
+# Action: /barangay/family-profiles/<int:family_id>/edit - Saves changes to a family profile.
 @barangay_bp.route("/family-profiles/<int:family_id>/edit", methods=["POST"])
 @login_required
 @role_required("barangay_user")
@@ -953,6 +810,7 @@ def family_profile_edit(family_id):
     return redirect(url_for("barangay.family_profiles"))
 
 
+# Action: /barangay/family-profiles/<int:family_id>/archive - Archives a family (hides it from lists) or restores it.
 @barangay_bp.route("/family-profiles/<int:family_id>/archive", methods=["POST"])
 @login_required
 @role_required("barangay_user")
@@ -964,15 +822,12 @@ def family_profile_archive(family_id):
     return redirect(url_for("barangay.family_profiles", archived=request.args.get("archived")))
 
 
+# Action: /barangay/family-profiles/<int:family_id>/delete - Deletes a family. Not allowed if it was already listed in a report (archive it instead).
 @barangay_bp.route("/family-profiles/<int:family_id>/delete", methods=["POST"])
 @login_required
 @role_required("barangay_user")
 def family_profile_delete(family_id):
     family = _get_own_family_or_404(family_id)
-    # A family already cited on a report can't be removed outright - the
-    # report's snapshot (ReportAffectedFamily) survives either way, but
-    # deleting the profile here would strand its "view profile" link.
-    # Archiving is the safe removal path once a family has history.
     if ReportAffectedFamily.query.filter_by(family_id=family.family_id).first():
         flash(f"{family.family_name} has been cited on a report and can't be deleted - archive it instead.", "error")
         return redirect(url_for("barangay.family_profiles"))
@@ -983,19 +838,14 @@ def family_profile_delete(family_id):
     return redirect(url_for("barangay.family_profiles"))
 
 
-
+# The official barangay letterhead for printed pages.
 def _letterhead(user, barangay):
-    # Lazy import - report_data is only ever imported inside functions here.
     from app.routes.report_data import build_letterhead
     return build_letterhead(user, barangay=barangay)
 
+# One family's row on the Relief Distribution Sheet:
+# last name, first name, number of dependents and food packs.
 def _rds_row(family, packs):
-    """One beneficiary row of the DSWD Relief Distribution Sheet
-    (print_family_list.html). The registry only keeps a family label
-    ("Dela Cruz Family") and the head's name, so LAST comes from the label
-    and FIRST from head_name (minus the surname if it was typed in full);
-    MIDDLE / EXT. / birthday stay blank for the barangay to fill in by hand.
-    No. of dependents = household members other than the head."""
     last = re.sub(r"\s+family$", "", (family.family_name or "").strip(), flags=re.I)
     first = (family.head_name or "").strip()
     if last and first.lower().endswith(" " + last.lower()):
@@ -1008,9 +858,8 @@ def _rds_row(family, packs):
     }
 
 
+# The header of the Relief Distribution Sheet: region, province, municipality, barangay and disaster.
 def _rds_header(barangay, event=None):
-    """The form's header fields. Disaster type/date only when the sheet is
-    printed from a report tied to an event; otherwise left blank."""
     disaster_type = occurred_on = ""
     if event is not None:
         disaster_type = f"{(event.event_type or 'other').title()} - {event.event_name}"
@@ -1025,25 +874,19 @@ def _rds_header(barangay, event=None):
     }
 
 
+# All family rows for the Relief Distribution Sheet.
 def _family_print_rows(families):
-    """RDS rows for a report's ReportAffectedFamily checklist - the actual
-    packs_given once a family has already been marked received, else the
-    suggested figure (1 + PWD + senior)."""
     return [
         _rds_row(f, f.packs_given if f.received else f.suggested_packs)
         for f in families
     ]
 
 
+# Page: /barangay/family-profiles/print - Prepares the print page for the families ticked on Family Profiles.
 @barangay_bp.route("/family-profiles/print")
 @login_required
 @role_required("barangay_user")
 def print_families_selected():
-    """Step 1 of the "select a family" print path (see print_report_families
-    for the "choose a report" half): shows the manually-picked families with
-    an editable Packs field per family - defaulted to the suggested figure
-    (1 + PWD + senior) but the barangay can override it here before
-    generating the actual printable sheet (print_families_generate)."""
     barangay = _own_barangay_or_404()
     ids = request.args.getlist("family_ids", type=int)
     if not ids:
@@ -1059,13 +902,11 @@ def print_families_selected():
     return render_template("barangay/print_family_prepare.html", barangay=barangay, families=families)
 
 
+# Action: /barangay/family-profiles/print/generate - Builds the printable Relief Distribution Sheet for the selected families.
 @barangay_bp.route("/family-profiles/print/generate", methods=["POST"])
 @login_required
 @role_required("barangay_user")
 def print_families_generate():
-    """Step 2 - renders the actual printable sheet using the pack quantities
-    the barangay set on the prepare step above (falls back to a family's
-    suggested figure for any left blank or invalid)."""
     barangay = _own_barangay_or_404()
     ids = request.form.getlist("family_ids", type=int)
     if not ids:
@@ -1091,13 +932,11 @@ def print_families_generate():
     )
 
 
+# Page: /barangay/damage-report/<int:report_id>/print-families - Prints the Relief Distribution Sheet for the affected families listed in a report.
 @barangay_bp.route("/damage-report/<int:report_id>/print-families")
 @login_required
 @role_required("barangay_user")
 def print_report_families(report_id):
-    """Printable distribution announcement for one Barangay Report's
-    affected-families checklist - the "choose a report" half of this
-    feature (see print_families_selected for the manual-pick half)."""
     report = _get_own_report_or_404(report_id)
     if not report.affected_families_list:
         flash("This report has no affected-families checklist to print.", "error")
@@ -1112,22 +951,6 @@ def print_report_families(report_id):
     )
 
 
-# ---------------------------------------------------------------------------
-# Relief Monitoring - read-only for the barangay: PSWDO/CSWDO own allocation
-# and dispatch, this page only tracks incoming deliveries and lets the
-# barangay confirm receipt (the manuscript's photo/signature validation
-# record requirement). One card per DistributionRecord ("delivery"), not per
-# AllocationRecord, since a single request can eventually produce a
-# tracked physical delivery - the ID and progress the barangay actually
-# cares about is the delivery's, not the original request's.
-# ---------------------------------------------------------------------------
-
-# Simplified 6-step barangay-facing view of a delivery's lifecycle. Coarser
-# than pswdo.DISPATCH_STEPS (which also distinguishes Loaded/Dispatched) -
-# those sub-stages are PSWDO/CSWDO's own logistics concern, not something a
-# receiving barangay needs a separate step for. Ends in "Received" (this
-# barangay's own confirmation), which pswdo.DISPATCH_STEPS has no equivalent
-# of since that stepper is written from the dispatching side.
 BARANGAY_DELIVERY_STEPS = ["requested", "approved", "preparing", "issued", "in_transit", "validated"]
 BARANGAY_STEP_LABELS = {
     "requested": "Requested", "approved": "Approved", "preparing": "Preparing",
@@ -1136,6 +959,7 @@ BARANGAY_STEP_LABELS = {
 }
 
 
+# Which step of the progress tracker a delivery is on.
 def _delivery_step_index(dist):
     if dist.status == "confirmed":
         return 5
@@ -1143,24 +967,23 @@ def _delivery_step_index(dist):
         return 4
     if dist.dispatch_status == "dispatched" or dist.is_issued:
         return 3
-    # preparing / loaded read as one "Preparing" stage here.
     return 2
 
 
+# Page: /barangay/relief-monitoring - Relief Monitoring page: track food pack deliveries coming to the barangay,
+# and confirm receipt when they arrive.
 @barangay_bp.route("/relief-monitoring")
 @login_required
 @role_required("barangay_user")
 def relief_monitoring():
     barangay = _own_barangay_or_404()
 
-    # Most recent first - distribution_date is date-only, so distribution_id
-    # breaks same-day ties to keep the newest delivery genuinely on top.
     distributions = DistributionRecord.query.filter_by(barangay_id=barangay.barangay_id).order_by(
         DistributionRecord.distribution_date.desc(),
         DistributionRecord.distribution_id.desc(),
     ).all()
 
-    _CONFIRMABLE = ("dispatched", "in_transit", "delayed", "delivered")
+    _CONFIRMABLE = ("dispatched", "in_transit", "delivered")
     total_packs = sum(d.quantity_released for d in distributions)
     in_transit_count = len([d for d in distributions if d.dispatch_status in _CONFIRMABLE and d.status != "confirmed"])
     received_count = len([d for d in distributions if d.status == "confirmed"])
@@ -1178,13 +1001,13 @@ def relief_monitoring():
             "fulfilling_office": fulfilling,
             "step_index": _delivery_step_index(d),
             "can_confirm": d.dispatch_status in _CONFIRMABLE and d.status != "confirmed",
-            "is_delayed": d.dispatch_status == "delayed",
         })
 
     search_query = (request.args.get("q") or "").strip()
     if search_query:
         ql = search_query.lower()
 
+        # True if a delivery matches the search text.
         def _row_matches(row):
             office = row["fulfilling_office"].office_name if row["fulfilling_office"] else ""
             return any(ql in field.lower() for field in (
@@ -1193,12 +1016,7 @@ def relief_monitoring():
 
         delivery_rows = [r for r in delivery_rows if _row_matches(r)]
 
-    # delivery_rows stays in the query's newest-first order - no status
-    # grouping, so "All statuses" reads strictly most-recent-first.
 
-    # Default view shows only what still needs the barangay's attention.
-    # Options: transit (default) · received · all. A bare search with no status
-    # picked spans everything so a lookup for a received delivery still lands.
     default_status = "all" if search_query else "transit"
     status_filter = request.args.get("status", default_status)
     if status_filter not in ("transit", "received", "all"):
@@ -1234,6 +1052,7 @@ def relief_monitoring():
     )
 
 
+# Finds a delivery, but only if it is for this barangay.
 def _get_own_distribution_or_404(distribution_id):
     rec = DistributionRecord.query.get_or_404(distribution_id)
     barangay = current_user.barangay
@@ -1242,17 +1061,15 @@ def _get_own_distribution_or_404(distribution_id):
     return rec
 
 
+# Action: /barangay/relief-monitoring/<int:distribution_id>/confirm-receipt - Confirms the barangay received a delivery: who received it,
+# how many arrived, and the condition (complete, partial or damaged).
 @barangay_bp.route("/relief-monitoring/<int:distribution_id>/confirm-receipt", methods=["POST"])
 @login_required
 @role_required("barangay_user")
 def confirm_receipt(distribution_id):
     rec = _get_own_distribution_or_404(distribution_id)
 
-    # The barangay's VALIDATION RECORD (manuscript) - the only thing that
-    # closes a Relief Request and moves stock into the barangay's inventory.
-    # Available once CSWDO has confirmed issuance (dispatched) or the delivery
-    # is on the road.
-    if rec.dispatch_status not in ("dispatched", "in_transit", "delayed", "delivered") or rec.status == "confirmed":
+    if rec.dispatch_status not in ("dispatched", "in_transit", "delivered") or rec.status == "confirmed":
         flash("This delivery isn't ready to be confirmed - it may have already been received.", "error")
         return redirect(url_for("barangay.relief_monitoring"))
 
@@ -1263,10 +1080,6 @@ def confirm_receipt(distribution_id):
         flash("Select the condition the delivery arrived in.", "error")
         return redirect(url_for("barangay.relief_monitoring"))
 
-    # Receipt breakdown - what actually arrived, per the barangay:
-    #   complete → all released packs, none damaged
-    #   partial  → the count the barangay entered, none damaged
-    #   damaged  → good + damaged counts the barangay entered
     expected = rec.quantity_released or 0
     if condition == "complete":
         quantity_received, quantity_damaged = expected, 0
@@ -1276,7 +1089,7 @@ def confirm_receipt(distribution_id):
         if quantity_received <= 0:
             flash("Enter how many food packs the barangay actually received.", "error")
             return redirect(url_for("barangay.relief_monitoring"))
-    else:  # damaged
+    else:
         quantity_good = request.form.get("quantity_good", type=int) or 0
         quantity_damaged = request.form.get("quantity_damaged", type=int) or 0
         quantity_received = quantity_good + quantity_damaged
@@ -1303,9 +1116,6 @@ def confirm_receipt(distribution_id):
             f.save(os.path.join(upload_dir, safe_name))
             saved_names.append(safe_name)
 
-    # Photo proof: REQUIRED when the barangay reports a partial or damaged
-    # delivery (CSWDO/MSWDO needs evidence before sending a replacement);
-    # OPTIONAL when everything arrived complete.
     if condition in ("partial", "damaged") and not saved_names:
         flash("Attach a photo of the delivery - proof is required when packs are short or damaged.", "error")
         return redirect(url_for("barangay.relief_monitoring"))
@@ -1321,7 +1131,6 @@ def confirm_receipt(distribution_id):
     else:
         rec.validation_type = None
     rec.status = "confirmed"
-    # The barangay's validation closes out the trip.
     rec.dispatch_status = "delivered"
     rec.submitted_by = current_user.user_id
 
@@ -1341,10 +1150,9 @@ def confirm_receipt(distribution_id):
     return redirect(url_for("barangay.relief_monitoring"))
 
 
+# Adds the good packs from a confirmed delivery to the barangay's stock
+# (with the batch expiration dates that came with it).
 def _record_barangay_receipt(rec):
-    """Validation closes the loop: bump the barangay's own food-pack inventory,
-    write the +delta to its ledger, and mark the originating Relief Request
-    fulfilled. Idempotent on distribution_id."""
     if BarangayStockLog.query.filter_by(
         distribution_id=rec.distribution_id, source_type="delivery"
     ).first():
@@ -1358,8 +1166,6 @@ def _record_barangay_receipt(rec):
             item_name="Food Packs", unit="packs", quantity_available=0,
         )
         db.session.add(inv)
-    # Only usable packs enter stock - what physically arrived, minus any the
-    # barangay flagged as damaged (see DistributionRecord.good_count).
     usable = rec.good_count
     ref = f"D-{rec.distribution_date.year}-{rec.distribution_id:03d}"
     detail = ""
@@ -1367,6 +1173,7 @@ def _record_barangay_receipt(rec):
         detail += f", {rec.received_count:,} of {rec.quantity_released or 0:,} released received"
     if rec.damaged_count:
         detail += f", {rec.damaged_count:,} damaged"
+    # Add the good packs to the barangay's stock.
     inv.quantity_available = (inv.quantity_available or 0) + usable
     inv.updated_by = current_user.user_id
     db.session.add(BarangayStockLog(
@@ -1377,11 +1184,6 @@ def _record_barangay_receipt(rec):
     ))
 
     alloc = rec.allocation
-    # Rebuild the batches the fulfilling office deducted at dispatch (real
-    # remaining shelf life carries forward, same as cswdo.receive_transfer) -
-    # only `usable` packs get a batch, matching what actually enters stock
-    # above; damaged packs never enter BarangayInventory so they get no
-    # batch either.
     if usable:
         for received_date, qty, item_specs in _lots_from_json(rec.batch_lots, usable, ph_today()):
             _create_barangay_food_pack_batch(rec.barangay_id, qty, received_date, current_user.user_id, item_specs)
@@ -1392,15 +1194,8 @@ def _record_barangay_receipt(rec):
             rep.status = "fulfilled"
 
 
+# Sends the damaged packs from a delivery back to the supplying warehouse's damaged stock.
 def _return_damaged_packs(rec):
-    """Damaged packs never enter the barangay's usable stock (see
-    _record_barangay_receipt's `good_count`-only bump) - they physically stay
-    with/come back to whichever office fulfilled the delivery. Credit them
-    back to that office's warehouse under a distinct "food_pack_damaged" item
-    so they're visible for disposal/write-off decisions without ever being
-    counted in the "food_pack" figure the allocation/prediction pipeline
-    reads. Called once, right after confirm_receipt sets rec.quantity_damaged
-    (the route's own "already confirmed" guard keeps this from double-firing)."""
     if not rec.damaged_count:
         return
     alloc = rec.allocation
@@ -1429,11 +1224,6 @@ def _return_damaged_packs(rec):
         updated_by=current_user.user_id,
     ))
 
-    # Mirror the same event on the barangay's own ledger - delta 0 since the
-    # damaged packs never entered BarangayInventory to begin with (see
-    # _record_barangay_receipt); this row exists purely so the barangay's own
-    # Movement History shows where the damaged packs went instead of them
-    # just disappearing from the count.
     db.session.add(BarangayStockLog(
         barangay_id=rec.barangay_id, item_type="food_pack", item_name="Food Packs",
         delta=0, source_type="damaged_return", distribution_id=rec.distribution_id,
@@ -1442,21 +1232,9 @@ def _return_damaged_packs(rec):
     ))
 
 
+# Keeps the barangay's food pack batches matching its actual stock count,
+# and moves expired batches out of usable stock.
 def _sync_barangay_food_pack_batches(barangay_id):
-    """Barangay-tier mirror of pswdo._sync_food_pack_batches: keeps
-    BarangayFoodPackBatch bookkeeping honest against the real "food_pack"
-    BarangayInventory total, then moves anything past its expiration_date
-    into a separate "food_pack_expired" bucket - same lazy-bucket pattern the
-    office tier uses.
-
-    Batches only get created on receipt (see _record_barangay_receipt) -
-    outgoing movements (_record_barangay_distribution) touch
-    BarangayInventory.quantity_available directly without picking a batch,
-    so the running batch total can drift ahead of the real on-hand count.
-    Step 1 below reconciles that drift, oldest batch first, on every call -
-    called at the top of every route that renders a barangay's current
-    stock.
-    """
     fp = BarangayInventory.query.filter_by(barangay_id=barangay_id, item_type="food_pack").first()
     on_hand = fp.quantity_available if fp else 0
 
@@ -1475,8 +1253,6 @@ def _sync_barangay_food_pack_batches(barangay_id):
             excess -= trim
         active_batches = [b for b in active_batches if b.quantity_remaining > 0]
     elif excess < 0:
-        # Stock that entered without a batch - give it one so the batch list
-        # always adds up to on hand.
         active_batches.append(_create_barangay_food_pack_batch(barangay_id, -excess, ph_today()))
 
     today = ph_today()
@@ -1516,14 +1292,9 @@ def _sync_barangay_food_pack_batches(barangay_id):
     db.session.commit()
 
 
+# Creates a new barangay food pack batch with its items.
+# The batch expires on the date of its earliest-expiring item.
 def _create_barangay_food_pack_batch(barangay_id, quantity, received_date, updated_by=None, item_specs=None):
-    """Barangay-tier mirror of pswdo._create_food_pack_batch: opens one
-    BarangayFoodPackBatch for newly-received Food Packs stock, with a
-    BarangayFoodPackBatchItem per item. item_specs
-    ([(component_id, custom_name, date_or_None), ...]) carries the source
-    batch's real contents and expiration dates down the chain; None means
-    the standard full pack with default shelf lives. Does not commit
-    (caller commits)."""
     from datetime import timedelta
     rows = _resolve_batch_item_specs(received_date, item_specs)
     batch = BarangayFoodPackBatch(
@@ -1542,13 +1313,8 @@ def _create_barangay_food_pack_batch(barangay_id, quantity, received_date, updat
     return batch
 
 
-# ---------------------------------------------------------------------------
-# Inventory - the barangay's own food-pack stock. A plain +/- ledger for
-# operational visibility (CSWDO/PSWDO can also see it). Goes UP automatically
-# when the barangay validates a delivery; goes DOWN when barangay personnel
-# record having handed packs out to residents. Not a model predictor.
-# ---------------------------------------------------------------------------
-
+# Page: /barangay/inventory - Inventory page: the barangay's food packs on hand, total received and given out,
+# batches with expiration dates, and stock movement history.
 @barangay_bp.route("/inventory")
 @login_required
 @role_required("barangay_user")
@@ -1560,9 +1326,6 @@ def inventory():
     ).first()
     on_hand = inv.quantity_available if inv else 0
 
-    # Lifetime totals for the stat cards - unaffected by the Movement History
-    # filters below, same convention as the CSWDO/PSWDO warehouse pages (the
-    # filter narrows the list, not the running totals).
     all_logs = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id).all()
     received = sum(l.delta for l in all_logs if l.delta > 0)
     given_out = sum(-l.delta for l in all_logs if l.delta < 0)
@@ -1575,9 +1338,6 @@ def inventory():
     logs = (logs_q.order_by(BarangayStockLog.created_at.desc(), BarangayStockLog.log_id.desc())
             .offset((page - 1) * per_page).limit(per_page).all())
 
-    # Delivery/damaged-return log rows link back to the DistributionRecord
-    # they came from - fetched in one query so the Movement History can show
-    # a released/good/short/damaged breakdown on click, without a query per row.
     distribution_ids = {
         l.distribution_id for l in logs
         if l.source_type in ("delivery", "damaged_return") and l.distribution_id
@@ -1609,13 +1369,11 @@ def inventory():
     )
 
 
+# Applies the movement type and date filters to the stock history.
 def _inventory_movements_query(barangay):
-    """Movement History query with the Inventory page's Type/Date filters
-    applied - shared by the page itself and its PDF/Excel export, so an
-    export always matches what the filtered list shows."""
     type_filter = request.args.get("type", "all")
     date_from, date_to = date_range(request.args)
-    legacy = arg_date(request.args, "date")  # old single-day ?date= links
+    legacy = arg_date(request.args, "date")
     if legacy and not (date_from or date_to):
         date_from = date_to = legacy
     logs_q = BarangayStockLog.query.filter_by(barangay_id=barangay.barangay_id)
@@ -1634,11 +1392,11 @@ INVENTORY_MOVEMENT_TYPE_LABELS = {
 }
 
 
+# Download: /barangay/inventory/movements/export - Downloads the stock movement history as an Excel file.
 @barangay_bp.route("/inventory/movements/export")
 @login_required
 @role_required("barangay_user")
 def inventory_movements_export():
-    """Movement History export - always Excel."""
     from app.routes.report_data import build_barangay_movement_export
     from app.routes.report_files import generate_file
 
@@ -1648,9 +1406,6 @@ def inventory_movements_export():
     logs = logs_q.order_by(BarangayStockLog.created_at.desc(), BarangayStockLog.log_id.desc()).all()
     type_label = "All Types" if type_filter == "all" else INVENTORY_MOVEMENT_TYPE_LABELS.get(type_filter, type_filter.title())
     report = build_barangay_movement_export(barangay, logs, type_label, date_from, date_to, current_user)
-    # Not logged to Recent Reports: a ReportLog re-download rebuilds from
-    # event/days filters only, so it couldn't reproduce this Type/Date-filtered
-    # export. Reports > Stock Movement History is the logged equivalent.
     content, _pages = generate_file(report, fmt)
 
     filename = f"stock_movements_{ph_now().strftime('%Y%m%d')}.{REPORTS_EXTENSIONS[fmt]}"
@@ -1660,13 +1415,12 @@ def inventory_movements_export():
     )
 
 
+# Action: /barangay/inventory/expired-batch/<int:batch_id>/resolve - Handles an expired food pack batch:
+# either dispose of the packs, or repack them with fresh items and put them back in stock.
 @barangay_bp.route("/inventory/expired-batch/<int:batch_id>/resolve", methods=["POST"])
 @login_required
 @role_required("barangay_user")
 def inventory_resolve_expired_batch(batch_id):
-    """Disposed/Fixed resolution for one expired BarangayFoodPackBatch -
-    mirrors pswdo.warehouse_inventory_resolve_expired_batch /
-    cswdo.municipal_inventory_resolve_expired_batch."""
     barangay = _own_barangay_or_404()
     batch = BarangayFoodPackBatch.query.get_or_404(batch_id)
     if batch.barangay_id != barangay.barangay_id or batch.status != "expired":
@@ -1729,11 +1483,6 @@ def inventory_resolve_expired_batch(batch_id):
             updated_by=current_user.user_id,
         ))
 
-        # received_date is today, not the original batch's date - see the
-        # matching comment in pswdo.warehouse_inventory_resolve_expired_batch
-        # for why (keeping the old date would make this brand-new stock look
-        # like the oldest active batch and expose it to the next sync's
-        # drift-reconciliation trim ahead of batches that are genuinely older).
         new_batch = BarangayFoodPackBatch(
             barangay_id=barangay.barangay_id, quantity_remaining=quantity,
             received_date=ph_today(),
@@ -1758,10 +1507,8 @@ def inventory_resolve_expired_batch(batch_id):
 DISTRIBUTION_PROOF_EXTENSIONS = {"jpg", "jpeg", "png"}
 
 
+# Checks the proof photos for a distribution (JPG or PNG only).
 def _distribution_proof_files():
-    """Optional photo proof attached to a distribution form (input name
-    "proof_photos"). Returns (files, error) - error is set when any attached
-    file isn't an image, so the caller can bail before touching stock."""
     files = [f for f in request.files.getlist("proof_photos") if f and f.filename]
     for f in files:
         ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else ""
@@ -1770,9 +1517,8 @@ def _distribution_proof_files():
     return files, None
 
 
+# Saves the proof photos for a distribution.
 def _save_distribution_proof(log, files):
-    """Saves the proof photos under static/uploads/barangay_distributions/<log_id>/
-    and records their names on the log. `log` must already have a log_id."""
     if not files:
         return
     upload_dir = os.path.join(current_app.root_path, "static", "uploads", "barangay_distributions", str(log.log_id))
@@ -1787,26 +1533,9 @@ def _save_distribution_proof(log, files):
     log.proof_photos = ",".join(saved) or None
 
 
+# Records food packs given out to families: removes them from stock (oldest batches first)
+# and saves the record with any proof photos.
 def _record_barangay_distribution(barangay_id, amount, reason, family_id=None, proof_files=None):
-    """The one place barangay stock ever decreases (see inventory_record's
-    docstring) - shared by the manual "Record Distribution" form on the
-    Inventory page and the per-family "Mark Received" checklist on a
-    fulfilled Barangay Report (mark_family_received below), so both write
-    to the same BarangayInventory/BarangayStockLog ledger and can never
-    disagree with each other or with the GIS map's stock-adequacy rating.
-
-    `family_id` optionally tags the log with which registered Family this
-    went to - set by either caller - so a family's distribution history is
-    always the same one query (BarangayStockLog.family_id) regardless of
-    whether the pack was tied to a report or handed out ad hoc.
-
-    `proof_files` (from _distribution_proof_files) are optional photo proof
-    that the packs were actually handed out, saved against the new log row.
-
-    Returns an error message string when there isn't enough stock on hand
-    (caller should flash it and bail without committing), or None on
-    success (caller still owns the commit).
-    """
     inv = BarangayInventory.query.filter_by(
         barangay_id=barangay_id, item_type="food_pack"
     ).first()
@@ -1814,10 +1543,9 @@ def _record_barangay_distribution(barangay_id, amount, reason, family_id=None, p
     if inv is None or on_hand < amount:
         return f"You only have {on_hand:,} food packs on hand."
 
+    # Remove the given-out packs from the barangay's stock.
     inv.quantity_available = on_hand - amount
     inv.updated_by = current_user.user_id
-    # Nearest-expiry batches go out first, so the Food Pack Batches panel
-    # drops right away and keeps adding up to on hand.
     _take_from_batches(BarangayFoodPackBatch.query.filter_by(
         barangay_id=barangay_id, status="active").filter(BarangayFoodPackBatch.quantity_remaining > 0).all(), amount)
     log = BarangayStockLog(
@@ -1827,26 +1555,16 @@ def _record_barangay_distribution(barangay_id, amount, reason, family_id=None, p
     )
     db.session.add(log)
     if proof_files:
-        db.session.flush()  # need log_id for the upload folder
+        db.session.flush()
         _save_distribution_proof(log, proof_files)
     return None
 
 
+# Action: /barangay/inventory/record - Form action 'Record Distribution': food packs given out, to whom, and proof photos.
 @barangay_bp.route("/inventory/record", methods=["POST"])
 @login_required
 @role_required("barangay_user")
 def inventory_record():
-    """Barangay-side stock write - DISTRIBUTION ONLY. Stock only ever comes IN
-    automatically, via a validated delivery (see _record_barangay_receipt,
-    called from confirm_receipt) - a barangay account has no way to add stock
-    by hand here, only record having handed packs out to residents. (A manual
-    "Adjust Count" add/subtract used to live here too; removed on purpose.)
-
-    This is the generic/manual path - it also doubles as the "Mark Received"
-    checklist's more flexible sibling: an optional family picker lets the
-    barangay name who this went to even when that family isn't tied to any
-    report at all (a resident not on this event's affected list, an older
-    profile, etc.) - see mark_family_received for the report-scoped version."""
     barangay = _own_barangay_or_404()
     amount = request.form.get("amount", type=int) or 0
     reason = request.form.get("reason", "").strip() or None
@@ -1870,8 +1588,6 @@ def inventory_record():
     if err:
         flash(err, "error")
         return redirect(url_for("barangay.inventory"))
-    # Every distribution needs a photo of the hand-over as proof (same rule
-    # as mark_family_received).
     if not proof_files:
         flash("Attach a photo of the hand-over to record this distribution.", "error")
         return redirect(url_for("barangay.inventory"))
@@ -1890,19 +1606,12 @@ def inventory_record():
     return redirect(url_for("barangay.inventory"))
 
 
+# Action: /barangay/damage-report/<int:report_id>/distribute/<int:raf_id> - Marks a family listed in a report as having received its food packs
+# (only after the delivery was confirmed), and removes the packs from stock.
 @barangay_bp.route("/damage-report/<int:report_id>/distribute/<int:raf_id>", methods=["POST"])
 @login_required
 @role_required("barangay_user")
 def mark_family_received(report_id, raf_id):
-    """Marks one affected family (from the report's checklist) as having
-    received its food pack(s) - the per-family counterpart to
-    inventory_record. Only actionable once the report is "fulfilled" (the
-    delivery itself has already been confirmed received, so the packs are
-    actually on hand to give out - see confirm_receipt).
-
-    Deducts `packs_given` from the same BarangayInventory/BarangayStockLog
-    ledger inventory_record uses (via _record_barangay_distribution), so
-    "who got a pack" and "how much stock is left" can never drift apart."""
     report = _get_own_report_or_404(report_id)
     if report.status != "fulfilled":
         flash("You can only record distribution once the delivery has been confirmed received.", "error")
@@ -1926,8 +1635,6 @@ def mark_family_received(report_id, raf_id):
     if err:
         flash(err, "error")
         return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
-    # A family is only marked as having received its packs with a photo of
-    # the hand-over as proof.
     if not proof_files:
         flash(f"Attach a photo of the hand-over to mark {raf.family_name} as received.", "error")
         return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
@@ -1949,14 +1656,11 @@ def mark_family_received(report_id, raf_id):
     return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
 
 
+# Action: /barangay/damage-report/<int:report_id>/distribute/<int:raf_id>/undo - Undoes a family's 'received' mark and puts its packs back into stock.
 @barangay_bp.route("/damage-report/<int:report_id>/distribute/<int:raf_id>/undo", methods=["POST"])
 @login_required
 @role_required("barangay_user")
 def undo_family_received(report_id, raf_id):
-    """Reverses a mark_family_received mistake - adds the packs back to
-    on-hand stock (logged as an 'adjustment', not another 'distribution',
-    since nothing actually went back out to anyone) and clears the
-    family's received state so it can be marked again correctly."""
     report = _get_own_report_or_404(report_id)
     raf = next((rf for rf in report.affected_families_list if rf.id == raf_id), None)
     if not raf or not raf.received:
@@ -1966,10 +1670,9 @@ def undo_family_received(report_id, raf_id):
         barangay_id=report.barangay_id, item_type="food_pack"
     ).first()
     if inv:
+        # Put the family's packs back into stock.
         inv.quantity_available += raf.packs_given
         inv.updated_by = current_user.user_id
-        # The packs are back on the shelf - which batch they came from isn't
-        # recorded, so they re-enter as a new batch with default shelf lives.
         _create_barangay_food_pack_batch(report.barangay_id, raf.packs_given, ph_today(), current_user.user_id)
         db.session.add(BarangayStockLog(
             barangay_id=report.barangay_id, item_type="food_pack", item_name="Food Packs",
@@ -1987,16 +1690,6 @@ def undo_family_received(report_id, raf_id):
     return redirect(url_for("barangay.view_damage_report", report_id=report.report_id))
 
 
-# ---------------------------------------------------------------------------
-# Reports - mirrors app.routes.cswdo's report-generation pattern (report
-# cards -> report_view -> PDF/Excel export -> logged + re-downloadable),
-# just scoped to this one barangay instead of a municipality. Only 2 of the
-# 7 generic report types have a meaningful barangay-scoped equivalent (see
-# app.routes.report_data.BARANGAY_REPORT_TYPES) - a barangay has no
-# warehouse of its own, so Warehouse Inventory/Stock Movement/Municipality
-# Summary/Analytics don't have real data behind them at this scope.
-# ---------------------------------------------------------------------------
-
 REPORTS_MIME_TYPES = {
     "pdf": "application/pdf",
     "excel": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -2004,10 +1697,12 @@ REPORTS_MIME_TYPES = {
 REPORTS_EXTENSIONS = {"pdf": "pdf", "excel": "xlsx"}
 
 
+# The filters saved with a generated report (event and period).
 def _reports_filters_snapshot(filters):
     return {"event_id": filters["event_id"], "days": filters["days"]}
 
 
+# Rebuilds a past report file from its saved filters, so it can be downloaded again.
 def _regenerate_barangay_report(log, barangay):
     from app.routes.reports import _StoredArgs
     from app.routes.report_data import resolve_barangay_filters, build_barangay_report
@@ -2019,6 +1714,8 @@ def _regenerate_barangay_report(log, barangay):
     return generate_file(report, log.format)
 
 
+# Page: /barangay/reports - Reports page: summary numbers for the barangay and the PDF/Excel reports
+# that can be generated, plus recently generated reports.
 @barangay_bp.route("/reports")
 @login_required
 @role_required("barangay_user")
@@ -2028,9 +1725,6 @@ def reports():
 
     barangay = _own_barangay_or_404()
     filters = resolve_barangay_filters(request.args)
-    # Every event, not just the currently-active one - a report is almost
-    # always generated *after* a typhoon has ended, so scoping this filter to
-    # status="active" would make every past event unselectable.
     active_events = DisasterEvent.query.filter_by(is_reference=False).order_by(DisasterEvent.start_date.desc()).all()
 
     my_reports = _own_submitted_reports(barangay.barangay_id)
@@ -2051,10 +1745,6 @@ def reports():
     packs_received = sum(d.quantity_released for d in delivered)
     completed_deliveries = len(delivered)
 
-    # "" not None - url_for() drops a None param outright, which would make
-    # the generated link carry no event_id at all instead of an explicit
-    # "no event filter", and resolve_barangay_filters() would then treat that
-    # as "not chosen yet" and silently default back to the active event.
     query_params = {"event_id": filters["event_id"] or "", "days": filters["days"]}
     report_cards = [
         {"slug": slug, **info, "generate_url": url_for("barangay.report_view", report_type=slug, **query_params)}
@@ -2097,6 +1787,7 @@ def reports():
     )
 
 
+# Page: /barangay/reports/<report_type> - Shows one report on screen before downloading it.
 @barangay_bp.route("/reports/<report_type>")
 @login_required
 @role_required("barangay_user")
@@ -2116,6 +1807,7 @@ def report_view(report_type):
     )
 
 
+# Creates a report as PDF or Excel and saves it in the report history.
 def _barangay_export_report(report_type, fmt):
     from app.models.report import ReportLog
     from app.routes.report_data import BARANGAY_REPORT_TYPES, resolve_barangay_filters, build_barangay_report
@@ -2127,9 +1819,6 @@ def _barangay_export_report(report_type, fmt):
     filters = resolve_barangay_filters(request.args)
     report = build_barangay_report(report_type, barangay, filters, current_user)
     content, pages = generate_file(report, fmt)
-    # ?inline=1 is the Print button: the PDF opens in the browser to print
-    # (a PDF prints without the browser's URL/title header), and isn't
-    # logged in Recent Reports since nothing was exported.
     inline = fmt == "pdf" and request.args.get("inline") == "1"
 
     if not inline:
@@ -2147,6 +1836,7 @@ def _barangay_export_report(report_type, fmt):
     )
 
 
+# Download: /barangay/reports/<report_type>/pdf - Downloads a report as a PDF file.
 @barangay_bp.route("/reports/<report_type>/pdf")
 @login_required
 @role_required("barangay_user")
@@ -2154,6 +1844,7 @@ def report_export_pdf(report_type):
     return _barangay_export_report(report_type, "pdf")
 
 
+# Download: /barangay/reports/<report_type>/excel - Downloads a report as an Excel file.
 @barangay_bp.route("/reports/<report_type>/excel")
 @login_required
 @role_required("barangay_user")
@@ -2161,6 +1852,7 @@ def report_export_excel(report_type):
     return _barangay_export_report(report_type, "excel")
 
 
+# Download: /barangay/reports/download/<int:report_id> - Downloads a report from the history again (only the user's own reports).
 @barangay_bp.route("/reports/download/<int:report_id>")
 @login_required
 @role_required("barangay_user")
@@ -2183,6 +1875,7 @@ def report_download(report_id):
     )
 
 
+# Download: /barangay/reports/download-all - Downloads the user's 10 latest reports together in one ZIP file.
 @barangay_bp.route("/reports/download-all")
 @login_required
 @role_required("barangay_user")
@@ -2216,10 +1909,8 @@ def report_download_all():
     )
 
 
-# ---------------------------------------------------------------------------
-# Notifications
-# ---------------------------------------------------------------------------
-
+# Page: /barangay/notifications - Barangay Notifications page: updates about the barangay's reports and deliveries,
+# filterable by category.
 @barangay_bp.route("/notifications")
 @login_required
 @role_required("barangay_user")
@@ -2248,20 +1939,12 @@ def notifications():
         view["was_unread"] = not log.is_read
         page_items.append(view)
 
-    # Opening the Notifications page is itself the "read" action - no per-item
-    # or "Mark all as read" click needed. Unread rows still show highlighted on
-    # this render (via was_unread) so the user sees what's new before it clears.
     if unread_count and scope is not None:
         ActivityLog.query.filter(scope, ActivityLog.is_read.is_(False)).update(
             {"is_read": True}, synchronize_session=False
         )
         db.session.commit()
 
-    # Only the categories this barangay's own ActivityLog rows can actually
-    # carry (see _own_activity_scope) - no "Warehouse" tab like PSWDO's, since
-    # warehouse-transfer notifications never carry a barangay_id, and no
-    # "Relief Requests" tab since the barangay's relief request IS its
-    # Barangay Report (Tier 1) and its whole lifecycle lives in that category.
     categories = [
         {"value": "all", "label": "All"},
         {"value": "barangay_reports", "label": "Barangay Reports"},
@@ -2277,12 +1960,11 @@ def notifications():
     )
 
 
+# Page: /barangay/notifications/<int:log_id>/view - Marks a notification as read and opens the page it is about.
 @barangay_bp.route("/notifications/<int:log_id>/view")
 @login_required
 @role_required("barangay_user")
 def view_notification(log_id):
-    """Same as pswdo.view_notification: opening a notification is what marks
-    it read, then routes to whatever page that notification is about."""
     log = ActivityLog.query.get_or_404(log_id)
     _assert_own_activity(log)
     log.is_read = True
@@ -2291,10 +1973,7 @@ def view_notification(log_id):
     return redirect(destination or url_for("barangay.notifications"))
 
 
-# ---------------------------------------------------------------------------
-# Profile Settings
-# ---------------------------------------------------------------------------
-
+# Page: /barangay/settings/profile - Barangay user's Profile Settings page.
 @barangay_bp.route("/settings/profile")
 @login_required
 @role_required("barangay_user")
@@ -2302,6 +1981,7 @@ def profile_settings():
     return render_template("barangay/profile_settings.html")
 
 
+# Action: /barangay/settings/profile - Saves the user's own name, email and designation (position).
 @barangay_bp.route("/settings/profile", methods=["POST"])
 @login_required
 @role_required("barangay_user")
@@ -2329,6 +2009,8 @@ def update_profile_info():
     return redirect(url_for("barangay.profile_settings"))
 
 
+# Action: /barangay/settings/password - Changes the user's own password.
+# The current password must be correct and the new one at least 8 characters.
 @barangay_bp.route("/settings/password", methods=["POST"])
 @login_required
 @role_required("barangay_user")

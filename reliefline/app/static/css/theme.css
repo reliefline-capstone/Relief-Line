@@ -1,24 +1,8 @@
-/* ============================================================
-   ReliefLine - visual theme refresh
-   ------------------------------------------------------------
-   Loaded LAST (see base.html), so it only needs to nudge the
-   shared component surfaces into the new look. Scope is strictly
-   cosmetic: colour, background, border, shadow, radius and the
-   type stack. No layout, spacing structure, content, markup,
-   navigation or behaviour is touched here.
+/* The app's look and feel on top of the basic styles: colors, rounded corners, shadows, */
+/* number cards, sidebar highlight and buttons. Loaded on every page. */
 
-   Palette (from the reference design system):
-     #5347CE  deep indigo   - primary / brand / active
-     #887CFD  soft violet   - secondary accent / gradients
-     #4896FE  clear blue    - tertiary accent
-     #16C8C7  teal          - reserved accent
-   The bulk of the recolour lives in the individual stylesheets
-   (navy -> indigo, etc.); this file is the finishing pass.
-   ============================================================ */
-
+/* Theme colors and shadow settings. */
 :root {
-    /* Legacy token names kept so existing var(--navy) / var(--accent-blue)
-       references resolve to the refreshed palette. */
     --navy: #5347ce;
     --navy-light: #4436b4;
     --accent-blue: #5347ce;
@@ -40,9 +24,7 @@
     --rl-shadow-hover: 0 10px 28px rgba(83, 71, 206, 0.12);
 }
 
-/* ---- Typography -------------------------------------------------------
-   Prefer SF Pro Display where it exists (Apple devices, per the reference),
-   fall back to the already-loaded Inter everywhere else. */
+/* Font for all text and form controls. */
 body,
 h1, h2, h3, h4, h5, h6,
 button, input, select, textarea, .page-header h2 {
@@ -50,14 +32,11 @@ button, input, select, textarea, .page-header h2 {
                  "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* ---- App canvas ----------------------------------------------------- */
 .dashboard-layout {
     background: var(--rl-canvas);
 }
 
-/* ---- Cards / panels ------------------------------------------------
-   Soft, rounded, hairline-bordered white surfaces with a barely-there
-   shadow - the reference's calm card language. */
+/* Panels and cards: white background, rounded corners, soft shadow. */
 .panel,
 .stat-card,
 .wh-reco-panel,
@@ -71,28 +50,20 @@ button, input, select, textarea, .page-header h2 {
     box-shadow: var(--rl-shadow-hover);
 }
 
-/* Stat cards stay flat - border + the bottom colour wash only, no shadow. */
+/* Number cards: icon colors, layout, and clickable cards. */
 .stat-card,
 .stat-card:hover {
     box-shadow: none;
 }
 
-/* ---- Stat cards -------------------------------------------------
-   Matches the reference mock while keeping the current reading order
-   (icon tile -> value -> label). The existing caption span (.stat-sub)
-   is relocated to a small status pill in the top-right corner - no
-   markup change, the same text, just re-placed. A muted arrow and a
-   faint colour wash finish the card. */
 .stat-card {
     position: relative;
     overflow: hidden;
     padding: 16px 15px 15px;
     gap: 0;
-    /* on the dashboards this is an <a>; elsewhere it stays a plain <div> */
     color: inherit;
     text-decoration: none;
 }
-/* Only the clickable dashboard cards get a pointer + hover affordance. */
 a.stat-card {
     cursor: pointer;
 }
@@ -100,7 +71,6 @@ a.stat-card:hover {
     border-color: #d7d5f2;
 }
 
-/* Icon: soft tinted rounded tile, top-left, in normal flow. */
 .stat-card .stat-icon {
     position: static;
     order: 0;
@@ -128,13 +98,12 @@ a.stat-card:hover {
     color: #2b3242;
 }
 
-/* Caption -> top-right status pill (dot + text, soft tinted). */
 .stat-card .stat-sub {
     position: absolute;
     top: 12px;
     right: 12px;
-    max-width: calc(100% - 74px);   /* clear the icon tile on the left */
-    padding: 2.5px 8px 2.5px 17px;  /* left pad leaves room for the dot */
+    max-width: calc(100% - 74px);
+    padding: 2.5px 8px 2.5px 17px;
     border-radius: 999px;
     background: rgba(83, 71, 206, 0.09);
     font-size: 9.5px;
@@ -158,8 +127,6 @@ a.stat-card:hover {
 }
 .stat-card .stat-sub:empty { display: none; }
 
-/* muted "go" arrow, bottom-right - only on the clickable dashboard cards
-   (a.stat-card), hidden until the card is hovered then it fades in. */
 a.stat-card::after {
     content: "";
     position: absolute;
@@ -179,7 +146,6 @@ a.stat-card:hover::after {
     transform: translateX(0);
 }
 
-/* faint colour wash along the bottom, tinted to the card's icon colour */
 .stat-card::before {
     content: "";
     position: absolute;
@@ -198,7 +164,6 @@ a.stat-card:hover::after {
 .stat-card:has(.stat-icon.blue)::before   { background: linear-gradient(0deg, rgba(72, 150, 254, 0.08) 0%, rgba(72, 150, 254, 0) 100%); }
 .stat-card:has(.stat-icon.brown)::before  { background: linear-gradient(0deg, rgba(165, 113, 58, 0.08) 0%, rgba(165, 113, 58, 0) 100%); }
 
-/* pill dot + tint follow the card colour */
 .stat-card:has(.stat-icon.red) .stat-sub    { background: rgba(231, 76, 60, 0.10); }
 .stat-card:has(.stat-icon.red) .stat-sub::before    { background: #e74c3c; }
 .stat-card:has(.stat-icon.orange) .stat-sub { background: rgba(230, 126, 34, 0.12); }
@@ -214,14 +179,11 @@ a.stat-card:hover::after {
 .stat-card:has(.stat-icon.brown) .stat-sub  { background: rgba(165, 113, 58, 0.12); }
 .stat-card:has(.stat-icon.brown) .stat-sub::before  { background: #a5713a; }
 
-/* keep card text above the wash + arrow */
 .stat-card .stat-icon,
 .stat-card .stat-value,
 .stat-card .stat-label { position: relative; z-index: 1; }
 .stat-card .stat-sub { z-index: 2; }
 
-/* filtered-view "LIVE" chip: bottom-right; the decorative arrow steps
-   aside for it on the cards that show one. */
 .stat-card .stat-live-tag {
     top: auto;
     bottom: 12px;
@@ -230,9 +192,7 @@ a.stat-card:hover::after {
 }
 a.stat-card:has(.stat-live-tag)::after { display: none; }
 
-/* ---- Sidebar -----------------------------------------------------
-   Lighter rail; the active item reads as a soft tint + brand colour
-   rather than a heavy solid slab. */
+/* Sidebar: background and the highlight for the current page. */
 .sidebar {
     background: var(--rl-surface);
     border-right: 1px solid var(--rl-border);
@@ -265,8 +225,6 @@ a.stat-card:has(.stat-live-tag)::after { display: none; }
     color: var(--rl-primary);
     font-size: 16.5px;
     letter-spacing: -0.02em;
-    /* Pull the "Pangasinan" sub-line up snug under the wordmark - the
-       body default line-height left too much air between the two. */
     line-height: 1.15;
 }
 .brand-sub {
@@ -275,15 +233,13 @@ a.stat-card:has(.stat-live-tag)::after { display: none; }
     margin-top: 1px;
 }
 
-/* The refreshed mark carries more internal detail than the old one -
-   a touch larger so it stays legible in the rail. */
 .brand-icon {
     width: 34px;
     height: 34px;
     flex-shrink: 0;
 }
 
-/* ---- Controls ---------------------------------------------------- */
+/* Buttons and form inputs: rounded look. */
 .btn-outline,
 .btn-icon,
 .btn-add-warehouse,
@@ -304,48 +260,34 @@ a.stat-card:has(.stat-live-tag)::after { display: none; }
     background: var(--rl-primary-strong);
 }
 
-/* ---- Greeting banner -------------------------------------------
-   Soft indigo->violet wash instead of the old heavy navy. */
+/* Dashboard greeting banner background. */
 .greeting-banner {
     background:
         radial-gradient(80% 150% at 88% -40%, rgba(136, 124, 253, 0.45) 0%, rgba(136, 124, 253, 0) 55%),
         linear-gradient(135deg, #5347ce 0%, #6f63e0 100%);
 }
 
-/* ---- Motion pared back (all roles) ---------------------------------
-   Drops the decorative entrance / looping / hover-lift animations across
-   the whole system. Deliberately KEPT: loading shimmers (they signal
-   "working"), the sidebar collapse transition, flash-toast in/out, and
-   instant colour feedback on controls. */
-
-/* page + panel entrances */
 .dashboard-main { animation: none; }
 
-/* modal pop-in -> modals just appear */
+/* Pop-up windows: rounded corners and shadow. */
 .rd-modal, .da-modal, .lp-modal,
 .rd-modal-overlay .rd-modal { animation: none; }
 
-/* Modal backdrop: a proper dark dim behind every dialog (the palette
-   swap had left it a pale lavender). One value for all overlay types. */
 .rd-modal-overlay,
 .da-modal-overlay,
 .auth-modal-overlay {
     background: rgba(19, 18, 40, 0.62);
 }
 
-/* looping "attention" pulses */
 .banner-event-badge-dot { animation: none; }
 .online-indicator.is-online .online-dot { animation: none; }
 
-/* panels + non-clickable stat cards: no hover motion at all */
+/* Hover effects on panels and cards. */
 .panel:hover, .stat-card:hover { transform: none; }
 .panel:hover { box-shadow: var(--rl-shadow); }
 .stat-card:hover .stat-icon,
 .stat-card:hover .stat-value { transform: none; }
 
-/* Clickable dashboard cards (a.stat-card): a small lift + soft shadow +
-   icon pop on hover, plus the arrow fading in. Higher specificity than
-   the resets just above, so it wins. */
 a.stat-card {
     transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
@@ -360,23 +302,17 @@ a.stat-card:hover .stat-icon {
 a.stat-card .stat-icon {
     transition: transform 0.16s ease;
 }
-/* stat-card arrow: fades in on hover, no slide */
 a.stat-card::after { transform: none; }
 a.stat-card:hover::after { transform: none; }
 
+/* No hover movement if the device asks for less motion. */
 @media (prefers-reduced-motion: reduce) {
     a.stat-card, a.stat-card:hover,
     a.stat-card .stat-icon, a.stat-card:hover .stat-icon { transform: none; }
 }
 
-/* The public landing page keeps its own entrance animations (see
-   landing.css) - it's a marketing page, not the working app. */
-
-/* sign-in page: only the looping Ken Burns photo drift is dropped;
-   the one-shot element rise-in stays. */
 .lpg::after { animation: none; }
 
-/* stat-card row: no entrance animation - cards paint in place on every load. */
 .stat-cards .stat-card { animation: none; }
 
 /* ===== DARK MODE - generated by scripts/gen_dark_css.py from the rules above. Do not edit below this line; rerun the script. ===== */
@@ -425,7 +361,7 @@ a.stat-card:hover::after { transform: none; }
     html[data-theme="dark"] .form-row input, html[data-theme="dark"] .form-row select, html[data-theme="dark"] .form-row textarea { border-radius: 10px; }
     html[data-theme="dark"] .btn-add-warehouse { background: var(--rl-primary); }
     html[data-theme="dark"] .btn-add-warehouse:hover { background: var(--rl-primary-strong); }
-    html[data-theme="dark"] .greeting-banner { background: radial-gradient(80% 150% at 88% -40%, rgba(136, 124, 253, 0.45) 0%, rgba(136, 124, 253, 0.0) 55%),
+    html[data-theme="dark"] .greeting-banner { background: radial-gradient(80% 150% at 88% -40%, rgba(136, 124, 253, 0.45) 0%, rgba(136, 124, 253, 0.0) 55%),
         linear-gradient(135deg, #5347ce 0%, #6f63e0 100%); }
     html[data-theme="dark"] .rd-modal-overlay, html[data-theme="dark"] .da-modal-overlay, html[data-theme="dark"] .auth-modal-overlay { background: rgba(19, 18, 40, 0.62); }
     html[data-theme="dark"] a.stat-card:hover { border-color: #38345b; }

@@ -1,3 +1,5 @@
+{# Page: /barangay/dashboard - Barangay dashboard (barangay user's first page). #}
+{# Shows the current disaster situation, the barangay's profile, recent reports, deliveries and alerts. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -18,8 +20,7 @@
 
     <main class="dashboard-main">
 
-
-        <!-- Greeting banner -->
+        {# Greeting banner: 'Good morning/afternoon', live clock, active event, and the weather widget. #}
         <section class="greeting-banner">
             <div class="greeting-main">
                 <h2>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }}, {{ current_user.name }}</h2>
@@ -50,7 +51,7 @@
             </div>
         </section>
 
-        <!-- Stat cards -->
+        {# 4 number cards: affected families, pending reports, food packs allocated, relief in transit. #}
         <section class="stat-cards stat-cards-4">
             <a class="stat-card" href="{{ url_for('barangay.damage_report') }}">
                 <div class="stat-icon purple">{{ icon('users', 18, '#6c5ce7') }}</div>
@@ -74,9 +75,9 @@
             </a>
         </section>
 
-        <!-- Current Situation + Barangay Profile -->
         <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
+            {# Current Situation: the active disaster event and the barangay's status. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Current Situation</h3>
@@ -109,6 +110,7 @@
                 {% endif %}
             </section>
 
+            {# Barangay Profile: population and number of households. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Barangay Profile</h3>
@@ -127,9 +129,9 @@
 
         </div>
 
-        <!-- Recent Barangay Reports + Relief Deliveries -->
         <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
+            {# Recent Barangay Reports: the latest reports and their status. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Recent Barangay Reports</h3>
@@ -150,6 +152,7 @@
                 </div>
             </section>
 
+            {# Relief Deliveries: food pack deliveries on the way or received. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Relief Deliveries</h3>
@@ -182,7 +185,7 @@
 
         </div>
 
-        <!-- Active Alerts -->
+        {# Active Alerts: the latest notifications for this barangay. #}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Active Alerts for Brgy. {{ barangay.barangay_name }}</h3>
@@ -217,8 +220,10 @@
     var months = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December'];
 
+    // Adds a leading zero (e.g. 7 -> 07).
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
+    // Updates the live clock on the dashboard every second.
     function tick() {
         var now = new Date();
         var hours24 = now.getHours();

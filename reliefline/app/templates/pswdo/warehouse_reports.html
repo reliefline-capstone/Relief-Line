@@ -1,3 +1,5 @@
+{# Page: /pswdo/warehouse-inventory/reports - Reports (PSWDO). #}
+{# Summary numbers, the list of reports that can be generated, and recently generated reports. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -17,12 +19,12 @@
 
     <main class="dashboard-main">
 
-
         <section class="page-header">
             <div>
                 <h2>Reports</h2>
                 <p>Generate, preview, and export operational reports</p>
             </div>
+            {# Filters for the reports: typhoon event, municipality and period. #}
             <form method="GET" class="gis-filters">
                 <input type="text" id="report-search" placeholder="Search report type..." autocomplete="off">
                 <select name="event_id" onchange="this.form.submit()">
@@ -46,7 +48,7 @@
             </form>
         </section>
 
-        <!-- Stat cards -->
+        {# 4 number cards: reports generated, approved requests, packs distributed, completed deliveries. #}
         <section class="reports-stat-cards">
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('file-text', 18, '#3867d6') }}</div>
@@ -71,6 +73,7 @@
         </section>
 
         <h4 class="reports-section-label">SELECT REPORT TYPE</h4>
+        {# One card per report type, with View, PDF and Excel buttons. #}
         <section class="report-cards-grid" id="report-cards-grid">
             {% for card in report_cards %}
             <div class="report-card" data-search="{{ (card.title ~ ' ' ~ card.description)|lower }}">
@@ -91,6 +94,7 @@
         </section>
         <p class="empty-note" id="report-search-empty" style="display:none;">No report types match your search.</p>
 
+        {# Recent Reports: reports generated before, to download again (or all at once as a ZIP). #}
         <section class="panel" style="margin-top:8px;">
             <div class="panel-header">
                 <h3>Recent Reports</h3>

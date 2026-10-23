@@ -1,3 +1,5 @@
+{# Page: /cswdo/relief-requests - Stock Requests (CSWDO/MSWDO). #}
+{# Request food packs from PSWDO, keep drafts, and track sent requests until the stock arrives. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
@@ -20,7 +22,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the Export and New Request buttons. #}
         <div class="page-header">
             <div>
                 <h2>Stock Requests</h2>
@@ -33,6 +35,7 @@
             </div>
         </div>
 
+        {# 2 number cards: warehouse food packs on hand, requests waiting for PSWDO. #}
         <section class="stat-cards stat-cards-2">
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('building', 18, '#1e8449') }}</div>
@@ -46,6 +49,7 @@
             </div>
         </section>
 
+        {# Tabs: Overview (all requests), New Request (shows how many drafts), Tracking. #}
         <div class="page-tabs">
             <a href="{{ url_for('cswdo.relief_requests', tab='overview') }}" class="page-tab {{ 'active' if tab == 'overview' }}">Overview</a>
             <a href="{{ url_for('cswdo.relief_requests', tab='create') }}" class="page-tab {{ 'active' if tab == 'create' }}">New Request{% if draft_count %} <span class="page-tab-badge">{{ draft_count }} draft</span>{% endif %}</a>
@@ -53,6 +57,8 @@
         </div>
 
         {% if tab == 'create' %}
+        {# New Request form: food packs needed, priority, reason, remarks and attachments. #}
+        {# 'Save Draft' keeps it; 'Submit' sends it to PSWDO. #}
         <form method="POST" action="{{ url_for('cswdo.relief_request_save_draft') }}" enctype="multipart/form-data" class="rr-panel">
             {% if editing_draft %}<input type="hidden" name="draft_id" value="{{ editing_draft.batch_id }}">{% endif %}
             <div class="rr-panel-header"><div><h3>Request Details</h3></div></div>
@@ -106,6 +112,7 @@
         {% elif tab == 'tracking' %}
         {% if selected %}
         {% set t = selected.transfer %}
+        {# Tracking: the selected request's status card. #}
         <div class="rr-track-card rr-track-{{ selected.display_status }}">
             <div class="rr-track-head">
                 <div class="rr-track-head-title">
@@ -120,6 +127,7 @@
             </div>
         </div>
         {% if t %}
+        {# Transfer progress steps (preparing, in transit, delivered) and the 'Confirm Receipt' button. #}
         <section class="panel dd-stepper-panel">
             <div class="dd-stepper">
                 {% for s in ['preparing','in_transit','delivered'] %}
@@ -133,7 +141,7 @@
             </div>
             <p class="form-hint" style="margin-top:10px;">Transfer of {{ "{:,}".format(t.quantity) }} food packs from {{ t.from_office.office_name }}.</p>
             {% if t.dispatch_status in ('in_transit','delivered') and t.status != 'completed' %}
-            <div style="margin-top:10px;">
+            <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <a href="{{ url_for('receipts.transfer_receipt', transfer_id=t.transfer_id) }}" class="btn-cancel" style="text-decoration:none;">View Details</a>
                 <button type="button" class="btn-decision btn-approve-full" data-open-modal="receive-modal-{{ t.transfer_id }}">{{ icon('check-circle', 16, 'white') }} Confirm Receipt</button>
             </div>
@@ -146,6 +154,7 @@
         </section>
         {% endif %}
         {% endif %}
+        {# Submitted Requests list: click one to track it. #}
         <div class="rr-panel rr-panel-flush">
             <div class="rr-panel-header"><div><h3>Submitted Requests</h3></div></div>
             <table class="rr-table">
@@ -178,6 +187,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if search_query %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
 
+        {# Overview filters: search, status, priority, typhoon event and dates. #}
         {% call filter_panel(chips, url_for(EP, tab='overview'), hidden={'tab': 'overview'}, summary=(rows|length) ~ ' of ' ~ total) %}
             {{ fp_search('q', search_query, 'Search request ID...') }}
             {% call fp_select('Status', 'status', 'check-circle') %}
@@ -200,6 +210,7 @@
             {% endcall %}
             {{ fp_date_range('Date', 'date_from', date_from, 'date_to', date_to) }}
         {% endcall %}
+        {# Overview table: request ID, event, packs requested and approved, status, date. #}
         <div class="rr-panel rr-panel-flush">
             <table class="rr-table">
                 <thead><tr><th>Request ID</th><th>Event</th><th>Requested</th><th>Approved</th><th>Status</th><th>Date</th><th></th></tr></thead>
@@ -236,8 +247,7 @@
     </main>
 </div>
 
-<!-- Delete-draft confirmation - replaces the native confirm() dialog. One modal
-     serves every .draft-delete-form on the page; the form is stashed on submit. -->
+{# 'Delete Draft' confirmation pop-up. #}
 <div class="rd-modal-overlay" id="delete-draft-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">
@@ -265,12 +275,14 @@
 
     if (modal.parentNode !== document.body) document.body.appendChild(modal);
 
+    // Opens the confirmation pop-up for a request action (e.g. deleting a draft).
     function openModal(form) {
         pendingForm = form;
         refEl.textContent = form.dataset.ref || '';
         modal.hidden = false;
         document.documentElement.classList.add('rd-modal-open');
     }
+    // Closes the confirmation pop-up without doing anything.
     function closeModal() {
         modal.hidden = true;
         pendingForm = null;
@@ -302,10 +314,12 @@
     var list = document.querySelector('[data-file-list]');
     var defaultText = label.textContent;
 
+    // Shows a file size in KB or MB.
     function kb(bytes) { return bytes < 1024 * 1024
         ? Math.max(1, Math.round(bytes / 1024)) + ' KB'
         : (bytes / 1024 / 1024).toFixed(1) + ' MB'; }
 
+    // Lists the attachment files the user chose, with their sizes.
     function render() {
         var files = Array.prototype.slice.call(input.files || []);
         list.innerHTML = '';

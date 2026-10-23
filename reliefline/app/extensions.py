@@ -1,3 +1,5 @@
+# Shared database and login tools used across the app.
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 

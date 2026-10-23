@@ -1,3 +1,5 @@
+{# Page: /cswdo/damage-assessment - Barangay Reports (CSWDO/MSWDO). #}
+{# Review the barangays' situation reports: verify, allocate food packs, return for correction, or decline. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, batch_picker with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
@@ -19,6 +21,8 @@
                       else (fulfilled_rows if tab == 'fulfilled'
                       else (declined_rows if tab == 'declined' else rows))))) %}
 
+{# The review pop-up for one report: all report details, affected families, #}
+{# food packs already received by families, and the Verify / Approve / Return / Decline buttons. #}
 {% macro request_modal(r) %}
 {% set rep = r.report %}
 {% set can_decide = rep.status in ('pending', 'returned') %}
@@ -59,7 +63,6 @@
                     {% for rf in rep.affected_families_list %}
                     {% set fam_title = ('Head: ' ~ rf.head_name ~ ' - ' if rf.head_name else '') ~ rf.member_count ~ ' members' ~ (', ' ~ rf.pwd_count ~ ' PWD' if rf.pwd_count else '') ~ (', ' ~ rf.senior_count ~ ' senior' if rf.senior_count else '') %}
                     {% if rf.received %}
-                    {# Green = the barangay marked this family as having received its packs; click for the hand-out details + photo proof. #}
                     <button type="button" class="fam-badge fam-badge-received" title="{{ fam_title }} · Received - click for details"
                             onclick="var p = document.getElementById('fam-recv-{{ rf.id }}'); var open = p.hidden; this.closest('.fam-recv-wrap').querySelectorAll('.fam-recv-panel').forEach(function (x) { x.hidden = true; }); p.hidden = !open;">
                         {{ icon('check', 11) }} {{ rf.family_name }} ({{ rf.member_count }})
@@ -167,7 +170,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the Export button. #}
         <div class="page-header">
             <div>
                 <h2>Barangay Reports</h2>
@@ -178,6 +181,7 @@
             </div>
         </div>
 
+        {# 4 number cards: awaiting decision, approved (in delivery), fulfilled, warehouse food packs on hand. #}
         <section class="stat-cards stat-cards-4">
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('clock', 18, '#d68910') }}</div>
@@ -211,6 +215,7 @@
         {% set EP = 'cswdo.damage_assessment' %}
         {% set fargs = {'tab': tab, 'q': search_query or None, 'barangay_id': barangay_filter, 'event_id': event_filter,
                         'date_from': date_from or None, 'date_to': date_to or None} %}
+        {# Tabs: Queue (waiting for review), Verified, Approved, Fulfilled, Declined, All Reports (with counts). #}
         <div class="page-tabs">
             {% for key, label, coll in TABS %}
             <a href="{{ f_url('cswdo.damage_assessment', fargs, {'tab': key}) }}" class="page-tab {{ 'active' if tab == key }}">{{ label }}{% if key == 'queue' %} <span class="page-tab-badge">{{ coll|length }}</span>{% endif %}</a>
@@ -223,6 +228,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if search_query %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
 
+        {# Filters: search, barangay, typhoon event and date range. #}
         {% call filter_panel(chips, url_for(EP, tab=tab), hidden={'tab': tab}, summary=(active_rows|length) ~ ' report' ~ ('s' if active_rows|length != 1 else '')) %}
             {{ fp_search('q', search_query, 'Search barangay or report ID...') }}
             {% call fp_select('Barangay', 'barangay_id', 'map-pin') %}
@@ -241,6 +247,8 @@
         {% endcall %}
 
         <div class="da-table-wrap">
+            {# Reports table: report ID, barangay, event, affected families, packs requested, barangay stock, status. #}
+            {# Click a row to open its review pop-up. #}
             <table class="da-table">
                 <thead>
                     <tr>
@@ -272,6 +280,7 @@
             </table>
         </div>
 
+        {# Creates the review pop-up for each report in the table. #}
         {% for r in active_rows %}{{ request_modal(r) }}{% endfor %}
 
     </main>

@@ -1,3 +1,5 @@
+{# Page: /pswdo/distribution/<id> - One delivery (PSWDO). #}
+{# Its progress, details, route map and confirmation, with buttons to move it to the next step. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, validation_attachments with context %}
 
@@ -19,7 +21,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Delivery number and status, with View Receipt and the next-step button (e.g. Mark as Loaded). #}
         <div class="page-header">
             <div class="wh-title-row">
                 <a href="{{ url_for('pswdo.distribution') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
@@ -29,7 +31,7 @@
             <a href="{{ url_for('receipts.distribution_receipt', distribution_id=rec.distribution_id) }}" class="btn-outline btn-outline-accent">{{ icon('file-text', 14) }} View Receipt</a>
         </div>
 
-        <!-- Distribution status stepper -->
+        {# Progress steps: preparing, loaded, dispatched, in transit, delivered. #}
         <section class="panel dd-stepper-panel">
             <div class="dd-stepper-header">
                 <span class="rd-panel-title" style="margin-bottom:0;">DISTRIBUTION STATUS</span>
@@ -72,7 +74,7 @@
         <div class="main-grid rd-grid">
             <div class="rd-main-col">
 
-                <!-- General Information -->
+                {# General Information: barangay, municipality, packs, priority, request. #}
                 <section class="panel">
                     <h3 class="rd-panel-title">General Information</h3>
                     <div class="dd-kv-list">
@@ -90,7 +92,7 @@
                     </div>
                 </section>
 
-                <!-- Warehouse Information -->
+                {# Warehouse Information: which warehouse sends the packs. #}
                 <section class="panel">
                     <h3 class="rd-panel-title">Warehouse Information</h3>
                     <div class="dd-wh-tiles">
@@ -112,7 +114,7 @@
                     </div>
                 </section>
 
-                <!-- Dispatch Schedule -->
+                {# Dispatch Schedule: delivery date and times. #}
                 <section class="panel">
                     <h3 class="rd-panel-title">Dispatch Schedule</h3>
                     <div class="dd-wh-tiles">
@@ -134,7 +136,7 @@
                     </div>
                 </section>
 
-                <!-- Route map placeholder -->
+                {# Route Map: from the warehouse to the barangay. #}
                 <section class="panel">
                     <div class="panel-header">
                         <h3 class="rd-panel-title" style="margin-bottom:0;">Route Map</h3>
@@ -167,7 +169,7 @@
                 </section>
 
                 {% if rec.dispatch_status == 'delivered' %}
-                <!-- Delivery Confirmation -->
+                {# Delivery Confirmation: who received it, when, and the condition. #}
                 <section class="panel">
                     <div class="panel-header">
                         <h3 class="rd-panel-title" style="margin-bottom:0;">Delivery Confirmation</h3>
@@ -186,7 +188,7 @@
 
             </div>
 
-            <!-- Sidebar -->
+            {# Right column: the action buttons for the current step. #}
             <aside class="rd-sidebar">
                 <section class="panel">
                     <span class="rd-label">QUICK SUMMARY</span>
@@ -229,7 +231,7 @@
     </main>
 </div>
 
-<!-- Confirm Delivery modal -->
+{# 'Confirm Delivery' pop-up: received by, time, travel time, condition and photos. #}
 <div class="rd-modal-overlay" id="confirm-delivery-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">

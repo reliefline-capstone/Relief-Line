@@ -1,3 +1,5 @@
+{# Page: /cswdo/municipal-inventory - Municipal Warehouse (CSWDO/MSWDO). #}
+{# The warehouse's details, capacity, incoming PSWDO transfers, stock items, food pack batches and recent movements. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -17,7 +19,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the Movement History, Export and Add Item buttons. #}
         <section class="page-header">
             <div>
                 <h2>Municipal Warehouse</h2>
@@ -32,6 +34,7 @@
 
         <div class="main-grid mi-detail-grid">
 
+            {# General Information: office name, address, manager and contact. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>General Information</h3>
@@ -55,6 +58,7 @@
             </section>
 
             <aside class="wh-side-col">
+                {# Capacity: how full the warehouse is (food packs vs capacity) and its health status. #}
                 <section class="panel">
                     <div class="panel-header">
                         <h3>Capacity</h3>
@@ -87,6 +91,7 @@
         </div>
 
         {% if incoming_transfers %}
+        {# Incoming from PSWDO: transfers on the way, with 'Confirm Receipt' buttons. #}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header"><h3>Incoming from PSWDO</h3></div>
             {% for t in incoming_transfers %}
@@ -105,6 +110,7 @@
         </section>
         {% endif %}
 
+        {# Inventory table: item, quantity, unit, minimum level, status, and Update/Remove buttons. #}
         <section class="panel wh-table-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Inventory</h3>
@@ -152,6 +158,7 @@
             </table>
         </section>
 
+        {# Food Pack Batches: received date, earliest expiry, days left, quantity, contents and status. #}
         <section class="panel wh-table-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Food Pack Batches</h3>
@@ -211,6 +218,7 @@
             <p class="form-hint" style="padding:8px 16px 16px;">Earliest Expiry is the first item in the pack to expire; the whole batch is pulled when it does.</p>
         </section>
 
+        {# Recent Stock Movement: the latest stock in and out. #}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Recent Stock Movement</h3>
@@ -238,7 +246,7 @@
     </main>
 </div>
 
-<!-- Add Item modal -->
+{# 'Add Stock Item' pop-up form. #}
 <div class="rd-modal-overlay" id="mi-add-item-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">
@@ -280,7 +288,7 @@
     </div>
 </div>
 
-<!-- Update Stock modals (one per item) -->
+{# For each item: an 'Update' pop-up (add/remove stock, or handle damaged packs) and a 'Remove Item' pop-up. #}
 {% for row in rows %}
 {% set item = row.item %}
 <div class="rd-modal-overlay" id="mi-update-modal-{{ item.inventory_id }}" hidden>
@@ -394,7 +402,7 @@
 {% endif %}
 {% endfor %}
 
-<!-- Resolve expired batch modals -->
+{# One 'Resolve Expired Batch' pop-up for each expired batch (dispose, or repack with fresh items). #}
 {% for row in batch_rows if row.shelf_status == 'expired' %}
 {% set batch = row.batch %}
 <div class="rd-modal-overlay" id="mi-batch-modal-{{ batch.batch_id }}" hidden>
@@ -429,9 +437,8 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 <script>
-// Live-computes the resulting total as the user types a donation/adjustment
-// amount, so nobody has to add it to the current stock by hand - the server
-// still does the authoritative math (see cswdo.municipal_inventory_update).
+// Shows the new total while the user types a stock change
+// (e.g. 500 now + 100 = 600; it can't go below 0).
 function miPreviewTotal(input) {
     var current = parseInt(input.dataset.current, 10) || 0;
     var delta = parseInt(input.value, 10);

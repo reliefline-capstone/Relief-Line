@@ -1,3 +1,5 @@
+{# Page: /cswdo/gis-map - GIS Map (CSWDO/MSWDO). #}
+{# Interactive map of the municipality's barangays: status, stock, warehouses and delivery routes. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -22,7 +24,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title. #}
         <section class="page-header gis-command-page-header">
             <div>
                 <h2>GIS Map</h2>
@@ -30,6 +32,7 @@
             </div>
         </section>
 
+        {# The map, with filters on top (municipality, barangay, event, status) and layer switches. #}
         <section class="panel gis-map-panel gis-map-panel-fill">
             <div class="gis-map-toolbar">
                 <div class="gis-search-bar gis-map-toolbar-search">
@@ -38,10 +41,6 @@
                     <button type="button" class="gis-search-clear" id="gis-search-clear" title="Clear search" hidden>{{ icon('x', 14) }}</button>
                 </div>
                 <div class="gis-inline-filters">
-                    {# The map's own logic still keys off this municipality select, but a
-                       single-municipality account has nothing to choose here - it stays
-                       in the page hidden (custom_select.js skips hidden selects) and the
-                       visible first filter is the barangay one below. #}
                     <select id="filter-lgu" title="Municipality" hidden>
                         <option value="">All Municipalities</option>
                         {% for lgu in target_lgus %}
@@ -96,6 +95,7 @@
                 <label class="map-legend-row map-layer-toggle"><input type="checkbox" id="layer-toggle-warehouse" checked> Warehouse</label>
             </div>
 
+            {# Floating side panel: details of the selected area (filled in by gis_map.js). #}
             <aside class="gis-floating-info" id="gis-floating-info">
                 <button type="button" class="gis-panel-btn gis-panel-close" id="gis-panel-close" title="Close panel" aria-label="Close panel">{{ icon('x', 14) }}</button>
                 <button type="button" class="gis-panel-btn gis-panel-open" id="gis-panel-open" title="Open panel" aria-label="Open panel" hidden>{{ icon('menu', 16) }}</button>
@@ -109,6 +109,7 @@
                 <button type="button" class="gis-routes-toggle" id="gis-routes-toggle" title="Show Active Distribution" aria-label="Show Active Distribution" hidden>
                     {{ icon('truck', 16) }}<span>Active Distribution</span><span class="badge-count" id="routes-count-pill">0</span>
                 </button>
+                {# Active Distribution Routes table: click a route to draw it on the map. #}
                 <section class="gis-routes-panel" id="gis-routes-panel">
                     <div class="gis-routes-head">
                         <h3>Active Distribution Routes</h3>

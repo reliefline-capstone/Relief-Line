@@ -1,3 +1,5 @@
+{# Page: /barangay/family-profiles/print - Set Packs Per Family (barangay user). #}
+{# Before printing the Relief Distribution Sheet, set how many food packs each chosen family gets. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -17,7 +19,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Form that creates the printable sheet. #}
         <form method="POST" action="{{ url_for('barangay.print_families_generate') }}">
             <section class="page-header">
                 <div style="max-width: 620px;">
@@ -32,6 +34,7 @@
                 </div>
             </section>
 
+            {# Families table: members, PWD, senior, children, and the 'Packs to Give' box (pre-filled with the suggestion). #}
             <section class="panel wh-table-panel fam-sticky-panel">
                 <table class="wh-table fam-sticky-table">
                     <thead>

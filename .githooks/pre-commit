@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
-# Keeps reliefline/database/reliefline_db.sql in sync with your live MariaDB/
-# MySQL on every commit, so `git push` always hands groupmates a working
-# snapshot of the current schema + data - .devcontainer/setup.sh loads this
-# exact file to provision a fresh database for anyone who opens the project.
-#
-# Works both inside the devcontainer (MariaDB, user "reliefline") and on a
-# local Windows/XAMPP checkout (MySQL, user "root", no password). No-ops
-# (does nothing, never blocks the commit) when mysqldump or the database
-# aren't reachable. Enabled per-checkout via:
-#     git config core.hooksPath .githooks
-# (done automatically by .devcontainer/setup.sh; run it once by hand on a
-# plain local clone.)
+# Before each git commit: saves a fresh copy of the database into database/reliefline_db.sql.
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,14 +7,6 @@ DUMP_FILE="$PROJECT_DIR/reliefline/database/reliefline_db.sql"
 DB_NAME="reliefline_db"
 DB_HOST="127.0.0.1"
 
-# --- locate every mysqldump worth trying ------------------------------------
-# A PATH hit is not necessarily the right one: a Homebrew MySQL 8/9 client
-# (common on macOS once anything else installs mysql-client) can't load the
-# older mysql_native_password auth plugin that a real XAMPP/MariaDB server
-# uses, so it fails to authenticate against it while a same-vendor binary
-# succeeds. Rather than trust the first name found on PATH, collect every
-# candidate binary and let the credential probe below pick whichever one
-# actually authenticates.
 DUMP_BINS=()
 if command -v mysqldump >/dev/null 2>&1; then
     DUMP_BINS+=("$(command -v mysqldump)")
@@ -48,9 +29,6 @@ do
 done
 [ "${#DUMP_BINS[@]}" -gt 0 ] || exit 0
 
-# --- pick the first (binary, credential) pair that actually authenticates ---
-# (a real dump probe - mysqladmin ping reports "alive" even on auth failure)
-# format: "user|password"
 CANDIDATES=("reliefline|reliefline_dev_pw" "root|")
 DUMP_BIN=""
 DB_USER=""
@@ -67,6 +45,5 @@ for bin in "${DUMP_BINS[@]}"; do
 done
 [ -n "$DB_USER" ] || exit 0
 
-# --- dump and stage ---------------------------------------------------------
 "$DUMP_BIN" -u "$DB_USER" ${DB_PASS:+-p"$DB_PASS"} -h "$DB_HOST" "$DB_NAME" > "$DUMP_FILE"
 git add "$DUMP_FILE"

@@ -1,8 +1,7 @@
-/* Standalone sign-in page (templates/login.html) - the provincial capitol
-   behind a light wash, provincial identity + ReliefLine intro on the left,
-   the sign-in card on the right. The shared .login-card and its form
-   controls come from login.css. */
+/* Styles for the Sign In page layout (/login): */
+/* animated background, top bar, introduction on the left, login box on the right, and the pop-ups. */
 
+/* Page background picture with a slow zoom effect and dark overlay. */
 .lpg {
     position: relative;
     min-height: 100vh;
@@ -12,8 +11,6 @@
     overflow: hidden;
 }
 
-/* The capitol photo lives on its own layer so it can drift very slowly
-   (Ken Burns) without moving the wash or the content on top of it. */
 .lpg::after {
     content: "";
     position: absolute;
@@ -24,8 +21,6 @@
     transform-origin: center;
 }
 
-/* Light wash - heaviest behind the copy on the left, clearing toward the
-   right so the building stays faintly visible behind the card. */
 .lpg::before {
     content: "";
     position: absolute;
@@ -42,12 +37,12 @@
 
 .lpg > * { position: relative; z-index: 2; }
 
+/* Animations: slow background zoom, and content rising into place. */
 @keyframes lpgKenBurns {
     from { transform: scale(1) translate(0, 0); }
     to   { transform: scale(1.08) translate(-1.5%, 1%); }
 }
 
-/* Staggered entrance for the page's pieces. */
 @keyframes lpgRise {
     from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -59,13 +54,14 @@
 .lpg-main .login-card { animation: lpgRise 0.6s cubic-bezier(0.16, 0.8, 0.3, 1) 0.24s both; }
 .lpg-footer        { animation: lpgRise 0.6s ease-out 0.32s both; }
 
+/* No animations if the device asks for less motion. */
 @media (prefers-reduced-motion: reduce) {
     .lpg::after,
     .lpg-topbar, .lpg-intro-lockup, .lpg-intro-desc,
     .lpg-main .login-card, .lpg-footer { animation: none; }
 }
 
-/* ---- Top bar: provincial identity ---- */
+/* Top bar: logo, name and links. */
 .lpg-topbar {
     display: flex;
     justify-content: space-between;
@@ -97,7 +93,7 @@
 }
 .lpg-toplinks a:hover { color: var(--accent-blue); }
 
-/* ---- Main split ---- */
+/* Main area: introduction (left) and login box (right). */
 .lpg-main {
     flex: 1;
     width: 100%;
@@ -143,8 +139,6 @@
     max-width: 480px;
 }
 
-/* The shared .login-card (login.css) sits in the right column. A touch more
-   presence than on the marketing page's hero. */
 .lpg-main .login-card {
     flex: 0 0 auto;
     margin-left: auto;
@@ -152,15 +146,13 @@
     box-shadow: 0 24px 64px rgba(15, 37, 71, 0.18);
 }
 
-/* "Secured System" divider removed - give the notice below the button its
-   own breathing room and a top rule in its place. */
 .lpg-main .login-card .secured-note {
     margin-top: 18px;
     padding-top: 16px;
     border-top: 1px solid #eee;
 }
 
-/* ---- Footer ---- */
+/* Footer links. */
 .lpg-footer {
     display: flex;
     justify-content: space-between;
@@ -176,7 +168,7 @@
 .lpg-footer a { color: var(--text-muted); }
 .lpg-footer a:hover { color: var(--navy); }
 
-/* ---- Forgot Password modal (same component as landing.html) ---- */
+/* Pop-ups: 'Forgot Password' and 'Set a New Password'. */
 .auth-modal-overlay {
     position: fixed;
     inset: 0;
@@ -192,7 +184,6 @@
 
 .auth-modal-card {
     position: relative;
-    /* @keyframes modalPopIn is defined in base.css. */
     animation: modalPopIn 0.18s ease-out both;
 }
 
@@ -205,7 +196,7 @@
     color: var(--text-muted);
 }
 
-/* ---- Responsive ---- */
+/* On tablets and phones: stack the introduction above the login box. */
 @media (max-width: 900px) {
     .lpg-main {
         justify-content: center;
@@ -217,6 +208,7 @@
     .lpg-main .login-card { margin: 0 auto; width: 100%; max-width: 400px; }
 }
 
+/* On small phones: smaller top bar and footer. */
 @media (max-width: 560px) {
     .lpg-topbar { padding: 14px 18px; }
     .lpg-brand-text span { display: none; }

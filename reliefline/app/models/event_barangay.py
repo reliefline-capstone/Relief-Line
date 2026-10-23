@@ -1,10 +1,10 @@
+# Database table: barangays covered by a local disaster event.
+
 from app.extensions import db
 
+# Database table 'event_barangays': which barangays a local disaster event covers
+# (when a municipality declares an event for only some of its barangays).
 class EventBarangay(db.Model):
-    """Explicit barangay membership for a scope="municipality" DisasterEvent -
-    which of a CSWDO's own barangays their local declare actually covers.
-    Unused for scope="province" events, which implicitly cover every
-    barangay (same behavior as before this table existed)."""
     __tablename__ = "event_barangays"
 
     event_barangay_id = db.Column(db.Integer, primary_key=True)

@@ -1,7 +1,6 @@
+{# CSWDO/MSWDO shared piece: the 'Confirm Receipt' pop-up for a stock transfer from PSWDO. #}
+{# Enter how many packs arrived and their condition; good packs are added to the municipal warehouse. #}
 {% from "_macros.html" import icon with context %}
-{# Confirm Receipt with verification (complete / partial / damaged) for one
-   incoming transfer `t`. Opened by [data-open-modal="receive-modal-<id>"];
-   needs relief_request_detail.css/js (shared modal + toggle helpers). #}
 <div class="rd-modal-overlay" id="receive-modal-{{ t.transfer_id }}" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">

@@ -1,15 +1,8 @@
-"""Typed accessors for app.models.system_setting.SystemSetting.
+# Reads and saves System Admin settings.
 
-Settings are stored as plain strings; callers cast on read. A missing key
-(nothing saved yet, or a fresh DB) silently falls back to `default` instead
-of raising, so every call site works before the System Settings page has
-ever been used.
-"""
 from app.extensions import db
 from app.models.system_setting import SystemSetting
 
-# key -> (default, cast, label) - the single place a new admin-editable
-# setting gets registered. admin.settings_page() renders a field per entry.
 SETTINGS_SCHEMA = {
     "warehouse_healthy_threshold": (0.70, float, "Healthy stock threshold (% of capacity)"),
     "warehouse_moderate_threshold": (0.30, float, "Moderate stock threshold (% of capacity)"),
@@ -17,6 +10,8 @@ SETTINGS_SCHEMA = {
 }
 
 
+# Reads a system setting saved by the System Admin (e.g. the 'Healthy' stock level).
+# If it was never saved, the given default value is used.
 def get_setting(key, default=None, cast=str):
     row = SystemSetting.query.get(key)
     if row is None:
@@ -29,6 +24,8 @@ def get_setting(key, default=None, cast=str):
         return default
 
 
+# Saves a system setting changed on the System Settings page,
+# and records which admin changed it.
 def set_setting(key, value, user_id=None):
     row = SystemSetting.query.get(key)
     str_value = "1" if value is True else "0" if value is False else str(value)

@@ -1,7 +1,8 @@
+# PSWDO report pages and downloads.
+
 import io
 import json
 import zipfile
-from datetime import datetime
 
 from app.utils.timezone import ph_now
 
@@ -14,7 +15,7 @@ from app.models.disaster_event import DisasterEvent
 from app.models.report import ReportLog
 
 from app.routes.pswdo import TARGET_LGUS
-from app.routes.report_data import REPORT_TYPES, PSWDO_REPORT_TYPES, resolve_filters, build_report
+from app.routes.report_data import PSWDO_REPORT_TYPES, resolve_filters, build_report
 from app.routes.report_files import generate_file
 
 reports_bp = Blueprint("reports", __name__)
@@ -26,12 +27,9 @@ MIME_TYPES = {
 EXTENSIONS = {"pdf": "pdf", "excel": "xlsx"}
 
 
+# Holds the saved filters of a past report so the report can be rebuilt the same way.
 class _StoredArgs(dict):
-    """Makes a plain {event_id, municipality, days} dict quack like
-    request.args for resolve_filters(), so a logged report's stored filters
-    can be replayed exactly on re-download without touching the live query
-    string."""
-
+    # Reads one saved filter value.
     def get(self, key, default=None, type=None):
         value = dict.get(self, key, default)
         if type is not None and value is not None:
@@ -42,10 +40,8 @@ class _StoredArgs(dict):
         return value
 
 
+# The filters saved with a generated report (event, municipality, period).
 def _filters_snapshot(filters):
-    """The resolved (not raw query-string) filter values, so a later
-    re-download reproduces this exact event/municipality/range even if the
-    'active' disaster event has since changed."""
     return {
         "event_id": filters["event_id"],
         "municipality": filters["municipality"],
@@ -53,6 +49,7 @@ def _filters_snapshot(filters):
     }
 
 
+# Rebuilds a past report file from its saved filters, so it can be downloaded again.
 def _regenerate_from_log(log):
     stored = json.loads(log.filters_json) if log.filters_json else {}
     filters = resolve_filters(_StoredArgs(stored))
@@ -60,6 +57,7 @@ def _regenerate_from_log(log):
     return generate_file(report, log.format)
 
 
+# Page: /pswdo/reports/<report_type> - Shows one PSWDO report on screen before downloading it.
 @reports_bp.route("/<report_type>")
 @login_required
 @role_required("pswdo_admin", "system_admin")
@@ -68,9 +66,6 @@ def view(report_type):
         abort(404)
     filters = resolve_filters(request.args)
     report = build_report(report_type, filters, current_user)
-    # Every event, not just the currently-active one - a report is almost
-    # always generated *after* a typhoon has ended, so scoping this filter to
-    # status="active" would make every past event unselectable.
     active_events = DisasterEvent.query.filter_by(is_reference=False).order_by(DisasterEvent.start_date.desc()).all()
     return render_template(
         "pswdo/report_view.html",
@@ -81,15 +76,14 @@ def view(report_type):
     )
 
 
+# Creates a report as PDF or Excel and saves it in the report history
+# (a 'print preview' PDF is not saved).
 def _export(report_type, fmt):
     if report_type not in PSWDO_REPORT_TYPES:
         abort(404)
     filters = resolve_filters(request.args)
     report = build_report(report_type, filters, current_user)
     content, pages = generate_file(report, fmt)
-    # ?inline=1 is the Print button: the PDF opens in the browser to print
-    # (a PDF prints without the browser's URL/title header), and isn't
-    # logged in Recent Reports since nothing was exported.
     inline = fmt == "pdf" and request.args.get("inline") == "1"
 
     if not inline:
@@ -107,6 +101,7 @@ def _export(report_type, fmt):
     )
 
 
+# Download: /pswdo/reports/<report_type>/pdf - Downloads a report as a PDF file.
 @reports_bp.route("/<report_type>/pdf")
 @login_required
 @role_required("pswdo_admin", "system_admin")
@@ -114,6 +109,7 @@ def export_pdf(report_type):
     return _export(report_type, "pdf")
 
 
+# Download: /pswdo/reports/<report_type>/excel - Downloads a report as an Excel file.
 @reports_bp.route("/<report_type>/excel")
 @login_required
 @role_required("pswdo_admin", "system_admin")
@@ -121,12 +117,11 @@ def export_excel(report_type):
     return _export(report_type, "excel")
 
 
+# Download: /pswdo/reports/download/<int:report_id> - Downloads a report from the history again.
 @reports_bp.route("/download/<int:report_id>")
 @login_required
 @role_required("pswdo_admin", "system_admin")
 def download(report_id):
-    """Re-download from Recent Reports - regenerates the same file from the
-    log's stored filters rather than keeping binary blobs on disk/DB."""
     log = ReportLog.query.get_or_404(report_id)
     if log.report_type not in PSWDO_REPORT_TYPES:
         abort(404)
@@ -139,6 +134,7 @@ def download(report_id):
     )
 
 
+# Download: /pswdo/reports/download-all - Downloads the 10 latest reports together in one ZIP file.
 @reports_bp.route("/download-all")
 @login_required
 @role_required("pswdo_admin", "system_admin")

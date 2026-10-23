@@ -1,4 +1,6 @@
-/* Municipality summary quick bar (Overview tab) */
+/* Styles for the barangay reports pages: */
+/* the CSWDO/MSWDO Barangay Reports review page and the barangay's own reports list. */
+/* Summary bar with report counts. (Not used on any page right now.) */
 .da-summary-bar {
     background: #efedfd;
     border-radius: 10px;
@@ -35,7 +37,7 @@
     border-radius: 8px;
 }
 
-/* Alert banners (Pending / Verified tabs) */
+/* Colored info banners (warning, success). */
 .da-banner {
     display: flex;
     align-items: center;
@@ -52,7 +54,7 @@
 .da-banner-success a { color: #1e8449; font-weight: 700; text-decoration: underline; }
 .da-banner strong { font-weight: 700; }
 
-/* Filter bar (Barangay Reports tab) */
+/* Filter bar above the reports table. (Not used on any page right now.) */
 .da-filter-bar {
     display: flex;
     gap: 10px;
@@ -73,17 +75,14 @@
 .da-filter-bar input[type="text"] { flex: 1; min-width: 220px; }
 .da-filter-count { margin-left: auto; font-size: 12px; color: #8a94a6; }
 
-/* Generic data table */
+/* Reports table: header, rows, and the 'New' badge. */
 .da-table-wrap {
     background: white;
     border-radius: 12px;
     overflow: hidden;
 }
 
-/* overflow: hidden above clips the rounded corners but also - on a phone,
-   where .da-table is wider than the viewport - clipped away every column
-   that didn't fit, with no way to reach them. Let it scroll horizontally
-   below the width tables actually need to fit unclipped. */
+/* On tablets and phones: let the table scroll sideways. */
 @media (max-width: 900px) {
     .da-table-wrap {
         overflow-x: auto;
@@ -113,13 +112,6 @@
 .da-table tbody tr:last-child td { border-bottom: none; }
 .da-table .da-barangay-name { font-weight: 700; color: #1a1a1a; }
 
-/* Queue tab mixes fresh submissions (status="pending", never reviewed
-   yet) with reports CSWDO already reviewed once and sent back
-   (status="returned", now waiting on the barangay) - both show a
-   "Status" badge, but nothing set the truly-new one apart at a glance.
-   This tints the whole row and tags the ref with a small badge, using
-   the same amber as .badge-status.status-pending so it reads as an
-   extension of that status rather than a clashing new color. */
 .da-table tbody tr.da-row-new { background: #fffaf1; }
 .da-table tbody tr.da-row-new:hover { background: #fef3e0; }
 .da-table tbody tr.da-row-new td:first-child { box-shadow: inset 3px 0 0 #d68910; }
@@ -138,18 +130,13 @@
     vertical-align: middle;
 }
 
+/* View / Review buttons in the table. */
 .da-table-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 .btn-view-sm, .btn-review-sm {
     font-size: 12px;
     font-weight: 600;
     padding: 6px 12px;
-    /* Matches .btn-view's padding/line-height (relief_requests.css) exactly -
-       this class is also declared there with different padding and no
-       line-height, and since both files load on the same barangay report
-       list page, the two partial declarations were mixing into a box a
-       couple pixels shorter than its .btn-view sibling in the same
-       actions cell. */
     line-height: 1.4;
     border-radius: 6px;
     display: inline-flex;
@@ -163,7 +150,7 @@
 .btn-review-sm { background: #5347ce; color: white; }
 .btn-review-sm:hover { background: #3f34a0; }
 
-/* Municipality Summary tab */
+/* Summary header with a progress bar. (Not used on any page right now.) */
 .da-summary-header {
     background: linear-gradient(135deg, #5347ce, #4436b4);
     color: white;
@@ -190,6 +177,7 @@
 .da-progress-track { height: 8px; background: rgba(255,255,255,0.18); border-radius: 4px; overflow: hidden; }
 .da-progress-fill { height: 100%; background: white; }
 
+/* Boxes showing how many barangays are at each flood level. */
 .da-flood-distribution-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -216,6 +204,7 @@
 .da-flood-box.tier-low { background: #e8faf0; }
 .da-flood-box.tier-low strong { color: #1e8449; }
 
+/* Call-to-action banner. (Not used on any page right now.) */
 .da-cta-banner {
     background: #efedfd;
     border: 1px solid #d6d1f4;
@@ -232,7 +221,7 @@
 .da-cta-banner strong { display: block; color: #5347ce; font-size: 13px; margin-bottom: 2px; }
 .da-cta-banner span { font-size: 12px; color: #556; }
 
-/* Modal */
+/* Older review pop-up window and its parts. */
 .da-modal-overlay {
     position: fixed;
     inset: 0;
@@ -240,10 +229,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Same reasoning as .rd-modal-overlay (relief_request_detail.css): pages
-       using this modal (e.g. cswdo/dashboard.html) can have a Leaflet map
-       whose internal panes run up to z-index 700 with no isolating stacking
-       context, so a low z-index here could render underneath it. */
     z-index: 2000;
     padding: 20px;
 }
@@ -255,7 +240,6 @@
     border-radius: 14px;
     width: 100%;
     max-width: 640px;
-    /* /--ui-scale - see .dashboard-layout zoom in base.css. */
     max-height: calc(90vh / var(--ui-scale));
     display: flex;
     flex-direction: column;
@@ -317,6 +301,7 @@
 .da-modal-pane { display: none; }
 .da-modal-pane.active { display: block; }
 
+/* Grid of report details inside the review pop-up. (Not used on any page right now.) */
 .da-data-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -333,6 +318,7 @@
 .da-data-field span { display: block; font-size: 10px; letter-spacing: 0.3px; color: #8a94a6; margin-bottom: 4px; }
 .da-data-field strong { font-size: 14px; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
 
+/* Attached photos/evidence chips. (Not used on any page right now.) */
 .da-evidence-label {
     display: block;
     font-size: 10.5px;
@@ -366,9 +352,7 @@
     word-break: break-all;
 }
 
-/* .da-remarks-box now lives in dashboard.css - every page using it loads
-   that stylesheet, which wasn't true of relief_request_detail.html. */
-
+/* Box showing who verified/returned the report. */
 .da-verification-record {
     display: flex;
     gap: 10px;
@@ -382,6 +366,7 @@
 .da-verification-record.status-verified { background: #e8faf0; color: #1e8449; }
 .da-verification-record.status-returned { background: #fdecea; color: #c0392b; }
 
+/* Verify / Return section with remarks. (Not used on any page right now.) */
 .da-verify-section { border-top: 1px dashed #e6e7ef; padding-top: 16px; margin-top: 4px; }
 .da-verify-section h4 { font-size: 13px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 
@@ -405,6 +390,7 @@
 
 .da-verify-actions { display: flex; gap: 10px; }
 
+/* Return (orange) and Verify (green) buttons. (Not used on any page right now.) */
 .btn-return, .btn-verify {
     flex: 1;
     display: flex;
@@ -432,10 +418,7 @@
     color: #8a94a6;
 }
 
-/* Barangay Reports review modal - single-column body that reads top to bottom
-   and simply scrolls when it runs long (.rd-modal already caps height and sets
-   overflow-y). The decision-support numbers sit in a compact 2×2 grid rather
-   than a tall centered stack. */
+/* The current report review pop-up: details on the left, decision on the right. */
 .rd-modal.rr-review-modal { max-width: 600px; }
 
 .rr-review-body {
@@ -454,8 +437,6 @@
     gap: 14px;
 }
 
-/* Decision-support figures: 2×2 grid of left-aligned cells, hairline dividers
-   from the container colour showing through the 1px gap. */
 .rr-review-decision .rd-amount-tile {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -477,8 +458,6 @@
 }
 .rr-review-decision .rd-amount-tile strong { display: block; font-size: 18px; margin: 0; }
 .rr-review-decision .rd-amount-tile .rd-sub { display: block; margin-top: 2px; }
-/* Allocation confirmation strip: info on the left, a real "Track delivery"
-   button on the right (was a bare "track it →" text link). */
 .rr-review-decision .rd-decision-summary {
     margin: 0;
     display: flex;
@@ -491,6 +470,7 @@
     border-radius: 10px;
     padding: 12px 14px;
 }
+/* Info box about the food packs being allocated. */
 .rr-allocation-info { display: flex; align-items: flex-start; gap: 10px; }
 .rr-allocation-info svg { flex-shrink: 0; margin-top: 1px; }
 .rr-allocation-info strong { display: block; font-size: 13.5px; }
@@ -510,6 +490,7 @@
 .rd-modal.rr-review-modal .rr-review-actions .btn-decision { min-width: 140px; }
 .rd-modal.rr-review-modal > .rr-review-foot-hint { margin: 12px 0 0; }
 
+/* On phones: stack the review pop-up into one column. */
 @media (max-width: 700px) {
     .da-data-grid { grid-template-columns: 1fr; }
     .da-flood-distribution-grid { grid-template-columns: repeat(2, 1fr); }
@@ -518,15 +499,12 @@
     .rr-review-decision .rd-amount-tile { grid-template-columns: 1fr; }
 }
 
-/* Affected-families chips in the report review modal - mirrors
-   .fam-badge in barangay.css (Family Profiles checklist). */
+/* 'Received' badge for families who already got their packs, and the expandable proof panel. */
 .fam-badge {
     font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
     background: #eef1f6; color: #5a6472; white-space: nowrap;
 }
 
-/* Received (barangay marked the family as given its packs) - green, and
-   clickable to show the hand-out details + photo proof below the chips. */
 .fam-badge-received {
     display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-family: inherit;
     background: #eafaf1; color: #1e8449; border: 1px solid #a9dfbf;

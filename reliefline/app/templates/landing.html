@@ -1,3 +1,5 @@
+{# Page: / - The public home page (landing page). #}
+{# Introduces ReliefLine, its features and the 3-level setup, with contact details and a link to sign in. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -8,17 +10,13 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}?v={{ asset_version('css/landing.css') }}">
 {% endblock %}
 
-<!-- Marketing page only - no auth actions flash here (sign-in lives on
-     /login now), so base.html's corner toast is suppressed rather than
-     pulling in dashboard.css just to style it. -->
-{# Public page: keeps its own light look, no dark mode. #}
 {% block theme_init %}{% endblock %}
 {% block global_flash %}{% endblock %}
 
 {% block content %}
 <div class="lp">
 
-    <!-- Nav -->
+    {# Top menu: logo, links to each section, and the Sign In button. #}
     <nav class="lp-nav">
         <div class="lp-nav-inner">
             <a href="#home" class="lp-brand">
@@ -43,7 +41,7 @@
         </div>
     </nav>
 
-    <!-- Hero -->
+    {# Hero (first screen): ReliefLine title, short description, buttons, and the province map picture. #}
     <section class="lp-hero" id="home">
         <div class="lp-hero-overlay"></div>
         <div class="lp-hero-inner lp-hero-split">
@@ -67,11 +65,6 @@
             </div>
 
             <div class="lp-hero-map">
-                {# Static SVG map of Pangasinan - projected once from PSA/PSGC
-                   municipal boundary data (app/static/geo/pangasinan_*.json) into
-                   plain path data at build time. Per-municipality fill buckets
-                   (lp-svgmap-poly-0..4) are a fixed, deterministic assignment
-                   purely for visual depth/variety - not tied to any real metric. #}
                 <svg class="lp-svgmap" viewBox="0 0 600 419.8" role="img"
                      aria-label="Map of the Province of Pangasinan with Lingayen, Dagupan City, Urdaneta City, Alaminos City, and San Carlos City marked. Decorative boundary map."
                      xmlns="http://www.w3.org/2000/svg">
@@ -197,7 +190,7 @@
         </div>
     </section>
 
-    <!-- System Capabilities -->
+    {# 'What ReliefLine Does': the 6 main feature cards. #}
     <section class="lp-section" id="services">
         <div class="lp-section-inner">
             <div class="lp-section-head lp-reveal">
@@ -240,15 +233,14 @@
         </div>
     </section>
 
-    <!-- About -->
+    {# 'About' section: how ReliefLine replaces scattered paper and spreadsheets with one shared system. #}
     <section class="lp-section lp-section-alt" id="about">
         <div class="lp-section-inner lp-about-grid">
             <div class="lp-about-copy lp-reveal">
                 <span class="lp-eyebrow lp-eyebrow-green">About ReliefLine</span>
                 <h2>From Fragmented to <span class="lp-accent">Data-Driven</span></h2>
                 <p>ReliefLine transforms fragmented relief planning into a centralized, data-driven workflow, from barangay-level reporting to provincial warehouse management.</p>
-                {# TODO: rewrite this whole description once the forecasting model is finalized. #}
-                <p>Built as a capstone research project aligned with the Province of Pangasinan's disaster preparedness goals, it projects food pack demand per municipality over the coming 3, 6 or 12 months from real per-typhoon relief records and typhoon-season climatology, and reports a safety-stock level (P90) for pre-positioning.</p>
+                <p>A capstone project supporting Pangasinan's disaster preparedness, it forecasts food pack demand per municipality for the next 3, 6 or 12 months from past typhoon relief records.</p>
 
                 <ul class="lp-check-list">
                     <li>{{ icon('check-circle', 16, '#1e8449') }} Evidence-based food pack stockpile planning using a time-forecasting model</li>
@@ -261,7 +253,6 @@
                 <img class="lp-about-device"
                      src="{{ url_for('static', filename='img/about-showcase.png') }}?v={{ asset_version('img/about-showcase.png') }}"
                      alt="ReliefLine PSWDO dashboard on a laptop" loading="lazy">
-
 
                 <div class="lp-showcase-chip lp-chip-tl">
                     <span class="lp-chip-ic lp-chip-ic-blue">{{ icon('trending-up', 16, '#5347ce') }}</span>
@@ -283,7 +274,7 @@
         </div>
     </section>
 
-    <!-- Three-Level Architecture -->
+    {# 'Three-Level Architecture': what Barangay, CSWDO/MSWDO and PSWDO each do, joined by an animated line. #}
     <section class="lp-section lp-section-arch" id="architecture">
         <div class="lp-section-inner">
             <div class="lp-section-head lp-reveal">
@@ -338,7 +329,6 @@
         </div>
     </section>
 
-    <!-- More Features -->
     {% set more_features = [
         ('users', 'Role-based access control'),
         ('clipboard', 'Barangay disaster reporting'),
@@ -356,6 +346,7 @@
         ('clock', 'Calamity history records'),
         ('download', 'CSV & PDF exports'),
     ] %}
+    {# 'More Features': a strip of smaller features that scrolls on its own (and can be dragged). #}
     <section class="lp-more" id="more-features">
         <h2 class="lp-more-title">More Features</h2>
         <div class="lp-more-marquee">
@@ -369,7 +360,7 @@
         </div>
     </section>
 
-    <!-- Contact -->
+    {# Contact Information cards: email, telephone, office address and office hours. #}
     <section class="lp-section" id="contact">
         <div class="lp-section-inner">
             <div class="lp-section-head lp-reveal">
@@ -413,7 +404,7 @@
         </div>
     </section>
 
-    <!-- Footer -->
+    {# Footer: links and copyright. #}
     <footer class="lp-footer">
         <div class="lp-footer-inner">
             <div class="lp-footer-brand">
@@ -447,11 +438,7 @@
         </div>
     </footer>
 
-    <!-- Privacy Notice / Terms of Use / Contact Support - opened from the
-         footer's Legal column in place, without leaving the landing page.
-         Content mirrors app.templates.privacy/terms/contact.html, which stay
-         reachable directly (e.g. their own real URL, no-JS) via the same
-         href each footer link still carries. -->
+    {# Privacy Notice pop-up (opened from the footer). #}
     <div class="auth-modal-overlay" id="privacy-notice-modal" hidden>
         <div class="login-card auth-modal-card static-page-modal-card">
             <button type="button" class="auth-modal-close" data-close-modal aria-label="Close">{{ icon('x', 18) }}</button>
@@ -478,6 +465,7 @@
         </div>
     </div>
 
+    {# Terms of Use pop-up (opened from the footer). #}
     <div class="auth-modal-overlay" id="terms-of-use-modal" hidden>
         <div class="login-card auth-modal-card static-page-modal-card">
             <button type="button" class="auth-modal-close" data-close-modal aria-label="Close">{{ icon('x', 18) }}</button>
@@ -501,6 +489,7 @@
         </div>
     </div>
 
+    {# Contact Support pop-up (opened from the footer). #}
     <div class="auth-modal-overlay" id="contact-support-modal" hidden>
         <div class="login-card auth-modal-card static-page-modal-card">
             <button type="button" class="auth-modal-close" data-close-modal aria-label="Close">{{ icon('x', 18) }}</button>
@@ -519,7 +508,6 @@
             </div>
         </div>
     </div>
-
 
 </div>
 {% endblock %}
@@ -542,10 +530,9 @@
         });
     });
 
-    // Nav gets a soft shadow once the page has scrolled past the hero top,
-    // reinforcing that it's staying pinned rather than just sitting there.
     var nav = document.querySelector('.lp-nav');
     if (nav) {
+        // Adds a shadow to the top menu once the page is scrolled.
         var onScroll = function () {
             nav.classList.toggle('is-scrolled', window.scrollY > 8);
         };
@@ -553,15 +540,8 @@
         onScroll();
     }
 
-    // Forgot Password modal - same generic [data-open-modal]/[data-close-modal]
-    // pattern used elsewhere in the app (e.g. relief_request_detail.js), scoped
-    // to .auth-modal-overlay here since this page doesn't load that script.
     document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
         btn.addEventListener('click', function (e) {
-            // Footer legal links keep a real href (Privacy Notice etc. stay
-            // reachable at their own URL with JS off, or ctrl/cmd/shift-click
-            // to open in a new tab as usual) - a plain click opens the modal
-            // in place instead of navigating away.
             if (e.metaKey || e.ctrlKey || e.shiftKey) return;
             var modal = document.getElementById(btn.dataset.openModal);
             if (!modal) return;
@@ -585,8 +565,6 @@
         }
     });
 
-    // Fade/slide each section's cards and copy blocks into place as they
-    // enter the viewport, instead of dumping the whole page at once.
     var revealTargets = document.querySelectorAll('.lp-reveal');
     if (revealTargets.length && 'IntersectionObserver' in window) {
         var observer = new IntersectionObserver(function (entries) {
@@ -602,10 +580,6 @@
         revealTargets.forEach(function (el) { el.classList.add('is-visible'); });
     }
 
-    // Three-Level Architecture: ONE continuous SVG connector, drawn from a path
-    // that is rebuilt from the live card geometry so it keeps an even distance
-    // from every card at any width. The draw progress and the per-card reveal
-    // are both tied to scroll position (never autoplay) and fully reversible.
     (function () {
         var arch = document.querySelector('.lp-architecture');
         if (!arch) return;
@@ -615,18 +589,18 @@
         if (!cards.length) return;
         var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+        // True if the decorative line is hidden (on small screens).
         var lineHidden = function () {
             return !path || getComputedStyle(svg).display === 'none';
         };
 
+        // The position and size of an element on the page.
         function box(el) {
             return { t: el.offsetTop, b: el.offsetTop + el.offsetHeight,
                      l: el.offsetLeft, r: el.offsetLeft + el.offsetWidth };
         }
 
-        // A Catmull-Rom spline through the given points -> one C1-continuous
-        // cubic path with NO sharp corners, passing smoothly through every
-        // waypoint. `t` (0..1) controls how loose the curve is.
+        // Turns a list of points into a smooth curved line.
         function smooth(pts, t) {
             t = t || 1;
             var d = 'M ' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
@@ -644,15 +618,10 @@
             return d;
         }
 
+        // Rounds a number to 1 decimal place.
         var n1 = function (v) { return (Math.round(v * 10) / 10).toString(); };
 
-        // ONE continuous route matching the reference:
-        //   hook over 01's top-right + down its right side
-        //   -> a clean round loop out to the LEFT linking 01 -> 02
-        //   -> a clean round loop out to the RIGHT linking 02 -> 03
-        //   -> a short finish.
-        // Each loop is a single symmetric cubic (a smooth "D" bulge - never a
-        // cusp). Segments that pass behind a card are hidden by the card.
+        // Draws the decorative curved line that connects the feature cards.
         function buildPath() {
             if (lineHidden()) return;
             var W = arch.offsetWidth, H = arch.offsetHeight;
@@ -660,9 +629,6 @@
             var cx = (c0.l + c0.r) / 2;
             var c0y = (c0.t + c0.b) / 2, c1y = (c1.t + c1.b) / 2, c2y = (c2.t + c2.b) / 2;
 
-            // the hook: two clean cubics that share a vertical tangent where
-            // they meet, so it rounds 01's top-right corner without a kink -
-            // an arc up and over, then a bulge down the right side into the edge.
             var hookX = Math.min(c0.r + 96, W - 12);
             var d = 'M ' + n1(cx) + ' ' + n1(c0.t - 54) +
                     ' C ' + n1(cx + 122) + ' ' + n1(c0.t - 94) + ' ' +
@@ -672,26 +638,17 @@
                             n1(c0.r + 40) + ' ' + n1(c0y - 6) + ' ' +
                             n1(c0.r) + ' ' + n1(c0y);
 
-            // straight-ish connector that runs BEHIND a card (hidden by it),
-            // arriving at (x,y) travelling horizontally so it flows into a bulge
+            // Builds one curve of the decorative line.
             function link(x, y, fromDir) {
                 return ' C ' + n1(x + fromDir * 60) + ' ' + n1(y) + ' ' +
                                n1(x + fromDir * 30) + ' ' + n1(y) + ' ' +
                                n1(x) + ' ' + n1(y);
             }
-            // A true half-circle bulge from (edge,y1) out past the card edge
-            // and back to (edge,y2) - drawn as TWO quarter-circle cubic arcs
-            // (kappa = 0.5523) meeting at the outermost point, so it is round,
-            // not a boxy teardrop. Leaves/returns to the edge horizontally.
             var K = 0.5523;
+            // Builds a rounded bend of the decorative line.
             function bulge(y1, y2, edge, dir) {
                 var mid = (y1 + y2) / 2;
                 var r = Math.abs(y2 - y1) / 2;
-                // room to the edge of view - on a full-width mobile card
-                // `edge` can sit at (or past) W - 10, which used to send this
-                // negative and Math.abs() turned that "no room" signal back
-                // into "still bulge 10px", overshooting the container's own
-                // edge. Floor it at 0 so it flattens instead of escaping.
                 var lim = Math.max(0, dir < 0 ? edge - 10 : W - 10 - edge);
                 r = Math.min(r, lim);
                 var outer = edge + dir * r;
@@ -704,14 +661,10 @@
                                n1(edge) + ' ' + n1(y2);
             }
 
-            // (hidden) from the hook's end straight across behind 01 to its
-            // left edge at mid-height, then the round loop out to the left -> 02
             d += link(c0.l, c0y, 1);
             d += bulge(c0y, c1y, c0.l, -1);
-            // (hidden) across behind 02 to its right edge, then the loop -> 03
             d += link(c1.r, c1y, -1);
             d += bulge(c1y, c2y, c1.r, 1);
-            // (hidden) a short finish behind 03
             d += link(c2.r - 40, c2y + 40, -1);
 
             svg.setAttribute('viewBox', '0 0 ' + Math.round(W) + ' ' + Math.round(H));
@@ -725,12 +678,10 @@
             return;
         }
 
-        // boxAt: the opaque card box fades in (kept ahead of the line so it
-        //   always masks the connector behind it).
-        // revealAt: the card's contents slide in as the line reaches the card.
         var boxAt = [0.0, 0.26, 0.58];
         var revealAt = [0.18, 0.55, 0.88];
         var ticking = false;
+        // Draws more of the decorative line as the user scrolls down.
         function update() {
             ticking = false;
             var vh = window.innerHeight || document.documentElement.clientHeight;
@@ -747,22 +698,21 @@
                 cards[i].classList.toggle('is-drawn', hidden ? p > 0.02 : p >= revealAt[i]);
             }
         }
+        // Runs the line animation smoothly while scrolling.
         function onScroll() {
             if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
         }
+        // Redraws the decorative line when the window size changes.
         function onResize() { buildPath(); onScroll(); }
 
         buildPath();
         window.addEventListener('scroll', onScroll, { passive: true });
         window.addEventListener('resize', onResize);
-        // rebuild once more after fonts/late layout settle
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(buildPath);
         setTimeout(buildPath, 400);
         update();
     })();
 
-    // "More Features" marquee: auto-scrolls, and can be grabbed / swiped to
-    // scroll through by hand (with a bit of momentum on release).
     (function () {
         var marq = document.querySelector('.lp-more-marquee');
         var track = marq && marq.querySelector('.lp-more-track');
@@ -772,15 +722,18 @@
         var offset = 0, half = 0, speed = 0.5;
         var dragging = false, lastX = 0, vel = 0, paused = false, moved = 0;
 
+        // Measures the scrolling logo strip.
         function measure() { half = track.scrollWidth / 2; }
         measure();
         window.addEventListener('resize', measure);
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
 
+        // Moves the logo strip to its current position.
         function apply() {
-            if (half > 0) offset = ((offset % half) + half) % half;   // wrap seamlessly
+            if (half > 0) offset = ((offset % half) + half) % half;
             track.style.transform = 'translateX(' + (-offset).toFixed(2) + 'px)';
         }
+        // Animates the logo strip: scrolls on its own, and can be dragged with the mouse or finger.
         function frame() {
             if (!dragging) {
                 if (Math.abs(vel) > 0.15) { offset -= vel; vel *= 0.94; }
@@ -805,6 +758,7 @@
             vel = dx * 0.55;
             apply();
         });
+        // Stops dragging the logo strip.
         function end(e) {
             if (!dragging) return;
             dragging = false;
@@ -813,9 +767,7 @@
         }
         marq.addEventListener('pointerup', end);
         marq.addEventListener('pointercancel', end);
-        // swallow the click that follows a real drag (so pills don't act like links)
         marq.addEventListener('click', function (e) { if (moved > 6) { e.preventDefault(); e.stopPropagation(); } }, true);
-        // steady auto-scroll pauses while hovering (momentum/drag unaffected)
         marq.addEventListener('mouseenter', function () { paused = true; });
         marq.addEventListener('mouseleave', function () { paused = false; });
     })();

@@ -2,11 +2,14 @@ Flask==3.0.3
 Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
 PyMySQL==1.2.0
+cryptography==43.0.3
 python-dotenv==1.0.1
-pandas==2.2.2
-scikit-learn==1.5.1
-statsmodels==0.14.2
+tzdata==2026.3
 numpy==1.26.4
+joblib==1.5.3
 reportlab==5.0.0
 openpyxl==3.1.5
 requests==2.32.3
+
+gunicorn==23.0.0; platform_system != "Windows"
+waitress==3.0.2; platform_system == "Windows"

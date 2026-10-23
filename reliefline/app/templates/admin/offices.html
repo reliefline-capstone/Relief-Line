@@ -1,3 +1,5 @@
+{# Page: /admin/offices - Warehouse Management (System Admin). #}
+{# List of PSWDO and CSWDO/MSWDO offices/warehouses; add, edit, activate or deactivate them. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -36,7 +38,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the Add Warehouse button. #}
         <section class="page-header">
             <div>
                 <h2>Warehouse Management</h2>
@@ -45,6 +47,7 @@
             <button type="button" class="btn-add-warehouse" data-open-modal="add-office-modal">{{ icon('plus', 14, 'white') }} Add Warehouse</button>
         </section>
 
+        {# Warehouse table: name, code, type, location, warehouse manager, number of users, status and action buttons. #}
         <section class="panel wh-table-panel">
             <table class="wh-table">
                 <thead>
@@ -95,7 +98,7 @@
     </main>
 </div>
 
-<!-- Add Warehouse modal -->
+{# 'Add Warehouse' pop-up form. #}
 <div class="rd-modal-overlay" id="add-office-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">
@@ -156,7 +159,7 @@
     </div>
 </div>
 
-<!-- Edit Warehouse modals (one per row) -->
+{# One 'Edit Warehouse' pop-up form for each office in the table. #}
 {% for row in rows %}
 {% set office = row.office %}
 <div class="rd-modal-overlay" id="edit-office-modal-{{ office.office_id }}" hidden>
@@ -220,7 +223,7 @@
 </div>
 {% endfor %}
 
-<!-- Shared confirmation modal (Activate / Deactivate) -->
+{# 'Are you sure?' pop-up shown before activating/deactivating an office. #}
 <div class="rd-modal-overlay" id="confirm-modal" data-tone="danger" hidden>
     <div class="rd-modal confirm-modal">
         <div class="confirm-modal-icon" data-confirm-icon>{{ icon('alert-triangle', 22) }}</div>

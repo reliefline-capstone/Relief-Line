@@ -1,3 +1,5 @@
+{# Page: /admin/users/<id>/activity - One user's activity (System Admin). #}
+{# Everything that user did in the system, with filters and CSV export. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
@@ -18,11 +20,11 @@
 
     <main class="dashboard-main">
 
-
         <div class="wh-breadcrumb">
             <a href="{{ url_for('admin.users') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
         </div>
 
+        {# User's name, role and status, with Back and Export buttons. #}
         <section class="page-header">
             <div>
                 {% set name_parts = user.name.split() %}
@@ -49,6 +51,7 @@
         {% if fargs.module %}{% set _ = chips.append({'label': 'Module', 'value': module_filter, 'tone': 'violet', 'url': f_url(EP, fargs, {'module': None})}) %}{% endif %}
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+        {# Filters: search, system section (module) and date range. #}
         {% call filter_panel(chips, url_for(EP, user_id=user.user_id), hidden={}, summary=(rows|length) ~ ' action' ~ ('s' if rows|length != 1 else '')) %}
             {{ fp_search('q', search_query, "Search this user's activity...") }}
             {% call fp_select('Module', 'module', 'grid') %}
@@ -60,6 +63,7 @@
             {{ fp_date_range('Date', 'date_from', date_from, 'date_to', date_to) }}
         {% endcall %}
 
+        {# Activity table: time, action, section and computer (IP address). #}
         <section class="panel wh-table-panel">
             <table class="wh-table">
                 <thead>

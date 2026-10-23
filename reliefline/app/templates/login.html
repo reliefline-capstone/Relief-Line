@@ -1,3 +1,5 @@
+{# Page: /login - The Sign In page. #}
+{# Also has the 'Forgot Password' pop-up and the 'Set a New Password' pop-up (after an admin reset). #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -8,15 +10,13 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/login_page.css') }}?v={{ asset_version('css/login_page.css') }}">
 {% endblock %}
 
-<!-- The login card shows its own inline .flash-message; base.html's corner
-     toast would otherwise render the same message a second time. -->
-{# Public page: keeps its own light look, no dark mode. #}
 {% block theme_init %}{% endblock %}
 {% block global_flash %}{% endblock %}
 
 {% block content %}
 <div class="lpg">
 
+    {# Top bar with the province seal and ReliefLine name. #}
     <header class="lpg-topbar">
         <a href="{{ url_for('auth.landing') }}" class="lpg-brand">
             <img src="{{ url_for('static', filename='img/province-seal.png') }}" alt="Province of Pangasinan Seal">
@@ -28,6 +28,7 @@
     </header>
 
     <main class="lpg-main">
+        {# Left side: short introduction to ReliefLine. #}
         <section class="lpg-intro">
             <div class="lpg-intro-lockup">
                 <img src="{{ url_for('static', filename='img/reliefline-logo.png') }}" alt="ReliefLine">
@@ -42,6 +43,7 @@
             </p>
         </section>
 
+        {# Right side: the login box (email, password, Sign In button). #}
         <div class="login-card">
             <div class="lock-badge">{{ icon('lock', 28, '#0f2547') }}</div>
             <h2>Welcome Back!</h2>
@@ -98,12 +100,12 @@
         </div>
     </main>
 
+    {# Footer links. #}
     <footer class="lpg-footer">
         <span>© 2026 Province of Pangasinan. All rights reserved.</span>
     </footer>
 
-    <!-- Forgot Password modal - opened by the "Forgot Password?" button, in
-         place, without navigating to a separate page. -->
+    {# 'Forgot Password?' pop-up: sends a reset request to the System Admin. #}
     <div class="auth-modal-overlay" id="forgot-password-modal" hidden>
         <div class="login-card auth-modal-card">
             <button type="button" class="auth-modal-close" data-close-modal aria-label="Close">{{ icon('x', 18) }}</button>
@@ -129,11 +131,8 @@
         </div>
     </div>
 
-    {# Set a New Password - shown to a user whose password was reset by a
-       System Administrator. No close control and data-no-dismiss: they stay
-       locked here (see app.__init__'s _enforce_forced_password_change) until
-       they replace the shared default password. #}
     {% if force_password_change %}
+    {# 'Set a New Password' pop-up: appears (and can't be closed) when an admin reset the password. #}
     <div class="auth-modal-overlay" id="set-password-modal" data-no-dismiss>
         <div class="login-card auth-modal-card">
             <div class="lock-badge">{{ icon('lock', 28, '#0f2547') }}</div>
@@ -184,7 +183,6 @@
 <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
 <script>
 (function () {
-    // Same generic [data-open-modal]/[data-close-modal] pattern as landing.html.
     document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
         btn.addEventListener('click', function () {
             var modal = document.getElementById(btn.dataset.openModal);
@@ -192,8 +190,6 @@
         });
     });
     document.querySelectorAll('.auth-modal-overlay').forEach(function (overlay) {
-        // [data-no-dismiss] (the forced "Set a New Password" step) can't be
-        // clicked away or Escape'd out of - the user has to complete it.
         if (overlay.hasAttribute('data-no-dismiss')) return;
         overlay.addEventListener('click', function (e) {
             if (e.target === overlay) overlay.hidden = true;
@@ -210,8 +206,6 @@
         }
     });
 
-    // When the locked "Set a New Password" modal is present, drop focus into
-    // it rather than the sign-in field behind it.
     var lockedField = document.querySelector('#set-password-modal #set-new-password');
     if (lockedField) lockedField.focus();
 })();

@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Runs once when the codespace/devcontainer is created (or rebuilt).
-# Installs MariaDB, loads the schema, and builds the Python venv so the
-# app is immediately runnable after the container finishes creating.
+# Sets up a new Codespace/devcontainer: installs MariaDB, loads the database, creates the Python environment and .env.
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,8 +23,6 @@ sudo mariadb -e "DROP DATABASE IF EXISTS reliefline_db; CREATE DATABASE reliefli
 sudo mariadb reliefline_db < "$APP_DIR/database/reliefline_db.sql"
 
 echo "==> Creating dedicated app DB user"
-# root@localhost uses unix_socket auth on Debian/MariaDB, which rejects the
-# app's TCP connection with an empty password - a dedicated user avoids that.
 sudo mariadb -e "
   CREATE USER IF NOT EXISTS 'reliefline'@'%' IDENTIFIED BY 'reliefline_dev_pw';
   GRANT ALL PRIVILEGES ON reliefline_db.* TO 'reliefline'@'%';
@@ -39,10 +35,16 @@ python3 -m venv .venv
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install -r requirements.txt
 
+echo "==> Writing a development .env (if missing)"
+if [ ! -f "$APP_DIR/.env" ]; then
+  cat > "$APP_DIR/.env" <<EOF
+SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+DATABASE_URL=mysql+pymysql://reliefline:reliefline_dev_pw@127.0.0.1/reliefline_db
+FLASK_DEBUG=1
+EOF
+fi
+
 echo "==> Enabling repo-tracked git hooks (.githooks/)"
-# Keeps database/reliefline_db.sql synced to this database on every commit -
-# see .githooks/pre-commit. Local git config, so every teammate's devcontainer
-# picks it up automatically on creation without a manual step.
 git -C "$PROJECT_DIR" config core.hooksPath .githooks
 
 echo "==> Setup complete"

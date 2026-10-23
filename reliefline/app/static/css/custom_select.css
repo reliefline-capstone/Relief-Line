@@ -1,37 +1,13 @@
-/* Custom-styled dropdown that replaces every plain <select> in the app.
-   A browser's native open-dropdown listbox can't be restyled with CSS at
-   all - its background, hover highlight colour, borders and font are
-   drawn by the OS/browser itself, not the page - so every <select> in the
-   system looked jarringly plain and inconsistent with the rest of the UI
-   the moment it was opened (default white box, harsh blue selection bar).
+/* Styles for the custom dropdown menus used on every form */
+/* (they replace the browser's own dropdowns so they look the same everywhere and work in dark mode). */
 
-   This is built and wired up entirely by static/js/custom_select.js, which
-   wraps every <select> on the page into this markup:
-     <div class="csel-wrap">
-       <select class="csel-native">...</select>   (kept for name/value
-                                                     submission + required
-                                                     validation, visually
-                                                     hidden below)
-       <button class="csel-trigger">...</button>
-       <ul class="csel-list">...</ul>
-     </div>
-   Both files are loaded globally in base.html, so this applies to every
-   <select> on every page without needing to touch individual templates. */
-
+/* The dropdown box; the real (hidden) dropdown sits inside it. */
 .csel-wrap {
     position: relative;
     display: inline-block;
     max-width: 100%;
-    /* Inside a flex row (filter bars) this sizes to content like a normal
-       flex item would; inside a flex column (.form-row) the container's
-       own align-items: stretch takes over and fills the width regardless
-       of this. */
 }
 
-/* Kept in the DOM (not display:none) so it's still a real, focusable,
-   constraint-validated form control - `required` and any existing
-   `change` listeners elsewhere in the codebase keep working untouched -
-   just clipped down to an invisible 1x1px box instead of shown. */
 .csel-native {
     position: absolute !important;
     width: 1px !important;
@@ -44,6 +20,7 @@
     border: 0 !important;
 }
 
+/* The button showing the selected option, with the arrow. */
 .csel-trigger {
     display: flex;
     align-items: center;
@@ -81,6 +58,7 @@
     transition: transform 0.12s ease;
 }
 
+/* Look of the button when open (arrow flips), invalid (red) or disabled. */
 .csel-wrap.is-open .csel-trigger {
     border-color: #5347ce;
     box-shadow: 0 0 0 3px rgba(83, 71, 206, 0.12);
@@ -98,6 +76,7 @@
 .csel-wrap.is-disabled .csel-trigger:hover { border-color: #e3e4ec; }
 .csel-wrap.is-disabled .csel-trigger svg { opacity: 0.5; }
 
+/* The list of options that opens below (or above) the button. */
 .csel-list {
     position: absolute;
     top: calc(100% + 4px);
@@ -117,22 +96,11 @@
 
 .csel-list[hidden] { display: none; }
 
-/* Toggled by custom_select.js when there isn't enough room below the
-   trigger but more above it (non-modal pages only - see .rd-modal
-   .csel-list below) - opens above the trigger instead of below. */
 .csel-list.csel-list-up { top: auto; bottom: calc(100% + 4px); }
 
-/* Inside a modal, the list joins normal document flow instead of
-   overlaying (position: absolute above) - opening it pushes the rest of
-   the form down and the modal card (height: auto, capped by its own
-   max-height: 90vh/overflow-y: auto) genuinely grows to fit it, instead
-   of the list being squeezed into whatever gap existed below the trigger
-   before it opened and needing its own scrollbar for a handful of
-   options. See positionList() in custom_select.js, which skips the
-   position/max-height math entirely for a trigger inside .rd-modal since
-   this covers it. */
 .rd-modal .csel-list { position: static; margin-top: 4px; }
 
+/* One option in the list: placeholder, hover/highlight, selected, disabled. */
 .csel-option {
     display: flex;
     align-items: center;
@@ -164,10 +132,7 @@
     pointer-events: none;
 }
 
-/* Compact inline variant - the dashboard period-filter's month/year
-   dropdowns sit next to a calendar icon and read as plain clickable text,
-   not a boxed control, so the generic bordered trigger would look wrong
-   there. */
+/* Smaller dropdowns in the dashboard's month/year filter. */
 .dash-period-date .csel-wrap { width: auto; }
 .dash-period-date .csel-trigger {
     min-width: 0;

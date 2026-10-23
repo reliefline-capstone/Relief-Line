@@ -1,3 +1,5 @@
+{# Page: /receipts/distribution/<id> and /receipts/transfer/<id> - Printable receipt. #}
+{# For a delivery to a barangay or a transfer between warehouses: parties, quantities, food pack contents and signatures. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, validation_attachments with context %}
 
@@ -25,6 +27,7 @@
         </div>
 
         <article class="rc-doc">
+            {# Receipt header: reference number, date and type. #}
             <header class="rc-header">
                 <div>
                     <span class="rc-eyebrow">RELIEFLINE &middot; FOOD PACK DELIVERY</span>
@@ -41,6 +44,7 @@
                 </div>
             </header>
 
+            {# From and To: the sending warehouse and the receiving office or barangay. #}
             <section class="rc-parties">
                 <div>
                     <span class="rc-label">From (sender)</span>
@@ -60,6 +64,7 @@
                 </div>
             </section>
 
+            {# Quantities: dispatched, received, short, damaged, and added to stock. #}
             <section class="rc-section">
                 <h3>Quantities</h3>
                 <table class="rc-table">
@@ -80,12 +85,11 @@
             </section>
 
             {% set STATUS_LABELS = {'fresh': 'Fresh', 'near_expiry': 'Near expiry', 'expired': 'Expired'} %}
+            {# Contents: each food pack batch, its items and expiration dates. #}
             <section class="rc-section">
                 <h3>Contents of {{ 'Transfer' if kind == 'transfer' else 'Delivery' }}</h3>
                 {% if lots %}
                 {% for lot in lots %}
-                {# Item-level counts, so a single expired item (usually the rice)
-                   doesn't read as the whole delivery being expired. #}
                 {% set n_expired = lot['items']|selectattr('status', 'equalto', 'expired')|list|length %}
                 {% set n_near = lot['items']|selectattr('status', 'equalto', 'near_expiry')|list|length %}
                 {% set n_fresh = lot['items']|selectattr('status', 'equalto', 'fresh')|list|length %}
@@ -127,8 +131,7 @@
                 {% endif %}
             </section>
 
-            {# 5. Receiver acknowledgment - blank lines to sign on a printed copy
-               while awaiting receipt; the recorded details once confirmed. #}
+            {# Receiver Acknowledgment: signature lines. #}
             <section class="rc-section rc-ack">
                 <h3>Receiver Acknowledgment</h3>
                 {% if received %}
@@ -147,6 +150,7 @@
             </section>
 
             {% if attachments %}
+            {# Photo proof from the confirmation (shown on screen, not printed). #}
             <section class="rc-section rc-noprint">
                 <h3>Photo proof</h3>
                 {{ validation_attachments(distribution_id, attachments) }}

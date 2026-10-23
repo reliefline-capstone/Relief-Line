@@ -1,5 +1,5 @@
-{# Signatory block in the standard LGU format: "Prepared By:" label, the
-   signer's name above the line, position below. Expects `lh`. #}
+{# Shared piece: the signature lines at the bottom of every report #}
+{# (Prepared by, Noted by, Approved by). #}
 <div class="rpt-signatures" style="grid-template-columns: repeat({{ lh.signatories|length }}, 1fr);">
     {% for s in lh.signatories %}
     <div class="rpt-sig">

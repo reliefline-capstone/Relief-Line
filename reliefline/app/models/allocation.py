@@ -1,5 +1,9 @@
+# Database table: food pack allocations to barangays.
+
 from app.extensions import db
 
+# Database table 'allocation_records': food packs set aside for a barangay.
+# It tracks how many were asked for, approved and released, which office supplies them, and the status.
 class AllocationRecord(db.Model):
     __tablename__ = "allocation_records"
 
@@ -16,27 +20,14 @@ class AllocationRecord(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
-    # Decision fields - no new status enum values (rejection is tracked via
-    # rejection_reason instead, since "pending" is otherwise unambiguous once set)
     rejection_reason = db.Column(db.Text, nullable=True)
     fulfilling_office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=True)
     expected_delivery_date = db.Column(db.Date, nullable=True)
     remarks = db.Column(db.Text, nullable=True)
     decided_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
 
-    # Set only for records created via the CSWDO/MSWDO "Relief Requests" batch
-    # flow (app/routes/cswdo.py) - NULL for province-level records created any
-    # other way (e.g. scripts/seed_demo_data.py), which PSWDO still processes
-    # exactly the same either way.
     batch_id = db.Column(db.Integer, db.ForeignKey("relief_request_batches.batch_id"), nullable=True)
 
-    # Provenance:
-    #   pswdo_batch      - CSWDO batched it up to PSWDO (Tier 2, legacy/current)
-    #   barangay_request - a barangay's Relief Request, fulfilled by CSWDO from
-    #                      its own municipal warehouse (Tier 1). PSWDO never sees
-    #                      or schedules these (filtered out of its queues).
-    #   cswdo_direct     - CSWDO pushed stock to a barangay proactively (model-
-    #                      driven), no barangay request behind it.
     source = db.Column(
         db.Enum("pswdo_batch", "barangay_request", "cswdo_direct"),
         nullable=False, default="pswdo_batch", server_default="pswdo_batch",
@@ -53,10 +44,13 @@ class AllocationRecord(db.Model):
     submitted_by = db.relationship("User", foreign_keys=[created_by])
     decided_by_user = db.relationship("User", foreign_keys=[decided_by])
 
+    # True if this allocation was rejected (a rejection reason was given).
     @property
     def is_rejected(self):
         return self.rejection_reason is not None
 
+    # The status shown on screen.
+    # It says 'partially approved' when fewer packs were approved than were asked for.
     @property
     def display_status(self):
         if self.is_rejected:

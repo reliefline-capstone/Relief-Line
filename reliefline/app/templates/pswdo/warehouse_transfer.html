@@ -1,3 +1,5 @@
+{# Page: /pswdo/warehouse-inventory/transfer - Stock Transfer (PSWDO). #}
+{# Move food packs from one PSWDO warehouse to another. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, prediction_disclaimer, batch_picker with context %}
 
@@ -17,7 +19,6 @@
 
     <main class="dashboard-main">
 
-
         {% set crumbs = [
             {"label": "Dashboard", "url": url_for('pswdo.warehouse_inventory')},
             {"label": "Stock Transfer", "url": none}
@@ -26,6 +27,7 @@
 
         {% if success %}
         <div class="main-grid">
+            {# 'Transfer Approved!' message, shown right after a transfer is made. #}
             <section class="panel wh-success-panel">
                 <div class="wh-success-icon">{{ icon('check-circle', 36, '#27ae60') }}</div>
                 <h3>Transfer Approved!</h3>
@@ -39,6 +41,7 @@
         {% else %}
         <div class="main-grid">
 
+            {# Transfer Stock form: from warehouse, to warehouse, quantity and reason. #}
             <section class="panel wh-transfer-panel">
                 <div class="panel-header">
                     <h3>Transfer Stock</h3>
@@ -113,6 +116,7 @@
             </section>
 
             <aside class="wh-side-col">
+                {# All Warehouse Stocks: each PSWDO warehouse's current food packs. #}
                 <section class="panel">
                     <div class="panel-header"><h3>All Warehouse Stocks</h3></div>
                     {% for w in warehouses %}
@@ -130,6 +134,7 @@
                 </section>
 
                 {% if recommendations %}
+                {# Suggestion box: which warehouse to move stock from and to. #}
                 <section class="wh-reco-panel" style="margin-top:16px;">
                     <div class="wh-reco-header"><h3 style="font-size:12px; letter-spacing:0.4px; color:#8a94a6;">RECOMMENDATION</h3></div>
                     <p style="font-size:13px;"><strong>{{ recommendations[0].title }}</strong></p>

@@ -1,6 +1,5 @@
-<!-- Role sub-navigation - filters the table below by the actor's role
-     (PSWDO / CSWDO-MSWDO / Barangay-Level User / System Administrator);
-     a green dot marks roles with someone active now. -->
+{# System Admin shared piece: the user-group tabs (All Users, PSWDO, CSWDO/MSWDO, Barangay) #}
+{# above the activity log. A green dot means someone in that group is online now. #}
 <div class="page-tabs">
     {% for g in groups %}
     <a href="{{ url_for(endpoint, role=g.key, q=search_query or None, module=module_filter if module_filter and module_filter != 'all' else None, date_from=date_from or None, date_to=date_to or None) }}" class="page-tab {{ 'active' if selected_group == g.key }}">

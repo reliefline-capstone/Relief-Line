@@ -1,7 +1,7 @@
+# System Admin pages: users, warehouses, barangays, activity log, settings.
+
 import csv
 import io
-import secrets
-from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, Response
 from flask_login import login_required, current_user
@@ -12,7 +12,7 @@ from app.utils.activity import log_admin_activity, module_for_action, module_bad
 from app.utils.filters import date_range, iso
 from app.utils.presence import is_online, ONLINE_THRESHOLD
 from app.utils.settings import SETTINGS_SCHEMA, get_setting, set_setting
-from app.utils.timezone import ph_time, ph_now, ph_today
+from app.utils.timezone import ph_time, ph_now
 from app.utils.roles import ROLE_LABELS
 from app.utils.mail import send_email
 from app.models.user import User
@@ -29,19 +29,9 @@ admin_bp = Blueprint("admin", __name__)
 ROLE_CHOICES = ["system_admin", "pswdo_admin", "cswdo_admin", "barangay_user"]
 
 
-# ---------------------------------------------------------------------------
-# Small display helpers - everything here derives from real stored fields
-# rather than adding columns for things that are really just presentation.
-# ---------------------------------------------------------------------------
-
-def _generate_temp_password():
-    return secrets.token_urlsafe(9)
-
-
+# Emails a user their temporary password.
+# If email isn't set up, the password is shown on screen to the admin instead.
 def _deliver_credentials(user, temp_password, subject, intro):
-    """Emails a new/reset password when SMTP is configured; otherwise falls
-    back to flashing it directly, mirroring auth.forgot_password's fallback
-    so the admin flow works before any mail server is wired up."""
     body = f"{intro}\n\nEmail: {user.email}\nTemporary password: {temp_password}\n\nPlease log in and change it right away."
     sent = False
     try:
@@ -59,12 +49,14 @@ def _deliver_credentials(user, temp_password, subject, intro):
         )
 
 
+# The office type shown on screen: Provincial, Warehouse, City, or Municipal.
 def _office_type_label(office):
     if office.office_type == "pswdo":
         return "Provincial" if office.area_covered == "Province of Pangasinan" else "Warehouse"
     return "City" if office.area_covered == "Urdaneta City" else "Municipal"
 
 
+# The short office code shown on screen (e.g. PSWDO, CSWDO, MSWDO-SB, WH-...).
 def _office_code(office):
     if office.office_type == "pswdo":
         if office.area_covered == "Province of Pangasinan":
@@ -78,10 +70,8 @@ def _office_code(office):
     return f"MSWDO-{abbrev}"
 
 
-# ---------------------------------------------------------------------------
-# Dashboard
-# ---------------------------------------------------------------------------
-
+# Page: /admin/dashboard - System Admin dashboard: total users, who is online, deactivated accounts,
+# this month's activity count and recently active users.
 @admin_bp.route("/dashboard")
 @login_required
 @role_required("system_admin")
@@ -104,10 +94,8 @@ def dashboard():
     )
 
 
-# ---------------------------------------------------------------------------
-# User Management
-# ---------------------------------------------------------------------------
-
+# Page: /admin/users - User Management page: list of all user accounts.
+# Can be searched by name/email and filtered by role and active/inactive status.
 @admin_bp.route("/users")
 @login_required
 @role_required("system_admin")
@@ -123,8 +111,6 @@ def users():
     if role_filter in ROLE_CHOICES:
         base_q = base_q.filter(User.role == role_filter)
 
-    # Counts always reflect the search term but ignore the status filter
-    # itself, so the tab badges show what each tab would contain if clicked.
     active_count = base_q.filter(User.is_active.is_(True)).count()
     inactive_count = base_q.filter(User.is_active.is_(False)).count()
 
@@ -146,9 +132,9 @@ def users():
     )
 
 
+# Links a user to their office (for PSWDO/CSWDO admins) or to their barangay (for barangay users),
+# depending on the chosen role.
 def _apply_user_office_barangay(user, role):
-    """Role dictates which assignment field is meaningful - clears the other
-    so a role change doesn't leave a stale office/barangay pointer behind."""
     if role in ("pswdo_admin", "cswdo_admin"):
         office_id = request.form.get("office_id", type=int)
         user.office_id = office_id
@@ -162,6 +148,8 @@ def _apply_user_office_barangay(user, role):
         user.barangay_id = None
 
 
+# Action: /admin/users/add - Creates a new user account with a temporary password.
+# The email must not already be used by another account.
 @admin_bp.route("/users/add", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -178,8 +166,8 @@ def add_user():
         flash(f"{email} is already registered to another account.", "error")
         return redirect(url_for("admin.users"))
 
-    temp_password = _generate_temp_password()
-    user = User(name=name, email=email, role=role, is_active=True)
+    temp_password = DEFAULT_RESET_PASSWORD
+    user = User(name=name, email=email, role=role, is_active=True, must_change_password=True)
     user.set_password(temp_password)
     _apply_user_office_barangay(user, role)
     db.session.add(user)
@@ -199,6 +187,7 @@ def add_user():
     return redirect(url_for("admin.users"))
 
 
+# Action: /admin/users/<int:user_id>/edit - Saves changes to a user account (name, email, role, office or barangay).
 @admin_bp.route("/users/<int:user_id>/edit", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -231,13 +220,16 @@ def edit_user(user_id):
     return redirect(url_for("admin.users"))
 
 
+# Action: /admin/users/<int:user_id>/reset-password - Resets a user to the default password (emailed or shown on screen),
+# makes them change it at next login, and records it in the activity log.
 @admin_bp.route("/users/<int:user_id>/reset-password", methods=["POST"])
 @login_required
 @role_required("system_admin")
 def reset_user_password(user_id):
     user = User.query.get_or_404(user_id)
-    temp_password = _generate_temp_password()
+    temp_password = DEFAULT_RESET_PASSWORD
     user.set_password(temp_password)
+    user.must_change_password = True
 
     log_admin_activity(current_user.user_id, "user_password_reset", f"{current_user.name} reset the password for {user.name}")
     db.session.commit()
@@ -249,6 +241,8 @@ def reset_user_password(user_id):
     return redirect(url_for("admin.users"))
 
 
+# Action: /admin/users/<int:user_id>/toggle-active - Activates or deactivates a user account. Deactivated users can't log in.
+# An admin can't deactivate themselves, and at least one active System Admin must remain.
 @admin_bp.route("/users/<int:user_id>/toggle-active", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -276,13 +270,11 @@ def toggle_user_active(user_id):
     return redirect(url_for("admin.users"))
 
 
+# Page: /admin/users/<int:user_id>/activity - Shows everything one user has done in the system (their activity log), with filters.
 @admin_bp.route("/users/<int:user_id>/activity")
 @login_required
 @role_required("system_admin")
 def user_activity(user_id):
-    """Everything a single user has done - the drill-down behind User
-    Management's "View Activity" action. Same ActivityLog rows System
-    Activity shows, just scoped to one actor instead of everyone."""
     user = User.query.get_or_404(user_id)
     search_query = request.args.get("q", "").strip()
     query, filters = _activity_filters(ActivityLog.query.filter_by(actor_id=user_id))
@@ -290,6 +282,7 @@ def user_activity(user_id):
     return render_template("admin/user_activity.html", user=user, rows=rows, search_query=search_query, **filters)
 
 
+# Download: /admin/users/<int:user_id>/activity/export - Downloads one user's activity log as a CSV (spreadsheet) file.
 @admin_bp.route("/users/<int:user_id>/activity/export")
 @login_required
 @role_required("system_admin")
@@ -300,14 +293,8 @@ def export_user_activity(user_id):
     return _export_activity(_search_activity(query, request.args.get("q", "").strip()), filename)
 
 
-# ---------------------------------------------------------------------------
-# Password Reset Requests - a user's self-service "Forgot Password" click
-# (app.routes.auth.forgot_password) lands here as a pending row instead of
-# resetting anything automatically. Granting resets the account's password
-# to DEFAULT_RESET_PASSWORD and flags must_change_password so the user is
-# forced onto auth.force_change_password the moment they next log in.
-# ---------------------------------------------------------------------------
-
+# Page: /admin/password-reset-requests - Password Reset Requests page: 'forgot password' requests to approve or deny.
+# Opening the page clears the sidebar badge.
 @admin_bp.route("/password-reset-requests")
 @login_required
 @role_required("system_admin")
@@ -325,10 +312,6 @@ def password_reset_requests():
 
     request_list = requests_q.order_by(PasswordResetRequest.requested_at.desc()).all()
 
-    # Opening this page is what clears the sidebar's red badge - marks every
-    # currently-pending request seen without touching `status`, so a request
-    # still shows under the Pending tab (and still needs a decision) even
-    # after the badge itself has cleared.
     PasswordResetRequest.query.filter_by(status="pending", is_seen=False).update(
         {"is_seen": True}, synchronize_session=False
     )
@@ -341,6 +324,8 @@ def password_reset_requests():
     )
 
 
+# Action: /admin/password-reset-requests/<int:request_id>/approve - Approves a reset: the account gets the default reset password,
+# and the user must choose a new password at their next login.
 @admin_bp.route("/password-reset-requests/<int:request_id>/approve", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -352,6 +337,7 @@ def approve_password_reset_request(request_id):
 
     user = reset_request.user
     user.set_password(DEFAULT_RESET_PASSWORD)
+    # The user must choose a new password at their next login.
     user.must_change_password = True
     reset_request.status = "approved"
     reset_request.reviewed_by = current_user.user_id
@@ -366,6 +352,7 @@ def approve_password_reset_request(request_id):
     return redirect(url_for("admin.password_reset_requests"))
 
 
+# Action: /admin/password-reset-requests/<int:request_id>/deny - Denies a password reset request and records it in the activity log.
 @admin_bp.route("/password-reset-requests/<int:request_id>/deny", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -388,10 +375,8 @@ def deny_password_reset_request(request_id):
     return redirect(url_for("admin.password_reset_requests"))
 
 
-# ---------------------------------------------------------------------------
-# Office Management
-# ---------------------------------------------------------------------------
-
+# Page: /admin/offices - Warehouse Management page: list of PSWDO and CSWDO/MSWDO offices and their warehouses,
+# with number of users, capacity and minimum food pack level.
 @admin_bp.route("/offices")
 @login_required
 @role_required("system_admin")
@@ -414,6 +399,7 @@ def offices():
     return render_template("admin/offices.html", rows=rows)
 
 
+# Copies the office form fields (name, type, area, capacity, address, contact) into the office record.
 def _apply_office_form(office):
     office.office_name = request.form.get("office_name", "").strip()
     office.office_type = request.form.get("office_type", "cswdo")
@@ -426,11 +412,9 @@ def _apply_office_form(office):
     office.email = request.form.get("email", "").strip() or None
 
 
+# Saves the minimum food pack stock (reorder point) for an office's warehouse.
+# Below this level, the stock shows as 'Low'.
 def _apply_food_pack_min(office):
-    """Set this warehouse's food-pack reorder point (WarehouseInventory row for
-    item_type='food_pack'). Drives the 'Low Stock' status on the Inventory
-    Management pages. Left blank on the form = no change. Call after the office
-    is flushed so office_id exists."""
     raw = request.form.get("food_pack_min_stock", type=int)
     if raw is None:
         return
@@ -447,6 +431,7 @@ def _apply_food_pack_min(office):
     fp.updated_by = current_user.user_id
 
 
+# Action: /admin/offices/add - Adds a new office/warehouse.
 @admin_bp.route("/offices/add", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -467,6 +452,7 @@ def add_office():
     return redirect(url_for("admin.offices"))
 
 
+# Action: /admin/offices/<int:office_id>/edit - Saves changes to an office/warehouse.
 @admin_bp.route("/offices/<int:office_id>/edit", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -485,6 +471,7 @@ def edit_office(office_id):
     return redirect(url_for("admin.offices"))
 
 
+# Action: /admin/offices/<int:office_id>/toggle-active - Activates or deactivates an office/warehouse.
 @admin_bp.route("/offices/<int:office_id>/toggle-active", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -499,10 +486,8 @@ def toggle_office_active(office_id):
     return redirect(url_for("admin.offices"))
 
 
-# ---------------------------------------------------------------------------
-# Barangay Management
-# ---------------------------------------------------------------------------
-
+# Page: /admin/barangays - Barangay Management page: list of barangays in the 3 municipalities,
+# with population, households and typical past food pack allocation.
 @admin_bp.route("/barangays")
 @login_required
 @role_required("system_admin")
@@ -529,6 +514,7 @@ def barangays():
     )
 
 
+# Copies the barangay form fields (name, municipality, population, households) into the barangay record.
 def _apply_barangay_form(barangay):
     barangay.barangay_name = request.form.get("barangay_name", "").strip()
     barangay.city_municipality = request.form.get("city_municipality", "")
@@ -536,6 +522,7 @@ def _apply_barangay_form(barangay):
     barangay.num_households = request.form.get("num_households", type=int) or 0
 
 
+# Action: /admin/barangays/add - Adds a new barangay.
 @admin_bp.route("/barangays/add", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -555,6 +542,7 @@ def add_barangay():
     return redirect(url_for("admin.barangays"))
 
 
+# Action: /admin/barangays/<int:barangay_id>/edit - Saves changes to a barangay.
 @admin_bp.route("/barangays/<int:barangay_id>/edit", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -572,6 +560,7 @@ def edit_barangay(barangay_id):
     return redirect(url_for("admin.barangays"))
 
 
+# Download: /admin/barangays/export - Downloads the barangay list as a CSV (spreadsheet) file.
 @admin_bp.route("/barangays/export")
 @login_required
 @role_required("system_admin")
@@ -597,46 +586,33 @@ def export_barangays():
     )
 
 
-# ---------------------------------------------------------------------------
-# System Activity - full feed off activity_logs, with an office
-# sub-navigation (who did this - grouped by which office the actor belongs
-# to) and a "Currently Active" panel built from real presence data (see
-# app.utils.presence), not from is_active or last_login.
-# ---------------------------------------------------------------------------
-
-# Fixed order matching the manuscript's role taxonomy (PSWDO -> CSWDO/MSWDO
-# -> Barangay-Level User -> System Administrator) rather than one tab per
-# office - keeps the sub-nav to at most 5 tabs no matter how many offices or
-# barangay-level accounts get added later.
 ROLE_GROUP_ORDER = ["pswdo_admin", "cswdo_admin", "barangay_user", "system_admin"]
 
 
+# The user groups for the activity log filter (All Users, PSWDO, CSWDO/MSWDO, Barangay...).
 def _actor_groups():
-    """One tab per role - always all 4 from ROLE_GROUP_ORDER, even ones with
-    zero users yet (e.g. Barangay-Level User before any such account
-    exists), so the filter is there and ready as soon as one is added."""
     groups = [{"key": "all", "label": "All Users"}]
     for role in ROLE_GROUP_ORDER:
         groups.append({"key": f"role:{role}", "label": ROLE_LABELS.get(role, role)})
     return groups
 
 
+# Filters users to one role group.
 def _group_user_filter(query, group_key):
-    """Applies a group_key (see _actor_groups) to a User query."""
     if group_key and group_key.startswith("role:"):
         return query.filter_by(role=group_key.split(":", 1)[1])
     return query
 
 
+# Filters the activity log to actions done by one user group.
 def _apply_actor_group_filter(query, group_key):
     if not group_key or group_key == "all":
         return query
     return _group_user_filter(query.join(User, ActivityLog.actor_id == User.user_id), group_key)
 
 
+# The user groups, each marked if someone in that group is online right now.
 def _groups_with_online_flag():
-    """Role tabs, each flagged with whether anyone in that role is
-    currently active (green dot) - see app.utils.presence."""
     online_cutoff = ph_now() - ONLINE_THRESHOLD
     groups = _actor_groups()
     for g in groups:
@@ -646,9 +622,8 @@ def _groups_with_online_flag():
     return groups
 
 
+# Applies the 'section of the system' and date filters to the activity log.
 def _activity_filters(query):
-    """Module + date-range filters for System Activity / User Activity and
-    their CSV exports. Returns (filtered query, template context)."""
     module_filter = request.args.get("module", "all")
     date_from, date_to = date_range(request.args)
     if module_filter != "all":
@@ -666,6 +641,7 @@ def _activity_filters(query):
                    "date_from": iso(date_from), "date_to": iso(date_to)}
 
 
+# Searches the activity log by description or user name.
 def _search_activity(query, search_query):
     if search_query:
         query = query.join(User, ActivityLog.actor_id == User.user_id, isouter=True).filter(
@@ -674,6 +650,7 @@ def _search_activity(query, search_query):
     return query
 
 
+# Gets the activity log rows ready for display (newest first, with section and badge color).
 def _activity_rows(query, search_query, limit=200):
     query = _search_activity(query, search_query)
     logs = query.order_by(ActivityLog.created_at.desc()).limit(limit).all()
@@ -683,6 +660,7 @@ def _activity_rows(query, search_query, limit=200):
     ]
 
 
+# Page: /admin/activity - System Activity page: the full activity log of all users, with search and filters.
 @admin_bp.route("/activity")
 @login_required
 @role_required("system_admin")
@@ -698,6 +676,7 @@ def activity():
     )
 
 
+# Builds the activity log CSV file (up to 1,000 latest entries).
 def _export_activity(query, filename):
     logs = query.order_by(ActivityLog.created_at.desc()).limit(1000).all()
     buffer = io.StringIO()
@@ -716,6 +695,7 @@ def _export_activity(query, filename):
     )
 
 
+# Download: /admin/activity/export - Downloads the activity log as a CSV (spreadsheet) file.
 @admin_bp.route("/activity/export")
 @login_required
 @role_required("system_admin")
@@ -724,10 +704,8 @@ def export_activity():
     return _export_activity(_search_activity(query, request.args.get("q", "").strip()), "system_activity.csv")
 
 
-# ---------------------------------------------------------------------------
-# System Settings
-# ---------------------------------------------------------------------------
-
+# Page: /admin/settings - System Settings page: the warehouse 'Healthy' and 'Moderate' stock levels
+# and the low-stock alert switch.
 @admin_bp.route("/settings", methods=["GET", "POST"])
 @login_required
 @role_required("system_admin")
@@ -758,11 +736,7 @@ def settings_page():
     )
 
 
-# ---------------------------------------------------------------------------
-# Profile Settings (the System Administrator's own account) - same pattern
-# as pswdo.profile_settings / update_profile_info / change_password.
-# ---------------------------------------------------------------------------
-
+# Page: /admin/profile-settings - System Admin's own Profile Settings page.
 @admin_bp.route("/profile-settings")
 @login_required
 @role_required("system_admin")
@@ -770,6 +744,7 @@ def profile_settings():
     return render_template("admin/profile_settings.html")
 
 
+# Action: /admin/profile-settings - Saves the admin's own name and email (the email must not be used by another account).
 @admin_bp.route("/profile-settings", methods=["POST"])
 @login_required
 @role_required("system_admin")
@@ -793,6 +768,8 @@ def update_profile_info():
     return redirect(url_for("admin.profile_settings"))
 
 
+# Action: /admin/profile-settings/password - Changes the admin's own password.
+# The current password must be correct and the new one at least 8 characters.
 @admin_bp.route("/profile-settings/password", methods=["POST"])
 @login_required
 @role_required("system_admin")

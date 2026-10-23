@@ -1,3 +1,5 @@
+{# Page: /pswdo/transfers - Stock Transfers (PSWDO). #}
+{# Stock moving from PSWDO depots to the municipal warehouses. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
@@ -19,7 +21,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title. #}
         <div class="page-header">
             <div>
                 <h2>Stock Transfers</h2>
@@ -27,6 +29,7 @@
             </div>
         </div>
 
+        {# 3 number cards: active transfers, packs in transit, completed. #}
         <section class="stat-cards stat-cards-3">
             <div class="stat-card"><div class="stat-icon amber">{{ icon('truck', 18, '#d68910') }}</div>
                 <span class="stat-value">{{ active_count }}</span><span class="stat-label">Active</span></div>
@@ -50,6 +53,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
 
+        {# Filters: search, status, destination, type and dates. #}
         {% call filter_panel(chips, url_for(EP), summary=(rows|length) ~ ' transfer' ~ ('s' if rows|length != 1 else '')) %}
             {{ fp_search('q', search_query, 'Search transfer or request ID...') }}
             {% call fp_select('Status', 'status', 'check-circle') %}
@@ -73,6 +77,7 @@
             {{ fp_date_range('Requested', 'date_from', date_from, 'date_to', date_to) }}
         {% endcall %}
 
+        {# Transfers table: transfer number, type, from -> to, packs and status. #}
         <section class="panel wh-table-panel">
             <table class="wh-table wh-table-transfers">
                 <thead><tr><th>Transfer</th><th>Type</th><th>From → To</th><th>Packs</th><th>Status</th><th></th></tr></thead>

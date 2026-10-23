@@ -1,3 +1,5 @@
+{# Page: /cswdo/reports/<type> - One report shown on screen (CSWDO/MSWDO), #}
+{# with filter chips and buttons to download it as PDF or Excel, or print it. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -7,9 +9,6 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse_inventory.css') }}?v={{ asset_version('css/warehouse_inventory.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}?v={{ asset_version('css/reports.css') }}">
-{# Wide reports print the WHOLE document landscape - a landscape page
-   inside an otherwise-portrait document gets rotated onto portrait
-   paper by the browser and its right edge cut off. #}
 {% if report.columns|length > 7 %}<style>@page { size: letter landscape; }</style>{% endif %}
 {% endblock %}
 
@@ -21,10 +20,9 @@
 
     <main class="dashboard-main">
 
-
-        {# Back button and filters share one row. #}
         <div class="rpt-topbar">
             <a href="{{ url_for('cswdo.reports') }}" class="wh-back-btn" title="Back" aria-label="Back">{{ icon('arrow-left', 18) }}</a>
+        {# The filters this report uses (event, period), with a link to change them. #}
         <section class="rpt-filterbar">
             <div class="rpt-filter-chips">
                 {{ icon('list', 14, '#2c5aa0') }}
@@ -40,6 +38,7 @@
         {% set pdf_url = url_for('cswdo.report_export_pdf', report_type=report.report_type, event_id=filters.event_id or '', days=filters.days) %}
         {% set excel_url = url_for('cswdo.report_export_excel', report_type=report.report_type, event_id=filters.event_id or '', days=filters.days) %}
 
+        {# Buttons: Export PDF, Export Excel, and Print. #}
         <section class="rpt-export-row">
             <span class="rpt-export-label">Export as:</span>
             <a href="{{ pdf_url }}" class="btn-export btn-export-pdf">{{ icon('file-text', 14, 'white') }} Export PDF</a>
@@ -47,6 +46,7 @@
             <button type="button" class="btn-export btn-export-print" data-print-pdf="{{ pdf_url }}&inline=1">{{ icon('list', 14, 'white') }} Print</button>
         </section>
 
+        {# The report document: letterhead, data table, notes and signature lines. #}
         <section class="rpt-document" id="report-document">
             {% set lh = report.letterhead %}
             {% set doc_title = report.title %}

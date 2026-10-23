@@ -1,3 +1,5 @@
+{# Page: /pswdo/relief-requests/<id> - One stock request (PSWDO). #}
+{# The request's details, its transfer progress, and the Approve / Decline decision. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, batch_picker with context %}
 
@@ -18,7 +20,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Request number and status. #}
         <div class="page-header">
             <div>
                 <div class="wh-title-row">
@@ -34,6 +36,7 @@
         </div>
 
         <div class="rd-left-col">
+                {# Request details: municipality, event, packs requested, priority, reason and attachments. #}
                 <section class="panel">
                     <div class="panel-header"><h3>Request</h3></div>
                     <div class="rd-info-grid">
@@ -47,6 +50,7 @@
                 </section>
 
                 {% if transfer %}
+                {# Replenishment Transfer progress (shown after approval), with the Dispatch button. #}
                 <section class="panel dd-stepper-panel">
                     <div class="panel-header"><h3>Replenishment Transfer {{ transfer.ref }}</h3></div>
                     <div class="dd-stepper">
@@ -78,6 +82,7 @@
                 {% endif %}
 
                 {% if batch.display_status == 'pending' %}
+                {# Decision: Approve and Decline buttons (or the decision already made). #}
                 <section class="panel">
                     <div class="panel-header"><h3>Decision</h3></div>
                     <div class="rd-action-row">
@@ -89,6 +94,7 @@
         </div>
 
         {% if batch.display_status == 'pending' %}
+        {# 'Approve' pop-up: choose the provincial depot to send from and how many packs. #}
         <div class="rd-modal-overlay" id="approve-modal" hidden>
             <div class="rd-modal">
                 <div class="rd-modal-header"><h3>Approve {{ batch.ref }}</h3><button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>
@@ -119,6 +125,7 @@
                 </form>
             </div>
         </div>
+        {# 'Decline' pop-up: a reason is required. #}
         <div class="rd-modal-overlay" id="reject-modal" hidden>
             <div class="rd-modal">
                 <div class="rd-modal-header"><h3>Decline {{ batch.ref }}</h3><button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button></div>

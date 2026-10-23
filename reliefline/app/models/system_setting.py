@@ -1,12 +1,11 @@
+# Database table: system settings.
+
 from app.extensions import db
 
 
+# Database table 'system_settings': settings the System Admin can change
+# (e.g. warehouse 'Healthy'/'Moderate' stock levels, low-stock alerts).
 class SystemSetting(db.Model):
-    """Simple key/value store for admin-editable operational settings (e.g.
-    warehouse stock thresholds). Deliberately schemaless beyond key/value so
-    new settings can be introduced from app.utils.settings without a
-    migration - see get_setting()/set_setting() for typed access."""
-
     __tablename__ = "system_settings"
 
     setting_key = db.Column(db.String(50), primary_key=True)

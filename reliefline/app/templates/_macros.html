@@ -1,10 +1,11 @@
+{# Shared building blocks used on many pages: #}
+{# icons, the photo viewer, the food pack batch picker, the forecast disclaimer and delivery photo attachments. #}
+{# Draws one of the app's icons by name (e.g. icon('truck', 18)). #}
 {% macro icon(name, size=20, color='currentColor', stroke_width=2) %}
 <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="{{ color }}" stroke-width="{{ stroke_width }}" stroke-linecap="round" stroke-linejoin="round">{{ ICONS[name]|safe }}</svg>
 {% endmacro %}
 
-{# Photo viewer for proof photos: one large photo, prev/next + "1 / 3" when
-   there are several, a thumbnail strip, and an open-full-size link. The
-   stepping is wired once for every viewer in base.html ([data-pv]). #}
+{# Photo viewer: thumbnails that open a larger view with previous/next. #}
 {% macro photo_viewer(urls, alt='Photo') %}
 <div class="pv" data-pv>
     <div class="pv-stage">
@@ -26,13 +27,8 @@
 </div>
 {% endmacro %}
 
-{# Optional "which batches go out" choice for a food-pack dispatch form.
-   Default mode is automatic (nearest expiry first - the server's FEFO);
-   "Choose batches" lists the warehouse's active batches with a quantity box
-   each (batch_qty_<id>), which must add up to the form's `quantity` field -
-   see app.routes.pswdo._batch_picks_from_form. `office_ids` is one office
-   (CSWDO) or every selectable depot (PSWDO); with several, `office_select`
-   names the form's warehouse <select> and only that depot's batches show. #}
+{# Batch picker on 'send stock' forms: send automatically (soonest-to-expire first) #}
+{# or choose how many packs to take from each batch. #}
 {% macro batch_picker(office_ids, office_select=None) %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/batch_picker.css') }}?v={{ asset_version('css/batch_picker.css') }}">
 <div class="bp" data-bp{% if office_select %} data-bp-office-select="{{ office_select }}"{% endif %}>
@@ -85,6 +81,7 @@
 <script src="{{ url_for('static', filename='js/batch_picker.js') }}?v={{ asset_version('js/batch_picker.js') }}"></script>
 {% endmacro %}
 
+{# Note shown under forecasts: the numbers are estimates to guide planning, not exact amounts. #}
 {% macro prediction_disclaimer() %}
 <div class="pa-disclaimer">
     {{ icon('info', 13, '#8a94a6') }}
@@ -92,6 +89,7 @@
 </div>
 {% endmacro %}
 
+{# Links to the photos/files attached when a delivery was confirmed. #}
 {% macro validation_attachments(distribution_id, filenames) %}
 {% set image_exts = ('.jpg', '.jpeg', '.png', '.gif', '.webp') %}
 {% if filenames %}

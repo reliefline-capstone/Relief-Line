@@ -1,3 +1,5 @@
+{# Page: /pswdo/recommendations - Recommendations (PSWDO). #}
+{# From the forecast: how much stock each municipality needs for the next 3/6/9/12 months, and what to do. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, prediction_disclaimer with context %}
 
@@ -17,13 +19,13 @@
 
     <main class="dashboard-main">
 
-
         <section class="page-header">
             <div>
                 <h2>Recommendations</h2>
                 <p>Demand-vs-stock across the target municipalities, from the forecaster's LGU-level projections.
                     {%- if active_event %} · {{ active_event.event_name }}{% endif %}</p>
             </div>
+            {# Choose the planning period (3, 6, 9 or 12 months). #}
             <form method="GET" class="wh-movement-filters">
                 <select name="months" onchange="this.form.submit()">
                     <option value="3" {{ 'selected' if horizon_months == 3 }}>3-month stockpile</option>
@@ -38,6 +40,8 @@
         <p class="empty-note">No model has been trained yet. Run <code>scripts/train_model.py</code> against the current database.</p>
         {% endif %}
 
+        {# 4 number cards: projected demand this month, this month's shortage, #}
+        {# recommended stockpile for the period, and total provincial stock. #}
         <section class="stat-cards stat-cards-4">
             <div class="stat-card"><div class="stat-icon blue">{{ icon('trending-up', 18, '#3867d6') }}</div>
                 <span class="stat-value">{{ "{:,}".format(total_demand) }}</span><span class="stat-label">Projected Demand This Month</span></div>
@@ -49,6 +53,7 @@
                 <span class="stat-value">{{ "{:,}".format(total_food_packs) }}</span><span class="stat-label">Provincial Stock (all warehouses)</span></div>
         </section>
 
+        {# Recommended Actions: one suggested step per municipality (approve a request, monitor, or pre-position). #}
         <section class="panel">
             <div class="panel-header"><h3>Recommended Actions</h3><span class="tag-outline">{{ recommendations|length }}</span></div>
             <div id="reco-list">
@@ -74,6 +79,8 @@
             {{ prediction_disclaimer() }}
         </section>
 
+        {# Per-Municipality Breakdown: demand, warehouse stock, coverage, shortage and stockpile, #}
+        {# with each municipality's barangays listed below it. #}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header"><h3>Per-Municipality Breakdown</h3></div>
             <div class="rr-table-wrap">

@@ -1,3 +1,5 @@
+{# Page: /admin/users - User Management (System Admin). #}
+{# All user accounts: add, edit, reset password, activate/deactivate, and view each user's activity. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, f_url with context %}
@@ -20,7 +22,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the Add User button. #}
         <section class="page-header">
             <div>
                 <h2>User Management</h2>
@@ -32,6 +34,7 @@
         {% set EP = 'admin.users' %}
         {% set fargs = {'status': status_filter if status_filter != 'all' else None, 'q': search_query or None,
                         'role': role_filter if role_filter != 'all' else None} %}
+        {# Tabs: All, Active, Inactive accounts. #}
         <div class="page-tabs">
             <a href="{{ f_url(EP, fargs, {'status': None}) }}" class="page-tab {{ 'active' if status_filter == 'all' }}">All Users <span class="page-tab-badge">{{ total_count }}</span></a>
             <a href="{{ f_url(EP, fargs, {'status': 'active'}) }}" class="page-tab {{ 'active' if status_filter == 'active' }}">Active <span class="page-tab-badge">{{ active_count }}</span></a>
@@ -42,6 +45,7 @@
         {% if fargs.status %}{% set _ = chips.append({'label': 'Status', 'value': status_filter|title, 'tone': 'green', 'url': f_url(EP, fargs, {'status': None})}) %}{% endif %}
         {% if fargs.role %}{% set _ = chips.append({'label': 'Role', 'value': ROLE_LABELS.get(role_filter, role_filter), 'tone': 'violet', 'url': f_url(EP, fargs, {'role': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+        {# Filters: search by name/email and role. #}
         {% call filter_panel(chips, url_for(EP), summary=(users|length) ~ ' account' ~ ('s' if users|length != 1 else '')) %}
             {{ fp_search('q', search_query, 'Search name or email...') }}
             {% call fp_select('Role', 'role', 'user') %}
@@ -57,6 +61,7 @@
             {% endcall %}
         {% endcall %}
 
+        {# User table: name, email, role, office/barangay, status, last login and action buttons. #}
         <section class="panel wh-table-panel">
             <table class="wh-table">
                 <thead>
@@ -115,7 +120,7 @@
     </main>
 </div>
 
-<!-- Add User modal -->
+{# 'Add User' pop-up form (the Office/Barangay field changes with the chosen role). #}
 <div class="rd-modal-overlay" id="add-user-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">
@@ -163,7 +168,7 @@
     </div>
 </div>
 
-<!-- Edit User modals (one per row) -->
+{# One 'Edit User' pop-up form for each user in the table. #}
 {% for user in users %}
 <div class="rd-modal-overlay" id="edit-user-modal-{{ user.user_id }}" hidden>
     <div class="rd-modal">

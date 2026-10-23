@@ -1,38 +1,9 @@
-/**
- * Weather & Typhoon Watch widget - fetches app.utils.weather's JSON snapshot
- * (served per-role at /pswdo/dashboard/weather, /cswdo/dashboard/weather,
- * /barangay/dashboard/weather) and renders it client-side.
- *
- * Fetched client-side on purpose: a slow or unreachable upstream (Open-Meteo
- * / GDACS) must never delay the dashboard's own server-rendered page load.
- * The container starts in a loading state and this script fills it in.
- *
- * Every host page must include a container like:
- *   <div class="weather-widget" data-weather-widget data-endpoint="{{ url_for('pswdo.dashboard_weather') }}"></div>
- *
- * A second, optional container renders a compact one-line summary - meant
- * for the dashboard's greeting banner, where a "condition + typhoon status"
- * glance belongs beside the clock rather than the full multi-day card:
- *   <div class="banner-weather-live" data-weather-header data-endpoint="..."></div>
- *
- * A third, optional container renders a compact multi-day forecast strip -
- * sits in the greeting banner where a manually-logged DisasterEvent badge
- * used to (that badge is a *record your office logged*, not live weather -
- * see app/models/disaster_event.py - so it doesn't belong next to a weather
- * widget; each dashboard shows it elsewhere if at all):
- *   <div class="banner-forecast-box" data-weather-forecast data-endpoint="..."></div>
- *
- * All containers fetch independently (they all hit the same 15-minute
- * server-side cache, so a second request in the same window is instant -
- * simpler than plumbing shared state between unrelated DOM regions).
- *
- * Icon paths are duplicated from app/utils/icons.py (the browser can't read
- * that file) - keep both in sync when adding a weather icon.
- */
+// Weather & Typhoon Watch widget on the dashboards.
+// Loads the weather and typhoon alerts from the server and shows them, with Declare/End Event buttons.
 (function () {
     "use strict";
 
-    var REFRESH_MS = 15 * 60 * 1000; // matches the server's 15-minute cache TTL
+    var REFRESH_MS = 15 * 60 * 1000;
 
     var WEATHER_ICONS = {
         "sun": '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
@@ -47,6 +18,7 @@
         "droplet": '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>'
     };
 
+    // Builds a weather icon (sun, cloud, rain...).
     function svgIcon(name, size) {
         var paths = WEATHER_ICONS[name] || WEATHER_ICONS.cloud;
         size = size || 20;
@@ -55,12 +27,14 @@
             'stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
     }
 
+    // Makes text safe to show on the page.
     function escapeHtml(s) {
         return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
             return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
         });
     }
 
+    // Builds the weather card for one municipality: current conditions and the next days' forecast.
     function renderCity(city) {
         if (!city || !city.available) {
             return (
@@ -102,6 +76,7 @@
         );
     }
 
+    // Builds the Typhoon Watch section: active storms near the Philippines, or 'no active storms'.
     function renderTyphoonWatch(watch) {
         if (!watch || !watch.available) {
             return (
@@ -133,22 +108,10 @@
             );
         }).join("");
 
-        // The "Declare Disaster Event" action itself now lives in the panel
-        // header (see eventActionHtml) instead of a second button dropped in
-        // here - one button, and this grid keeps only real storm cards as
-        // its items, so a lone card's auto-fit column properly collapses
-        // its unused siblings and stretches to use the panel's full width
-        // rather than a fixed-width card next to blank space.
         return '<div class="typhoon-watch typhoon-watch-active">' + storms + '</div>';
     }
 
-    // --- Declare/End Disaster Event header action ---------------------------
-    // PSWDO-only (gated by data-can-declare-events on the panel container -
-    // see app.routes.pswdo.declare_disaster_event / end_disaster_event).
-    // Only one of Declare/End ever renders: the app treats a single active
-    // DisasterEvent as the current one everywhere, so both being available
-    // at once would be misleading.
-
+    // Builds the 'Declare Event' or 'End Event' button (only for users allowed to declare events).
     function eventActionHtml(container, opts) {
         opts = opts || {};
         if (container.dataset.canDeclareEvents !== "true") return "";
@@ -160,10 +123,6 @@
                 "</form>"
             );
         }
-        // Pre-fills from the first live-detected storm when there is one, so
-        // declaring it is a one-click confirm rather than retyping what's
-        // already on screen - same single button either way, just with or
-        // without prefill data attributes.
         return (
             '<button type="button" class="weather-declare-btn" data-declare-open ' +
             'data-prefill-name="' + escapeHtml(opts.prefillName || "") + '" ' +
@@ -173,14 +132,11 @@
         );
     }
 
+    // Makes the Declare / End Event buttons work.
     function wireEventActions(container) {
         var endForm = container.querySelector(".weather-end-form");
         if (endForm) {
             endForm.addEventListener("submit", function (e) {
-                // Native confirm() dialogs look out of place next to the rest of
-                // the app's own modal styling, so this opens the styled
-                // #end-event-modal instead and only actually submits the form
-                // once the user confirms there.
                 e.preventDefault();
                 openEndEventModal(endForm, container.dataset.activeEventName || "this event");
             });
@@ -193,6 +149,7 @@
         }
     }
 
+    // Asks for confirmation before ending an event.
     function openEndEventModal(form, name) {
         var modal = document.getElementById("end-event-modal");
         if (!modal) return;
@@ -201,19 +158,15 @@
         modal.hidden = false;
         var confirmBtn = document.getElementById("end-event-confirm-btn");
         if (confirmBtn) {
-            // Reassigning .onclick (rather than addEventListener) each time
-            // keeps this to a single handler bound to the current form,
-            // even if the widget re-renders and wires up a new one.
+            // Ends the event once the user confirms.
             confirmBtn.onclick = function () {
                 modal.hidden = true;
-                // form.submit() bypasses the 'submit' event entirely (unlike a
-                // real button click), so this doesn't re-trigger the listener
-                // above and reopen the modal.
                 form.submit();
             };
         }
     }
 
+    // Opens the Declare Event form, pre-filled with the storm's name from the typhoon alert.
     function openDeclareModal(name, condition) {
         var modal = document.getElementById("declare-event-modal");
         if (!modal) return;
@@ -225,6 +178,7 @@
         if (nameInput) nameInput.focus();
     }
 
+    // Builds the whole weather widget: header, municipality weather cards and typhoon watch.
     function renderWidget(container, data) {
         var watch = data.typhoon_watch;
         var firstStorm = (watch && watch.available && watch.active && watch.storms[0]) || {};
@@ -252,6 +206,7 @@
         wireEventActions(container);
     }
 
+    // Shows a message when the weather can't be loaded.
     function renderError(container) {
         container.innerHTML = (
             '<div class="weather-widget-header">' +
@@ -268,6 +223,7 @@
         wireEventActions(container);
     }
 
+    // Loads the weather data from the server and shows it (also used by the Refresh button).
     function loadWidget(container, isManualRefresh) {
         var endpoint = container.getAttribute("data-endpoint");
         if (!endpoint) return;
@@ -290,21 +246,7 @@
             });
     }
 
-    // --- Compact header chip (greeting banner) -----------------------------
-    // A one-line live-conditions glance, distinct from the full multi-city
-    // panel above. Uses the first city in the endpoint's response - the
-    // viewer's own LGU for CSWDO/barangay, or the first of the three target
-    // LGUs for PSWDO's province-wide view.
-    //
-    // No typhoon-watch line here on purpose (used to show GDACS's raw "is
-    // there any cyclone in the PAR" read, e.g. "No active cyclone in the
-    // PAR") - it duplicated the greeting banner's own Active Event badge
-    // (server-rendered from this office's actual declared DisasterEvent,
-    // see app.routes.cswdo/barangay dashboard()), was a second, less
-    // authoritative signal for the same thing, and ate up header space for
-    // it. PSWDO's fuller Weather & Typhoon Watch panel further down the page
-    // still carries the live GDACS read for those who want it.
-
+    // Builds the small weather display in the page header (temperature and conditions).
     function renderHeaderChip(container, data) {
         var city = (data.cities || [])[0];
         var conditionsHtml;
@@ -323,10 +265,12 @@
         container.innerHTML = '<div class="weather-header-conditions">' + conditionsHtml + '</div>';
     }
 
+    // Shows 'Live conditions unavailable' in the header.
     function renderHeaderError(container) {
         container.innerHTML = '<span class="weather-header-loading">Live conditions unavailable</span>';
     }
 
+    // Loads the header weather from the server.
     function loadHeader(container) {
         var endpoint = container.getAttribute("data-endpoint");
         if (!endpoint) return;
@@ -339,10 +283,7 @@
             .catch(function () { renderHeaderError(container); });
     }
 
-    // --- Compact forecast strip (greeting banner, badge slot) --------------
-    // Same multi-day data as the detail panel's per-city cards, just laid
-    // out for the banner's dark background and tighter width.
-
+    // Builds the forecast box (the next days' weather for the municipality).
     function renderForecastBox(container, data) {
         var city = (data.cities || [])[0];
         if (!city || !city.available || !city.forecast || !city.forecast.length) {
@@ -366,10 +307,12 @@
         );
     }
 
+    // Shows 'Forecast unavailable' in the forecast box.
     function renderForecastError(container) {
         container.innerHTML = '<span class="banner-forecast-error">' + svgIcon("cloud", 14) + ' Forecast unavailable</span>';
     }
 
+    // Loads the forecast from the server.
     function loadForecast(container) {
         var endpoint = container.getAttribute("data-endpoint");
         if (!endpoint) return;

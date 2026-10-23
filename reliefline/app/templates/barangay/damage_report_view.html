@@ -1,3 +1,5 @@
+{# Page: /barangay/damage-report/<id>/view - One barangay report (barangay user). #}
+{# Shows the review result, the status timeline, all report details, food pack distribution to families, and photos. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -18,7 +20,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Report number and status, with buttons: Print Family List, Edit Report, and Unsubmit (only while waiting for review). #}
         <section class="page-header">
             <div>
                 <div class="wh-title-row">
@@ -43,17 +45,20 @@
 
         {% set reviewer = report.reviewed_by_user.name ~ ' (MSWDO/CSWDO)' if report.reviewed_by_user else 'MSWDO/CSWDO' %}
         {% if report.status == 'returned' %}
+        {# Red box: shown when the report was returned for correction, with the reviewer's note. #}
         <section class="panel" style="border:1px solid #f6cfc9; background:#fdecea; margin-bottom:16px;">
             <div class="panel-header"><h3 style="color:#c0392b;">Returned for Revision by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks or 'No reason was provided.' }}</p>
             <a href="{{ url_for('barangay.edit_damage_report', report_id=report.report_id) }}" class="btn-submit-final" style="background:#c0392b; text-decoration:none; margin-top:8px; display:inline-flex;">Correct &amp; Resubmit {{ icon('arrow-right', 14, 'white') }}</a>
         </section>
         {% elif report.status == 'declined' %}
+        {# Red box: shown when the report was declined, with the reason. #}
         <section class="panel" style="border:1px solid #f6cfc9; background:#fdecea; margin-bottom:16px;">
             <div class="panel-header"><h3 style="color:#c0392b;">Declined by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#7a2e23;">{{ report.review_remarks or 'No reason was provided.' }}</p>
         </section>
         {% elif report.status in ('approved', 'fulfilled') %}
+        {# Green box: shown when the report was approved/fulfilled, with the food packs allocated. #}
         <section class="panel" style="border:1px solid #cdebd7; background:#f0faf4; margin-bottom:16px;">
             <div class="panel-header"><h3 style="color:#1e8449;">{{ 'Approved' if report.status == 'approved' else 'Fulfilled - delivery confirmed received' }} by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#1e5631;">
@@ -63,6 +68,7 @@
             </p>
         </section>
         {% elif report.status == 'verified' %}
+        {# Blue box: shown when the report was verified. #}
         <section class="panel" style="border:1px solid #cfe0f0; background:#f0f6fc; margin-bottom:16px;">
             <div class="panel-header"><h3 style="color:#2c5aa0;">Verified by {{ reviewer }}</h3></div>
             <p style="font-size:13px; color:#244b86;">
@@ -72,6 +78,7 @@
         </section>
         {% endif %}
 
+        {# Report Status Timeline: drafted, submitted, reviewed, delivered. #}
         <section class="panel">
             <div class="panel-header"><h3>Report Status Timeline</h3></div>
             <div class="status-timeline">
@@ -118,6 +125,7 @@
         </section>
 
         <div class="main-grid drv-grid" style="margin-top:16px;">
+            {# Report Information: event, date and time, who submitted it. #}
             <section class="panel">
                 <div class="panel-header"><h3>Report Information</h3></div>
                 <div class="review-row-list">
@@ -132,6 +140,7 @@
             </section>
 
             <div class="drv-side">
+                {# Barangay Assessment: affected families and people, damaged houses, flood level. #}
                 <section class="panel">
                     <div class="panel-header"><h3>Barangay Assessment</h3></div>
                     <div class="assess-pills assess-pills-2">
@@ -149,6 +158,7 @@
                     </div>
                 </section>
 
+                {# Relief Allocation: food packs requested and approved. #}
                 <section class="panel">
                     <div class="panel-header"><h3>Relief Allocation</h3></div>
                     <div class="info-grid">
@@ -163,6 +173,8 @@
         {% if report.affected_families_list %}
         {% set received_count = report.affected_families_list|selectattr('received')|list|length %}
         {% set packs_given_total = report.affected_families_list|sum(attribute='packs_given') %}
+        {# Distribution Tracking: each affected family, with 'Mark Received' / 'Undo' buttons #}
+        {# (available once the delivery has been confirmed). #}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Distribution Tracking</h3>
@@ -198,7 +210,6 @@
                     {% elif report.status == 'fulfilled' %}
                     <form method="POST" action="{{ url_for('barangay.mark_family_received', report_id=report.report_id, raf_id=rf.id) }}" class="fam-distribute-action" enctype="multipart/form-data">
                         <input type="number" name="packs_given" min="1" value="{{ rf.suggested_packs }}" class="fam-distribute-packs" title="Food packs given">
-                        {# Photo proof is required - Mark Received stays disabled until one is attached (also enforced in mark_family_received). #}
                         <label class="fam-proof-btn" title="Attach a photo of the hand-over (required)">
                             {{ icon('camera', 14) }} <span class="fam-proof-label">Add Photo *</span>
                             <input type="file" name="proof_photos" accept=".jpg,.jpeg,.png" multiple hidden
@@ -215,11 +226,13 @@
         </section>
         {% endif %}
 
+        {# Remarks written on the report. #}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header"><h3>Remarks</h3></div>
             <p style="font-size:13px;">{{ report.remarks or 'No remarks provided.' }}</p>
         </section>
 
+        {# Supporting Photos attached to the report. #}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header"><h3>Supporting Photos ({{ report.photo_paths.split(',')|length if report.photo_paths else 0 }})</h3></div>
             {% if report.photo_paths %}
@@ -240,8 +253,7 @@
 </div>
 
 {% if report.status == 'pending' %}
-<!-- Unsubmit confirmation - replaces the native confirm() dialog, same
-     pattern as damage_report.html's delete-draft modal. -->
+{# 'Unsubmit Report' confirmation pop-up (pulls the report back to draft). #}
 <div class="rd-modal-overlay" id="unsubmit-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">
@@ -265,14 +277,14 @@
     var modal = document.getElementById('unsubmit-modal');
     if (!form || !modal) return;
 
-    // Reparent to <body> so position:fixed pins to the viewport, not the
-    // animated .dashboard-main (same reasoning as relief_request_detail.js).
     if (modal.parentNode !== document.body) document.body.appendChild(modal);
 
+    // Opens the confirmation pop-up.
     function openModal() {
         modal.hidden = false;
         document.documentElement.classList.add('rd-modal-open');
     }
+    // Closes the confirmation pop-up.
     function closeModal() {
         modal.hidden = true;
         document.documentElement.classList.remove('rd-modal-open');

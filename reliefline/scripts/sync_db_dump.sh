@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
-# Writes the live reliefline_db (schema + data) to database/reliefline_db.sql.
-#
-# Run this after EVERY change to the database (seed scripts, schema changes,
-# model retrains that write model_metrics...) so the committed dump - which
-# .devcontainer/setup.sh loads to provision a fresh database - never drifts
-# from what you are actually running. The pre-commit hook does the same thing
-# at commit time as a safety net; this script is the explicit, loud version:
-# it exits non-zero if it cannot dump, and it never leaves a half-written file
-# (dumps to a temp file, then moves it into place only when mysqldump
-# succeeded and the output looks complete).
-#
-# Usage:  bash scripts/sync_db_dump.sh
+# Saves a fresh copy of the database into database/reliefline_db.sql (run after any database change).
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -63,7 +52,6 @@ TMP_FILE="$(mktemp)"
 trap 'rm -f "$TMP_FILE"' EXIT
 "$DUMP_BIN" -u "$DB_USER" ${DB_PASS:+-p"$DB_PASS"} -h "$DB_HOST" "$DB_NAME" > "$TMP_FILE"
 
-# mysqldump ends a complete dump with "-- Dump completed"; refuse anything else.
 if ! tail -n 3 "$TMP_FILE" | grep -q "Dump completed"; then
     echo "sync_db_dump: dump looks incomplete - leaving $DUMP_FILE untouched" >&2
     exit 1

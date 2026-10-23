@@ -1,3 +1,5 @@
+{# Page: /admin/profile-settings - System Admin's own Profile Settings. #}
+{# Change name and email, dark mode, and password. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -16,7 +18,6 @@
 
     <main class="dashboard-main">
 
-
         <section class="page-header">
             <div>
                 <h2>Profile Settings</h2>
@@ -27,6 +28,7 @@
         {% set name_parts = current_user.name.split() %}
         <div class="settings-grid">
 
+            {# Profile summary card: name, role and email. #}
             <section class="panel profile-summary-card">
                 <div class="profile-summary-avatar">{{ (name_parts[0][0] + name_parts[-1][0])|upper if name_parts|length > 1 else current_user.name[:2]|upper }}</div>
                 <h3>{{ current_user.name }}</h3>
@@ -45,6 +47,7 @@
             </section>
 
             <div class="settings-forms">
+                {# Account Information form: name and email. #}
                 <section class="panel">
                     <div class="panel-header">
                         <h3>Account Information</h3>
@@ -68,13 +71,15 @@
                         </form>
                         <aside class="settings-aside">
                             <h4>About your details</h4>
-                            <p>Your name and email identify you across the audit log and every administrative action you take, and are used for system notifications. Keep them current.</p>
+                            <p>Your name identifies you across the audit log and every administrative action you take, and your email address is the one you sign in with. Keep them current.</p>
                         </aside>
                     </div>
                 </section>
 
+                {# Dark mode switch. #}
                 {% include "_appearance_panel.html" %}
 
+                {# Change Password form: current password, new password, confirm. #}
                 <section class="panel">
                     <div class="panel-header">
                         <h3>Change Password</h3>

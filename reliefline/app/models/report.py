@@ -1,5 +1,9 @@
+# Database table: history of generated reports.
+
 from app.extensions import db
 
+# Database table 'report_logs': history of generated PDF/Excel reports
+# (type, format, filters used, who made it), so they can be downloaded again.
 class ReportLog(db.Model):
     __tablename__ = "report_logs"
 

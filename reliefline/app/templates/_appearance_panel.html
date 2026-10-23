@@ -1,7 +1,7 @@
+{# Shared piece: the 'Appearance' box on every Profile Settings page. #}
+{# It has the Dark Mode on/off switch (the choice is remembered in this browser). #}
 {% from "_macros.html" import icon with context %}
-{# Profile Settings - Appearance (every role). The Dark Mode switch is just a
-   [data-theme-toggle] button: base.html flips html[data-theme], saves it in
-   this browser (localStorage) and keeps aria-checked in sync. #}
+{# Appearance panel: the dark mode switch on the left, a short explanation on the right. #}
 <section class="panel">
     <div class="panel-header">
         <h3>Appearance</h3>

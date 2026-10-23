@@ -1,3 +1,5 @@
+{# Page: /barangay/relief-monitoring - Relief Monitoring (barangay user). #}
+{# Track food pack deliveries coming to the barangay, and confirm receipt when they arrive. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, validation_attachments with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
@@ -21,7 +23,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title. #}
         <section class="page-header">
             <div>
                 <h2>Relief Monitoring</h2>
@@ -29,6 +31,7 @@
             </div>
         </section>
 
+        {# 4 number cards: total deliveries, in transit, received, total packs. #}
         <section class="stat-cards stat-cards-4">
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('truck', 18, '#3867d6') }}</div>
@@ -66,6 +69,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if search_query %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
 
+        {# Filters: search, status and date range. #}
         {% call filter_panel(chips, url_for(EP, status='all'), summary=(delivery_rows|length) ~ ' deliver' ~ ('ies' if delivery_rows|length != 1 else 'y')) %}
             {{ fp_search('q', search_query, 'Search delivery or warehouse...') }}
             {% call fp_select('Status', 'status', 'check-circle') %}
@@ -78,6 +82,8 @@
         {% endcall %}
 
         {% if delivery_rows %}
+        {# One card per delivery: progress steps, details (packs, from which warehouse, dates), #}
+        {# and the 'View Delivery Receipt' and 'Confirm Relief Receipt' buttons. #}
         {% for row in delivery_rows %}
         {% set d = row.distribution %}
         {% set confirmed = d.status == 'confirmed' %}
@@ -113,13 +119,6 @@
                 {% if not loop.last %}<div class="dd-step-line {{ 'dd-step-line-done' if loop.index0 < row.step_index }}"></div>{% endif %}
                 {% endfor %}
             </div>
-
-            {% if row.is_delayed %}
-            <div class="stock-warning">
-                {{ icon('alert-triangle', 14, '#c0392b') }}
-                <span>This delivery is delayed. Contact {{ row.fulfilling_office.office_name if row.fulfilling_office else 'the dispatching office' }} for an updated ETA.</span>
-            </div>
-            {% endif %}
 
             <div class="dm-delivery-info-grid">
                 <div><span>Food Packs {{ 'Released' if confirmed }}</span><strong>{{ "{:,}".format(d.quantity_released) }}</strong></div>
@@ -163,6 +162,8 @@
     </main>
 </div>
 
+{# One 'Confirm Receipt' pop-up per delivery: who received it, how many arrived, #}
+{# the condition (complete, partial, damaged) and optional photos. #}
 {% for row in delivery_rows %}
 {% if row.can_confirm %}
 {% set d = row.distribution %}
@@ -176,8 +177,6 @@
             Confirm that Brgy. {{ barangay.barangay_name }} received {{ "{:,}".format(d.quantity_released) }} food packs
             from {{ row.fulfilling_office.office_name if row.fulfilling_office else 'the dispatching office' }}.
         </p>
-        {# Delivery receipt summary, collapsed by default so the form stays short -
-           open it to check what was dispatched before confirming. #}
         <details class="confirm-receipt-summary">
             <summary>{{ icon('file-text', 14) }} View delivery receipt <span class="confirm-receipt-chevron">{{ icon('chevron-down', 14) }}</span></summary>
             <div class="confirm-receipt-rows">
@@ -201,7 +200,6 @@
                 <option value="damaged">Damaged - some packs arrived damaged</option>
             </select>
 
-            {# Complete: nothing to enter - all released packs received, none damaged. #}
             <div class="confirm-qty confirm-qty-partial" data-dist="{{ d.distribution_id }}" hidden>
                 <label for="qty-received-{{ d.distribution_id }}">Food Packs Received</label>
                 <input type="number" id="qty-received-{{ d.distribution_id }}" name="quantity_received"
@@ -249,10 +247,9 @@
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
 <script>
 (function () {
-    // Condition selector reveals the matching quantity inputs - scoped per
-    // modal via data-dist since a barangay can have several confirm modals on
-    // this page. "Complete" needs no input (all released packs, none damaged).
     document.querySelectorAll('.confirm-condition').forEach(function (sel) {
+        // Shows the quantity fields that match the chosen delivery condition
+        // (how many arrived for 'Partial', how many were damaged for 'Damaged').
         function sync() {
             var id = sel.dataset.dist;
             var partial = document.querySelector('.confirm-qty-partial[data-dist="' + id + '"]');
@@ -265,7 +262,6 @@
                 damaged.hidden = sel.value !== 'damaged';
                 damaged.querySelectorAll('input').forEach(function (i) { i.required = !damaged.hidden; });
             }
-            // Photo proof is required for partial/damaged, optional for complete.
             var photoRequired = sel.value === 'partial' || sel.value === 'damaged';
             var tag = document.querySelector('.confirm-photo-tag[data-dist="' + id + '"]');
             var hint = document.querySelector('.confirm-photo-hint[data-dist="' + id + '"]');
@@ -281,8 +277,6 @@
         sync();
     });
 
-    // The photo input lives in a hidden dropzone, so native `required` can't
-    // surface - guard on submit instead.
     document.querySelectorAll('.confirm-receipt-form').forEach(function (form) {
         form.addEventListener('submit', function (e) {
             var id = form.dataset.dist;
@@ -297,8 +291,6 @@
         });
     });
 
-    // Same "Tap to upload" -> "N file(s) selected" label swap as the Damage
-    // Report wizard's upload-dropzone (barangay/damage_report_form.html).
     document.querySelectorAll('.upload-dropzone input[type="file"]').forEach(function (input) {
         input.addEventListener('change', function () {
             var label = input.closest('.upload-dropzone').querySelector('strong');

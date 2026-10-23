@@ -1,3 +1,5 @@
+{# Page: /pswdo/warehouse-inventory/warehouses - Warehouses (PSWDO). #}
+{# One card per warehouse with its stock, % full and links. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -16,7 +18,6 @@
 
     <main class="dashboard-main">
 
-
         <section class="page-header">
             <div>
                 <div class="wh-title-row">
@@ -27,6 +28,7 @@
             </div>
         </section>
 
+        {# Warehouse cards: name, location, food packs, fill level, and View / Inventory buttons. #}
         <div class="wh-card-grid">
             {% for w in warehouses %}
             <div class="wh-warehouse-card">

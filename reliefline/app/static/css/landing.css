@@ -1,3 +1,6 @@
+/* Styles for the public home page (/): top menu, hero section with the province map, */
+/* feature cards, about, 3-level architecture, scrolling features, contact cards, footer and pop-ups. */
+/* Colors used on the home page. */
 :root {
     --lp-navy: #5347ce;
     --lp-navy-light: #4436b4;
@@ -10,7 +13,7 @@
 
 body { overflow-x: hidden; }
 
-/* ---- Nav ---- */
+/* Top menu: gets a shadow after scrolling; logo and links. */
 .lp-nav {
     position: sticky;
     top: 0;
@@ -46,6 +49,7 @@ body { overflow-x: hidden; }
 .lp-brand-text strong { font-size: 16px; color: var(--lp-navy); }
 .lp-brand-text span { font-size: 11.5px; color: var(--lp-text-muted); }
 
+/* Menu button (phones) and menu links. */
 .lp-nav-toggle {
     display: none;
     background: none;
@@ -80,8 +84,6 @@ body { overflow-x: hidden; }
 
 .lp-nav-links a:hover::after { transform: scaleX(1); }
 
-/* "Log In" - the nav's one call to action, styled as a solid button rather
-   than a plain link (and no underline-grow on hover). */
 .lp-nav-login {
     display: inline-flex;
     align-items: center;
@@ -92,12 +94,10 @@ body { overflow-x: hidden; }
     font-weight: 600;
     transition: background 0.2s ease;
 }
-/* Needs to out-specify `.lp-nav-links a:hover` above, which would otherwise
-   turn the label blue-on-blue (unreadable) on hover. */
 .lp-nav-links a.lp-nav-login:hover { background: var(--lp-blue-light); color: #fff; }
 .lp-nav-login::after { display: none; }
 
-/* ---- Hero ---- */
+/* Smooth scrolling, and fade-in animations. */
 html { scroll-behavior: smooth; }
 
 @keyframes lp-fade-up {
@@ -110,15 +110,13 @@ html { scroll-behavior: smooth; }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-
+/* Hero (first screen): background picture with slow zoom, overlay and gentle wave. */
 .lp-hero {
     position: relative;
-    overflow: hidden;                 /* clip the slowly zooming photo */
+    overflow: hidden;
     padding: 64px 28px 128px;
 }
 
-/* Capitol backdrop on its own layer: a single, gentle zoom-in on load that
-   eases to a fixed limit and stops (no endless loop). */
 @keyframes lp-hero-zoom {
     from { transform: scale(1); }
     to   { transform: scale(1.07); }
@@ -129,18 +127,14 @@ html { scroll-behavior: smooth; }
     inset: 0;
     z-index: 0;
     background: url('/static/img/capitol-bg.jpg') center/cover no-repeat;
-    transform-origin: 62% 45%;        /* keep the capitol facade in frame as it grows */
-    transform: scale(1.07);           /* resting state = the zoom's end point */
+    transform-origin: 62% 45%;
+    transform: scale(1.07);
     animation: lp-hero-zoom 7s ease-out both;
     will-change: transform;
 }
 .lp-hero-overlay { z-index: 1; }
 .lp-hero-inner { z-index: 2; }
 
-/* Wave divider where the hero meets the next section - a white curve
-   cut out of the hero's bottom edge so the photo flows into the page
-   instead of ending on a hard line. Two tileable wave layers drift
-   sideways at different speeds for a gentle rolling motion. */
 @keyframes lp-wave-drift {
     from { background-position: 0 bottom, 0 bottom; }
     to   { background-position: 640px bottom, -880px bottom; }
@@ -163,9 +157,6 @@ html { scroll-behavior: smooth; }
     animation: lp-wave-drift 14s linear infinite;
 }
 
-/* Strong, soft wash - heaviest over the left copy and the lower edge,
-   lighter toward the upper-right so the building/tree stay faintly
-   recognizable without competing with the text or the login card. */
 .lp-hero-overlay {
     position: absolute;
     inset: 0;
@@ -187,14 +178,6 @@ html { scroll-behavior: smooth; }
 
 .lp-hero-copy { text-align: left; }
 
-/* Coverage map, right column of the hero - a single static, pre-projected
-   SVG (built once from the same PSA/PSGC boundary data as the old Leaflet
-   version, see landing.html's inline <svg>) instead of a JS map library.
-   No runtime library, no fetch, no pan/zoom/fitBounds/resize handling to
-   fight with for a graphic that never moves - the viewBox scales natively
-   with the column's own width at any size, which is also what makes the
-   whole .lp-svgmap-* block below able to skip every one of the container-
-   query/clip-path/overflow workarounds the Leaflet version needed. */
 .lp-hero-map {
     position: relative;
     animation: lp-fade-in 0.6s ease-out 0.15s both;
@@ -202,6 +185,7 @@ html { scroll-behavior: smooth; }
             drop-shadow(0 5px 10px rgba(28, 30, 58, 0.12));
 }
 
+/* The province map drawing in the hero (glowing outlines and labels). */
 .lp-svgmap {
     display: block;
     width: 100%;
@@ -209,13 +193,6 @@ html { scroll-behavior: smooth; }
     overflow: visible;
 }
 
-/* Layer order: a soft blurred copy of the outline first (the "glow" behind
-   the shape, separating it from the busy Capitol photo), then white
-   casing for a crisp edge, then the base gradient fill, then each
-   municipality's own tinted overlay (semi-transparent - the gradient
-   still shows through, so this reads as depth/texture rather than a flat
-   choropleth), then a purple line on top to re-crisp the silhouette over
-   the mesh's own edge segments, then the province label, then markers. */
 .lp-svgmap-glow { fill: none; stroke: #8f88d9; stroke-width: 6; opacity: 0.35; }
 .lp-svgmap-casing { fill: none; stroke: #ffffff; stroke-width: 4; stroke-linejoin: round; }
 .lp-svgmap-fill { fill: url(#lp-map-grad); stroke: none; }
@@ -230,10 +207,6 @@ html { scroll-behavior: smooth; }
 
 .lp-svgmap-outline { fill: none; stroke: #6c5fd6; stroke-width: 1.4; opacity: 0.85; }
 
-/* SVG text has no text-shadow - paint-order lets the stroke (the halo)
-   render behind the fill instead of on top of/outside it, which is what
-   actually gives "PANGASINAN" a clean white halo against the mesh lines
-   crossing behind it rather than a blurry, uneven glow. */
 .lp-svgmap-label {
     font-size: 16px;
     font-weight: 700;
@@ -245,11 +218,6 @@ html { scroll-behavior: smooth; }
     paint-order: stroke;
 }
 
-/* Every municipality name - including the 5 that used to get their own
-   pin/chip treatment (Urdaneta City, Lingayen, Dagupan City, Alaminos
-   City, San Carlos City) - now shares this one plain white-halo-stroke
-   style, at a density where overlap between neighbouring names is
-   expected/accepted rather than avoided. */
 .lp-svgmap-muni-label {
     font-size: 8.5px;
     font-weight: 600;
@@ -260,11 +228,13 @@ html { scroll-behavior: smooth; }
     paint-order: stroke;
 }
 
+/* On phones: smaller map labels. */
 @media (max-width: 620px) {
     .lp-svgmap-label { font-size: 14px; letter-spacing: 1.5px; }
     .lp-svgmap-muni-label { font-size: 7px; }
 }
 
+/* Hero text: title, description and buttons. */
 .lp-hero-lockup {
     display: flex;
     align-items: center;
@@ -304,6 +274,7 @@ html { scroll-behavior: smooth; }
     flex-wrap: wrap;
 }
 
+/* Home page buttons. */
 .lp-btn {
     display: inline-flex;
     align-items: center;
@@ -324,17 +295,10 @@ html { scroll-behavior: smooth; }
 .lp-btn-secondary { background: #eef1f6; color: #333; }
 .lp-btn-secondary:hover { background: #e2e6ee; }
 
-/* ---- Shared section layout ---- */
-/* overflow-x: clip - decorative layers like .lp-about-showcase::before
-   (inset -9% past the column) otherwise poked ~50px past the viewport on
-   1024-1280px screens and gave the whole page a sideways scroll. clip (not
-   hidden) leaves the vertical bleed and position: sticky untouched. */
+/* Page sections and their small colored titles. */
 .lp-section { padding: 80px 28px; overflow-x: clip; }
 .lp-section-alt { background: var(--lp-bg-alt); }
 
-/* Three-Level Architecture: a relief-operations photo behind the cards,
-   washed out under a white-to-violet veil so the cards and copy stay easy
-   to read. */
 .lp-section-arch {
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.93) 0%, rgba(247, 245, 255, 0.86) 50%, rgba(255, 255, 255, 0.93) 100%),
@@ -366,7 +330,7 @@ html { scroll-behavior: smooth; }
 .lp-eyebrow-green { background: #e8faf0; color: #1e8449; }
 .lp-eyebrow-orange { background: #fff1e6; color: #c8621a; }
 
-/* ---- Feature cards ---- */
+/* Feature cards grid: icon, title, text, hover lift. */
 .lp-card-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -400,15 +364,13 @@ html { scroll-behavior: smooth; }
 }
 .lp-feature-icon svg { transition: stroke 0.25s ease; }
 
-/* icon recolours on card hover */
 .lp-feature-card:hover .lp-feature-icon { background: #5347ce; }
 .lp-feature-card:hover .lp-feature-icon svg { stroke: #fff; }
 
 .lp-feature-card h3 { font-size: 15px; color: var(--lp-navy); margin-bottom: 8px; }
 .lp-feature-card p { font-size: 13.5px; color: var(--lp-text-muted); line-height: 1.6; }
 
-
-/* ---- About + architecture ---- */
+/* About section: text, check list and the device picture with floating chips. */
 .lp-about-grid {
     display: grid;
     grid-template-columns: 1fr 1.05fr;
@@ -425,26 +387,19 @@ html { scroll-behavior: smooth; }
 
 .lp-about-cta { margin-top: 24px; }
 
-/* --- About showcase: laptop mockup + floating capability chips --- */
 .lp-about-showcase {
     position: relative;
     padding: 48px 30px 40px;
 }
-/* A few distinct, well-separated soft "bubble" blobs + small crisp accent
-   circles. Each blob fades fully to transparent at its own edge and there is
-   clear space between them, so nothing ever forms a rectangular seam. */
 .lp-about-showcase::before {
     content: "";
     position: absolute;
     inset: -16% -9% -9%;
     z-index: 0;
     pointer-events: none;
-    /* every circle sits fully inside the viewBox with margin, so each fade
-       finishes before the layer edge - nothing is ever clipped flat */
     background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 640'%3E%3Cg fill='%23dbe6f7' fill-opacity='0.55'%3E%3Ccircle cx='690' cy='205' r='178'/%3E%3Ccircle cx='178' cy='412' r='140'/%3E%3Ccircle cx='778' cy='452' r='82'/%3E%3Ccircle cx='204' cy='150' r='78'/%3E%3C/g%3E%3Cg fill='%23a7c0e8'%3E%3Ccircle cx='188' cy='320' r='14'/%3E%3Ccircle cx='236' cy='392' r='6'/%3E%3Ccircle cx='742' cy='268' r='16'/%3E%3Ccircle cx='806' cy='300' r='6'/%3E%3C/g%3E%3C/svg%3E");
 }
 
-/* Laptop mockup image (transparent PNG render) */
 .lp-about-device {
     position: relative;
     z-index: 1;
@@ -453,7 +408,6 @@ html { scroll-behavior: smooth; }
     height: auto;
     filter: drop-shadow(0 30px 46px rgba(28, 30, 58, 0.16)) drop-shadow(0 8px 18px rgba(83, 71, 206, 0.12));
     transform-origin: 50% 70%;
-    /* held hidden until the showcase scrolls into view, then pops in */
     animation: lp-device-pop 0.62s cubic-bezier(0.34, 1.45, 0.6, 1) both;
     animation-play-state: paused;
 }
@@ -478,9 +432,6 @@ html { scroll-behavior: smooth; }
     line-height: 1.25;
     color: var(--lp-text-muted);
     white-space: nowrap;
-    /* all four pop in together, hold, then disappear together - loop.
-       tiny per-chip offsets keep it from looking too mechanical.
-       Held at frame 0 (hidden) until the showcase scrolls into view. */
     animation: lp-chip-pop 6.5s ease-in-out infinite both;
     animation-play-state: paused;
 }
@@ -499,8 +450,6 @@ html { scroll-behavior: smooth; }
 .lp-chip-ic-violet { background: #f1ecfb; }
 .lp-chip-ic-green  { background: #e6f6ec; }
 
-/* near-simultaneous - only a few tenths of a second apart.
-   --cs gives each chip a slightly different resting size */
 .lp-chip-tl { top: 10px; left: -16px; animation-delay: 0s;    --cs: 1.08; }
 .lp-chip-tr { top: 30px; right: -6px; animation-delay: 0.18s; --cs: 0.9; }
 .lp-chip-bl { bottom: 74px; left: -22px; animation-delay: 0.32s; --cs: 1.16; }
@@ -515,10 +464,7 @@ html { scroll-behavior: smooth; }
     100% { opacity: 0; transform: scale(calc(var(--cs, 1) * 0.4)); }
 }
 
-/* Architecture: ONE continuous purple connector that flows past all three
-   levels - over 01, a wide sweep to 02, a wide sweep to 03. It draws itself
-   in step with scroll (JS drives stroke-dashoffset) and each card is
-   revealed as the line reaches it. */
+/* Three-Level Architecture: the 3 cards joined by an animated line. */
 .lp-architecture {
     position: relative;
     max-width: 900px;
@@ -535,7 +481,6 @@ html { scroll-behavior: smooth; }
     margin-bottom: 14px;
 }
 
-/* the connector */
 .lp-arch-line {
     position: absolute;
     inset: 0;
@@ -553,13 +498,9 @@ html { scroll-behavior: smooth; }
     stroke-linejoin: round;
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    /* eases scroll updates so it glides rather than snapping frame-to-frame */
     transition: stroke-dashoffset 0.25s ease-out;
 }
 
-/* Two-stage reveal: the opaque card BOX fades in first (`.box-in`, ahead of
-   the drawing line, so it always masks the connector that passes behind it),
-   then the card's CONTENTS slide in as the line reaches it (`.is-drawn`). */
 .lp-arch-card {
     position: relative;
     z-index: 1;
@@ -623,7 +564,6 @@ html { scroll-behavior: smooth; }
 .lp-arch-card li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #4b5563; }
 .lp-arch-card li svg { flex-shrink: 0; }
 
-/* per-level gradient accents (number text + icon tile) */
 .lp-arch-barangay { background: #fcfbff; }
 .lp-arch-barangay .lp-arch-num,
 .lp-arch-barangay .lp-arch-ic { background-image: linear-gradient(150deg, #9a6ff0, #6d3fc4); }
@@ -632,12 +572,11 @@ html { scroll-behavior: smooth; }
 .lp-arch-city .lp-arch-num,
 .lp-arch-city .lp-arch-ic { background-image: linear-gradient(150deg, #6f74f2, #4133c0); }
 
-/* Same violet as the Barangay card. */
 .lp-arch-provincial { background: #fcfbff; }
 .lp-arch-provincial .lp-arch-num,
 .lp-arch-provincial .lp-arch-ic { background-image: linear-gradient(150deg, #9a6ff0, #6d3fc4); }
 
-/* ---- More Features (marquee) ---- */
+/* 'More Features' strip that scrolls by itself. */
 .lp-more {
     background: linear-gradient(135deg, #5347ce 0%, #4436b4 100%);
     padding: 58px 0 62px;
@@ -654,7 +593,7 @@ html { scroll-behavior: smooth; }
     display: flex;
     overflow: hidden;
     cursor: grab;
-    touch-action: pan-y;          /* let the page scroll vertically; we handle horizontal drags */
+    touch-action: pan-y;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
     mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
 }
@@ -686,6 +625,7 @@ html { scroll-behavior: smooth; }
 }
 .lp-more-pill svg { flex-shrink: 0; }
 
+/* No auto-scroll if the device asks for less motion. */
 @media (prefers-reduced-motion: reduce) {
     .lp-more-marquee { -webkit-mask-image: none; mask-image: none; }
     .lp-more-track {
@@ -697,11 +637,10 @@ html { scroll-behavior: smooth; }
         padding: 0 20px;
         row-gap: 12px;
     }
-    /* the track holds the list twice for a seamless scroll - show it once here */
     .lp-more-track .lp-more-pill:nth-child(n+16) { display: none; }
 }
 
-/* ---- Contact ---- */
+/* Contact cards: email, phone, address, office hours. */
 .lp-contact-intro {
     text-align: center;
     max-width: 620px;
@@ -735,6 +674,7 @@ html { scroll-behavior: smooth; }
 .lp-contact-card h4 { font-size: 14px; color: var(--lp-navy); margin-bottom: 6px; }
 .lp-contact-card span { font-size: 13px; color: var(--lp-text-muted); }
 
+/* 'Emergency / Disaster Concerns' note (ReliefLine is not an emergency hotline). */
 .lp-emergency-note {
     margin-top: 26px;
     background: #fdfaf9;
@@ -745,7 +685,6 @@ html { scroll-behavior: smooth; }
     display: flex;
     align-items: flex-start;
     gap: 14px;
-    /* Full width of the contact cards row above it. */
     max-width: none;
     text-align: left;
 }
@@ -773,7 +712,7 @@ html { scroll-behavior: smooth; }
 
 .lp-emergency-text span { font-size: 13.5px; color: #333; line-height: 1.6; }
 
-/* ---- Footer ---- */
+/* Footer: brand and links. */
 .lp-footer { background: var(--lp-navy); color: white; }
 
 .lp-footer-inner {
@@ -819,7 +758,7 @@ html { scroll-behavior: smooth; }
 .lp-status { display: flex; align-items: center; gap: 6px; }
 .lp-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #27ae60; }
 
-/* ---- Scroll-reveal ---- */
+/* Items fade in as you scroll to them (one after another). */
 .lp-reveal {
     opacity: 0;
     transform: translateY(16px);
@@ -841,10 +780,7 @@ html { scroll-behavior: smooth; }
 .lp-contact-grid .lp-reveal:nth-child(3) { transition-delay: 0.16s; }
 .lp-contact-grid .lp-reveal:nth-child(4) { transition-delay: 0.24s; }
 
-
-/* Forgot Password modal - overlays the landing page itself (dims it, same
-   idea as .rd-modal-overlay elsewhere in the app) instead of navigating to
-   a separate standalone page. */
+/* Pop-ups: Privacy Notice, Terms of Use, Contact Support. */
 .auth-modal-overlay {
     position: fixed;
     inset: 0;
@@ -860,13 +796,9 @@ html { scroll-behavior: smooth; }
 
 .auth-modal-card {
     position: relative;
-    /* @keyframes modalPopIn lives in base.css, loaded on every page. */
     animation: modalPopIn 0.18s ease-out both;
 }
 
-/* Privacy Notice / Terms of Use / Contact Support run longer than a login
-   form, so unlike the other .auth-modal-card uses, this one needs its own
-   scroll region instead of just growing past the viewport. */
 .static-page-modal-card {
     max-height: 85vh;
     overflow-y: auto;
@@ -881,7 +813,7 @@ html { scroll-behavior: smooth; }
     color: var(--text-muted);
 }
 
-/* Motion-sensitive users get the same content with no animation. */
+/* No animations if the device asks for less motion. */
 @media (prefers-reduced-motion: reduce) {
     .lp-hero-lockup, .lp-hero-desc, .lp-hero-actions,
     .lp-hero-map, .lp-hero::after, .lp-hero::before,
@@ -907,7 +839,7 @@ html { scroll-behavior: smooth; }
     html { scroll-behavior: auto; }
 }
 
-/* ---- Responsive ---- */
+/* On smaller screens: stack the hero text above the map. */
 @media (max-width: 980px) {
     .lp-hero-split {
         grid-template-columns: 1fr;
@@ -921,6 +853,7 @@ html { scroll-behavior: smooth; }
     .lp-hero-map { width: 100%; max-width: 460px; }
 }
 
+/* On tablets: fewer cards per row, footer and architecture stacked. */
 @media (max-width: 900px) {
     .lp-card-grid { grid-template-columns: repeat(2, 1fr); }
     .lp-about-grid { grid-template-columns: 1fr; gap: 40px; }
@@ -928,18 +861,11 @@ html { scroll-behavior: smooth; }
     .lp-footer-inner { grid-template-columns: 1fr 1fr; }
     .lp-footer-brand { grid-column: 1 / -1; }
 
-    /* Keep the exact desktop layout (laptop + absolutely-positioned,
-       animated chips) rather than swapping to a stacked grid - the chips'
-       offsets/sizes are all fixed px tuned for the desktop-width image, so
-       `zoom` shrinks the whole showcase (image, chip positions, chip text)
-       together as one rigid unit instead of letting them drift apart. */
     .lp-about-showcase {
         max-width: 460px;
         margin: 0 auto;
     }
 
-    /* not enough side room for the wide connector - hide it, keep the plain
-       per-card reveal (JS falls back automatically). */
     .lp-architecture { max-width: 540px; }
     .lp-arch-line { display: none; }
 }
@@ -952,6 +878,7 @@ html { scroll-behavior: smooth; }
     .lp-about-showcase { zoom: 0.62; }
 }
 
+/* On phones: menu becomes a drop-down, smaller hero and sections. */
 @media (max-width: 720px) {
     .lp-nav-toggle { display: flex; }
     .lp-nav-inner { padding: 9px 16px; gap: 10px; }
@@ -986,6 +913,7 @@ html { scroll-behavior: smooth; }
     .lp-hero-map { width: 100%; max-width: 380px; overflow: hidden; border-radius: 8px; }
 }
 
+/* On small phones: one card per row, full-width buttons, smaller text. */
 @media (max-width: 560px) {
     .lp-card-grid { grid-template-columns: 1fr; }
     .lp-contact-grid { grid-template-columns: 1fr; }
@@ -1014,6 +942,7 @@ html { scroll-behavior: smooth; }
     .lp-more-track { gap: 10px; }
 }
 
+/* On very small phones: smaller logo text and title. */
 @media (max-width: 400px) {
     .lp-brand-text span { display: none; }
     .lp-brand-text strong { font-size: 13.5px; }

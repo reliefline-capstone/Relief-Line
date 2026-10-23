@@ -1,5 +1,9 @@
+# Database table: barangays.
+
 from app.extensions import db
 
+# Database table 'barangays': every barangay in the 3 target municipalities,
+# with its population and number of households (families).
 class Barangay(db.Model):
     __tablename__ = "barangays"
 

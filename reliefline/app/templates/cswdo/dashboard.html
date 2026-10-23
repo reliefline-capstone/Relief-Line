@@ -1,3 +1,5 @@
+{# Page: /cswdo/dashboard - CSWDO/MSWDO dashboard (first page after login). #}
+{# The municipality's situation: event, map, barangay reports, warehouse stock and recent activity. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, prediction_disclaimer with context %}
 
@@ -6,9 +8,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_version('css/dashboard.css') }}">
-<!-- .rd-modal/.rd-modal-overlay box styling (white card, centering, header,
-     form fields) lives here despite the filename - needed for the Declare/
-     End Event modals above (same file pswdo/dashboard.html loads). -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
@@ -18,11 +17,10 @@
     {% set active_page = 'dashboard' %}
     {% include "cswdo/_sidebar.html" %}
 
-    <!-- Main content -->
     <main class="dashboard-main">
 
-
-        <!-- Greeting banner -->
+        {# Greeting banner: 'Good morning/afternoon', live clock, active event, weather widget, #}
+        {# and the Declare / End Event buttons. #}
         <section class="greeting-banner">
             <div class="greeting-main">
                 <h2>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }}, {{ current_user.name }}</h2>
@@ -50,10 +48,6 @@
                     <span class="banner-event-badge-label">PSWDO also declared: {{ province_event.event_name }}</span>
                 </div>
                 {% endif %}
-                <!-- Declare/End Disaster Event - moved here (from the now-
-                     removed Weather & Typhoon Watch panel) since that panel's
-                     own live weather/forecast only duplicated this same
-                     banner's weather chip and 4-day forecast box above. -->
                 {% if own_local_event %}
                 <button type="button" class="banner-event-action" data-open-modal="end-event-modal">{{ icon('check-circle', 14) }} End Disaster Event</button>
                 {% else %}
@@ -62,7 +56,8 @@
             </div>
         </section>
 
-        <!-- Stat cards -->
+        {# 6 number cards: affected barangays, affected families, municipal food packs, #}
+        {# pending stock requests, incoming deliveries, pending barangay reports. #}
         <section class="stat-cards">
             <a class="stat-card" href="{{ url_for('cswdo.gis_map') }}">
                 <div class="stat-icon orange">{{ icon('map-pin', 18, '#e67e22') }}</div>
@@ -96,23 +91,11 @@
             </a>
         </section>
 
-        <!-- The Weather & Typhoon Watch panel that used to live here (live,
-             via app/utils/weather.py) was removed - its per-city weather and
-             4-day forecast only duplicated the greeting banner's own weather
-             chip and forecast box above. Its Declare/End Disaster Event
-             action moved into that banner instead (see banner-aside above)
-             so removing the panel didn't also remove the only way to
-             declare/end a local event. -->
         {% if own_local_event %}
         <form method="POST" action="{{ url_for('cswdo.end_disaster_event', event_id=own_local_event.event_id) }}" id="end-event-form" hidden></form>
         {% endif %}
 
-        <!-- Declare Local Disaster Event modal - see
-             app.routes.cswdo.declare_disaster_event. Unlike PSWDO's version,
-             this only takes effect for {{ lgu or 'your municipality' }} and
-             lets you narrow it to specific barangays (all checked by
-             default). Blocked while a province-wide or your own local event
-             is already active. -->
+        {# 'Declare Local Disaster Event' pop-up: event name, categories, and which barangays it covers. #}
         <div class="rd-modal-overlay" id="declare-event-modal" hidden>
             <div class="rd-modal rd-modal-declare">
                 <div class="rd-modal-header">
@@ -158,7 +141,7 @@
             </div>
         </div>
 
-        <!-- End Disaster Event confirmation modal - see app.routes.cswdo.end_disaster_event. -->
+        {# 'End Disaster Event' confirmation pop-up. #}
         <div class="rd-modal-overlay" id="end-event-modal" hidden>
             <div class="rd-modal">
                 <div class="rd-modal-header">
@@ -173,9 +156,9 @@
             </div>
         </div>
 
-        <!-- GIS Map + Relief Request Status -->
         <div class="main-grid dash-grid-even">
 
+            {# Small GIS map of the municipality's barangays, colored by need. #}
             <section class="panel map-panel">
                 <div class="panel-header">
                     <h3>GIS Map - {{ lgu or 'Your Municipality' }}</h3>
@@ -211,6 +194,7 @@
                 </div>
             </section>
 
+            {# Barangay Reports waiting for review, with quick links. #}
             <section class="panel requests-panel">
                 <div class="panel-header">
                     <h3>Barangay Reports</h3>
@@ -248,9 +232,9 @@
 
         </div>
 
-        <!-- Municipal Inventory + Recent Activities -->
         <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
+            {# Municipal Warehouse: food packs and other items in stock, with health status. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Municipal Warehouse</h3>
@@ -282,6 +266,7 @@
                 {% endif %}
             </section>
 
+            {# Recent Activities in the municipality. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Recent Activities</h3>
@@ -313,9 +298,6 @@ window.RELIEFLINE_GIS_MAP_URL = "{{ url_for('cswdo.gis_map') }}";
 window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
 </script>
 <script src="{{ url_for('static', filename='js/dashboard_map.js') }}?v={{ asset_version('js/dashboard_map.js') }}"></script>
-<!-- Generic [data-close-modal]/.rd-modal-overlay wiring (despite the filename,
-     this is the shared modal utility most dashboard pages load) - needed for
-     the Declare/End Event modals above. -->
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 <script src="{{ url_for('static', filename='js/weather_widget.js') }}?v={{ asset_version('js/weather_widget.js') }}"></script>
 <script>
@@ -328,8 +310,10 @@ window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
     var months = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December'];
 
+    // Adds a leading zero (e.g. 7 -> 07).
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
+    // Updates the live clock on the dashboard every second.
     function tick() {
         var now = new Date();
         var hours24 = now.getHours();
@@ -343,25 +327,18 @@ window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
     setInterval(tick, 1000);
 })();
 
-// Select All / Unselect All toggle for the Declare Local Disaster Event
-// modal's barangay checklist - one button whose label always names the
-// action it's about to take: "Unselect All" while every box is still
-// checked (the starting state), flipping to "Select All" the moment any
-// box gets unticked (by this button or by hand), and back again once every
-// box is checked again - so it also self-corrects if the barangay list
-// gets hand-picked back up to all-checked one by one.
 (function () {
     var toggleBtn = document.getElementById('declare-select-all-toggle');
-    // The barangay list specifically - the Event Category chips above it use
-    // the same .declare-barangay-checklist styling.
     var checklist = document.getElementById('declare-barangay-list');
     if (!toggleBtn || !checklist) return;
     var checkboxes = checklist.querySelectorAll('input[type="checkbox"]');
 
+    // True if all barangays are ticked in the Declare Event form.
     function allChecked() {
         return Array.prototype.every.call(checkboxes, function (cb) { return cb.checked; });
     }
 
+    // Switches the button between 'Select All' and 'Unselect All'.
     function syncLabel() {
         toggleBtn.textContent = allChecked() ? 'Unselect All' : 'Select All';
     }

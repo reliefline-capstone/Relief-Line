@@ -1,3 +1,5 @@
+{# Page: /pswdo/dashboard - PSWDO dashboard (first page after login). #}
+{# Province-wide view: events, map, pending stock requests, warehouse status, recommendations and recent activity. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, prediction_disclaimer with context %}
 
@@ -15,11 +17,10 @@
     {% set active_page = 'dashboard' %}
     {% include "pswdo/_sidebar.html" %}
 
-    <!-- Main content -->
     <main class="dashboard-main">
 
-
-        <!-- Greeting banner -->
+        {# Greeting banner: 'Good morning/afternoon', live clock, active event, weather widget, #}
+        {# and the Declare / End Event buttons. #}
         <section class="greeting-banner">
             <div class="greeting-main">
                 <h2>Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 18 else 'Evening') }}, {{ current_user.name }}</h2>
@@ -44,7 +45,7 @@
             </div>
         </section>
 
-        <!-- Period filter -->
+        {# Period filter: view the numbers for now, a chosen month, or a chosen year. #}
         <form method="GET" class="dash-period-bar">
             <div class="dash-period-row">
                 <span class="dash-period-title">{{ icon('sliders', 14) }} FILTER BY PERIOD</span>
@@ -81,7 +82,8 @@
             {% endif %}
         </form>
 
-        <!-- Stat cards -->
+        {# Number cards: active event, affected municipalities, affected families, #}
+        {# food packs available, pending stock requests, low-stock warehouses. #}
         <section class="stat-cards">
             <a class="stat-card" href="{{ url_for('pswdo.gis_map') }}">
                 <div class="stat-icon red">{{ icon('alert-triangle', 18, '#e74c3c') }}</div>
@@ -117,7 +119,6 @@
             </a>
         </section>
 
-        <!-- Weather & Typhoon Watch (live, via app/utils/weather.py) -->
         <div class="weather-widget" data-weather-widget data-endpoint="{{ url_for('pswdo.dashboard_weather') }}"
              data-can-declare-events="true"
              data-active-event-id="{{ primary_event.event_id if primary_event else '' }}"
@@ -130,9 +131,7 @@
             <p class="weather-empty skeleton-shimmer">Loading live weather…</p>
         </div>
 
-        <!-- Declare Disaster Event modal - see app.routes.pswdo.declare_disaster_event.
-             Opened by static/js/weather_widget.js, either manually via the panel's
-             header button or pre-filled off a live-detected storm. -->
+        {# 'Declare Typhoon-Related Event' pop-up (a province-wide event). #}
         <div class="rd-modal-overlay" id="declare-event-modal" hidden>
             <div class="rd-modal">
                 <div class="rd-modal-header">
@@ -159,8 +158,7 @@
             </div>
         </div>
 
-        <!-- End Disaster Event confirmation modal - see app.routes.pswdo.end_disaster_event.
-             Opened by static/js/weather_widget.js in place of a native confirm() dialog. -->
+        {# 'End Disaster Event' confirmation pop-up. #}
         <div class="rd-modal-overlay" id="end-event-modal" hidden>
             <div class="rd-modal">
                 <div class="rd-modal-header">
@@ -175,9 +173,9 @@
             </div>
         </div>
 
-        <!-- GIS Map + Pending Stock Requests -->
         <div class="main-grid dash-grid-even">
 
+            {# Small GIS map of the province with the 3 municipalities and warehouses. #}
             <section class="panel map-panel">
                 <div class="panel-header">
                     <h3>GIS Map - Province of Pangasinan</h3>
@@ -213,6 +211,7 @@
                 </div>
             </section>
 
+            {# Pending Stock Requests from the CSWDO/MSWDO offices, with links to review them. #}
             <section class="panel requests-panel">
                 <div class="panel-header">
                     <h3>Pending Stock Requests</h3>
@@ -238,9 +237,9 @@
 
         </div>
 
-        <!-- Warehouse Status + Recommendations -->
         <div class="main-grid dash-grid-even" style="margin-top: 16px;">
 
+            {# Warehouse Status: each warehouse's food packs and how full it is. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Warehouse Status</h3>
@@ -269,6 +268,7 @@
                 {% endfor %}
             </section>
 
+            {# Recommendations: suggested actions from the forecast (e.g. restock a municipality). #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Recommendations</h3>
@@ -311,9 +311,9 @@
 
         </div>
 
-        <!-- Recent Activities -->
         <div class="main-grid" style="margin-top: 16px; grid-template-columns: 1fr;">
 
+            {# Recent Activities across the province. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Recent Activities</h3>
@@ -358,8 +358,10 @@ window.RELIEFLINE_DASHBOARD_ROLE = "{{ current_user.role }}";
     var months = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December'];
 
+    // Adds a leading zero (e.g. 7 -> 07).
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
+    // Updates the live clock on the dashboard every second.
     function tick() {
         var now = new Date();
         var hours24 = now.getHours();

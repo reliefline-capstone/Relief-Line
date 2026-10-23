@@ -1,3 +1,5 @@
+// The GIS Map page: the interactive map of municipalities, barangays, warehouses and delivery routes.
+// It also builds the side panel, the search box and the routes table.
 document.addEventListener('DOMContentLoaded', function () {
     var TIER_COLORS = {
         critical: '#e74c3c',
@@ -6,11 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
         low: '#27ae60',
         unrated: '#d8dee8',
     };
-    // A darker shade of each TIER_COLORS hue, for the study-area polygon
-    // border (gis_map.js provinceStyle) - the fill shows the status color
-    // itself, the border is that same status "inked in" a shade darker, so
-    // a critical (red) study area reads as a distinct dark-red outline, not
-    // the same fixed purple every status used to get.
     var TIER_BORDER_COLORS = {
         critical: '#922b21',
         high: '#9c5310',
@@ -19,9 +16,6 @@ document.addEventListener('DOMContentLoaded', function () {
         unrated: '#5d6d7e',
     };
     var TIER_RANK = { critical: 4, high: 3, medium: 2, low: 1, unrated: 0 };
-    // Dark mode (html[data-theme="dark"]): the dark outlines above vanish on
-    // the dimmed basemap and on their own fills, so borders switch to light
-    // tints of the same hues. Restyled live on the 'rl-themechange' event.
     var TIER_BORDER_COLORS_DARK = {
         critical: '#f5a49b',
         high: '#f8c27a',
@@ -29,17 +23,9 @@ document.addEventListener('DOMContentLoaded', function () {
         low: '#9ee8bb',
         unrated: '#c3cad6',
     };
+    // True if dark mode is on (map colors change to match).
     function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
-    // Smooth, Google-Maps-style zoom. The page's CSS `zoom` (base.css
-    // --ui-scale) is cancelled on #gis-map itself (gis_map.css, "Smooth
-    // zoom"), so Leaflet sees a net scale of 1 and its zoom animation no
-    // longer drifts markers off their spot - the reason it used to be off.
-    //   zoomSnap 0          - any fractional level, so the wheel glides
-    //                         instead of jumping a whole level per notch
-    //   wheelPxPerZoomLevel - wheel distance for one level (higher = gentler)
-    //   wheelDebounceTime   - react to the wheel almost immediately
-    //   zoomDelta 0.5       - +/- buttons and keyboard step half a level
     var map = L.map('gis-map', {
         zoomControl: false,
         zoomAnimation: true,
@@ -48,12 +34,6 @@ document.addEventListener('DOMContentLoaded', function () {
         wheelPxPerZoomLevel: 110,
         wheelDebounceTime: 10,
     }).setView([15.98, 120.45], 11);
-    // Fixed stacking for the vector layers, independent of the order they
-    // happen to be (re)added in: municipalities in the default overlay pane
-    // (z 400), barangays above them, delivery routes above both. Before,
-    // everything shared one pane, so re-adding the municipality layer (e.g.
-    // toggling "Municipality Boundary" off and on) put the city polygon on
-    // top of its barangays and it swallowed their hover and clicks.
     map.createPane('barangayPane').style.zIndex = 410;
     map.createPane('routePane').style.zIndex = 420;
 
@@ -62,57 +42,26 @@ document.addEventListener('DOMContentLoaded', function () {
         maxZoom: 18,
     }).addTo(map);
 
-    // Bottom-right instead of Leaflet's default top-left (which now sits
-    // under the search bar overlay anyway) - restyled in gis_map.css to
-    // match the app's own button/panel language instead of Leaflet's stock
-    // look. Leaflet stacks same-corner controls itself, so this shares the
-    // corner with the attribution control with no manual offset needed.
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-    // Drill-down state: overview -> municipality -> barangay-list -> barangay-detail
     var state = { level: 'overview', lgu: null, barangayId: null, barangayName: null, showBreakdown: false };
     var currentData = null;
 
+    // Makes text safe to show on the page (so names with symbols can't break the layout).
     function escapeHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
         });
     }
+    // Formats a number with commas (e.g. 12,345).
     function fmt(n) { return (n || 0).toLocaleString(); }
 
-    // Config rendered server-side by app.routes.pswdo._gis_config() (shared by
-    // both the PSWDO and CSWDO page templates) - role-specific destinations
-    // and, for a single-LGU scope (CSWDO/MSWDO), the municipality to land on
-    // by default instead of an overview that only ever has one entry.
     var GIS_CONFIG = window.RELIEFLINE_GIS_CONFIG || { role: null, barangayReportsUrl: null, defaultLgu: null };
 
-    // PSWDO (province-wide oversight) sees municipality-level aggregates
-    // only - no barangay boundaries, no barangay drill-down. That level of
-    // operational detail is CSWDO/MSWDO's job (they only ever have one
-    // municipality in scope anyway). system_admin gets the same province-wide
-    // view PSWDO does.
     var IS_MUNI_ONLY = GIS_CONFIG.role !== 'cswdo_admin';
 
-    // is_target is already restricted server-side to this user's own scope
-    // (app.routes.pswdo._gis_scope_lgus) - a three-tier visual hierarchy:
-    //   1. Other municipalities - light grey, thin border, muted fill.
-    //      Real PSGC boundaries now (not placeholder shapes), shown at
-    //      every drill-down level, never hidden - see TARGET_LGUS in
-    //      app.routes.pswdo for why only 3 LGUs get further detail.
-    //   2. Study area (Urdaneta City / Santa Barbara / Calasiao), not the
-    //      one currently open - same purple border as every study area
-    //      (that border is what marks "this is one of the 3", consistently),
-    //      filled with that LGU's own real demand tier color (PSWDO/
-    //      system_admin only - same Critical/High/Medium/Low/Unrated scale
-    //      as the legend and every badge elsewhere) so the map itself
-    //      answers "which study area needs attention right now" at a
-    //      glance. Recomputed fresh from currentData every render.
-    //   3. The study area currently open (state.lgu) - strongest border/
-    //      fill of the three, plus the zoom-in and side-panel detail that
-    //      setLevel() already drives.
-    // CSWDO/MSWDO (single-LGU scope) keeps a flat purple fill instead -
-    // that account's own dashboard already covers its one town's status,
-    // so this map doesn't need to repeat it as a color.
+    // Colors each municipality on the map: the 3 target municipalities by status,
+    // other towns in grey, and the selected one highlighted.
     function provinceStyle(feature) {
         var isTarget = feature.properties.is_target;
         if (!isTarget) {
@@ -126,62 +75,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 ? { color: '#9aa3b5', weight: 1.2, fillColor: '#3a3f52', fillOpacity: 0.35 }
                 : { color: '#6b7280', weight: 1.2, fillColor: '#c3c7d1', fillOpacity: 0.5 };
         }
-        // className is set once when the layer/path DOM element is first
-        // created (Leaflet doesn't re-apply it on a later setStyle() -
-        // setLevel() below only ever calls setStyle(), never recreates the
-        // layer) - so it has to stay the same string across selected/
-        // unselected, and "strongest" instead comes entirely from the
-        // color/weight/fillOpacity numbers below, which setStyle() DOES
-        // update live.
         var isSelected = state.lgu === feature.properties.lgu;
         var fillColor = '#5347ce';
-        // CSWDO/MSWDO: dark green outline around their own city/town - sits
-        // with the green barangay fills instead of a clashing purple line.
         var borderColor = isDark() ? '#9ee8bb' : '#145a32';
         if (IS_MUNI_ONLY) {
             var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === feature.properties.lgu; }) : null;
             var tier = muni ? muni.status_tier : 'unrated';
             fillColor = TIER_COLORS[tier];
-            // Border is that same status color, darker - not the fixed
-            // purple every status used to get - so a critical (red) study
-            // area outlines in dark red, a low (green) one in dark green, etc.
             borderColor = (isDark() ? TIER_BORDER_COLORS_DARK : TIER_BORDER_COLORS)[tier];
         }
         return {
             color: borderColor,
             weight: isSelected ? 4 : 2.5,
             fillColor: fillColor,
-            // CSWDO/MSWDO: no fill at all on the municipality shape - the
-            // barangay layer drawn on top of it IS the status colouring, and
-            // a translucent purple fill underneath tinted every status
-            // colour (green "Low" came out teal, not the legend's green).
             fillOpacity: IS_MUNI_ONLY ? (isSelected ? 0.65 : 0.45) : 0,
             className: 'gis-target-muni',
         };
     }
 
-    // Always-on municipality/city name labels - separate from the hover
-    // tooltips below (which carry demand data for in-scope LGUs and a
-    // "no data" note for everyone else) so every one of the province's 48
-    // LGUs reads its name at a glance without hovering. Plain divIcon
-    // markers, not interactive, so clicks/hover still reach the polygon
-    // underneath rather than the label.
     var muniLabelLayer = L.layerGroup().addTo(map);
 
     var provinceLayer = L.geoJSON(null, {
         style: provinceStyle,
+        // Adds the name label, the hover info and the click action to each municipality.
         onEachFeature: function (feature, layer) {
             var p = feature.properties;
             var labelBounds = layer.getBounds();
             if (labelBounds.isValid()) {
-                // Study-area labels are also a click target for setLevel(),
-                // not just decoration - Calasiao/Santa Barbara's own
-                // polygons can be a tiny sliver at whole-province zoom (much
-                // smaller than Urdaneta City's), easy to miss with a click;
-                // the label sits at a fixed, always-legible spot regardless
-                // of how small the real shape renders, so it's a far more
-                // reliable place to click "this municipality" than the
-                // shape itself at that zoom level.
                 var labelMarker = L.marker(labelBounds.getCenter(), {
                     icon: L.divIcon({
                         className: p.is_target ? 'gis-muni-label gis-muni-label-target' : 'gis-muni-label',
@@ -196,10 +116,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
             if (p.is_target) {
-                // currentData is already assigned before addData() runs (see
-                // loadData()), so the per-LGU relief rollup - the closest
-                // real figure to "predicted demand" this dataset has - is
-                // available here to enrich the hover tooltip.
                 var muni = currentData ? currentData.municipalities.find(function (m) { return m.lgu === p.lgu; }) : null;
                 var demandLine = muni ? (
                     '<br>Predicted Demand: ' + fmt(muni.predicted_demand) + ' packs' +
@@ -207,13 +123,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 ) : '';
                 layer.bindTooltip('<strong>' + escapeHtml(p.lgu) + '</strong>' + demandLine + '<br><em>Click to view</em>', { sticky: true });
                 layer.on('click', function () { toggleMunicipality(p.lgu); });
-                // Hover deepens the fill (a real, visible color change - no
-                // shadow/glow filter involved anywhere on this layer any
-                // more) plus a slightly thicker border. mouseout resets via
-                // provinceStyle(feature) itself, not hardcoded numbers, so
-                // it's always exactly back to this LGU's real current
-                // tier/selection style - never stale if either changes
-                // while the cursor happens to be sitting on it.
                 layer.on('mouseover', function () {
                     layer.setStyle({
                         weight: state.lgu === p.lgu ? 4.5 : 3.2,
@@ -222,58 +131,29 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 layer.on('mouseout', function () { layer.setStyle(provinceStyle(feature)); });
             } else if (!IS_MUNI_ONLY) {
-                // CSWDO/MSWDO: every other municipality is plain backdrop -
-                // no hover highlight, tooltip, click or pointer cursor.
-                // (Set before the layer is added, so Leaflet never makes the
-                // path interactive in the first place.)
                 layer.options.interactive = false;
             } else {
-                // Outside current detailed coverage - hover or click both
-                // answer with just the name plus why nothing else shows, as
-                // a small, auto-dismissing tooltip rather than a modal-style
-                // popup with its own close button. Deliberately stops
-                // there: no stock/request/prediction figures, because none
-                // exist for this municipality (see
-                // app.routes.pswdo.TARGET_LGUS) and inventing any would
-                // misrepresent real coverage.
                 layer.bindTooltip(
                     '<strong>' + escapeHtml(p.name) + '</strong>' +
                     '<span class="gis-neutral-tt-note">Outside current detailed data coverage' +
                     '<br><em>Click to view</em></span>',
                     { className: 'gis-neutral-tooltip', sticky: true }
                 );
-                // PSWDO/system_admin (province-wide oversight) can open any
-                // municipality - it just lands on an empty-state panel, see
-                // renderMunicipalityPanel.
                 layer.on('click', function () { toggleMunicipality(p.name); });
-                // Fill darkens too on hover, not just the border - a weight/
-                // color-only change was easy to miss on a shape this small
-                // at province zoom; the fill covers the whole shape, so its
-                // change reads immediately as "this one, right here".
                 layer.on('mouseover', function () {
                     layer.setStyle(isDark()
                         ? { weight: 2, color: '#e4e6ee', fillColor: '#5b6275', fillOpacity: 0.55 }
                         : { weight: 2, color: '#4b5563', fillColor: '#9aa0ac', fillOpacity: 0.65 });
                 });
-                // mouseout resets via provinceStyle so a currently-selected
-                // no-data municipality keeps its selected look.
                 layer.on('mouseout', function () { layer.setStyle(provinceStyle(feature)); });
             }
         },
     }).addTo(map);
 
-    // Barangay name labels (CSWDO/MSWDO layout - PSWDO has no barangay layer).
-    // Plain text divIcons like the municipality labels, one per barangay
-    // currently drawn (so the Status filter thins them out along with the
-    // shapes), each placed at a point that's actually INSIDE its polygon - a
-    // bounding-box centre can land outside a concave barangay. Whether a
-    // label is shown depends on zoom: it only appears once its polygon is
-    // wide enough on screen to hold the name, so 34 names don't pile up on
-    // top of each other (and on tiny barangays) at the municipality view -
-    // zooming in reveals the rest.
     var barangayLabelLayer = L.layerGroup().addTo(map);
     var barangayLabels = [];
 
+    // Area of a map shape (used to decide where to put labels).
     function ringArea(ring) {
         var s = 0;
         for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -281,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return s / 2;
     }
+    // True if a point is inside a map shape.
     function pointInRing(pt, ring) {
         var inside = false;
         for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -289,10 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return inside;
     }
-    // [lat, lng] label spot for a Polygon/MultiPolygon: the area-weighted
-    // centroid of its largest outer ring, or - if that falls outside the
-    // shape - the middle of the widest horizontal chord through the
-    // centroid's latitude.
+    // Finds a good spot inside a barangay's shape to put its name label.
     function polygonLabelPoint(geometry) {
         var polys = geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates];
         var best = null, bestArea = 0;
@@ -325,8 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return [pt[1], pt[0]];
     }
 
-    // Largest outer ring of a Polygon/MultiPolygon ([lng, lat] pairs) - what a
-    // nudged label position is checked against to stay inside its barangay.
+    // The biggest part of a map shape (for barangays made of several pieces).
     function largestRing(geometry) {
         var polys = geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates];
         var best = null, bestArea = 0;
@@ -337,6 +214,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return best;
     }
 
+    // Creates the barangay name labels on the map.
     function rebuildBarangayLabels(features) {
         barangayLabelLayer.clearLayers();
         barangayLabels = [];
@@ -356,20 +234,16 @@ document.addEventListener('DOMContentLoaded', function () {
         updateBarangayLabelVisibility();
     }
 
+    // Hides barangay labels that would overlap other labels,
+    // so the map stays readable at every zoom level.
     function updateBarangayLabelVisibility() {
         if (!barangayLabels.length) return;
         var cbox = map.getContainer().getBoundingClientRect();
         var taken = [];
-        // The municipality's own name label (and anything else already on
-        // screen at that spot) is an obstacle too.
         document.querySelectorAll('.gis-muni-label-target').forEach(function (e) {
             var r = e.getBoundingClientRect();
             if (r.width) taken.push({ l: r.left - cbox.left, t: r.top - cbox.top, r: r.right - cbox.left, b: r.bottom - cbox.top });
         });
-        // The selected barangay's label always shows; after it, the biggest
-        // barangays claim their spot first, and a smaller one whose label
-        // would land on top of an already-placed label stays hidden until
-        // there's room for it (zooming in makes room).
         var selectedId = state.level === 'barangay-detail' ? state.barangayId : null;
         barangayLabels.map(function (entry) {
             var sw = map.latLngToContainerPoint(entry.bounds.getSouthWest());
@@ -379,9 +253,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }).sort(function (x, y) { return y.area - x.area; }).forEach(function (item) {
             var entry = item.entry, el = entry.marker.getElement();
             if (!el) return;
-            // The label's real rendered size (measured once - the font
-            // doesn't change with zoom), not a per-character estimate: the
-            // estimate ran wide and hid labels that actually had room.
             if (!entry.size) {
                 el.style.display = '';
                 var span = el.querySelector('span') || el;
@@ -390,15 +261,14 @@ document.addEventListener('DOMContentLoaded', function () {
             var w = entry.size ? entry.size.w : entry.name.length * 5.6 + 8;
             var h = entry.size ? entry.size.h : 13;
             var home = map.latLngToContainerPoint(entry.home);
+            // The space a label takes on the screen.
             function boxAt(p) { return { l: p.x - w / 2, t: p.y - h / 2, r: p.x + w / 2, b: p.y + h / 2 }; }
+            // True if a label would overlap a label already shown.
             function clashes(box) {
                 return taken.some(function (t) {
                     return !(box.r <= t.l || t.r <= box.l || box.b <= t.t || t.b <= box.t);
                 });
             }
-            // Its own spot first; if another label is already there, try a
-            // few nudges (up/down/left/right) that keep the label's centre
-            // inside its own barangay, before giving up and hiding it.
             var offsets = [[0, 0], [0, -h], [0, h], [-w / 2, 0], [w / 2, 0], [0, -2 * h], [0, 2 * h],
                            [-w / 2, -h], [w / 2, -h], [-w / 2, h], [w / 2, h]];
             var placed = null;
@@ -428,6 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var barangayLayer = L.geoJSON(null, {
         pane: 'barangayPane',
+        // Colors each barangay by its priority level (and outlines the selected barangay).
         style: function (feature) {
             var p = feature.properties;
             var color = TIER_COLORS[p.priority_tier] || TIER_COLORS.unrated;
@@ -439,6 +310,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 fillOpacity: 0.75,
             };
         },
+        // Adds the hover info (status, stock, food packs) and the click action to each barangay.
         onEachFeature: function (feature, layer) {
             var p = feature.properties;
             if (p.has_data) {
@@ -463,31 +335,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }).addTo(map);
 
     var warehouseLayer = L.layerGroup().addTo(map);
-    // Search result pin layer - kept separate from every other layer so a
-    // search never disturbs municipality/warehouse/route rendering.
     var searchMarkerLayer = L.layerGroup().addTo(map);
-    // The actual road-routed polyline (OSRM) for whichever Active
-    // Distribution Routes row a user clicks into - routes stay hidden
-    // otherwise, no in-transit line renders automatically for every
-    // delivery, only for the one the user actually asked to see.
     var osrmRouteLayer = L.layerGroup().addTo(map);
 
-    // Warehouse marker pixel size shrinks in steps as the map zooms out.
-    // Markers are always placed at their real, fixed [lat, lng] (see
-    // renderWarehouses below) - that never changes with zoom. What DOES
-    // change with zoom, for every map (this isn't Leaflet-specific), is how
-    // many screen pixels separate two markers that are a fixed real-world
-    // distance apart: Calasiao and Santa Barbara's warehouses are only
-    // ~8km apart, so at a zoomed-out view their fixed-size 30px icons can
-    // visually touch or overlap even though neither one has actually
-    // moved. Shrinking the icon at lower zoom keeps them visually distinct
-    // instead of reading as "the pin jumped".
     var WH_ICON_ZOOM_BREAKPOINTS = [
         { minZoom: 13, size: 30 },
         { minZoom: 11, size: 24 },
         { minZoom: 9, size: 18 },
         { minZoom: 0, size: 14 },
     ];
+    // The warehouse icon size for the current zoom level (bigger when zoomed in).
     function warehouseIconSize() {
         var zoom = map.getZoom();
         for (var i = 0; i < WH_ICON_ZOOM_BREAKPOINTS.length; i++) {
@@ -495,9 +352,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return 14;
     }
-    // iconAnchor is always exactly half of iconSize (recomputed here every
-    // time, never hardcoded) so the anchor point - the marker's actual
-    // [lat, lng] - stays under the icon's visual center at every size.
+    // Builds a warehouse icon colored by stock health (Healthy, Moderate, Low).
     function buildWarehouseIcon(healthClass) {
         var size = warehouseIconSize();
         var half = size / 2;
@@ -508,10 +363,6 @@ document.addEventListener('DOMContentLoaded', function () {
             iconAnchor: [half, half],
         });
     }
-    // (marker, healthClass) pairs currently on the map, so a zoomend can
-    // re-run buildWarehouseIcon() on each without re-fetching/re-placing
-    // any of them - only the icon's pixel size changes, never the marker's
-    // underlying latlng.
     var warehouseMarkers = [];
     map.on('zoomend', function () {
         warehouseMarkers.forEach(function (entry) {
@@ -519,22 +370,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Draws the warehouse icons on the map with their hover info (stock and % full).
     function renderWarehouses(warehouses) {
         warehouseLayer.clearLayers();
         warehouseMarkers = [];
         warehouses.forEach(function (w) {
             var healthClass = (w.health || 'low').toLowerCase();
-            // A plain building icon, colored by stock health, instead of a
-            // 2-3 letter abbreviation of the warehouse's name - "C"/"SB"/
-            // "UC" read as unexplained codes to anyone who hasn't memorized
-            // which warehouse each stands for. The full name is still one
-            // click away in the popup below.
             var marker = L.marker([w.lat, w.lng], { icon: buildWarehouseIcon(healthClass), title: w.name });
             warehouseMarkers.push({ marker: marker, healthClass: healthClass });
-            // Food packs are the one figure every warehouse popup leads
-            // with, everywhere in the app - the badge next to it is the
-            // same badge-health used on the Dashboard/Warehouse Inventory,
-            // so "is this warehouse okay" reads the same way here too.
             var popupHtml =
                 '<strong>' + escapeHtml(w.name) + '</strong>' +
                 '<span>' + escapeHtml(w.area_covered) + '</span>' +
@@ -542,13 +385,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<span class="gis-wh-popup-qty">' + fmt(w.food_pack_qty) + ' <small>/ ' + fmt(w.capacity) + ' packs (' + w.pct.toFixed(0) + '%)</small></span>' +
                 '<span class="badge-health badge-' + healthClass + '">' + escapeHtml(w.health || 'No data available') + '</span>' +
                 '</div>';
-            // PSWDO only (CSWDO/MSWDO keeps the popup exactly as it was) -
-            // every other relief item this office has on record, never
-            // fabricated ("No data available" when there's genuinely
-            // nothing), kept visually separate from the food-pack figure
-            // above rather than just another plain text line among others,
-            // so the whole popup reads as "relief supplies", not a generic
-            // office info card.
             if (IS_MUNI_ONLY) {
                 popupHtml += '<div class="gis-wh-popup-divider"></div>';
                 popupHtml += '<span class="gis-wh-popup-label">Other Relief Items</span>';
@@ -567,15 +403,16 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ---- Search box ------------------------------------------------
     var searchResultsEl = document.getElementById('gis-search-results');
     var searchInputEl = document.getElementById('gis-search-input');
     var searchClearEl = document.getElementById('gis-search-clear');
 
+    // Shows the search box's clear (x) button only when something is typed.
     function updateSearchClearVisibility() {
         searchClearEl.hidden = !searchInputEl.value;
     }
 
+    // Clears the map search box and its results.
     function clearSearch() {
         searchInputEl.value = '';
         searchMarkerLayer.clearLayers();
@@ -584,17 +421,13 @@ document.addEventListener('DOMContentLoaded', function () {
         searchInputEl.focus();
     }
 
+    // Hides the search results list.
     function hideSearchResults() {
         searchResultsEl.hidden = true;
         searchResultsEl.innerHTML = '';
     }
 
-    // The search box finds things IN THIS MAP'S SCOPE and opens the one you
-    // pick, the same as clicking it on the map - not an arbitrary street/place
-    // lookup. PSWDO/system_admin: MUNICIPALITIES (all 48 in the province map,
-    // with or without data). CSWDO/MSWDO: BARANGAYS of their own
-    // municipality (the only ones on their map). Matched locally against the
-    // already-loaded map data, so it's instant and needs no network.
+    // Everything that can be searched on the map (municipalities and barangays).
     function searchCandidates() {
         if (IS_MUNI_ONLY) {
             return currentData.province_context.features.map(function (f) {
@@ -602,6 +435,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return {
                     name: name,
                     sub: 'Municipality &middot; ' + (f.properties.is_target ? 'has data' : 'no data'),
+                    // Opens the chosen municipality from the search results.
                     pick: function () { setLevel('municipality', name); },
                 };
             });
@@ -611,11 +445,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return {
                 name: pr.name,
                 sub: 'Barangay &middot; ' + escapeHtml(pr.lgu),
+                // Opens the chosen barangay from the search results.
                 pick: function () { setLevel('barangay-detail', pr.lgu, pr.barangay_id, pr.name); },
             };
         });
     }
 
+    // Searches the map while the user types and lists the matches.
     function runSearch() {
         var q = (searchInputEl.value || '').trim();
         if (!q) { hideSearchResults(); return []; }
@@ -646,6 +482,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return found;
     }
 
+    // Goes to the chosen search result on the map.
     function selectSearchResult(m) {
         searchMarkerLayer.clearLayers();
         hideSearchResults();
@@ -654,12 +491,9 @@ document.addEventListener('DOMContentLoaded', function () {
         m.pick();
     }
 
-    // ---- OSRM route visualization (Active Distribution Routes) ------
-    // Free public demo router, no API key. Draws the actual road path
-    // (distinct solid teal line) plus a popup with real distance/duration
-    // from OSRM itself - separate from the schematic dashed lines above.
     var activeRouteRowId = null;
 
+    // Removes the delivery route shown on the map.
     function clearRouteDetail() {
         activeRouteRowId = null;
         osrmRouteLayer.clearLayers();
@@ -670,20 +504,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Shows the delivery route's details box (with a close button).
     function showRouteDetail(html) {
         var detailEl = document.getElementById('gis-route-detail');
         if (!detailEl) return;
         detailEl.hidden = false;
-        // Close button on the selected route's strip: puts the route away
-        // (line, pin, highlighted row) - see the delegated click listener
-        // near the routes table wiring below, since this markup is replaced
-        // on every showRouteDetail() call.
         detailEl.innerHTML = '<button type="button" class="gis-route-detail-close" title="Close route" aria-label="Close route">' + ICON.close + '</button>' + html;
     }
 
-    // Small colored dot marker for a route's start/end point - see the
-    // comment at its call site in loadOsrmRoute for why this is a plain
-    // L.marker (marker pane) instead of L.circleMarker (SVG).
+    // The dot that marks where a delivery route starts (the warehouse).
     function routeDotIcon(fillColor) {
         return L.divIcon({
             className: 'gis-route-dot',
@@ -693,10 +522,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Location-pin marker for a route's destination. Anchored at the pin's
-    // TIP (bottom centre), not its centre like routeDotIcon, so the tip sits
-    // exactly on the destination's real [lat, lng] and the pin's body rises
-    // above it - a plain marker-pane element, for the same reason as the dots.
+    // The pin that marks where a delivery route ends (the barangay).
     function routePinIcon(fillColor) {
         return L.divIcon({
             className: 'gis-route-pin',
@@ -709,23 +535,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Start dot + destination pin for a route. Plain L.marker dots, not
-    // L.circleMarker (SVG) - after the fitBounds() jump, Leaflet's SVG
-    // renderer's own internal positioning can end up visibly offset from
-    // marker-pane elements (like the warehouse icon under them) even though
-    // both come from the exact same [lat, lng] - a real, reproducible
-    // Leaflet quirk under this page's CSS zoom scale (base.css --ui-scale),
-    // not a coordinate error. Marker-pane elements sidestep it entirely and
-    // land exactly on the warehouse icon's own real position. The
-    // destination is a location pin, drawn above the warehouse icon that can
-    // sit on the very same point (a PSWDO route ends at the receiving
-    // municipality's own warehouse). Returns the pin so the caller can put
-    // the distance/time summary on it.
-    // One colour for the whole route (line, straight-line fallback, start dot)
-    // - the app's own indigo instead of the earlier teal, which blended into
-    // the green "Low" study-area fills and the blue water it usually crosses.
     var ROUTE_COLOR = '#5347ce';
 
+    // Draws the start dot and end pin of a delivery route.
     function addRouteEndpoints(r) {
         L.marker([r.from_lat, r.from_lng], { icon: routeDotIcon(ROUTE_COLOR), keyboard: false })
             .bindTooltip(escapeHtml(r.from_office)).addTo(osrmRouteLayer);
@@ -733,16 +545,10 @@ document.addEventListener('DOMContentLoaded', function () {
             .addTo(osrmRouteLayer);
     }
 
-    // Pads the fit away from the overlays on the map itself - the toolbar
-    // row along the top (and the tall destination pin under it), and the
-    // info card on the right while it's open - so the route's end never
-    // lands hidden underneath them.
+    // Zooms the map so the whole route is visible (leaving room for open panels).
     function fitRouteBounds(bounds) {
         var infoWrap = document.getElementById('gis-floating-info');
         var panelOpen = infoWrap && !infoWrap.classList.contains('is-collapsed');
-        // ...and the routes dock along the bottom, when it's open (PSWDO
-        // layout) - it's taller while a route's detail strip is showing, so
-        // this is measured, not a fixed number.
         var bottomPad = 40;
         var dock = document.getElementById('gis-routes-panel');
         if (dock && !dock.hidden) {
@@ -755,14 +561,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // The summary sits on the map itself (a permanent tooltip over the
-    // destination pin), not only in the table's detail strip below the map -
-    // the table can be scrolled well out of sight of the route it just drew.
+    // Adds the label on the route's destination pin (destination and distance).
     function pinSummary(pin, r, line2) {
         pin.bindTooltip('<strong>' + escapeHtml(r.to_label) + '</strong><br>' + line2,
             { permanent: true, direction: 'top', className: 'gis-route-tt' });
     }
 
+    // Builds the route details: delivery number, from/to, distance and estimated travel time.
     function detailHtml(r, distanceLabel, distanceValue, timeValue) {
         return '<strong>D-' + r.distribution_id + ' &middot; ' + escapeHtml(r.from_office) + ' &rarr; ' + escapeHtml(r.to_label) + '</strong>' +
             '<div class="gis-route-detail-grid">' +
@@ -773,6 +578,8 @@ document.addEventListener('DOMContentLoaded', function () {
             '</div>';
     }
 
+    // Gets the actual road route for a delivery from the free OSRM map service and draws it.
+    // If the service is unavailable, a straight line and straight-line distance are shown instead.
     function loadOsrmRoute(r, rowEl) {
         osrmRouteLayer.clearLayers();
         document.querySelectorAll('#routes-table-body tr.gis-route-row-active').forEach(function (el) {
@@ -791,25 +598,15 @@ document.addEventListener('DOMContentLoaded', function () {
         var url = 'https://router.project-osrm.org/route/v1/driving/' +
             r.from_lng + ',' + r.from_lat + ';' + r.to_lng + ',' + r.to_lat +
             '?overview=full&geometries=geojson';
-        // The public OSRM demo server can hang as easily as it can fail
-        // outright - without a timeout the row would sit on "Loading route…"
-        // indefinitely instead of falling through to the straight-line view.
         var controller = ('AbortController' in window) ? new AbortController() : null;
         var timer = controller ? setTimeout(function () { controller.abort(); }, 10000) : null;
         fetch(url, controller ? { signal: controller.signal } : undefined)
             .then(function (resp) { if (!resp.ok) throw new Error('routing failed'); return resp.json(); })
             .then(function (data) {
                 if (timer) clearTimeout(timer);
-                if (activeRouteRowId !== r.distribution_id) return; // a newer click superseded this one
+                if (activeRouteRowId !== r.distribution_id) return;
                 if (!data.routes || !data.routes.length) throw new Error('no route');
                 var route = data.routes[0];
-                // A white "casing" drawn first, wider than the route line
-                // itself, then the solid teal line on top - keeps the route
-                // clearly visible/highlighted against ANY background it
-                // crosses (a solid study-area fill, another municipality,
-                // busy basemap detail), not just readable against a plain
-                // map. Same technique real map products use for a route
-                // that has to stay legible over arbitrary terrain.
                 L.geoJSON(route.geometry, {
                     pane: 'routePane',
                     style: { color: '#ffffff', weight: 9, opacity: 0.95 },
@@ -829,10 +626,6 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(function () {
                 if (timer) clearTimeout(timer);
                 if (activeRouteRowId !== r.distribution_id) return;
-                // Road routing didn't come back (server down, slow, or no
-                // road path) - still show WHERE the delivery is going with
-                // a straight line between the two real endpoints, clearly
-                // labelled as not a road route, rather than an empty map.
                 var from = [r.from_lat, r.from_lng], to = [r.to_lat, r.to_lng];
                 L.polyline([from, to], { pane: 'routePane', color: '#ffffff', weight: 8, opacity: 0.95 }).addTo(osrmRouteLayer);
                 var straight = L.polyline([from, to], { pane: 'routePane', color: ROUTE_COLOR, weight: 4, opacity: 1, dashArray: '8 8' }).addTo(osrmRouteLayer);
@@ -846,6 +639,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    // Builds the summary number cards at the top of the side panel.
     function renderStats(stats) {
         return '' +
             '<section class="stat-cards gis-stat-cards">' +
@@ -868,8 +662,6 @@ document.addEventListener('DOMContentLoaded', function () {
             '</section>';
     }
 
-    // Minimal inline icon set matching app/utils/icons.py, kept local since this
-    // panel is assembled client-side (server-rendered {{ icon() }} can't reach it).
     var ICON = {
         mapPin: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e67e22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
         users: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c5ce7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
@@ -886,15 +678,12 @@ document.addEventListener('DOMContentLoaded', function () {
         chevronLeft: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
     };
 
+    // Builds a colored priority badge (e.g. 'High').
     function tierBadge(tier, label) {
         return '<span class="badge-priority badge-priority-' + tier + '"><i class="priority-dot"></i> ' + escapeHtml(label) + '</span>';
     }
 
-    // Used by renderMunicipalityPanel and renderBarangayDetail. Scoped to the
-    // role it belongs to (see app.routes.pswdo._gis_config) - the button is
-    // simply omitted for the other role rather than linking somewhere it
-    // would 403 or make no sense: reviewing barangay reports is entirely a
-    // CSWDO/MSWDO responsibility, PSWDO has no barangay-report page.
+    // Builds the 'View Barangay Reports' button (CSWDO/MSWDO only).
     function barangayReportsButtonHtml(lgu, barangayName) {
         if (!GIS_CONFIG.barangayReportsUrl) return '';
         return '<button type="button" class="btn-outline dd-full-width" data-external="barangay-reports" data-lgu="' + escapeHtml(lgu) + '"' +
@@ -902,22 +691,17 @@ document.addEventListener('DOMContentLoaded', function () {
             ' style="justify-content:center; margin-top:10px;">' + ICON.clipboard + ' View Barangay Reports</button>';
     }
 
-    // Barangay detail only (CSWDO/MSWDO) - this barangay's own hand-outs to
-    // residents with their photo proof (cswdo.barangay_distribution_history).
-    // Named "Family Distributions" so it isn't confused with the panel's own
-    // "Distribution History" (deliveries from this office to the barangay).
+    // Builds the 'View Family Distributions' button (CSWDO/MSWDO only).
     function barangayDistributionsButtonHtml(barangayId) {
         if (!GIS_CONFIG.barangayDistributionsUrl || !barangayId) return '';
         return '<button type="button" class="btn-outline dd-full-width" data-external="barangay-distributions" data-barangay-id="' + barangayId + '"' +
             ' style="justify-content:center; margin-top:10px;">' + ICON.camera + ' View Family Distributions</button>';
     }
 
+    // Builds the province overview side panel: summary numbers and each municipality's status.
     function renderOverviewPanel() {
         var html = renderStats(currentData.stats);
 
-        // Top filter bar's Status select doubles as this list's own filter
-        // for PSWDO/system_admin (which has no barangay layer of its own to
-        // filter - see applyClientFilters) - same tier values either way.
         var statusFilterEl = document.getElementById('filter-status');
         var statusFilter = statusFilterEl ? statusFilterEl.value : '';
         var visibleMunicipalities = statusFilter
@@ -940,10 +724,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<span class="gis-row-chevron">' + ICON.chevronRight + '</span>' +
                 '</div>';
         });
-        // Every other municipality on the province map - not part of the
-        // predictive/status model, so no barangay data behind them (and no
-        // drill-down beyond an empty-state panel, see renderMunicipalityPanel).
-        // Only when no Status filter is applied, since they have no status.
         if (IS_MUNI_ONLY && !statusFilter) {
             currentData.province_context.features
                 .filter(function (f) { return !f.properties.is_target; })
@@ -961,9 +741,6 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '<p class="empty-note" id="gis-muni-search-empty" hidden>No municipality matches your search.</p>';
         html += '</div></section>';
 
-        // Barangay-level priority listing is CSWDO/MSWDO operational detail
-        // - PSWDO's oversight view stops at the "Municipalities" list above,
-        // which already answers "which LGU has the highest demand."
         if (!IS_MUNI_ONLY) {
             html += '<section class="panel"><div class="panel-header"><h3>Priority Barangays</h3></div><div>';
             if (!currentData.priority_barangays.length) {
@@ -981,6 +758,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return html;
     }
 
+    // Builds the food packs requested / approved / released lines.
     function reliefRows(relief) {
         return '' +
             '<div class="dd-summary-row"><span>Food Packs Requested</span><strong>' + fmt(relief.requested) + '</strong></div>' +
@@ -989,6 +767,8 @@ document.addEventListener('DOMContentLoaded', function () {
             '<div class="dd-summary-row"><span>Remaining Need</span><strong class="text-red">' + fmt(relief.remaining) + '</strong></div>';
     }
 
+    // Builds the side panel for one municipality: status, affected families,
+    // food packs, warehouse stock and its barangays.
     function renderMunicipalityPanel(lgu) {
         var m = currentData.municipalities.find(function (x) { return x.lgu === lgu; });
         if (!m) {
@@ -1073,14 +853,13 @@ document.addEventListener('DOMContentLoaded', function () {
         return html;
     }
 
+    // Builds the list of barangays in a municipality (filtered by status if chosen).
     function renderBarangayListPanel(lgu) {
         var statusFilter = document.getElementById('filter-status').value;
         var features = currentData.target_barangays.features.filter(function (f) {
             return f.properties.lgu === lgu && (!statusFilter || f.properties.priority_tier === statusFilter);
         });
         var withData = features.filter(function (f) { return f.properties.has_data; });
-        // "affected" = the barangay filed a report for this event (same basis as
-        // the dashboards), not the graded status tier.
         var affected = withData.filter(function (f) { return f.properties.is_affected; });
 
         withData.sort(function (a, b) {
@@ -1109,10 +888,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return html;
     }
 
+    // Shows 'Loading barangay details...' while the details are fetched.
     function renderBarangayDetailLoading() {
         return '<section class="panel"><p class="empty-note">Loading barangay details…</p></section>';
     }
 
+    // Builds the side panel for one barangay: status, report, stock and food packs.
     function renderBarangayDetail(b) {
         var eventId = document.getElementById('filter-event').value;
         var html = '<section class="panel">';
@@ -1138,9 +919,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!b.distribution_history.length) {
             html += '<p class="empty-note">No distribution records for this barangay yet.</p>';
         } else {
-            // Latest 3 only; View All goes to the CSWDO Deliveries page filtered
-            // to this barangay, or (PSWDO - its Distribution page leaves out
-            // CSWDO-sourced deliveries) reveals the rest of the rows in place.
             html += '<table class="wh-table"><thead><tr><th>DATE</th><th>PACKS</th><th>STATUS</th></tr></thead><tbody>';
             b.distribution_history.forEach(function (d, i) {
                 html += '<tr' + (i >= 3 ? ' class="gis-dist-extra" hidden' : '') + '><td>' + escapeHtml(d.date) + '</td><td>' + fmt(d.packs) + '</td>' +
@@ -1164,6 +942,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return html;
     }
 
+    // Shows the right side panel for the current view (province, municipality or barangay).
     function renderPanel() {
         var panel = document.getElementById('gis-info-panel');
         if (!currentData) { panel.innerHTML = '<p class="empty-note">Loading…</p>'; return; }
@@ -1187,19 +966,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Builds the 'Province > Municipality > Barangay' path at the top of the map.
     function renderBreadcrumb() {
         var el = document.getElementById('gis-breadcrumb');
         var parts = [];
-        // "Province" is province-wide oversight - a PSWDO/system_admin
-        // concern only (see IS_MUNI_ONLY above). A CSWDO/MSWDO account is
-        // already locked to its own single LGU server-side, so this crumb
-        // stays as a plain, non-clickable label for them instead of a link
-        // back to a province overview they have no business opening.
-        // ...so for that account the crumb trail starts at its own
-        // municipality instead: "Province" would only be a dead label.
         if (!(GIS_CONFIG.role === 'cswdo_admin' && state.lgu)) {
-            // Plain text for everyone now - the back button (left of the trail)
-            // is the way up a level, so "Province" isn't a link any more.
             parts.push({ label: 'Province', nav: 'overview', disabled: true });
         }
         if (state.lgu) {
@@ -1212,13 +983,6 @@ document.addEventListener('DOMContentLoaded', function () {
             parts.push({ label: state.barangayName, nav: 'barangay-detail', lgu: state.lgu, barangayId: state.barangayId, barangayName: state.barangayName });
         }
 
-        // Back button: one level up from wherever you are (municipality ->
-        // province overview, barangay list -> municipality, barangay detail
-        // -> barangay list), so you don't have to aim for the "Province"
-        // crumb. Not shown at the top level, or for a CSWDO/MSWDO account at
-        // its own municipality (its "Province" crumb is disabled, there's no
-        // province overview for it to go back to). Reuses the same data-nav
-        // attributes the crumbs use, so handleActionClick needs no changes.
         var backBtn = '';
         var back = null;
         if (state.level === 'municipality' && GIS_CONFIG.role !== 'cswdo_admin') {
@@ -1244,18 +1008,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }).join('');
     }
 
+    // Zooms the map to the current view.
     function focusMap() {
         if (!currentData) return;
         if (state.level === 'overview') {
-            // Whole province (every municipality in province_context, not
-            // just the 3 target LGUs, and not the target LGUs' barangays -
-            // those sit in a narrow N-S sliver, so fitting to them alone
-            // stretched the map's east-west extent to match the
-            // container's wide aspect ratio and left far-off municipalities
-            // e.g. Alaminos, San Carlos) out of frame instead of the
-            // intended province-wide overview. Applies to PSWDO and
-            // CSWDO/MSWDO alike - the geographic overview is the same
-            // regardless of how much of it has detailed data.
             var b = provinceLayer.getBounds();
             if (b && b.isValid()) map.fitBounds(b.pad(0.02));
             return;
@@ -1265,11 +1021,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (feats.length) {
             bounds = L.geoJSON({ type: 'FeatureCollection', features: feats }).getBounds();
         } else {
-            // No barangay-level boundaries loaded for this LGU yet (barangay
-            // drill-down isn't wired up) - fall back to the municipality's
-            // own real PSGC boundary from province_context, which is always
-            // present, so "zoom to the selected study area" still works on
-            // its own instead of silently doing nothing.
             var muniFeature = currentData.province_context.features.find(function (f) { return f.properties.lgu === state.lgu || f.properties.name === state.lgu; });
             if (!muniFeature) return;
             bounds = L.geoJSON(muniFeature).getBounds();
@@ -1279,14 +1030,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var routesById = {};
 
+    // Builds the delivery routes table under the map (only the chosen municipality's routes if one is open).
     function renderRoutesTable() {
         clearRouteDetail();
         var routes = currentData ? currentData.routes_table : [];
         if (state.lgu) {
             routes = routes.filter(function (r) { return r.to_municipality === state.lgu; });
         }
-        // A selected barangay narrows it further to deliveries bound for
-        // that barangay only.
         var brgyName = state.level === 'barangay-detail' ? state.barangayName : null;
         if (brgyName) {
             routes = routes.filter(function (r) { return r.to_barangay_id === state.barangayId; });
@@ -1315,6 +1065,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }).join('');
     }
 
+    // Applies the status filter: only barangays with the chosen status stay on the map.
     function applyClientFilters() {
         if (!currentData) return;
         barangayLayer.clearLayers();
@@ -1331,8 +1082,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return true;
         });
         barangayLayer.addData({ type: 'FeatureCollection', features: filtered });
-        // Draw the selected barangay last so its blue border isn't partly
-        // covered by its neighbours' white borders along shared edges.
         if (state.level === 'barangay-detail' && state.barangayId) {
             barangayLayer.eachLayer(function (layer) {
                 if (layer.feature && layer.feature.properties.barangay_id === state.barangayId) layer.bringToFront();
@@ -1341,9 +1090,9 @@ document.addEventListener('DOMContentLoaded', function () {
         rebuildBarangayLabels(filtered);
     }
 
+    // Switches the view (province, municipality, or barangay),
+    // then refreshes the map, side panel, path and routes table.
     function setLevel(level, lgu, barangayId, barangayName) {
-        // Municipality-level view never drills further than 'municipality' -
-        // no barangay boundary layer is even populated to select from.
         if (IS_MUNI_ONLY && (level === 'barangay-list' || level === 'barangay-detail')) {
             level = 'municipality';
         }
@@ -1352,30 +1101,14 @@ document.addEventListener('DOMContentLoaded', function () {
         state.barangayId = barangayId || null;
         state.barangayName = barangayName || null;
         state.showBreakdown = false;
-        // Picking a municipality (map, list, search box or filter) while the
-        // info card is closed brings it back on its own - otherwise the
-        // selection happens with nothing showing what was selected, and the
-        // hamburger has to be pressed as a second step. Going back to the
-        // province overview (Reset) doesn't reopen it: closing it was a
-        // deliberate choice and nothing new was picked.
         if (state.level !== 'overview' && panelWrap && panelWrap.classList.contains('is-collapsed')) {
             setPanelOpen(true);
         }
-        // Keep the Municipality dropdown showing what's actually selected
-        // when the selection came from somewhere else (map, list, search
-        // box, Reset). Setting .value alone updates the hidden native
-        // <select> but not the visible custom-select trigger (see
-        // custom_select.js) - it only re-renders its label on a 'change'
-        // event, so one is dispatched; the listener below ignores it since
-        // the value already matches state.lgu.
         var lguSelect = document.getElementById('filter-lgu');
         if (lguSelect.value !== (state.lgu || '')) {
             lguSelect.value = state.lgu || '';
             lguSelect.dispatchEvent(new Event('change'));
         }
-        // Same for the Barangay filter (CSWDO/MSWDO layout only): it shows the
-        // barangay currently open, or "All Barangays" at the municipality
-        // level, whichever way the selection was made.
         var brgySelect = document.getElementById('filter-barangay');
         if (brgySelect) {
             var wantBrgy = (state.level === 'barangay-detail' && state.barangayId) ? String(state.barangayId) : '';
@@ -1390,39 +1123,18 @@ document.addEventListener('DOMContentLoaded', function () {
         renderBreadcrumb();
         renderPanel();
         renderRoutesTable();
-        // Same as the info card above: picking any municipality while the
-        // Active Distribution panel is minimised brings it back - including
-        // ones with nothing in transit, where it shows its "No active
-        // distribution routes" note, so it's clear there's simply nothing
-        // there rather than the panel having failed to open.
-        // PSWDO only: a CSWDO/MSWDO account is always "in" a municipality, so
-        // every barangay click would re-open a panel it had just minimised.
         var onPhone = window.innerWidth < 700;
         if (IS_MUNI_ONLY && !onPhone && state.level !== 'overview' && routesPanel && routesPanel.hidden) {
             setRoutesOpen(true);
         }
-        // On a phone the info card and the routes panel are both bottom
-        // sheets, so only one shows at a time (see gis_map.css): opening a
-        // municipality's card puts the routes panel back to its pill.
         if (onPhone && state.level !== 'overview' && routesPanel && !routesPanel.hidden) {
             setRoutesOpen(false);
         }
-        // #gis-info-panel's content just got fully replaced, but its
-        // scrollable ancestor (.gis-floating-card, now that the info panel
-        // floats on the map instead of a plain sidebar) keeps whatever
-        // scrollTop it had from the PREVIOUS level's content - a browser
-        // never resets a container's scroll position just because its
-        // children changed. Left alone, drilling into a municipality right
-        // after scrolling the overview list would render the new panel
-        // already scrolled past its own header.
         var floatingCard = document.querySelector('.gis-floating-card');
         if (floatingCard) floatingCard.scrollTop = 0;
     }
 
-    // Map clicks toggle: clicking the municipality/barangay that's already
-    // selected deselects it - a municipality goes back to the province
-    // overview, a barangay back to its municipality. A CSWDO/MSWDO account
-    // has no province overview (see Reset), so its own municipality stays.
+    // Opens a municipality when clicked, or goes back if it's already open.
     function toggleMunicipality(lgu) {
         if (state.level === 'municipality' && state.lgu === lgu) {
             if (!GIS_CONFIG.defaultLgu) setLevel('overview');
@@ -1430,6 +1142,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         setLevel('municipality', lgu);
     }
+    // Opens a barangay when clicked, or goes back if it's already open.
     function toggleBarangay(lgu, barangayId, barangayName) {
         if (state.level === 'barangay-detail' && state.barangayId === barangayId) {
             setLevel('municipality', lgu);
@@ -1438,11 +1151,6 @@ document.addEventListener('DOMContentLoaded', function () {
         setLevel('barangay-detail', lgu, barangayId, barangayName);
     }
 
-    // Deep-link support so links from other pages (e.g. the Dashboard's mini
-    // map) can land directly on a municipality or barangay instead of overview.
-    // Falls back to GIS_CONFIG.defaultLgu when there's no explicit query param
-    // - a CSWDO/MSWDO admin's scope is a single municipality, so there's no
-    // real "overview" for them to land on; they go straight to their town.
     var pendingNav = (function () {
         var params = new URLSearchParams(window.location.search);
         var municipality = params.get('municipality') || GIS_CONFIG.defaultLgu;
@@ -1451,6 +1159,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return { municipality: municipality, barangayId: barangayId ? parseInt(barangayId, 10) : null };
     })();
 
+    // Loads the map data from the server for the chosen disaster event, then draws everything.
     function loadData() {
         var eventId = document.getElementById('filter-event').value;
         var url = '/pswdo/gis-map/data' + (eventId ? '?event_id=' + eventId : '');
@@ -1483,8 +1192,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Delegated click handling for breadcrumb + info panel (both are re-rendered
-    // via innerHTML, so listeners are attached once on stable ancestors).
+    // Handles button clicks inside the side panel (breakdowns, links to other pages, etc.).
     function handleActionClick(e) {
         if (e.target.closest('#btn-toggle-breakdown')) {
             state.showBreakdown = !state.showBreakdown;
@@ -1526,42 +1234,34 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('gis-breadcrumb').addEventListener('click', handleActionClick);
     document.getElementById('gis-info-panel').addEventListener('click', handleActionClick);
 
-    // Active Distribution Routes dock (PSWDO layout): a panel on the map
-    // itself that minimises to a pill button. Open by default where there's
-    // room beside the legend and the info card; on a narrow window it would
-    // cover most of the map, so it starts as the pill there instead.
     var routesPanel = document.getElementById('gis-routes-panel');
     var routesToggle = document.getElementById('gis-routes-toggle');
     var routesMin = document.getElementById('gis-routes-min');
-    // The map panel carries whether the dock is open and how tall it is (as
-    // --dock-h), so the CSS can stack the info card ABOVE it on windows too
-    // narrow for the two to sit side by side, instead of one covering the other.
     var routesMapPanel = document.querySelector('.gis-map-panel');
+    // Makes room at the bottom of the map for the routes panel when it is open.
     function syncDockSpace() {
         if (!routesMapPanel) return;
         var open = !routesPanel.hidden;
         routesMapPanel.classList.toggle('gis-dock-open', open);
         routesMapPanel.style.setProperty('--dock-h', open ? routesPanel.offsetHeight + 'px' : '0px');
     }
+    // Opens or closes the delivery routes panel.
     function setRoutesOpen(open) {
         routesPanel.hidden = !open;
         routesToggle.hidden = open;
         syncDockSpace();
     }
     if (routesPanel && routesToggle && routesMin) {
-        // Its height changes as rows load and while a route's detail strip is
-        // showing - keep the reserved space in step.
         if ('ResizeObserver' in window) new ResizeObserver(syncDockSpace).observe(routesPanel);
         setRoutesOpen(window.innerWidth >= 1360);
         routesToggle.addEventListener('click', function () { setRoutesOpen(true); });
         routesMin.addEventListener('click', function () { setRoutesOpen(false); });
     }
 
-    // Floating panel close (X) / reopen (hamburger) - PSWDO layout only;
-    // the CSWDO page keeps its plain sidebar and has neither button.
     var panelWrap = document.getElementById('gis-floating-info');
     var panelCloseBtn = document.getElementById('gis-panel-close');
     var panelOpenBtn = document.getElementById('gis-panel-open');
+    // Opens or closes the side info panel.
     function setPanelOpen(open) {
         panelWrap.classList.toggle('is-collapsed', !open);
         panelCloseBtn.hidden = !open;
@@ -1572,9 +1272,6 @@ document.addEventListener('DOMContentLoaded', function () {
         panelOpenBtn.addEventListener('click', function () { setPanelOpen(true); });
     }
 
-    // #gis-muni-search is re-created on every renderOverviewPanel() call, so
-    // this listens on the panel itself (delegation, same pattern as
-    // handleActionClick above) instead of being re-wired per render.
     document.getElementById('gis-info-panel').addEventListener('input', function (e) {
         if (e.target.id !== 'gis-muni-search') return;
         var q = e.target.value.trim().toLowerCase();
@@ -1593,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (barangayFilterEl) {
         barangayFilterEl.addEventListener('change', function () {
             var current = (state.level === 'barangay-detail' && state.barangayId) ? String(state.barangayId) : '';
-            if (this.value === current) return; // setLevel's own sync event
+            if (this.value === current) return;
             var lgu = state.lgu || GIS_CONFIG.defaultLgu;
             if (!this.value) setLevel('municipality', lgu);
             else setLevel('barangay-detail', lgu, parseInt(this.value, 10), this.options[this.selectedIndex].text);
@@ -1601,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     document.getElementById('filter-lgu').addEventListener('change', function () {
         var lgu = this.value;
-        if (lgu === (state.lgu || '')) return; // already showing this one (setLevel's own sync event)
+        if (lgu === (state.lgu || '')) return;
         setLevel(lgu ? 'municipality' : 'overview', lgu || null);
     });
     document.getElementById('filter-status').addEventListener('change', function () {
@@ -1611,10 +1308,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var refreshBtn = document.getElementById('btn-refresh');
     if (refreshBtn) refreshBtn.addEventListener('click', loadData);
 
-    // Map Layers checkboxes (legend box) - each just shows/hides a real
-    // Leaflet layer group already on the map, nothing re-fetched. Municipality
-    // Boundary also toggles the name-label layer with it, since a label with
-    // no boundary underneath it reads as a stray floating word.
+    // Shows or hides a map layer (e.g. warehouses, labels) with its checkbox.
     function wireLayerToggle(checkboxId, layers) {
         var cb = document.getElementById(checkboxId);
         if (!cb) return;
@@ -1628,9 +1322,6 @@ document.addEventListener('DOMContentLoaded', function () {
     wireLayerToggle('layer-toggle-barangay', [barangayLayer, barangayLabelLayer]);
     wireLayerToggle('layer-toggle-warehouse', [warehouseLayer]);
 
-    // Reset: back to the starting view - the province overview for PSWDO; for
-    // a CSWDO/MSWDO account (single-LGU scope, no real province overview) its
-    // own municipality, which is where that account lands to begin with.
     var resetBtn = document.getElementById('btn-reset-map');
     if (resetBtn) {
         resetBtn.addEventListener('click', function () {
@@ -1644,12 +1335,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Search: button click or Enter key; results dismiss on outside click.
     document.getElementById('gis-search-btn').addEventListener('click', runSearch);
     searchInputEl.addEventListener('keydown', function (e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        // Enter opens the best (first) match instead of just re-listing.
         var found = runSearch();
         if (found.length) selectSearchResult(found[0]);
     });
@@ -1664,7 +1353,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Active Distribution Routes: click a row to draw its real OSRM route.
     document.getElementById('gis-route-detail').addEventListener('click', function (e) {
         if (e.target.closest('.gis-route-detail-close')) clearRouteDetail();
     });
@@ -1673,36 +1361,22 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!row) return;
         var r = routesById[row.getAttribute('data-distribution-id')];
         if (!r) return;
-        // Clicking the row that's already showing its route puts it away
-        // again (a way to clear the map without hunting for another
-        // control). A row that fell back to the straight line re-tries the
-        // road route instead, so a transient OSRM failure isn't sticky.
         if (row.classList.contains('gis-route-row-active') && !row.hasAttribute('data-route-failed')) {
             clearRouteDetail();
             return;
         }
         row.removeAttribute('data-route-failed');
         loadOsrmRoute(r, row);
-        // CSWDO's routes table still sits below its map - bring the map
-        // into view, or the route it just drew is somewhere off-screen
-        // above. (On the PSWDO page the table is on the map already.)
         var panelEl = document.querySelector('.gis-map-panel');
         if (panelEl && panelEl.scrollIntoView) panelEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
-    // Legend toggle - the legend is always on show on a desktop-sized window,
-    // but on a phone it would cover most of the map, so there it starts hidden
-    // behind this button (the button itself is display:none on desktop).
     var legendToggle = document.getElementById('gis-legend-toggle');
     var legendBox = document.getElementById('gis-legend-box');
     if (legendToggle && legendBox) {
         legendToggle.addEventListener('click', function () { legendBox.classList.toggle('is-open'); });
     }
 
-    // Fullscreen toggle - expands the whole map panel (search bar, map,
-    // legend included) via the browser's native Fullscreen API, no extra
-    // library. Leaflet needs an explicit invalidateSize() nudge after the
-    // container's size changes, or tiles render wrong until the next pan.
     var fullscreenBtn = document.getElementById('gis-fullscreen-btn');
     var mapPanelEl = document.querySelector('.gis-map-panel');
     if (fullscreenBtn && mapPanelEl) {

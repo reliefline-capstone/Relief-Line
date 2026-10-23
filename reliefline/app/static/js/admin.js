@@ -1,4 +1,8 @@
+// System Admin pages (Add/Edit User forms).
+// Shows the 'Office' field for PSWDO/CSWDO roles and the 'Barangay' field for barangay users.
 document.addEventListener('DOMContentLoaded', function () {
+    // Shows only the fields that match the selected role:
+    // the Office field for PSWDO/CSWDO admins, the Barangay field for barangay users.
     function syncRoleFields(select) {
         var form = select.closest('form');
         if (!form) return;

@@ -1,3 +1,5 @@
+# Sets up the whole app: settings, database, login, sidebar badges, and all pages.
+
 import os
 
 from flask import Flask
@@ -7,9 +9,21 @@ from app.utils.icons import ICONS
 from app.utils.roles import ROLE_LABELS
 from app.utils.timezone import ph_time, ph_now, ph_today
 
+# Builds and starts the whole ReliefLine web app.
+# It loads the settings, connects the database, turns on login, and registers every page of the system.
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    if not app.config["SECRET_KEY"]:
+        if not app.config["DEBUG"]:
+            # On the server, the app refuses to start without a SECRET_KEY (it keeps logins secure).
+            raise RuntimeError("SECRET_KEY is not set - add it to the environment / .env (see app/config.py).")
+        app.config["SECRET_KEY"] = "dev-secret-key"
+
+    if app.config["BEHIND_PROXY"]:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -21,12 +35,9 @@ def create_app():
     from app.models.disaster_event import EVENT_CATEGORIES
     app.jinja_env.globals["EVENT_CATEGORIES"] = EVENT_CATEGORIES
 
+    # Adds a version number to each CSS/JS file link (based on when the file last changed).
+    # This makes browsers download the newest file after an update instead of using an old saved copy.
     def asset_version(filename):
-        # File mtime as a cache-busting query string - browsers otherwise hold
-        # onto a stale copy of a static JS/CSS file across edits (bit us with
-        # gis_map.js: the fix was live on the server but the browser kept
-        # serving the old cached script), so this forces a re-fetch whenever
-        # the file on disk actually changes.
         try:
             path = os.path.join(app.static_folder, filename)
             return int(os.path.getmtime(path))
@@ -35,51 +46,29 @@ def create_app():
 
     app.jinja_env.globals["asset_version"] = asset_version
 
+    # Lists the food pack batches a warehouse can choose from when sending out stock.
+    # Used by the batch picker that appears on every 'send stock' form.
     def pickable_food_pack_batches(office_id):
-        # Lazy import - app.routes.pswdo imports models/extensions at load time.
         from app.routes.pswdo import _pickable_food_pack_batches
         return _pickable_food_pack_batches(office_id) if office_id else []
-    # Used by the batch_picker macro (_macros.html) on every dispatch form.
     app.jinja_env.globals["pickable_food_pack_batches"] = pickable_food_pack_batches
 
+    from app import models
     from app.models.user import User
-    from app.models.office import Office
     from app.models.barangay import Barangay
-    from app.models.warehouse import WarehouseInventory, WarehouseStockLog
-    from app.models.food_pack_batch import (
-        FoodPackComponent, FoodPackBatch, FoodPackBatchItem,
-        BarangayFoodPackBatch, BarangayFoodPackBatchItem,
-    )
-    from app.models.allocation import AllocationRecord
-    from app.models.validation import DistributionRecord
-    from app.models.prediction import PredictionLog, ModelMetrics
-    # typhoon_calendar / relief_events / relief_event_typhoons /
-    # barangay_relief_records have no ORM model - app.ml.train and
-    # scripts/load_relief_events.py read/write them directly via SQL (see
-    # scripts/apply_relief_schema.py for their schema). They replaced
-    # barangay_monthly_history / climate_monthly, which are dropped.
-    from app.models.disaster_event import DisasterEvent
-    from app.models.barangay_status import BarangayDisasterStatus
     from app.models.barangay_report import BarangayReport
-    from app.models.family import Family, ReportAffectedFamily
-    from app.models.barangay_inventory import BarangayInventory, BarangayStockLog
-    from app.models.relief_request_batch import ReliefRequestBatch
-    from app.models.activity_log import ActivityLog, DailyOpsStat
-    from app.models.logistics import WarehouseTransfer
-    from app.models.report import ReportLog
-    from app.models.system_setting import SystemSetting
-    from app.models.password_reset_request import PasswordResetRequest
+    from app.models.activity_log import ActivityLog
 
+    # Looks up the logged-in user's account on every page visit,
+    # so the app always knows who is using it.
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    # Saves the time a logged-in user was last active (at most once a minute).
+    # This powers the green 'Online' badge the System Admin sees.
     @app.before_request
     def _track_last_activity():
-        # Heartbeat for app.utils.presence.is_online() - throttled to once a
-        # minute per user so normal browsing doesn't turn into a write on
-        # every single request. Skips static assets (no endpoint / a
-        # 'static' endpoint) since those aren't a meaningful "user is here".
         from datetime import timedelta
         from flask import request
         from flask_login import current_user
@@ -94,14 +83,10 @@ def create_app():
             current_user.last_activity = now
             db.session.commit()
 
+    # If an admin reset this user's password, the user is sent back to the login page
+    # until they choose a new password of their own. Only login and logout stay reachable.
     @app.before_request
     def _enforce_forced_password_change():
-        # Set on User.must_change_password when a System Administrator
-        # grants a PasswordResetRequest (see app.routes.admin) - the account
-        # now holds the shared default password, so every page but /login
-        # (which auto-opens the locked "Set a New Password" modal), that
-        # modal's POST target, and logout redirects to /login until the
-        # user replaces it with one of their own.
         from flask import request, redirect, url_for
         from flask_login import current_user
 
@@ -110,17 +95,22 @@ def create_app():
         }
         if not current_user.is_authenticated or request.endpoint in allowed_endpoints:
             return
+        # This user's password was reset by an admin: send them to the login page to set a new one.
         if current_user.must_change_password:
             return redirect(url_for("auth.login"))
 
+    # Makes the app's icon set available on every page.
     @app.context_processor
     def inject_icons():
         return dict(ICONS=ICONS)
 
+    # Makes the readable role names (e.g. 'PSWDO Administrator') available on every page.
     @app.context_processor
     def inject_role_labels():
         return dict(ROLE_LABELS=ROLE_LABELS)
 
+    # Counts the user's unread notifications for the number badge on the sidebar bell.
+    # Each role only counts notifications meant for them (own municipality, own barangay, or province-wide).
     @app.context_processor
     def inject_unread_notifications():
         from flask_login import current_user
@@ -128,10 +118,6 @@ def create_app():
             return dict(unread_notification_count=0)
 
         if current_user.role == "cswdo_admin":
-            # Scoped to this office's own LGU - must match the count shown on
-            # the CSWDO Notifications page and dashboard widget (see
-            # app.routes.cswdo._own_activity_filters), otherwise the sidebar
-            # badge would disagree with the page it links to.
             office = current_user.office
             lgu = office.area_covered if office else None
             filters = []
@@ -151,9 +137,6 @@ def create_app():
             return dict(unread_notification_count=count)
 
         if current_user.role == "barangay_user":
-            # Scoped to this barangay_id alone - must match the count shown on
-            # the Barangay Notifications page and dashboard widget (see
-            # app.routes.barangay._own_activity_filter).
             if not current_user.barangay_id:
                 return dict(unread_notification_count=0)
             from app.routes.pswdo import NOTIFICATION_META
@@ -165,27 +148,16 @@ def create_app():
             ).count()
             return dict(unread_notification_count=count)
 
-        # pswdo_admin / system_admin see the province-wide count, matching the
-        # PSWDO Notifications page (app.routes.pswdo.notifications) - same
-        # PSWDO_NOTIFICATION_TYPES allowlist, so System Administration rows
-        # (logins, user/office/barangay management) never count here either
-        # (even though they're already is_read=True by design), and neither
-        # do damage_report_* rows - reviewing those is entirely CSWDO/MSWDO's
-        # job, and PSWDO has no page to click through to for them.
         from app.routes.pswdo import PSWDO_NOTIFICATION_TYPES
         count = ActivityLog.query.filter(
             ActivityLog.action_type.in_(PSWDO_NOTIFICATION_TYPES), ActivityLog.is_read.is_(False)
         ).count()
         return dict(unread_notification_count=count)
 
+    # Counts stock requests from CSWDO/MSWDO still waiting for a PSWDO decision.
+    # Shown as a number badge on PSWDO's 'Stock Requests' sidebar link.
     @app.context_processor
     def inject_pending_stock_requests():
-        # Powers the badge on pswdo/_sidebar.html's "Stock Requests" link
-        # (included on every pswdo/*.html page). Counts submitted stock
-        # requests still awaiting a PSWDO decision - same filter as the
-        # dashboard's "Pending Stock Requests" stat and the "Awaiting
-        # decision" tab on the Stock Requests page, so the three never
-        # disagree.
         from flask_login import current_user
         from app.models.relief_request_batch import ReliefRequestBatch
         if not current_user.is_authenticated or current_user.role not in ("pswdo_admin", "system_admin"):
@@ -196,13 +168,10 @@ def create_app():
         ).count()
         return dict(pending_stock_requests=count)
 
+    # Counts new barangay reports waiting for CSWDO/MSWDO review in the user's municipality.
+    # Shown as a number badge on the 'Barangay Reports' sidebar link; clears once the event ends.
     @app.context_processor
     def inject_pending_barangay_reports():
-        # Powers the badge on cswdo/_sidebar.html's "Barangay Reports" link
-        # (included on every cswdo/*.html page). Counts this office's LGU
-        # reports tagged "New" on the Barangay Reports page - pending and
-        # not tied to an ended event (same rule as BarangayReport.is_new),
-        # so the badge clears once the event it was sent under ends.
         from flask_login import current_user
         from app.models.disaster_event import DisasterEvent
         if not current_user.is_authenticated or current_user.role not in ("cswdo_admin", "system_admin"):
@@ -223,15 +192,10 @@ def create_app():
         ).count()
         return dict(pending_barangay_reports=count)
 
+    # Counts new 'forgot password' requests the System Admin hasn't opened yet.
+    # Shown as a number badge on the 'Password Reset Requests' sidebar link.
     @app.context_processor
     def inject_pending_password_resets():
-        # Powers the badge on admin/_sidebar.html's "Password Reset
-        # Requests" link, which is included on every admin/*.html page -
-        # a context processor means each admin route doesn't need to
-        # compute and pass this count itself. Scoped to is_seen=False (not
-        # just status="pending") so opening the Password Reset Requests page
-        # - which marks pending rows seen, see app.routes.admin - clears the
-        # badge even though those requests are still awaiting a decision.
         from flask_login import current_user
         from app.models.password_reset_request import PasswordResetRequest
         if not current_user.is_authenticated or current_user.role != "system_admin":

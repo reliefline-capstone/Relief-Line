@@ -1,3 +1,5 @@
+{# Page: /admin/barangays - Barangay Data Management (System Admin). #}
+{# List of barangays with population and households; add, edit and export them. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, f_url with context %}
@@ -20,7 +22,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the Export and Add Barangay buttons. #}
         <section class="page-header">
             <div>
                 <h2>Barangay Data Management</h2>
@@ -32,6 +34,7 @@
             </div>
         </section>
 
+        {# Total number of barangays. #}
         <section class="stat-cards stat-cards-1">
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('map-pin', 18, '#3867d6') }}</div>
@@ -45,6 +48,7 @@
         {% set chips = [] %}
         {% if fargs.municipality %}{% set _ = chips.append({'label': 'Municipality', 'value': municipality_filter, 'tone': 'violet', 'url': f_url(EP, fargs, {'municipality': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
+        {# Filters: search by name and municipality. #}
         {% call filter_panel(chips, url_for(EP), summary=(rows|length) ~ ' barangay' ~ ('s' if rows|length != 1 else '')) %}
             {{ fp_search('q', search_query, 'Search barangay...') }}
             {% call fp_select('Municipality', 'municipality', 'map-pin') %}
@@ -55,6 +59,7 @@
             {% endcall %}
         {% endcall %}
 
+        {# Barangay table: name, municipality, population, households, typical past allocation, Edit button. #}
         <section class="panel wh-table-panel">
             <table class="wh-table">
                 <thead>
@@ -88,7 +93,7 @@
     </main>
 </div>
 
-<!-- Add Barangay modal -->
+{# 'Add Barangay' pop-up form. #}
 <div class="rd-modal-overlay" id="add-barangay-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">
@@ -129,7 +134,7 @@
     </div>
 </div>
 
-<!-- Edit Barangay modals (one per row) -->
+{# One 'Edit Barangay' pop-up form for each barangay in the table. #}
 {% for row in rows %}
 {% set barangay = row.barangay %}
 <div class="rd-modal-overlay" id="edit-barangay-modal-{{ barangay.barangay_id }}" hidden>

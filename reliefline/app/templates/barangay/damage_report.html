@@ -1,3 +1,5 @@
+{# Page: /barangay/damage-report - Barangay Reports (barangay user). #}
+{# Create situation reports for the CSWDO/MSWDO, continue drafts, and see past reports and their review results. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
@@ -21,7 +23,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the 'New Report' button. #}
         <section class="page-header">
             <div>
                 <h2>Barangay Reports</h2>
@@ -30,11 +32,13 @@
             <a href="{{ url_for('barangay.new_damage_report') }}" class="btn-primary" style="text-decoration:none;">{{ icon('plus', 14, 'white') }} New Report</a>
         </section>
 
+        {# Tabs: Dashboard (open reports) and History (reviewed reports). #}
         <div class="notif-filter-tabs">
             <a href="{{ url_for('barangay.damage_report', tab='dashboard') }}" class="notif-filter-tab {{ 'active' if tab != 'history' }}">{{ icon('grid', 14) }} Active Report</a>
             <a href="{{ url_for('barangay.damage_report', tab='history') }}" class="notif-filter-tab {{ 'active' if tab == 'history' }}">{{ icon('file-text', 14) }} History</a>
         </div>
 
+        {# 5 number cards: total reports, waiting for review, reviewed, returned for correction, drafts. #}
         <section class="stat-cards stat-cards-5">
             <div class="stat-card">
                 <div class="stat-icon amber">{{ icon('clipboard', 18, '#d68910') }}</div>
@@ -75,6 +79,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
 
+        {# History tab filters: search, status, typhoon event and date range. #}
         {% call filter_panel(chips, url_for(EP, tab='history'), hidden={'tab': 'history'}, summary=(decided_reports|length) ~ ' report' ~ ('s' if decided_reports|length != 1 else ''), export_url=url_for('barangay.damage_report_export', **fargs)) %}
             {{ fp_search('q', search_query, 'Search report ID...') }}
             {% call fp_select('Status', 'status', 'check-circle') %}
@@ -92,6 +97,7 @@
             {{ fp_date_range('Date Submitted', 'date_from', date_from, 'date_to', date_to) }}
         {% endcall %}
 
+        {# History table: report ID, typhoon event, date submitted, status, who reviewed it, View button. #}
         <section class="panel rr-table-panel">
             {% if decided_reports %}
             <table class="rr-table">
@@ -135,6 +141,7 @@
         </div>
         {% endif %}
 
+        {# Open reports table (drafts, waiting for review, returned): report ID, event, date, status, actions. #}
         <section class="panel rr-table-panel">
             {% if open_rows %}
             <table class="rr-table">
@@ -179,8 +186,7 @@
     </main>
 </div>
 
-<!-- Delete-draft confirmation - replaces the native confirm() dialog. A single
-     modal serves every draft row; the delete button stashes its form here. -->
+{# 'Delete Draft' confirmation pop-up. #}
 <div class="rd-modal-overlay" id="delete-draft-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">
@@ -205,16 +211,16 @@
     var confirmBtn = document.getElementById('delete-draft-confirm-btn');
     var pendingForm = null;
 
-    // Reparent to <body> so position:fixed pins to the viewport, not the
-    // animated .dashboard-main (same reasoning as relief_request_detail.js).
     if (modal.parentNode !== document.body) document.body.appendChild(modal);
 
+    // Opens the confirmation pop-up for a report action (e.g. deleting or unsubmitting a report).
     function openModal(form) {
         pendingForm = form;
         refEl.textContent = form.dataset.ref || '';
         modal.hidden = false;
         document.documentElement.classList.add('rd-modal-open');
     }
+    // Closes the confirmation pop-up without doing anything.
     function closeModal() {
         modal.hidden = true;
         pendingForm = null;

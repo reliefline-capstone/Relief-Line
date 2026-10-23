@@ -1,3 +1,5 @@
+{# Page: /cswdo/barangay-distributions - Family Distributions (CSWDO/MSWDO). #}
+{# What a chosen barangay handed out to its families, with proof photos. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, photo_viewer with context %}
 {% from "_filter_panel.html" import filter_panel, fp_select, fp_date_range, f_url with context %}
@@ -18,6 +20,7 @@
 
     <main class="dashboard-main">
 
+        {# Page title (with the chosen barangay's name). #}
         <div class="page-header">
             <div>
                 <div class="wh-title-row">
@@ -36,6 +39,7 @@
         {% if fargs.proof %}{% set _ = chips.append({'label': 'Proof', 'value': proof_labels.get(proof_filter, proof_filter), 'tone': 'green', 'url': f_url(EP, fargs, {'proof': None})}) %}{% endif %}
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
 
+        {# Filters: barangay, with/without photo proof, and date range. #}
         {% call filter_panel(chips, url_for(EP, barangay_id=barangay.barangay_id if barangay else None), summary=(logs|length) ~ ' distribution' ~ ('s' if logs|length != 1 else '')) %}
             {% call fp_select('Barangay', 'barangay_id', 'map-pin') %}
                 <option value="">Select a barangay</option>
@@ -53,9 +57,11 @@
         {% endcall %}
 
         {% if not barangay %}
+        {# Message shown until a barangay is chosen. #}
         <section class="panel"><p class="empty-note">Select a barangay to see its distribution history.</p></section>
         {% else %}
 
+        {# 4 number cards: packs distributed, families reached, records with photo proof, packs on hand now. #}
         <section class="stat-cards stat-cards-4">
             <div class="stat-card">
                 <div class="stat-icon orange">{{ icon('truck', 18, '#e67e22') }}</div>
@@ -79,6 +85,7 @@
             </div>
         </section>
 
+        {# Distributions table: date, given to (family or note), packs, photo proof, recorded by. #}
         <section class="panel wh-table-panel" style="margin-top:16px;">
             <div class="panel-header"><h3>Distributions</h3></div>
             <table class="wh-table">
@@ -118,6 +125,7 @@
             </table>
         </section>
 
+        {# One photo viewer pop-up for each distribution that has proof photos. #}
         {% for l in logs if l.proof_photo_list %}
         <div class="rd-modal-overlay" id="bd-proof-{{ l.log_id }}" hidden>
             <div class="rd-modal" style="max-width:600px;">

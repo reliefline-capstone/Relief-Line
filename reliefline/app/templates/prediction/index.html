@@ -1,3 +1,5 @@
+{# Page: /prediction/ - Analytics & Recommendations (Predictive Analytics) for PSWDO and CSWDO/MSWDO. #}
+{# The food pack forecast, how long stock will last, barangay breakdowns, warehouse stock vs forecast, and model accuracy. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, prediction_disclaimer with context %}
 
@@ -23,7 +25,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title. #}
         <section class="page-header">
             <div>
                 <h2>Analytics &amp; Recommendations</h2>
@@ -31,7 +33,7 @@
             </div>
         </section>
 
-        <!-- Stat cards -->
+        {# 3 number cards: estimated need, current stock/shortage, and number of active recommendations. #}
         <section class="stat-cards stat-cards-3">
             <div class="stat-card">
                 <div class="stat-icon orange">{{ icon('package', 18, '#e67e22') }}</div>
@@ -52,6 +54,8 @@
 
         <div class="main-grid {{ 'pa-grid-stack' if is_cswdo else 'dash-grid-even' }}" style="margin-top:16px;">
 
+            {# System Recommendations: suggested actions, each with a pop-up listing the barangays involved #}
+            {# (CSWDO/MSWDO can allocate to a barangay directly from there). #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>System Recommendations</h3>
@@ -74,10 +78,6 @@
                             <h3>{{ icon('package', 18, '#0f2547') }} {{ rec.title }}</h3>
                             <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
                         </div>
-                        <p class="form-hint">
-                            Biggest gap first. Short = recommended {{ rec.horizon_months }}-month stockpile minus
-                            (on hand + on the way). Together: {{ "{:,}".format(rec.total_short) }} packs short.
-                        </p>
                         <div class="rr-table-wrap" style="max-height:60vh; overflow:auto;">
                             <table class="rr-table">
                                 <thead><tr>
@@ -102,7 +102,8 @@
                                 </tbody>
                             </table>
                         </div>
-                        <p class="form-hint" style="margin-top:10px;">Red = stock doesn't even cover the expected demand. Orange = covers expected, but not the recommended stockpile.</p>
+                        <p class="form-hint" style="margin:10px 0 2px;"><strong style="color:#c0392b;">Red</strong> = stock doesn't even cover the expected demand.</p>
+                        <p class="form-hint" style="margin:0;"><strong style="color:#d35400;">Orange</strong> = covers expected, but not the recommended stockpile.</p>
                     </div>
                 </div>
                 {% endif %}
@@ -115,6 +116,8 @@
 
         </div>
 
+        {# Projected Demand: the monthly forecast chart (expected need and recommended stockpile), #}
+        {# with a municipality and period filter. Click a month to see its barangay breakdown. #}
         <section class="panel" id="pa-forecast-detail" style="margin-top:16px; margin-bottom:16px;">
             <div class="panel-header">
                 <h3>Projected Demand</h3>
@@ -141,12 +144,10 @@
             {% set months = chart_months %}
             {% set n = months|length %}
             {% set axis_max = chart_axis_max or 1 %}
-            {# plot area: x 70..980, y 40 (top) .. 280 (zero line) #}
             {% set pl, pr, pt, pb = 70, 980, 40, 280 %}
             {% set slot = (pr - pl) / n %}
             {% set bw = [slot * 0.3, 30]|min %}
             {% set compact = n > 8 %}
-            {# Bar with 4px rounded top corners and a square base on the zero line. #}
             {% macro top_rounded_bar(x, h, w) -%}
             {%- set r = [4, h, w / 2]|min -%}
             M{{ '%.1f'|format(x) }},{{ pb }} V{{ '%.1f'|format(pb - h + r) }} Q{{ '%.1f'|format(x) }},{{ '%.1f'|format(pb - h) }} {{ '%.1f'|format(x + r) }},{{ '%.1f'|format(pb - h) }} H{{ '%.1f'|format(x + w - r) }} Q{{ '%.1f'|format(x + w) }},{{ '%.1f'|format(pb - h) }} {{ '%.1f'|format(x + w) }},{{ '%.1f'|format(pb - h + r) }} V{{ pb }} Z
@@ -228,9 +229,6 @@
                     <span class="rd-sub">packs</span>
                 </div>
             </div>
-            {% if lgu_forecast.short_horizon %}
-            <p class="stock-warning" style="margin:8px 0;">{{ icon('alert-triangle', 16, '#b9651a') }}<strong>Not a safety stock for this period</strong></p>
-            {% endif %}
             {% if lgu_forecast.below_largest_event %}
             <p class="stock-warning" style="margin:8px 0;">{{ icon('alert-triangle', 16, '#b9651a') }}<strong>{% if lgu_forecast.largest_covered_only_by_buffer %}Largest storm covered only by the buffer{% else %}Extreme storms are not covered{% endif %}</strong></p>
             {% endif %}
@@ -241,6 +239,7 @@
         </section>
 
         {% if cover_chart %}
+        {# 'How long will the stock last?' chart: current stock vs the forecasted need adding up month by month. #}
         <section class="panel" id="pa-cover-chart" style="margin-bottom:16px;">
             <div class="panel-header">
                 <h3>How long will the stock last? - {{ lgu_forecast.lgu }}</h3>
@@ -331,42 +330,7 @@
 
         <div class="main-grid {{ 'pa-grid-stack' if is_cswdo else 'dash-grid-even' }}">
 
-            {# Superseded by the time-forecasting model - was a current-moment
-               snapshot (submitted requests / model estimate vs delivered so
-               far), not an actual forecast. Replaced in-place below with the
-               model's real per-LGU projections. Commented out (Jinja comment,
-               so the {% %} tags inside stay inert) rather than deleted, in
-               case the snapshot view is wanted back later.
-
-            <section class="panel">
-                <div class="panel-header">
-                    <h3>Demand Forecast by Municipality</h3>
-                    {% if event %}<span class="tag-outline">{{ icon('cloud-lightning', 12) }} {{ event.event_name }}</span>{% endif %}
-                </div>
-                {% for f in forecast_by_lgu %}
-                <div class="warehouse-status-row">
-                    <div class="warehouse-status-top">
-                        <div class="warehouse-status-name">
-                            <div>
-                                <strong>{{ f.lgu }}</strong>
-                            </div>
-                        </div>
-                        <div class="warehouse-status-right">
-                            <span class="badge-priority badge-priority-{{ f.priority_tier }}"><i class="priority-dot"></i> {{ f.priority_label }}</span>
-                            <strong>{{ "{:,}".format(f.packs_needed) }}</strong>
-                        </div>
-                    </div>
-                    <div class="warehouse-bar">
-                        <div class="warehouse-bar-fill pa-fill-{{ f.priority_tier }}" style="width: {{ f.pct_done if f.pct_done <= 100 else 100 }}%;"></div>
-                    </div>
-                    <span class="warehouse-status-sub">Delivered: {{ "{:,}".format(f.delivered) }}   Remaining: {{ "{:,}".format(f.remaining) }}   {{ f.pct_done }}% done</span>
-                </div>
-                {% else %}
-                <p class="empty-note">No municipalities in scope for this filter.</p>
-                {% endfor %}
-            </section>
-            #}
-
+            {# Projected Demand by Municipality: each municipality's forecast for the period. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Projected Demand by Municipality</h3>
@@ -390,12 +354,11 @@
                 {% endfor %}
             </section>
 
-
-
         </div>
 
         {% if show_breakdown and lgu_forecast and barangay_breakdown %}
         {% set top = barangay_breakdown[0] %}
+        {# Barangay Breakdown: each barangay's current stock, expected need and recommended stockpile. #}
         <section class="panel" id="pa-barangay-breakdown" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Barangay Breakdown - {{ lgu_forecast.lgu }}</h3>
@@ -428,10 +391,8 @@
         </section>
         {% endif %}
 
-        {# CSWDO view: this panel's numbers now live in "How long will the stock
-           last?" (stock, capacity, shortfall, manage link). Kept for the
-           multi-warehouse admin view, where it compares every warehouse. #}
         {% if not is_cswdo %}
+        {# Warehouse Stock vs Forecast: each warehouse's stock compared with the recommended stockpile. #}
         <section class="panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Warehouse Stock vs Forecast</h3>
@@ -478,15 +439,14 @@
         {% endif %}
 
         {% if not is_cswdo %}
+        {# Model Performance: how accurate the forecast was when tested on past typhoons #}
+        {# (tables of accuracy scores and the 'actual vs predicted' chart). #}
         <section class="panel pa-model-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Model Performance</h3>
                 <span class="rd-sub">Two-Stage Model (share regression + climatology) · leave-one-typhoon-out validation</span>
             </div>
             {% if latest_metrics %}
-            {# Every tile shows one figure per municipality, so no single
-               municipality (e.g. Calasiao's near-empty storms) sets the
-               headline and none is hidden behind a "worst" or combined number. #}
             <div class="pa-model-rows">
                 <div class="pa-decision-tile"><span class="rd-sub">Share MAE</span>
                     <ul class="pa-tile-lgus">{% for r in loto_cv %}<li><span>{{ r.lgu }}</span><strong>{{ "%.4f"|format(r.mae_model) }}</strong></li>{% endfor %}</ul>
@@ -682,7 +642,6 @@
         </section>
         {% endif %}
 
-
     </main>
 </div>
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
@@ -693,9 +652,12 @@
     var panel = document.getElementById('pa-month-detail');
     if (!panel) return;
     var hits = document.querySelectorAll('.pa-month-hit');
+    // Formats a number with commas (e.g. 12,345).
     var fmt = function (n) { return Number(n).toLocaleString('en-US'); };
+    // Makes text safe to show on the page.
     function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+    // Shows the barangay breakdown for the month clicked on the forecast chart.
     function select(key) {
         var m = DATA[key];
         if (!m) return;
@@ -715,6 +677,7 @@
             : 'Only ' + m.label + ' is shown. Barangay figures can differ from the municipal total by a few packs due to rounding.';
         panel.hidden = false;
     }
+    // Closes the barangay breakdown.
     function close() {
         panel.hidden = true;
         hits.forEach(function (h) { h.classList.remove('active'); });
@@ -731,10 +694,10 @@
 </script>
 {% endif %}
 <script>
-/* Hover tooltips for the forecast charts. Positions are in SVG viewBox units,
-   converted to % of the chart box so they follow the responsive SVG. */
 (function () {
+    // Formats a number with commas (e.g. 12,345).
     var fmt = function (n) { return Number(n).toLocaleString('en-US'); };
+    // Positions the chart tooltip next to the mouse.
     function place(host, tip, x, y) {
         var svg = host.querySelector('svg');
         var vb = svg.viewBox.baseVal;
@@ -747,6 +710,7 @@
         tip.style.left = left + 'px';
         tip.style.top = Math.max(py - tip.offsetHeight - 12, 0) + 'px';
     }
+    // Builds one line of the chart tooltip.
     function row(cls, label, value) {
         return '<div class="pa-tip-row"><i class="' + cls + '"></i><span>' + label + '</span><strong>' + value + '</strong></div>';
     }
@@ -755,6 +719,7 @@
     if (demand) {
         var dtip = document.getElementById('pa-demand-tip');
         demand.querySelectorAll('.pa-month-hit').forEach(function (h) {
+            // Shows the tooltip for a forecast bar (expected need, stockpile, season).
             function show() {
                 var d = h.dataset;
                 dtip.innerHTML = '<div class="pa-tip-title">' + d.tipLabel + '</div>' +
@@ -782,9 +747,11 @@
         var ctip = document.getElementById('pa-cover-tip');
         var cross = document.getElementById('pa-cover-cross');
         var dots = cover.querySelectorAll('.pa-pt');
+        // Shows the packs left over, or how many packs short.
         function left(v) {
             return v >= 0 ? fmt(v) + ' left' : '<span class="pa-tip-short">short ' + fmt(-v) + '</span>';
         }
+        // Hides the chart tooltip.
         function clear() {
             ctip.hidden = true;
             cross.classList.remove('on');

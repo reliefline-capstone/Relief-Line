@@ -1,9 +1,5 @@
-"""
-Renders a build_report() dict (see report_data.py) into a real PDF or Excel
-file. One renderer per format, shared by every report type - the report data
-already carries generic columns/rows, so no per-report-type layout code is
-needed here.
-"""
+# Creates the PDF and Excel report files.
+
 import io
 import os
 from xml.sax.saxutils import escape
@@ -23,43 +19,30 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, KeepTogether, Image
 
-NAVY = colors.HexColor("#0f2547")
-MUTED = colors.HexColor("#8a94a6")
-LIGHT_GRAY = colors.HexColor("#f4f6fa")
-BORDER = colors.HexColor("#e1e5eb")
-
-
+# Sets each table column's width in the PDF to fit its contents.
 def _column_widths(columns, rows, total_width):
-    """Width per column proportional to its longest content (header words or
-    cell text), clamped so a short column like "#" stays narrow and one long
-    column can't starve the rest - instead of every column getting the same
-    share and long values spilling out of narrow cells."""
     weights = []
     for i, col in enumerate(columns):
         longest_word = max((len(w) for w in str(col).split()), default=1)
         longest_cell = max((len(str(r[i])) for r in rows), default=0)
-        # +2 on header words: they're bold, so a word needs a little more
-        # room than its character count or it splits mid-word.
         weights.append(min(max(longest_word + 2, min(longest_cell, 28), 4), 30))
     scale = total_width / sum(weights)
     return [w * scale for w in weights]
 
 
-# Box a letterhead seal is scaled into - wider than tall, so a landscape
-# logo (Urdaneta's) isn't shrunk down to a round seal's width.
 SEAL_W, SEAL_H = 1.3 * inch, 0.95 * inch
 
 
+# Finds an image file (like an official seal) in the app's files.
 def _static_path(rel):
-    """Absolute path of a file under app/static, or None if it's missing."""
     if not rel:
         return None
     path = os.path.join(current_app.static_folder, *rel.split("/"))
     return path if os.path.exists(path) else None
 
 
+# Loads an official seal/logo image, resized for the report header.
 def _seal(rel):
-    """A letterhead seal image scaled to fit SEAL_W x SEAL_H (keeps its aspect)."""
     path = _static_path(rel)
     if not path:
         return ""
@@ -68,8 +51,8 @@ def _seal(rel):
     return Image(path, width=iw * scale, height=ih * scale)
 
 
+# Builds the top of the PDF: seals on the sides and the government/office name in the middle.
 def _letterhead_block(lh, width, line_style, lgu_style, office_style):
-    """[left seal | centered Republic/Province/LGU lines + office | right seal]."""
     text = [Paragraph(escape(line), lgu_style if i >= 2 else line_style) for i, line in enumerate(lh["lines"])]
     text.append(Paragraph(escape(lh["office"].upper()), office_style))
     side = SEAL_W + 6
@@ -84,6 +67,7 @@ def _letterhead_block(lh, width, line_style, lgu_style, office_style):
     return table
 
 
+# Builds the signature lines at the bottom of the PDF ('Prepared by', 'Noted by'...).
 def _signature_table(letterhead, width):
     sigs = letterhead["signatories"]
     gap = 24
@@ -92,8 +76,7 @@ def _signature_table(letterhead, width):
     name = ParagraphStyle("RLSigName", fontName="Helvetica-Bold", fontSize=9, alignment=TA_CENTER)
     pos = ParagraphStyle("RLSigPos", fontName="Helvetica", fontSize=8.5, leading=10.5, alignment=TA_CENTER)
 
-    # Signer columns separated by empty gap columns, so each signature line
-    # is its own segment instead of one rule running across the page.
+    # Adds spacing between the signature columns.
     def with_gaps(cells):
         out = []
         for i, c in enumerate(cells):
@@ -122,12 +105,10 @@ def _signature_table(letterhead, width):
     return KeepTogether([Spacer(1, 26), table])
 
 
+# Creates the PDF file of a report: letterhead, title, filters used,
+# the data table and the signature lines.
 def generate_pdf(report):
     buffer = io.BytesIO()
-    # Wide reports go landscape, same threshold as the on-screen print view.
-    # Letter (short bond - the usual office paper here) with 0.75" margins.
-    # An A4 page printed at actual size on Letter paper lost ~0.7" off its
-    # right edge; a Letter page with these margins fits on either paper.
     pagesize = landscape(letter) if len(report["columns"]) > 7 else letter
     doc = SimpleDocTemplate(
         buffer, pagesize=pagesize,
@@ -199,6 +180,7 @@ def generate_pdf(report):
     return buffer.getvalue(), page_count
 
 
+# Creates the Excel file of a report: letterhead, title, filters used and the data table.
 def generate_excel(report):
     wb = Workbook()
     ws = wb.active
@@ -213,13 +195,13 @@ def generate_excel(report):
     last_col = max(len(report["columns"]), 2)
     center = Alignment(horizontal="center")
 
+    # Writes a centered title line across the Excel sheet.
     def centered(row, value, font):
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=last_col)
         cell = ws.cell(row=row, column=1, value=value)
         cell.font = font
         cell.alignment = center
 
-    # Letterhead - same lines as the PDF/printed report.
     row = 1
     for i, line in enumerate(lh["lines"]):
         centered(row, line, Font(size=10, bold=i >= 2))
@@ -227,7 +209,6 @@ def generate_excel(report):
     centered(row, lh["office"].upper(), Font(size=11, bold=True))
     row += 2
 
-    # Seals over the letterhead rows' left and right ends.
     for rel, col in ((lh.get("logo_left"), 1), (lh.get("logo_right"), last_col)):
         path = _static_path(rel)
         if not path:
@@ -275,7 +256,6 @@ def generate_excel(report):
             ws.cell(row=next_row + i, column=1, value=f"• {note}")
         next_row += len(report["notes"]) + 2
 
-    # Signatories, one per column block: label, name (on the line), position.
     sig_row = next_row + 1
     for i, s in enumerate(lh["signatories"]):
         col = 1 + i * 3
@@ -290,6 +270,7 @@ def generate_excel(report):
     return buffer.getvalue(), page_count
 
 
+# Creates the report file in the chosen format (PDF or Excel).
 def generate_file(report, fmt):
     if fmt == "pdf":
         return generate_pdf(report)

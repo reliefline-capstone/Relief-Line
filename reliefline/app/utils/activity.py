@@ -1,10 +1,4 @@
-"""Shared metadata + logging helper for admin-authored ActivityLog rows
-(System Administration actions - user/office/barangay management, auth,
-settings). Operational rows written elsewhere (allocation, distribution,
-warehouse - see app.routes.pswdo/cswdo) are untouched and simply fall back
-to DEFAULT_MODULE_LABEL.
-"""
-from datetime import datetime
+# Activity log helpers (save an entry, section names, badge colors).
 
 from app.utils.timezone import ph_now
 
@@ -42,13 +36,12 @@ MODULE_LABELS = {
 DEFAULT_MODULE_LABEL = "Other"
 
 
+# Tells which part of the system an activity belongs to (e.g. 'User Management', 'Authentication').
+# Used to group and filter the System Activity log.
 def module_for_action(action_type):
     return MODULE_LABELS.get(action_type, DEFAULT_MODULE_LABEL)
 
 
-# CSS class suffix (see static/css/admin.css .badge-module.mod-*) each module
-# renders with - reuses the same color language as the rest of the app
-# (blue/purple/amber/green/red/gray) rather than inventing a new palette.
 MODULE_BADGE_CLASS = {
     "Authentication": "mod-blue",
     "Allocation": "mod-purple",
@@ -63,18 +56,14 @@ MODULE_BADGE_CLASS = {
 DEFAULT_MODULE_BADGE_CLASS = "mod-gray"
 
 
+# Picks the badge color shown next to an activity, based on its part of the system.
 def module_badge_class(action_type):
     return MODULE_BADGE_CLASS.get(module_for_action(action_type), DEFAULT_MODULE_BADGE_CLASS)
 
 
+# Saves one entry in the activity log: who did what, when, and from which computer (IP address).
+# Used for System Admin actions like creating users or resetting passwords.
 def log_admin_activity(actor_id, action_type, description, office_id=None, barangay_id=None):
-    """Writes an ActivityLog row for a System Administration action.
-
-    is_read=True on purpose: these rows are visible on the admin's own
-    System Activity page (which doesn't filter by is_read), but shouldn't
-    inflate the PSWDO/CSWDO notification bell - that feed is for
-    operational items awaiting their review, not admin housekeeping.
-    """
     log = ActivityLog(
         actor_id=actor_id, action_type=action_type, description=description,
         office_id=office_id, barangay_id=barangay_id,

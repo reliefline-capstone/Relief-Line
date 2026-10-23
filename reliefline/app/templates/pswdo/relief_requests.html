@@ -1,8 +1,8 @@
+{# Page: /pswdo/relief-requests - Stock Requests (PSWDO). #}
+{# Requests for food packs from the CSWDO/MSWDO offices, to review; also pre-position stock without a request. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, batch_picker with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range with context %}
-{# This page's URL with every current filter kept, `over` changing some of
-   them (None drops one). #}
 {% macro rr_url(fargs, over={}) %}{% set d = fargs.copy() %}{% set _ = d.update(over) %}{{ url_for('pswdo.relief_requests', **d) }}{% endmacro %}
 
 {% block title %}Stock Requests - ReliefLine{% endblock %}
@@ -21,7 +21,6 @@
 
     <main class="dashboard-main">
 
-
         {% set fargs = {
             'status': status_filter if status_filter != 'all' else None,
             'municipality': municipality_filter if municipality_filter != 'all' else None,
@@ -31,6 +30,7 @@
             'date_from': date_from or None,
             'date_to': date_to or None,
         } %}
+        {# Page title with the Export (CSV) and Pre-position buttons. #}
         <div class="rr-page-head">
             <div>
                 <h2>Stock Requests</h2>
@@ -44,6 +44,7 @@
         </div>
 
         <div class="rr-toolbar">
+            {# Status tabs: All requests, Awaiting decision, Approved / In Transit, Fulfilled, Declined (with counts). #}
             <nav class="page-tabs">
                 {% set pill_defs = [
                     ('all', 'All requests', total_count),
@@ -61,8 +62,6 @@
             </nav>
         </div>
 
-        {# Active filters as removable chips - each chip's link is this page
-           with just that one filter reset. #}
         {% set tab_labels = {} %}{% for key, label, n in pill_defs %}{% set _ = tab_labels.update({key: label}) %}{% endfor %}
         {% set event_names = {} %}{% for e in events %}{% set _ = event_names.update({e.event_id: e.event_name}) %}{% endfor %}
         {% set chips = [] %}
@@ -72,6 +71,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': rr_url(fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if fargs.q %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': rr_url(fargs, {'q': None})}) %}{% endif %}
 
+        {# Filters: search, municipality, priority, typhoon event and dates (plus Export). #}
         {% call filter_panel(chips, url_for('pswdo.relief_requests', status=fargs.status), hidden={'status': fargs.status} if fargs.status else {}) %}
             {{ fp_search('q', search_query, 'Search request ID or municipality...') }}
             {% call fp_select('Municipality', 'municipality', 'map-pin') %}
@@ -96,6 +96,8 @@
         {% endcall %}
 
         <div class="rr-table-wrap">
+            {# Requests table: request ID, municipality, event, packs requested and approved, priority, status. #}
+            {# Click a row to open the request. #}
             <table class="rr-table">
                 <thead>
                     <tr><th>Request ID</th><th>Municipality</th><th>Event</th><th>Requested</th><th>Approved</th><th>Priority</th><th>Status</th><th></th></tr>
@@ -139,6 +141,8 @@
     </main>
 </div>
 
+{# 'Pre-position Stock' pop-up: send packs from a depot to a municipal warehouse without a request, #}
+{# with a live 'before -> after' stock preview. #}
 <div class="rd-modal-overlay" id="direct-preposition-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header"><h3>{{ icon('package', 18, '#0f2547') }} Pre-position Stock</h3>

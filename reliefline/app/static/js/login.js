@@ -1,3 +1,4 @@
+// Login form: the eye button that shows or hides the typed password.
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.toggle-password').forEach(function (btn) {
         btn.addEventListener('click', function () {

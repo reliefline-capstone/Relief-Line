@@ -1,3 +1,5 @@
+{# Page: /cswdo/deliveries - Deliveries (CSWDO/MSWDO). #}
+{# Food pack deliveries from the municipal warehouse to its barangays, and pre-positioning packs to a barangay. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, batch_picker with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, fp_date_range, f_url with context %}
@@ -20,7 +22,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the 'Allocate' button (send packs to a barangay ahead of time). #}
         <div class="page-header">
             <div>
                 <h2>Deliveries</h2>
@@ -33,6 +35,7 @@
             </div>
         </div>
 
+        {# 4 number cards: preparing/loading, issued/in transit, awaiting barangay confirmation, confirmed received. #}
         <section class="stat-cards stat-cards-4">
             <div class="stat-card">
                 <div class="stat-icon blue">{{ icon('package', 18, '#3867d6') }}</div>
@@ -69,6 +72,7 @@
         {% if date_from or date_to %}{% set _ = chips.append({'label': 'Date', 'value': (date_from or '...') ~ ' to ' ~ (date_to or '...'), 'tone': 'neutral', 'url': f_url(EP, fargs, {'date_from': None, 'date_to': None})}) %}{% endif %}
         {% if search_query %}{% set _ = chips.append({'label': 'Search', 'value': search_query, 'tone': 'neutral', 'url': f_url(EP, fargs, {'q': None})}) %}{% endif %}
 
+        {# Filters: search, status, barangay, typhoon event, type (from a report or pre-positioned) and dates. #}
         {% call filter_panel(chips, url_for(EP, status='all'), summary=(rows|length) ~ ' deliver' ~ ('ies' if rows|length != 1 else 'y')) %}
             {{ fp_search('q', search_query, 'Search barangay or delivery ID...') }}
             {% call fp_select('Status', 'status', 'check-circle') %}
@@ -98,6 +102,8 @@
             {{ fp_date_range('Delivery Date', 'date_from', date_from, 'date_to', date_to) }}
         {% endcall %}
 
+        {# Deliveries table: delivery ID, barangay report, event, barangay, packs, status and progress bar. #}
+        {# Click a row to open the delivery. #}
         <section class="panel rr-table-panel">
             <table class="rr-table">
                 <thead>
@@ -122,7 +128,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            <span class="badge-status status-{{ 'validated' if r.status == 'confirmed' else ('delayed' if r.dispatch_status == 'delayed' else r.dispatch_status) }}">
+                            <span class="badge-status status-{{ 'validated' if r.status == 'confirmed' else r.dispatch_status }}">
                                 {{ 'Validated Received' if r.status == 'confirmed' else dispatch_labels.get(r.dispatch_status, r.dispatch_status) }}
                             </span>
                             {% if row.awaiting_validation %}<span class="rr-sub">awaiting barangay validation</span>{% endif %}
@@ -140,6 +146,7 @@
         </section>
 
         {% if can_allocate %}
+        {# 'Allocate to Barangay' pop-up: send food packs to a barangay before it asks (pre-positioning). #}
         <div class="rd-modal-overlay" id="dv-allocate-modal" hidden>
             <div class="rd-modal" style="max-width:560px;">
                 <div class="rd-modal-header">
@@ -198,8 +205,6 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 <script>
-// ?allocate=<barangay_id>&qty=<n> (from Predictive Analytics' "barangays need
-// food packs" list) opens the Allocate modal prefilled for that barangay.
 document.addEventListener('DOMContentLoaded', function () {
     var params = new URLSearchParams(window.location.search);
     var brgy = params.get('allocate');

@@ -1,5 +1,9 @@
+# Database table: each barangay's condition during a disaster event.
+
 from app.extensions import db
 
+# Database table 'barangay_disaster_status': a barangay's condition during one event
+# (normal, monitoring, needs assistance, high priority) and its affected families. Used to color the map.
 class BarangayDisasterStatus(db.Model):
     __tablename__ = "barangay_disaster_status"
 

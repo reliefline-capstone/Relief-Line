@@ -1,3 +1,5 @@
+{# Page: /admin/dashboard - System Administration dashboard (System Admin's first page). #}
+{# Shows user counts, who is online, recent users and quick links. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -16,7 +18,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title. #}
         <section class="page-header">
             <div>
                 <h2>System Administration</h2>
@@ -24,6 +26,7 @@
             </div>
         </section>
 
+        {# 4 number cards: total users, users online now, deactivated accounts, activity this month. #}
         <section class="stat-cards stat-cards-4">
             <a class="stat-card" href="{{ url_for('admin.users') }}">
                 <div class="stat-icon blue">{{ icon('users', 18, '#3867d6') }}</div>
@@ -49,6 +52,7 @@
 
         <div class="main-grid">
 
+            {# Recent Users: the 5 most recently active accounts, with Online/Offline status. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Recent Users</h3>
@@ -75,6 +79,7 @@
                 {% endfor %}
             </section>
 
+            {# Quick Actions: shortcuts to the main System Admin pages. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>Quick Actions</h3>

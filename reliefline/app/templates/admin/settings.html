@@ -1,3 +1,5 @@
+{# Page: /admin/settings - System Settings (System Admin). #}
+{# Sets when a warehouse shows as Healthy / Moderate / Low, and the low-stock alert switch. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -18,7 +20,6 @@
 
     <main class="dashboard-main">
 
-
         <section class="page-header">
             <div>
                 <h2>System Settings</h2>
@@ -28,6 +29,7 @@
 
         <div class="settings-grid">
 
+            {# About ReliefLine: system information. #}
             <section class="panel">
                 <div class="panel-header">
                     <h3>About ReliefLine</h3>
@@ -43,6 +45,7 @@
             </section>
 
             <div class="settings-forms">
+                {# Warehouse Stock Thresholds form: the % full for 'Healthy' and 'Moderate', and low-stock alerts on/off. #}
                 <section class="panel">
                     <div class="panel-header">
                         <h3>Warehouse Stock Thresholds</h3>

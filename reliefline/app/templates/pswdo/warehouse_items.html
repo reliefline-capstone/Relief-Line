@@ -1,3 +1,5 @@
+{# Page: /pswdo/warehouse-inventory/<id>/inventory - Inventory Management for one warehouse (PSWDO). #}
+{# Every stock item, food pack batches with expiration dates, and forms to add, update or remove stock. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -17,13 +19,13 @@
 
     <main class="dashboard-main">
 
-
         {% set crumbs = [
             {"label": office.office_name, "url": url_for('pswdo.warehouse_detail', office_id=office.office_id)},
             {"label": "Inventory Management", "url": none}
         ] %}
         {% include "pswdo/_warehouse_subnav.html" %}
 
+        {# Search box, filters, and the Export and Add Stock buttons. #}
         <section class="page-header">
             <form method="GET" class="wh-search-form">
                 <div class="wh-search-wrapper">
@@ -38,6 +40,7 @@
             </div>
         </section>
 
+        {# Items table: item, current quantity, unit, minimum level, stock vs minimum, status, and action buttons. #}
         <section class="panel wh-table-panel">
             <table class="wh-table">
                 <thead>
@@ -94,6 +97,7 @@
             </table>
         </section>
 
+        {# Food Pack Batches: received date, earliest expiry, days left, quantity, contents and status. #}
         <section class="panel wh-table-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Food Pack Batches</h3>
@@ -157,7 +161,7 @@
 </div>
 
 {% if office.office_type == 'pswdo' %}
-<!-- Add Stock modal -->
+{# 'Add Stock Item' pop-up form (with source, and food pack contents/expiry dates). #}
 <div class="rd-modal-overlay" id="add-stock-modal" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header">
@@ -204,7 +208,7 @@
     </div>
 </div>
 
-<!-- Update Stock modals (one per item) -->
+{# For each item: an 'Update' pop-up (add/remove stock with reason and source) and a 'Remove Item' pop-up. #}
 {% for row in rows %}
 {% set item = row.item %}
 <div class="rd-modal-overlay" id="update-stock-modal-{{ item.inventory_id }}" hidden>
@@ -307,7 +311,7 @@
 {% endif %}
 {% endfor %}
 
-<!-- Resolve expired batch modals -->
+{# One 'Resolve Expired Batch' pop-up for each expired batch (dispose, or repack with fresh items). #}
 {% for row in batch_rows if row.shelf_status == 'expired' %}
 {% set batch = row.batch %}
 <div class="rd-modal-overlay" id="batch-modal-{{ batch.batch_id }}" hidden>
@@ -343,9 +347,8 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
 <script>
-// Live-computes the resulting total as the user types a donation/adjustment
-// amount, so nobody has to add it to the current stock by hand - the server
-// still does the authoritative math (see pswdo.warehouse_inventory_update).
+// Shows the new total while the user types a stock change
+// (e.g. 500 now + 100 = 600; it can't go below 0).
 function whPreviewTotal(input) {
     var current = parseInt(input.dataset.current, 10) || 0;
     var delta = parseInt(input.value, 10);

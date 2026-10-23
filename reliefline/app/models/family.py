@@ -1,33 +1,16 @@
+# Database tables: family profiles, and affected families in a report.
+
 from app.extensions import db
 
 
+# Database table 'barangay_families': the families registered in each barangay (Family Profiles),
+# with household head, purok, and the number of members, PWDs, seniors and children.
 class Family(db.Model):
-    """A registered household/family profile for a barangay - the barangay's
-    own resident *profiling* registry (panelist-requested addition). Filled
-    in once by the barangay on the Family Profiles page and then reused as a
-    checklist when filing a Barangay Report: instead of typing
-    affected-families/individuals counts by hand, the barangay checks off
-    which of its registered families were affected, and
-    BarangayReport.affected_families/affected_individuals (plus the
-    pwd/senior/children breakdown) are summed from that selection - see
-    app.routes.barangay._apply_report_form and ReportAffectedFamily below.
-
-    `pwd_count` / `senior_count` / `children_count` are informational
-    sub-counts of `member_count` (a member can be none of the three, e.g. a
-    working-age adult with no disability). They aren't forced to add up to
-    member_count - they drive the food-pack suggestion formula (1 pack for
-    the family + 1 per PWD member + 1 per senior member; see
-    BarangayReport.suggested_food_packs), not a strict headcount audit.
-    """
     __tablename__ = "barangay_families"
 
     family_id = db.Column(db.Integer, primary_key=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
 
-    # A family label ("Dela Cruz Family"), the primary display on every
-    # list/checklist. head_name (the actual household head's name, e.g.
-    # "Josefa") is a secondary/subtitle field - mainly there to tell apart
-    # two families that share both family_name and purok.
     family_name = db.Column(db.String(150), nullable=False)
     head_name = db.Column(db.String(150), nullable=True)
     purok = db.Column(db.String(100), nullable=True)
@@ -38,10 +21,6 @@ class Family(db.Model):
     senior_count = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
     children_count = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
 
-    # Soft-archive rather than hard delete - a family already cited on a past
-    # submitted report must stay resolvable. ReportAffectedFamily snapshots
-    # its own counts so an archived (or edited) profile never rewrites a past
-    # report's numbers; this flag just hides it from new checklists.
     is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))
 
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
@@ -49,18 +28,15 @@ class Family(db.Model):
 
     barangay = db.relationship("Barangay", backref="families")
 
+    # Suggested food packs for this family: 1, plus 1 more for each PWD and each senior citizen.
     @property
     def suggested_packs(self):
-        """1 for the family + 1 per PWD member + 1 per senior member."""
         return 1 + (self.pwd_count or 0) + (self.senior_count or 0)
 
 
+# Database table 'barangay_report_families': the families listed as affected in a barangay report,
+# and whether each one has already received its food packs.
 class ReportAffectedFamily(db.Model):
-    """One Family checked off as affected on a specific BarangayReport.
-    Snapshots the family's member/PWD/senior/children counts *as they were
-    at submission time* so editing the family registry later - or archiving
-    or deleting the family - never rewrites a past report's numbers.
-    """
     __tablename__ = "barangay_report_families"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -75,13 +51,6 @@ class ReportAffectedFamily(db.Model):
     senior_count = db.Column(db.Integer, nullable=False, default=0)
     children_count = db.Column(db.Integer, nullable=False, default=0)
 
-    # Distribution tracking - "who among the affected families actually got
-    # their food pack(s)" (panelist-requested: the barangay needs this
-    # visible, not just the aggregate delivered quantity). Only actionable
-    # once the report is "fulfilled" (delivery confirmed received - see
-    # app.routes.barangay.mark_family_received), and marking a family
-    # received deducts `packs_given` from BarangayInventory via the same
-    # ledger inventory_record uses, so the two never disagree.
     received = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("0"))
     received_at = db.Column(db.DateTime, nullable=True)
     packs_given = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
@@ -94,17 +63,15 @@ class ReportAffectedFamily(db.Model):
     family = db.relationship("Family")
     received_by_user = db.relationship("User", foreign_keys=[received_by])
 
+    # Suggested food packs for this family: 1, plus 1 more for each PWD and each senior citizen.
     @property
     def suggested_packs(self):
         return 1 + (self.pwd_count or 0) + (self.senior_count or 0)
 
+    # The stock record that shows this family received its food packs
+    # (empty if not yet received).
     @property
     def distribution_log(self):
-        """The BarangayStockLog written when this family was marked received
-        (app.routes.barangay.mark_family_received) - carries the packs and any
-        photo proof. Matched on family + the "<family> - <report ref>" reason
-        that route writes; the latest one wins, so an Undo + re-mark points at
-        the current record. None when not received (or no log found)."""
         if not self.received:
             return None
         from app.models.barangay_inventory import BarangayStockLog

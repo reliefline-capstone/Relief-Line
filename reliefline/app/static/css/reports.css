@@ -1,4 +1,6 @@
-/* ---- Toolbar (search + event/municipality/date filters) ---- */
+/* Styles for the Reports pages and on-screen reports: */
+/* report cards, report document with letterhead, tables, signatures, export buttons, and printing. */
+/* Filter bar at the top of the Reports page. */
 .gis-filters {
     display: flex;
     align-items: center;
@@ -16,12 +18,7 @@
 }
 .gis-filters input[type="text"] { min-width: 200px; }
 
-/* ---- Stat cards ---- */
-/* minmax(0, 1fr), not a bare 1fr, on every rule below: a bare 1fr track
-   still respects a grid item's default min-width: auto (its content's own
-   min-content size), so a card whose footer row (PDF/Excel badges +
-   Generate button, no wrap) doesn't shrink kept pushing "2 columns" or
-   "1 column" wider than the viewport instead of actually fitting it. */
+/* Number cards on the Reports page. */
 .reports-stat-cards {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -36,18 +33,14 @@
     margin-bottom: 10px;
 }
 
-/* ---- Report type cards ---- */
-/* auto-fit (not a fixed repeat(3, ...)) so a role with fewer report types
-   (barangay has 2) fills the row instead of leaving a dead empty-column
-   gap. The 320px minmax floor is what naturally caps this at 3-per-row on
-   a normal desktop width and drops to fewer, wider columns as the column
-   narrows - same effect the old fixed 1100px/640px breakpoints gave. */
+/* Grid of report type cards. */
 .report-cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 16px;
     margin-bottom: 20px;
 }
+/* On smaller screens: fewer number cards per row. */
 @media (max-width: 1100px) {
     .reports-stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -55,6 +48,7 @@
     .reports-stat-cards { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* One report type card: icon, title, description, PDF/Excel badges and buttons. */
 .report-card {
     background: white;
     border-radius: 12px;
@@ -109,7 +103,7 @@
 }
 .btn-generate:hover { background: #3f34a0; }
 
-/* ---- Generic report table (Recent Reports + report preview) ---- */
+/* Report tables. */
 .rpt-table-wrap { overflow-x: auto; }
 .rpt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .rpt-table th {
@@ -129,11 +123,6 @@
 }
 .rpt-table tbody tr:nth-child(even) { background: #f9f9fd; }
 
-/* Report document preview: fit wide reports (up to 11 columns) inside the
-   page instead of running off the right edge behind a horizontal scroll -
-   long headers wrap onto two lines, cells are tighter, and short values
-   (IDs like RR-2026-082, dates, numbers) stay on one line rather than
-   breaking at every hyphen. */
 .rpt-document .rpt-table { font-size: 12px; }
 .rpt-document .rpt-table th {
     white-space: normal;
@@ -144,10 +133,9 @@
     vertical-align: bottom;
 }
 .rpt-document .rpt-table td { padding: 9px 6px; }
-/* Set in report_view.html on single-word cells (IDs, numbers) and ones of
-   12 characters or fewer (dates like "Sep 14, 2026"). */
 .rpt-document .rpt-table td.rpt-nowrap { white-space: nowrap; }
 
+/* PDF / Excel format tags in the Recent Reports list. */
 .format-tag {
     font-size: 11px;
     font-weight: 700;
@@ -157,6 +145,7 @@
 .format-tag.pdf { background: #fdecea; color: #c0392b; }
 .format-tag.excel { background: #e8faf0; color: #1e8449; }
 
+/* Small download buttons. */
 .btn-mini {
     display: inline-flex;
     align-items: center;
@@ -172,7 +161,7 @@
 }
 .btn-mini:hover { background: #f4f4fb; }
 
-/* ---- Report preview page ---- */
+/* Filter chips above an on-screen report. */
 .rpt-filterbar {
     display: flex;
     justify-content: space-between;
@@ -185,7 +174,6 @@
     padding: 12px 16px;
     margin-bottom: 14px;
 }
-/* Report view: back button to the left of the filters bar, one row. */
 .rpt-topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .rpt-topbar .rpt-filterbar { flex: 1; min-width: 0; margin-bottom: 0; }
 @media print { .rpt-topbar { display: none !important; } }
@@ -202,6 +190,7 @@
 .rpt-edit-filters { font-size: 12.5px; color: #5347ce; font-weight: 600; text-decoration: none; }
 .rpt-edit-filters:hover { text-decoration: underline; }
 
+/* Export PDF / Export Excel / Print buttons. */
 .rpt-export-row {
     display: flex;
     align-items: center;
@@ -230,6 +219,7 @@
 .btn-export-excel:hover { background: #196e3c; }
 .btn-export-print { background: #333; }
 .btn-export-print:hover { background: #1a1a1a; }
+/* 'Back' link. (Not used on any page right now.) */
 .rpt-back-link {
     margin-left: auto;
     font-size: 12.5px;
@@ -241,6 +231,7 @@
 }
 .rpt-back-link:hover { color: #333; }
 
+/* The on-screen report 'paper': header, title, status pills, notes. */
 .rpt-document {
     background: white;
     border-radius: 12px;
@@ -302,14 +293,11 @@
     padding: 3px 10px;
     border-radius: 12px;
 }
-/* Relief request statuses - same mapping as badge-status-* in relief_requests.css:
-   pending=yellow, approved/released=green, rejected=red, partially-approved=blue. */
 .rpt-status-approved, .rpt-status-released, .rpt-status-delivered { background: #e8faf0; color: #1e8449; }
 .rpt-status-pending, .rpt-status-preparing { background: #fef5e3; color: #d68910; }
-.rpt-status-rejected, .rpt-status-delayed { background: #fdecea; color: #c0392b; }
+.rpt-status-rejected { background: #fdecea; color: #c0392b; }
 .rpt-status-partially-approved { background: #efedfd; color: #5347ce; }
 
-/* Distribution/logistics sub-statuses - same mapping as badge-status-* in distribution.css. */
 .rpt-status-loaded { background: #efedfd; color: #5347ce; }
 .rpt-status-dispatched { background: #f1edfe; color: #5347ce; }
 .rpt-status-in-transit { background: #fdf0e4; color: #a5713a; }
@@ -322,10 +310,7 @@
 .rpt-notes strong { color: #5347ce; display: block; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.3px; }
 .rpt-notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 
-/* Official LGU letterhead (_report_letterhead.html): centered
-   Republic / Province / City-Municipality / Barangay lines, the issuing
-   office, then the document title and its details. Plain black-on-white so
-   it reads the same on screen, on paper and photocopied. */
+/* Official letterhead: seals on both sides and the office lines in the middle. */
 .rpt-lh {
     display: grid;
     grid-template-columns: 120px 1fr 120px;
@@ -342,8 +327,7 @@
 .rpt-lh-lines { display: flex; flex-direction: column; font-size: 12.5px; line-height: 1.45; }
 .rpt-lh-lgu { font-weight: 700; }
 .rpt-lh-office { margin-top: 6px; font-size: 14px; font-weight: 800; letter-spacing: 0.4px; }
-/* Phone screen (print keeps the layout above): smaller seal columns so the
-   letterhead lines get the width instead of being squeezed past the edge. */
+/* On phones: smaller letterhead seals. */
 @media screen and (max-width: 600px) {
     .rpt-lh { grid-template-columns: 56px 1fr 56px; gap: 8px; }
     .rpt-lh-seal { height: 56px; }
@@ -351,6 +335,7 @@
     .rpt-lh-lines { font-size: 11px; }
     .rpt-lh-office { font-size: 12px; }
 }
+/* Report title and details under the letterhead. */
 .rpt-lh-title {
     text-align: center;
     font-size: 17px;
@@ -370,9 +355,7 @@
 .rpt-lh-meta dt { color: #555; font-weight: 600; white-space: nowrap; }
 .rpt-lh-meta dd { margin: 0; color: #1a1a1a; font-weight: 700; }
 
-/* Signatories (_report_signatures.html): "Prepared By:" label, the name
-   (uppercase, bold) sitting on the line, position underneath. Column count
-   is set inline from the number of signatories. */
+/* Signature lines at the bottom. */
 .rpt-signatures {
     display: grid;
     gap: 28px;
@@ -391,16 +374,13 @@
     margin-top: 24px;
 }
 
+/* When printing: hide buttons and filters, print only the report. */
 @media print {
     .rpt-filterbar, .rpt-export-row { display: none !important; }
     .rpt-document { box-shadow: none !important; padding: 0 !important; border-radius: 0; }
 
-    /* Tables: never scroll-clip or overflow the page - wrap instead, keep
-       rows whole, and repeat the header row on every page. */
     .rpt-table-wrap { overflow: visible !important; }
     .rpt-table { font-size: 10.5px; table-layout: auto; }
-    /* Wrap between words only - never mid-word ("Submitte-d") or at every
-       hyphen of an ID; IDs/dates/numbers (td.rpt-nowrap) stay on one line. */
     .rpt-table th,
     .rpt-table td {
         padding: 5px 6px;
@@ -421,9 +401,7 @@
     .rpt-lh-meta { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* Distribution announcement print sheet (print_family_list.html) - a blank
-   tally box the barangay can check by hand during actual distribution, and
-   a bold total row. */
+/* Tally box and total row. (Not used on any page right now.) */
 .rpt-tally-box { text-align: center; font-size: 18px; color: #8a94a6; }
 .rpt-total-row td { border-top: 2px solid #d8dee9; background: #f4f4fb; }
 
@@ -478,7 +456,7 @@
     html[data-theme="dark"] .rpt-status-pill { border-radius: 12px; }
     html[data-theme="dark"] .rpt-status-approved, html[data-theme="dark"] .rpt-status-released, html[data-theme="dark"] .rpt-status-delivered { background: #213936; color: #7ae1a5; }
     html[data-theme="dark"] .rpt-status-pending, html[data-theme="dark"] .rpt-status-preparing { background: #38322b; color: #f4bd67; }
-    html[data-theme="dark"] .rpt-status-rejected, html[data-theme="dark"] .rpt-status-delayed { background: #38252b; color: #e1847a; }
+    html[data-theme="dark"] .rpt-status-rejected { background: #38252b; color: #e1847a; }
     html[data-theme="dark"] .rpt-status-partially-approved { background: #1f2136; color: #a6a0e6; }
     html[data-theme="dark"] .rpt-status-loaded { background: #1f2136; color: #a6a0e6; }
     html[data-theme="dark"] .rpt-status-dispatched { background: #212136; color: #a6a0e6; }

@@ -1,3 +1,5 @@
+{# Page: /barangay/notifications - Notifications (barangay user). #}
+{# Updates about the barangay's reports and deliveries, filterable by category, 'unread' ones highlighted. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 
@@ -17,7 +19,6 @@
 
     <main class="dashboard-main">
 
-
         <section class="page-header">
             <div>
                 <h2>Notifications</h2>
@@ -25,6 +26,7 @@
             </div>
         </section>
 
+        {# Category tabs (All, Reports, Deliveries...). #}
         <nav class="page-tabs">
             {% for cat in categories %}
             <a href="{{ url_for('barangay.notifications', category=cat.value) }}"
@@ -34,6 +36,7 @@
             {% endfor %}
         </nav>
 
+        {# Notification list (unread ones highlighted), with page numbers at the bottom. #}
         <section class="panel">
             <div class="notif-panel-header">
                 <h3>

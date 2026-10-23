@@ -1,3 +1,5 @@
+// Stock Transfer page: choosing the 'from' and 'to' warehouses (they must be different)
+// and showing each warehouse's stock as you type the quantity.
 document.addEventListener('DOMContentLoaded', function () {
     var fromSelect = document.getElementById('from_office_id');
     var toSelect = document.getElementById('to_office_id');
@@ -10,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var fromValue = document.getElementById('from-preview-value');
     var toValue = document.getElementById('to-preview-value');
 
+    // The chosen warehouse's name, stock and location.
     function selectedData(select) {
         var opt = select.options[select.selectedIndex];
         if (!opt || !opt.value) return null;
@@ -20,16 +23,13 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
+    // Formats a number with commas (e.g. 12,345).
     function formatNumber(n) {
         return n.toLocaleString('en-US');
     }
 
-    // A warehouse already picked on one side can't also be picked on the
-    // other - both the native <option> (so it can't be selected via
-    // keyboard on the still-native element) and the custom dropdown's own
-    // <li> (custom_select.js only reads `disabled` once, at page load, so
-    // its list needs to be told about this directly) get disabled/enabled
-    // to match whichever value is currently selected on the opposite side.
+    // Hides the warehouse already chosen on the other side,
+    // so 'from' and 'to' can't be the same warehouse.
     function excludeOtherSelection(select, otherValue) {
         var wrap = select.closest('.csel-wrap');
         var list = wrap ? wrap.cselList : null;
@@ -61,11 +61,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Keeps the 'from' and 'to' warehouses different.
     function syncExclusions() {
         excludeOtherSelection(toSelect, fromSelect.value);
         excludeOtherSelection(fromSelect, toSelect.value);
     }
 
+    // Updates the hints under each field (stock available, location)
+    // and the preview when the form changes.
     function update() {
         syncExclusions();
         var from = selectedData(fromSelect);

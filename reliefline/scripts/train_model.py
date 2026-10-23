@@ -1,13 +1,5 @@
-"""
-Trains the two-stage food-pack forecaster (app.ml.train) against the current
-database and prints leave-one-typhoon-out validation for each LGU's share
-model against two baselines. Safe to re-run any time new relief data lands -
-each run adds a fresh ModelMetrics row. Afterwards sync the dump:
-bash scripts/sync_db_dump.sh
+# Retrains the forecast model and prints its accuracy (run: python scripts/train_model.py).
 
-Usage:
-    .venv/Scripts/python.exe scripts/train_model.py
-"""
 import sys
 import os
 
@@ -68,7 +60,6 @@ with app.app_context():
                    if nz is not None else "n/a")
         print(f"{lgu:<20}{lgu_cell:>14}{cv['barangay_coverage'] * 100:>17.1f}%{nz_cell:>20}")
 
-    # Defense metrics (2026-10-03) - one per claim; see app.ml.train.
     print("\nP90 stock: pinball loss (tau 0.9, packs; lower is better) + shortfall/excess, no buffer")
     print(f"{'':<16}{'level':<22}{'pinball':>10}{'ran short':>12}{'avg short':>11}{'avg excess':>12}")
     for lgu, cv in out["loto_p90"].items():
@@ -99,7 +90,7 @@ with app.app_context():
               f"per-family share from history alone; floor lifts {f['n_floor_lifted']} "
               f"({f['share_moved_by_floor']:.1%} of the LGU's stock)")
 
-    print(f"\nPriority ranking (held-out storms with >= 5 barangays served)")
+    print("\nPriority ranking (held-out storms with >= 5 barangays served)")
     print(f"{'':<18}{'Spearman model':>16}{'pooled':>9}{'top-5 hit model':>18}{'pooled':>9}{'storms':>8}")
     for lgu, cv in out["loto_cv"].items():
         if not cv or not cv.get("rank_n_storms"):

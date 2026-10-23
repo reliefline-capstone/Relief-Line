@@ -1,3 +1,5 @@
+{# Page: /barangay/inventory - Barangay Inventory (barangay user). #}
+{# Food packs on hand, movement history, food pack batches with expiration dates, and recording packs given to families. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon, photo_viewer with context %}
 {% from "_filter_panel.html" import filter_panel, fp_select, fp_date_range, f_url with context %}
@@ -11,6 +13,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/relief_request_detail.css') }}?v={{ asset_version('css/relief_request_detail.css') }}">
 {% endblock %}
 
+{# One row of the movement history, with its pop-ups (delivery breakdown, proof photos). #}
 {% macro movement_row(l, delivery_recs) %}
 {% set rec = delivery_recs.get(l.distribution_id) if l.distribution_id else none %}
 {% set has_breakdown = rec and (rec.shortage_count or rec.damaged_count) %}
@@ -75,7 +78,7 @@
 
     <main class="dashboard-main">
 
-
+        {# Page title with the 'Record Distribution' button. #}
         <div class="page-header">
             <div>
                 <h2>Barangay Inventory</h2>
@@ -86,6 +89,7 @@
             </div>
         </div>
 
+        {# 3 number cards: food packs on hand, total received, total distributed. #}
         <section class="stat-cards stat-cards-3">
             <div class="stat-card">
                 <div class="stat-icon green">{{ icon('package', 18, '#1e8449') }}</div>
@@ -104,10 +108,10 @@
             </div>
         </section>
 
+        {# Movement History: every food pack coming in and going out, with filters and pages. #}
         <section class="panel">
             <div class="panel-header">
                 <h3>Movement History</h3>
-                {# Excel export of the Type/Date filters currently applied below. #}
                 {% set export_args = {'type': type_filter if type_filter != 'all' else None, 'date_from': date_from or None, 'date_to': date_to or None} %}
                 <a href="{{ url_for('barangay.inventory_movements_export', **export_args) }}" class="btn-outline">{{ icon('download', 14) }} Export</a>
             </div>
@@ -171,6 +175,7 @@
             {% endif %}
         </section>
 
+        {# Food Pack Batches: received date, earliest expiry, days left, quantity, contents, status (fresh/near expiry/expired). #}
         <section class="panel wh-table-panel" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Food Pack Batches</h3>
@@ -233,6 +238,7 @@
     </main>
 </div>
 
+{# 'Record Distribution' pop-up: how many packs were given, to which family, and proof photos. #}
 <div class="rd-modal-overlay" id="bi-distribute" hidden>
     <div class="rd-modal">
         <div class="rd-modal-header"><h3>Record Distribution</h3>
@@ -259,7 +265,6 @@
                 <input type="text" name="reason" id="bi-d-reason" placeholder="e.g. Distributed at evacuation center, Purok 3">
             </div>
             <div class="form-row">
-                {# Required - Record stays disabled until a photo is picked (also enforced in inventory_record). #}
                 <label>Photo proof *</label>
                 <label for="bi-d-proof" class="upload-dropzone">
                     <span class="upload-dropzone-icon">{{ icon('camera', 22) }}</span>
@@ -277,7 +282,7 @@
     </div>
 </div>
 
-<!-- Resolve expired batch modals -->
+{# One 'Resolve Expired Batch' pop-up for each expired batch (dispose, or repack with fresh items). #}
 {% for row in batch_rows if row.shelf_status == 'expired' %}
 {% set batch = row.batch %}
 <div class="rd-modal-overlay" id="batch-modal-{{ batch.batch_id }}" hidden>
@@ -323,12 +328,12 @@
         });
     }
 
-    // Photo proof dropzone: "N photos selected" + thumbnails, and a Remove link.
     var proof = document.getElementById('bi-d-proof');
     var previews = document.getElementById('bi-d-proof-previews');
     if (proof && previews) {
         var zone = proof.closest('.upload-dropzone');
         var label = zone.querySelector('strong');
+        // Shows previews of the chosen proof photos, and enables the submit button.
         function render() {
             var n = proof.files.length;
             label.textContent = n ? n + ' photo' + (n > 1 ? 's' : '') + ' selected - tap to change' : label.dataset.default;
@@ -341,6 +346,7 @@
                 img.alt = f.name;
                 img.title = f.name;
                 img.src = URL.createObjectURL(f);
+                // Frees the browser's memory after a preview photo has loaded.
                 img.onload = function () { URL.revokeObjectURL(img.src); };
                 previews.appendChild(img);
             });
@@ -355,7 +361,6 @@
             previews.hidden = !n;
         }
         proof.addEventListener('change', render);
-        // Closing the modal without recording also forgets the picked photos.
         var form = proof.form;
         if (form) form.addEventListener('reset', function () { setTimeout(render, 0); });
     }

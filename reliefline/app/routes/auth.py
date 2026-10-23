@@ -1,4 +1,4 @@
-from datetime import datetime
+# Public pages and login: home, login, logout, forgot password, help.
 
 from app.utils.timezone import ph_now
 
@@ -12,7 +12,6 @@ from app.utils.activity import log_admin_activity
 
 auth_bp = Blueprint("auth", __name__)
 
-# Where each role lands after login (and after a forced password change).
 _ROLE_DASHBOARD_ENDPOINT = {
     "system_admin": "admin.dashboard",
     "pswdo_admin": "pswdo.dashboard",
@@ -21,24 +20,26 @@ _ROLE_DASHBOARD_ENDPOINT = {
 }
 
 
+# Picks which dashboard to open after login, based on the user's role
+# (System Admin, PSWDO, CSWDO/MSWDO, or Barangay).
 def _dashboard_endpoint(role):
     return _ROLE_DASHBOARD_ENDPOINT.get(role, "auth.login")
 
 
+# Page: / - The public home page anyone can see.
+# It explains ReliefLine and has the login box.
 @auth_bp.route("/")
 def landing():
     return render_template("landing.html")
 
 
+# Page: /login - Login page: checks the email and password.
+# If correct, the user is logged in and sent to their dashboard; deactivated accounts are refused.
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")
-        # Which page the form was submitted from, so a failed attempt lands the
-        # user back where they were instead of bouncing them to a different
-        # login screen. "landing" = the marketing page's hero login card;
-        # anything else = the standalone /login page (templates/login.html).
         origin = request.form.get("origin", "login")
         retry = (
             redirect(url_for("auth.landing") + "#login-card")
@@ -51,25 +52,20 @@ def login():
             return retry
 
         if user and user.check_password(password):
+            # Password is correct: log the user in.
             login_user(user)
             user.last_login = ph_now()
             log_admin_activity(user.user_id, "login", f"{user.name} logged in")
             db.session.commit()
             if user.must_change_password:
-                # The forced "Set a New Password" step is a locked modal on
-                # the /login page - _enforce_forced_password_change keeps the
-                # user there until they replace the default password.
                 return redirect(url_for("auth.login"))
             return redirect(url_for(_dashboard_endpoint(user.role)))
         flash("Invalid username/email or password.", "error")
         return retry
 
     if current_user.is_authenticated and not current_user.must_change_password:
-        # Already signed in - no reason to show the login screen again.
         return redirect(url_for(_dashboard_endpoint(current_user.role)))
 
-    # current_user set + must_change_password: render with the locked
-    # "Set a New Password" modal (see templates/login.html).
     return render_template(
         "login.html",
         force_password_change=(
@@ -78,6 +74,7 @@ def login():
     )
 
 
+# Page: /logout - Logs the user out and returns to the home page.
 @auth_bp.route("/logout")
 @login_required
 def logout():
@@ -85,11 +82,12 @@ def logout():
     return redirect(url_for("auth.landing"))
 
 
+# Page: /forgot-password - 'Forgot password' form: sends a reset request to the System Admin to approve.
+# Only one pending request per account is kept.
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
-        # Back to whichever screen's modal this came from (see auth.login).
         origin = request.form.get("origin", "landing")
         back = url_for("auth.login") if origin == "login" else url_for("auth.landing")
         user = User.query.filter_by(email=email).first()
@@ -102,8 +100,6 @@ def forgot_password():
                 db.session.add(PasswordResetRequest(user_id=user.user_id))
                 db.session.commit()
 
-        # Same confirmation message whether or not the email is registered,
-        # so this can't be used to probe which emails have accounts.
         flash(
             "If that account exists, a password reset request has been sent "
             "to a System Administrator for approval.",
@@ -111,11 +107,11 @@ def forgot_password():
         )
         return redirect(back)
 
-    # Forgot Password is a modal on the landing / login pages (opened by the
-    # "Forgot Password?" button) rather than its own standalone page.
     return redirect(url_for("auth.login"))
 
 
+# Page: /force-change-password - Makes a user whose password was reset choose a new password (at least 8 characters,
+# and not the default reset password) before they can use the app.
 @auth_bp.route("/force-change-password", methods=["GET", "POST"])
 @login_required
 def force_change_password():
@@ -139,27 +135,28 @@ def force_change_password():
             flash("Password updated. You're all set.", "success")
             return redirect(url_for(_dashboard_endpoint(current_user.role)))
 
-    # This endpoint only serves the modal's POST now. A GET (or a POST that
-    # failed validation) goes back to /login, where the locked modal
-    # re-opens with the flashed message.
     return redirect(url_for("auth.login"))
 
 
+# Page: /help - Help page (public).
 @auth_bp.route("/help")
 def help_page():
     return render_template("help.html")
 
 
+# Page: /contact - Contact page (public).
 @auth_bp.route("/contact")
 def contact_page():
     return render_template("contact.html")
 
 
+# Page: /privacy - Privacy Policy page (public).
 @auth_bp.route("/privacy")
 def privacy_page():
     return render_template("privacy.html")
 
 
+# Page: /terms - Terms of Use page (public).
 @auth_bp.route("/terms")
 def terms_page():
     return render_template("terms.html")

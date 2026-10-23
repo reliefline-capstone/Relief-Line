@@ -1,18 +1,12 @@
-"""Plain-language Movement History labels for the expired/damaged food-pack
-moves, shared by every tier (PSWDO, CSWDO, barangay) and their exports so
-the same move always reads the same way.
-
-Each expiry or damage step is logged as a pair of rows - one on usable
-"Food Packs" and one on the separate "Expired Food Packs" / "Damaged Food
-Packs" bucket - so every label says which bucket went up or down."""
+# Readable labels for stock movements.
 
 EXPIRED = "Expired Food Packs"
 DAMAGED = "Damaged Food Packs"
 
 
+# Writes the readable name of a stock movement shown in stock history tables
+# (e.g. 'Expired - Disposed', 'Damaged - Returned to Food Packs').
 def stock_log_label(item_type, delta, source_type, reason=""):
-    """Label for an expired/damaged stock log, or None for anything else
-    (the caller keeps its own Received / Released / ... wording)."""
     reason = (reason or "").lower()
     disposed = "disposed" in reason
 
@@ -21,7 +15,6 @@ def stock_log_label(item_type, delta, source_type, reason=""):
             if delta > 0:
                 return f"Expired - Added to {EXPIRED}"
             return "Expired - Disposed" if disposed else f"Expired - Removed from {EXPIRED}"
-        # usable Food Packs side
         return "Expired - Removed from Food Packs" if delta < 0 else "Expired - Returned to Food Packs"
 
     if item_type == "food_pack_damaged":
@@ -30,7 +23,6 @@ def stock_log_label(item_type, delta, source_type, reason=""):
         return "Damaged - Disposed" if disposed else f"Damaged - Removed from {DAMAGED}"
 
     if source_type == "damaged_return":
-        # Barangay's own 0-qty marker row - the packs went back to the warehouse.
         return "Damaged - Returned to Warehouse"
 
     if item_type == "food_pack" and delta > 0 and "previously-damaged" in reason:

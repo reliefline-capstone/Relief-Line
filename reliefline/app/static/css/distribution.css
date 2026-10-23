@@ -1,3 +1,6 @@
+/* Styles for the delivery pages (PSWDO Distribution, CSWDO Deliveries, barangay Relief Monitoring, GIS map): */
+/* delivery status badges and the PSWDO 'New Distribution' pop-up. */
+/* Main (blue) button. */
 .btn-primary {
     display: inline-flex;
     align-items: center;
@@ -12,30 +15,29 @@
 
 .btn-primary:hover { background: #4436b4; }
 
+/* Filter bar on the distribution page. */
 .dist-filter-bar { justify-content: flex-start; }
 .dist-filter-bar .btn-outline { margin-left: auto; }
 
-/* Below ~768px .filter-bar wraps onto several lines (relief_requests.css) -
-   margin-left: auto then shoves the Filter button to the far right of
-   whichever line it lands on instead of the end of the whole bar, opening
-   a wide dead gap next to the status dropdown right before it. */
+/* On phones: full-width filter button. */
 @media (max-width: 768px) {
     .dist-filter-bar .btn-outline { margin-left: 0; }
 }
 
+/* Delivery ID text, and 'unassigned' label. */
 .dist-id { color: #5347ce; }
 .dist-unassigned { color: #b8bfc9; font-style: italic; }
 
+/* Delivery status badges: Preparing, Loaded, Dispatched, In Transit, Delivered. */
 .badge-status-preparing { background: #fef5e3; color: #d68910; }
 .badge-status-loaded { background: #efedfd; color: #5347ce; }
 .badge-status-dispatched { background: #f1edfe; color: #5347ce; }
 .badge-status-in_transit { background: #fdf0e4; color: #a5713a; }
 .badge-status-delivered { background: #e8faf0; color: #1e8449; }
-.badge-status-delayed { background: #fdecea; color: #c0392b; }
 
 .badge-status { display: inline-flex; align-items: center; gap: 5px; }
 
-/* New Distribution wizard */
+/* 'New Distribution' pop-up: the 2-step indicator. */
 .nd-modal { max-width: 460px; }
 
 .nd-steps {
@@ -77,6 +79,7 @@
     background: #e6e7ef;
 }
 
+/* Step 1: municipality tiles to choose from. */
 .nd-muni-grid {
     display: flex;
     flex-direction: column;
@@ -101,6 +104,7 @@
 .nd-muni-tile strong { font-size: 14px; color: #5347ce; }
 .nd-muni-tile span { font-size: 12px; color: #8a94a6; }
 
+/* 'Back' link to step 1. */
 .nd-back-link {
     display: flex;
     align-items: center;
@@ -113,6 +117,7 @@
     margin-bottom: 10px;
 }
 
+/* Step 2: list of approved allocations to choose from. */
 .nd-request-list {
     display: flex;
     flex-direction: column;
@@ -133,9 +138,6 @@
     transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-/* A class-level `display` beats the UA [hidden]{display:none} rule at equal
-   specificity, so the JS toggling .hidden on these to filter by municipality
-   would otherwise leave them visibly laid out. */
 .nd-request-option[hidden] { display: none; }
 
 .nd-request-option:hover { border-color: #5347ce; }
@@ -146,6 +148,7 @@
 .nd-request-body strong { font-size: 13.5px; color: #5347ce; }
 .nd-request-body span { font-size: 12px; color: #8a94a6; }
 
+/* Stock badge: enough stock (green) or low stock (red) in the supplying warehouse. */
 .nd-stock-badge {
     display: flex;
     align-items: center;
@@ -184,7 +187,6 @@
     html[data-theme="dark"] .badge-status-dispatched { background: #212136; color: #a6a0e6; }
     html[data-theme="dark"] .badge-status-in_transit { background: #382e2b; color: #d5ae86; }
     html[data-theme="dark"] .badge-status-delivered { background: #213936; color: #7ae1a5; }
-    html[data-theme="dark"] .badge-status-delayed { background: #38252b; color: #e1847a; }
     html[data-theme="dark"] .nd-step { color: #b8bfc9; }
     html[data-theme="dark"] .nd-step.is-active { color: #a6a0e6; }
     html[data-theme="dark"] .nd-step-num { border-radius: 50%; background: #222530; color: #8a94a6; }

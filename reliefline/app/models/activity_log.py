@@ -1,6 +1,10 @@
+# Database tables: activity log / notifications, daily operations numbers.
+
 from app.extensions import db
 from app.utils.timezone import ph_now
 
+# Database table 'activity_logs': every recorded action (who did what, and when).
+# It doubles as the notifications list - each row can be read or unread.
 class ActivityLog(db.Model):
     __tablename__ = "activity_logs"
 
@@ -11,16 +15,9 @@ class ActivityLog(db.Model):
     is_read = db.Column(db.Boolean, nullable=False, default=False)
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=True)
-    # Which specific record this notification is about - lets "View" open that
-    # exact record's detail page instead of a generic filtered list. Only one
-    # of these (or none, e.g. warehouse_transfer_completed which resolves via
-    # office_id instead) is populated per row, depending on action_type.
     allocation_id = db.Column(db.Integer, db.ForeignKey("allocation_records.allocation_id"), nullable=True)
     distribution_id = db.Column(db.Integer, db.ForeignKey("distribution_records.distribution_id"), nullable=True)
     batch_id = db.Column(db.Integer, db.ForeignKey("relief_request_batches.batch_id"), nullable=True)
-    # Populated only for rows written via System Administration actions (see
-    # app.utils.activity) - older/operational rows predate this column and
-    # stay NULL, which the admin System Activity table renders as "-".
     ip_address = db.Column(db.String(45), nullable=True)
     created_at = db.Column(db.DateTime, default=ph_now)
 
@@ -32,6 +29,8 @@ class ActivityLog(db.Model):
     batch = db.relationship("ReliefRequestBatch")
 
 
+# Database table 'daily_ops_stats': daily operations numbers per office
+# (e.g. how many delivery vehicles were active that day).
 class DailyOpsStat(db.Model):
     __tablename__ = "daily_ops_stats"
 

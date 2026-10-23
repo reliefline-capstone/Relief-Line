@@ -1,3 +1,6 @@
+/* Styles for list/table pages across the app (requests, deliveries, reports, notifications...): */
+/* tables, status and priority badges, filters, page buttons (pagination) and the Stock Requests page header. */
+/* Search form above tables. */
 .rr-actions {
     display: flex;
     align-items: center;
@@ -24,6 +27,7 @@
     font-size: 13px;
 }
 
+/* Older filter bar: dropdowns and date fields. (Not used on any page right now.) */
 .filter-bar {
     display: flex;
     align-items: center;
@@ -64,9 +68,6 @@
 
 .filter-bar select[name="municipality"] { width: 190px; }
 
-/* Matches .filter-bar select's own height/border/radius - there was no rule
-   for the plain text input at all before, so it fell back to the browser's
-   bare default appearance next to the styled dropdowns beside it. */
 .filter-bar input[type="text"] {
     height: 38px;
     padding: 8px 14px;
@@ -81,9 +82,6 @@
 }
 .filter-bar input[type="text"]:focus { outline: none; border-color: #5347ce; }
 
-/* When the search field is wrapped in .rr-search-wrapper, that wrapper is
-   the styled box - strip the wrapped <input>'s own border/height/padding so
-   it doesn't render a second box inside the first. */
 .filter-bar .rr-search-wrapper input[type="text"] {
     height: auto;
     min-width: 0;
@@ -113,6 +111,7 @@
     color: #333;
 }
 
+/* Summary count pills (pending, approved, released, rejected). */
 .summary-pills {
     display: flex;
     align-items: center;
@@ -143,9 +142,9 @@
     color: #8a94a6;
 }
 
+/* Table panel (scrolls sideways on small screens). */
 .rr-table-panel { padding: 0; overflow: hidden; }
 
-/* Card wrapper for a bare <table class="rr-table"> that is not inside a .panel */
 .rr-table-wrap {
     background: white;
     border-radius: 12px;
@@ -153,11 +152,7 @@
     margin-bottom: 14px;
 }
 
-/* The table itself is wider than a phone screen (see .rr-table-wrap .rr-table
-   td below), and overflow: hidden above simply clipped every column past
-   the first few with no way to reach them. Scope the swap to narrow
-   viewports only, so the rounded-corner clipping above is untouched on
-   desktop/tablet where the table already fits. */
+/* On tablets and phones: tables scroll sideways. */
 @media (max-width: 900px) {
     .rr-table-panel, .rr-table-wrap {
         overflow-x: auto;
@@ -165,6 +160,7 @@
     }
 }
 
+/* Tables: header, rows, hover, and clickable rows. */
 .rr-table {
     width: 100%;
     border-collapse: collapse;
@@ -197,14 +193,9 @@
 
 .rr-table tbody tr:hover td { background: #faf9fe; }
 
-/* -- Stock Requests list specifics (scoped to .rr-table-wrap, the only
-      page that uses it) ------------------------------------------------ */
-/* Row height sized so a full page of results fills most of the viewport
-   rather than leaving a large empty band under the card. */
 .rr-table-wrap .rr-table th { padding: 11px 16px; }
 .rr-table-wrap .rr-table td { padding: 14px 16px; font-size: 13px; }
 
-/* tabular figures so digit columns line up */
 .rr-table-wrap .rr-table td:nth-child(1),
 .rr-table-wrap .rr-table td:nth-child(4),
 .rr-table-wrap .rr-table td:nth-child(5) {
@@ -214,12 +205,8 @@
     color: #55606f;
     font-weight: 600;
 }
-/* Event name reads as a link */
 .rr-table-wrap .rr-table td:nth-child(3) { color: #5347ce; }
 
-/* A request still awaiting a decision jumps out: warm row wash + a
-   solid accent bar down its left edge, so a new submission is spotted
-   at a glance without scanning the Status column. */
 .rr-table-wrap .rr-table tbody tr:has(.badge-status.status-pending) td {
     background: #fff8ec;
 }
@@ -229,15 +216,12 @@
 .rr-table-wrap .rr-table tbody tr:has(.badge-status.status-pending) td:first-child {
     box-shadow: inset 3px 0 0 0 #e0930f;
 }
-/* Actions column hugs the right edge */
 .rr-table-wrap .rr-table th:last-child,
 .rr-table-wrap .rr-table td:last-child {
     text-align: right;
     white-space: nowrap;
 }
 
-/* Pagination footer sits inside the table card: count on the left,
-   page controls on the right. */
 .rr-table-wrap .rr-pagination {
     justify-content: space-between;
     border-top: 1px solid #eef0f5;
@@ -252,6 +236,7 @@
     margin-top: 2px;
 }
 
+/* Status badges (pending, approved, fulfilled, declined...). */
 .badge-status {
     display: inline-flex;
     align-items: center;
@@ -276,6 +261,7 @@
 .badge-status-returned,
 .badge-status-declined { background: #fdecea; color: #c0392b; }
 
+/* Priority badges with a colored dot (critical, high, medium, low). */
 .badge-priority {
     display: inline-flex;
     align-items: center;
@@ -302,6 +288,7 @@
     display: inline-block;
 }
 
+/* 'View' button. */
 .btn-view {
     display: inline-flex;
     align-items: center;
@@ -315,6 +302,7 @@
 }
 .btn-view:hover { background: #efedfd; }
 
+/* Page numbers under tables. */
 .rr-pagination {
     display: flex;
     justify-content: space-between;
@@ -343,6 +331,7 @@
     border-color: #5347ce;
 }
 
+/* On phones: stack the filters. */
 @media (max-width: 768px) {
     .filter-bar { gap: 10px; }
 
@@ -363,9 +352,6 @@
     }
 }
 
-/* Once the bar wraps (below), margin-left: auto strands this count alone
-   on whichever line still has room, right-aligned with a dead gap on its
-   left - drop it to its own full-width, left-aligned line instead. */
 @media (max-width: 768px) {
     .rr-table-count {
         margin-left: 0;
@@ -373,18 +359,10 @@
     }
 }
 
-/* ------------------------------------------------------------------ *
- * Shared bits for the two-tier request / delivery / transfer tables
- * (Stock Requests, Deliveries, Stock Transfers). These pages lift
- * markup from the distribution templates, so the helper classes live
- * here where every one of them links relief_requests.css.
- * ------------------------------------------------------------------ */
-
-/* Row count sitting at the right edge of a filter bar */
+/* 'Showing X of Y' text and the reports filter bar. (Not used on any page right now.) */
 .rr-table-count,
 .da-filter-count { margin-left: auto; font-size: 12px; color: #8a94a6; }
 
-/* Filter bar variant lifted from the distribution pages */
 .da-filter-bar {
     display: flex;
     align-items: center;
@@ -405,7 +383,7 @@
 }
 .da-filter-bar input[type="text"] { flex: 1; min-width: 220px; }
 
-/* Small row action button */
+/* Small View / Review buttons (also blue and red versions). */
 .btn-view-sm,
 .btn-review-sm {
     display: inline-flex;
@@ -413,10 +391,6 @@
     justify-content: center;
     gap: 6px;
     padding: 6px 12px;
-    /* Explicit 1px border on every variant (see .btn-sm-primary/-danger below)
-       and line-height:1 so an <a> and a <button> with the same label render
-       the exact same box - a <button> otherwise keeps line-height:normal and
-       comes out shorter. */
     border: 1px solid transparent;
     line-height: 1;
     border-radius: 6px;
@@ -429,8 +403,7 @@
 .btn-review-sm { background: #5347ce; color: white; }
 .btn-review-sm:hover { background: #3f34a0; }
 
-/* On the Stock Requests list the "Review" action (pending rows only) reads
-   as a soft primary chip rather than the neutral "View" grey. */
+/* Highlighted rows. */
 .rr-table-wrap .rr-table tbody tr:has(.status-pending) td:last-child .btn-view-sm {
     background: #ece9fb;
     color: #4a3fb4;
@@ -439,32 +412,20 @@
     background: #ded9f7;
 }
 
-/* Filled colour variants for draft-row Edit / Delete. Compound selector
-   (.btn-view-sm.btn-sm-*, not just .btn-sm-*) so these always beat plain
-   .btn-view-sm's own background/border on specificity - pages that also
-   load damage_assessment.css (which redeclares .btn-view-sm's background/
-   border) sort after this file, and at equal specificity a same-class
-   selector loaded later would otherwise silently win and grey these out. */
 .btn-view-sm.btn-sm-primary { background: #5347ce; border-color: #5347ce; color: #fff; }
 .btn-view-sm.btn-sm-primary:hover { background: #4a3fb4; border-color: #4a3fb4; }
 .btn-view-sm.btn-sm-danger { background: #c0392b; border-color: #c0392b; color: #fff; }
 .btn-view-sm.btn-sm-danger:hover { background: #a53125; border-color: #a53125; }
-/* Same idea for the barangay report list's Resume action - was an inline
-   style="background:#2c5aa0" before, which (being on the element itself)
-   permanently wins over any :hover rule a stylesheet could ever add, so
-   the button never gave hover feedback. */
 .btn-view-sm.btn-sm-blue { background: #2c5aa0; border-color: #2c5aa0; color: #fff; }
 .btn-view-sm.btn-sm-blue:hover { background: #234b7d; border-color: #234b7d; }
 
+/* Row action buttons. */
 .rr-table .da-barangay-name { font-weight: 700; color: #1a1a1a; }
 
-/* Draft row actions (Edit + Delete) - keep the two buttons the same size,
-   on one baseline, evenly spaced, matching the barangay damage-report draft row. */
 .rr-row-actions { display: inline-flex; align-items: stretch; gap: 6px; }
 .rr-row-actions form { display: inline-flex; }
 
-/* Generic status badge colours - markup is class="badge-status status-X"
-   (the older single-class .badge-status-X rules above stay for legacy pages) */
+/* More status badge colors. */
 .badge-status.status-pending,
 .badge-status.status-partially_approved { background: #fef5e3; color: #d68910; }
 .badge-status.status-fulfilled,
@@ -472,13 +433,9 @@
 .badge-status.status-delivered,
 .badge-status.status-completed,
 .badge-status.status-confirmed { background: #e8faf0; color: #1e8449; }
-/* "Approved" is in-progress (transfer on the way), not done - reads
-   purple like the "Approved / In Transit" filter, distinct from the
-   green "Fulfilled". */
 .badge-status.status-approved { background: #efedfd; color: #5347ce; }
 .badge-status.status-declined,
 .badge-status.status-rejected,
-.badge-status.status-delayed { background: #fdecea; color: #c0392b; }
 .badge-status.status-draft { background: #f0f2f6; color: #667; }
 .badge-status.status-preparing,
 .badge-status.status-loaded,
@@ -486,7 +443,7 @@
 .badge-status.status-dispatched,
 .badge-status.status-in_transit { background: #efedfd; color: #5347ce; }
 
-/* Summary pills rendered as plain <span> children (no .pill class) */
+/* Summary pills layout. (Not used on any page right now.) */
 .summary-pills > span {
     padding: 7px 14px;
     border-radius: 8px;
@@ -497,10 +454,7 @@
 }
 .summary-pills > span:first-child { background: #fef5e3; color: #b7791f; }
 
-/* ================================================================
-   Compact toolbar layout (Stock Requests list) - tabs on the left,
-   search / filter / actions on the right, all on one wrapping row.
-   ================================================================ */
+/* Stock Requests page header and toolbar (tabs, search, buttons). */
 .rr-page-head {
     display: flex; justify-content: space-between; align-items: flex-start;
     flex-wrap: wrap; gap: 12px;
@@ -518,18 +472,8 @@
     margin-bottom: 14px;
 }
 
-/* Status filter tabs - shared .page-tabs/.page-tab component
-   (dashboard.css, same underline-tab style as e.g. cswdo's Barangay
-   Reports queue tabs) rather than this page's own one-off pill/colored-
-   text style, so the two read as the same design language. Nested inside
-   .rr-toolbar's row (alongside the municipality/search filter form)
-   instead of .page-tabs' usual standalone full-width placement, so its
-   own border-bottom/margin-bottom (meant to separate it from unrelated
-   content below) would otherwise add a stray partial-width line and
-   misalign it against .rr-toolbar-controls on the same row. */
 .rr-toolbar .page-tabs { border-bottom: none; margin-bottom: 0; }
 
-/* Right-hand controls */
 .rr-toolbar-controls {
     display: flex;
     align-items: center;
@@ -592,7 +536,7 @@
 .rr-primary-btn { padding: 0 14px; background: #5347ce; border: 1px solid #5347ce; color: #fff; }
 .rr-primary-btn:hover { background: #4436b4; }
 
-/* Compact pagination: "Showing x to y" + prev / current / next */
+/* Newer page buttons: previous/next and current page. */
 .rr-pagination { justify-content: space-between; }
 .pagination-controls {
     display: flex;
@@ -625,13 +569,9 @@
     font-weight: 700;
 }
 
-/* Priority badge colours (class="badge-priority tier-X") - the tier-critical/
-   high/medium/low/unrated set is defined in dashboard.css, which every page
-   using this also links. Only the extra aliases are needed here. */
+/* Extra priority colors and the 'New' badge. */
 .badge-priority.tier-moderate { background: #fef5e3; color: #d68910; }
 .badge-priority.tier-none { background: #f0f2f6; color: #8a94a6; }
-/* "New" tag beside a stock request awaiting PSWDO review (see
-   ReliefRequestBatch.is_new). .da-new-badge uses the same look. */
 .badge-new {
     display: inline-block;
     margin-left: 6px;
@@ -646,10 +586,7 @@
     vertical-align: middle;
 }
 
-
-/* Phone: count on its own line, page buttons centred and wrapping; page
-   numbers more than one away from the current page drop out (Previous/Next
-   still reach them). */
+/* On phones: simpler page buttons. */
 @media (max-width: 600px) {
     .rr-pagination { flex-wrap: wrap; justify-content: center; gap: 10px; }
     .rr-pagination > span { flex: 1 1 100%; text-align: center; }
@@ -731,8 +668,7 @@
     html[data-theme="dark"] .badge-status.status-pending, html[data-theme="dark"] .badge-status.status-partially_approved { background: #38322b; color: #f4bd67; }
     html[data-theme="dark"] .badge-status.status-fulfilled, html[data-theme="dark"] .badge-status.status-validated, html[data-theme="dark"] .badge-status.status-delivered, html[data-theme="dark"] .badge-status.status-completed, html[data-theme="dark"] .badge-status.status-confirmed { background: #213936; color: #7ae1a5; }
     html[data-theme="dark"] .badge-status.status-approved { background: #1f2136; color: #a6a0e6; }
-    html[data-theme="dark"] .badge-status.status-declined, html[data-theme="dark"] .badge-status.status-rejected, html[data-theme="dark"] .badge-status.status-delayed { background: #38252b; color: #e1847a; }
-    html[data-theme="dark"] .badge-status.status-draft { background: #222530; color: #aeb0b9; }
+    html[data-theme="dark"] .badge-status.status-declined, html[data-theme="dark"] .badge-status.status-rejected, html[data-theme="dark"] .badge-status.status-draft { background: #222530; color: #aeb0b9; }
     html[data-theme="dark"] .badge-status.status-preparing, html[data-theme="dark"] .badge-status.status-loaded, html[data-theme="dark"] .badge-status.status-issued, html[data-theme="dark"] .badge-status.status-dispatched, html[data-theme="dark"] .badge-status.status-in_transit { background: #1f2136; color: #a6a0e6; }
     html[data-theme="dark"] .summary-pills > span { border-radius: 8px; background: #222530; color: #b1b5c2; }
     html[data-theme="dark"] .summary-pills > span:first-child { background: #38322b; color: #e7b873; }

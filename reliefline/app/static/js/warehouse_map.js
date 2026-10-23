@@ -1,3 +1,4 @@
+// Small map showing where each warehouse is located.
 document.addEventListener('DOMContentLoaded', function () {
     var mapEl = document.getElementById('warehouse-map');
     if (!mapEl) return;
@@ -10,12 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
         Low: '#e74c3c',
     };
 
-    // zoomAnimation: false - this page sits under .dashboard-layout's CSS
-    // `zoom` scale (base.css --ui-scale). Leaflet's animated zoom transition
-    // positions markers with a transform computed in its own pixel space
-    // that doesn't account for that ancestor scale, so a marker can visibly
-    // drift off its real spot for the duration of the zoom - same fix
-    // already applied to the GIS Map's own Leaflet instance.
     var map = L.map(mapEl, {
         zoomControl: true,
         scrollWheelZoom: false,
