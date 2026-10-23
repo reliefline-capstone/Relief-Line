@@ -601,6 +601,11 @@ def edit_damage_report(report_id):
 @login_required
 @role_required("barangay_user")
 def delete_damage_report(report_id):
+    # Already gone (double-click, form resubmit, deleted in another tab) -
+    # treat as done instead of showing a raw 404 page.
+    if not db.session.get(BarangayReport, report_id):
+        flash("That draft was already deleted.", "info")
+        return redirect(url_for("barangay.damage_report"))
     report = _get_own_report_or_404(report_id)
     # Only drafts can be deleted - a submitted report stays on record so the
     # MSWDO review trail and any allocation tied to it are never orphaned.

@@ -2,12 +2,10 @@ from datetime import datetime, timedelta
 
 from app.utils.timezone import ph_today
 
-from flask import Blueprint, render_template, request, url_for, redirect, flash, abort
+from flask import Blueprint, render_template, request, url_for
 from flask_login import login_required, current_user
 
 from app.utils.decorators import role_required
-from app.extensions import db
-from app.models.activity_log import ActivityLog
 from app.models.barangay import Barangay
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.disaster_event import DisasterEvent
@@ -27,7 +25,7 @@ from app.utils.disaster_events import (
 from app.routes.pswdo import (
     TARGET_LGUS,
     _load_warehouses, _stock_recommendations, _forecast_recommendations, _barangay_recommendations, _relief_summary,
-    _stock_adequacy, _STOCK_TIER, _safety_reserve,
+    _stock_adequacy, _STOCK_TIER,
 )
 
 prediction_bp = Blueprint("prediction", __name__)
@@ -100,12 +98,7 @@ def _stock_cover(stock, lgu_names, horizon_months):
     f12 = [ml_predict.forecast_lgu(l, 12) for l in lgu_names]
     if any(f is None for f in fh + f12):
         return None
-    model_stockpile = sum(f["horizon_p90"] for f in fh)
-    # Plus each LGU's policy safety reserve for zero-forecast months (see
-    # app.routes.pswdo._safety_reserve) - coverage and shortfall are measured
-    # against this recommended total, not the bare model stockpile.
-    reserve = sum(_safety_reserve(l, horizon_months, f)["total"] for l, f in zip(lgu_names, fh))
-    stockpile = model_stockpile + reserve
+    stockpile = sum(f["horizon_p90"] for f in fh)
     expected = sum(f["horizon_total"] for f in fh)
 
     remaining, months = float(stock), 0.0
@@ -127,7 +120,7 @@ def _stock_cover(stock, lgu_names, horizon_months):
     else:
         tier = "critical"
     return {
-        "stockpile": stockpile, "model_stockpile": model_stockpile, "reserve": reserve,
+        "stockpile": stockpile,
         "expected": expected, "coverage_pct": coverage, "tier": tier,
         "shortfall": max(stockpile - stock, 0),
         "months_cover": round(months, 1), "covers_12_plus": not exhausted,
@@ -159,7 +152,7 @@ def _barangay_snapshot(barangay, status_row, event_id):
         ).order_by(
             BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
         ).first()
-    stock_need = (report_row.affected_families or 0) if report_row else 0
+    stock_need = (report_row.requested_food_packs or 0) if report_row else 0
     adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
 
     if has_request:
@@ -340,10 +333,6 @@ def index():
     if forecast_lgu_choice not in scope_lgus:
         forecast_lgu_choice = scope_lgus[0] if scope_lgus else None
     lgu_forecast = ml_predict.forecast_lgu(forecast_lgu_choice, forecast_months) if forecast_lgu_choice else None
-    lgu_reserve = _safety_reserve(forecast_lgu_choice, forecast_months, lgu_forecast) if lgu_forecast else None
-    # Only the LGU's own CSWDO/MSWDO sets its reserve %; everyone else sees it.
-    own_office = current_user.office
-    can_edit_reserve = bool(is_cswdo and own_office and own_office.area_covered == forecast_lgu_choice)
 
     # Two line charts built from the forecast (geometry in app.ml.charts):
     #  - "Will the stock last?": cumulative expected / P90 demand vs the
@@ -419,10 +408,7 @@ def index():
                       if lgu_forecast else None)
     chart_months = chart_forecast["months"] if chart_forecast else []
     # Y axis for that chart: a round top value + evenly spaced ticks.
-    # Safety reserve bar height on zero-forecast months (policy layer, see
-    # app.routes.pswdo._safety_reserve) - drawn apart from the forecast bars.
-    reserve_per_month = lgu_reserve["per_month"] if lgu_reserve else 0
-    peak = max([m["p90_packs"] for m in chart_months] + [reserve_per_month])
+    peak = max([m["p90_packs"] for m in chart_months], default=0)
     step = min((c * mag for mag in (1, 10, 100, 1000, 10000, 100000) for c in (1, 2, 2.5, 5)
                 if c * mag * 4 >= peak), default=1)
     step = max(int(-(-step // 1)), 1)
@@ -442,17 +428,11 @@ def index():
         ).all())
         stock_total = sum(v for v in on_hand.values() if v is not None)
         for m in chart_months:
-            # Zero-forecast month: the recommended stockpile is the office's
-            # safety reserve, split by the same barangay shares as the
-            # forecast (Expected stays the model's own 0).
-            is_reserve = m["projected_packs"] == 0 and reserve_per_month > 0
-            month_stockpile = reserve_per_month if is_reserve else m["p90_packs"]
+            month_stockpile = m["p90_packs"]
             month_breakdown[m["date"]] = {
                 "label": f"{MONTH_NAMES[m['month'] - 1]} {m['year']}",
                 "expected": m["projected_packs"],
                 "stockpile": month_stockpile,
-                "is_reserve": is_reserve,
-                "reserve_pct": lgu_reserve["pct"] if lgu_reserve else 0,
                 "on_hand_total": stock_total,
                 "rows": [{
                     "name": r["name"],
@@ -473,17 +453,23 @@ def index():
     recommendations = []
     top = ranking[0] if ranking else None
     if top and top["priority_rank"] >= 3:
-        local_office = next((o for o in all_offices if o.office_type == "cswdo" and o.area_covered == top["lgu"]), None)
-        local_stock = next((w["food_pack_qty"] for w in warehouses if local_office and w["office"].office_id == local_office.office_id), 0)
+        # The barangay's own stock - not its municipal warehouse's, which made
+        # a well-stocked city read as "only N packs" next to one barangay's need.
+        brgy_stock = top["on_hand_stock"]
+        stock_txt = ("no stock on record" if brgy_stock is None
+                     else f"Brgy. {top['name']} has {brgy_stock:,} packs on hand")
         recommendations.append({
             "type": "critical" if top["priority_rank"] == 4 else "warning",
             "title": f"Prioritize {top['name']}",
             "tag": top["priority_label"],
             "detail": f"{top['affected_families']:,} affected families and {top['packs_needed']:,} packs needed"
                        f" ({'submitted request' if top['need_source'] == 'request' else 'model estimate'})."
-                       f" Current local stock: {local_stock:,} packs only.",
-            "link_label": "View Relief Request",
-            "link": relief_link + ("?municipality=" + top["lgu"] if not is_cswdo else ""),
+                       f" Current stock: {stock_txt}.",
+            # CSWDO: the barangay's own reports (relief_link is CSWDO's stock
+            # request to PSWDO, unrelated to this barangay).
+            "link_label": "View Barangay Reports" if is_cswdo else "View Relief Request",
+            "link": (url_for("cswdo.damage_assessment", tab="all", barangay_id=top["barangay_id"])
+                     if is_cswdo else relief_link + "?municipality=" + top["lgu"]),
         })
     # Forecast-based: municipal stock vs the model's cumulative demand (the
     # "How long will the stock last?" chart). A CSWDO sees only their own
@@ -505,6 +491,9 @@ def index():
             "type": rec["type"], "title": rec["title"], "tag": "Barangays", "detail": rec["detail"],
             "link_label": "Allocate to Barangays" if is_cswdo else "View Relief Requests",
             "link": url_for("cswdo.deliveries") if is_cswdo else relief_link,
+            # Full list behind "View all N barangays" (modal on the page).
+            "barangays": rec["barangays"], "lgu": rec["lgu"],
+            "total_short": rec["total_short"], "horizon_months": rec["horizon_months"],
         })
     for rec in _stock_recommendations(warehouses):
         recommendations.append({
@@ -551,9 +540,6 @@ def index():
         forecast_months=forecast_months,
         forecast_lgu_choice=forecast_lgu_choice,
         lgu_forecast=lgu_forecast,
-        lgu_reserve=lgu_reserve,
-        reserve_per_month=reserve_per_month,
-        can_edit_reserve=can_edit_reserve,
         forecast_summary_by_lgu=forecast_summary_by_lgu,
         barangay_breakdown=barangay_breakdown,
         month_breakdown=month_breakdown,
@@ -568,31 +554,3 @@ def index():
         loto_packs_cv=ml_predict.loto_packs_cv_summary(),
         loto_p90=ml_predict.p90_coverage_summary(),
     )
-
-
-@prediction_bp.route("/safety-reserve", methods=["POST"])
-@login_required
-@role_required("cswdo_admin")
-def set_safety_reserve():
-    """CSWDO/MSWDO sets its own office's safety reserve % (see
-    app.routes.pswdo._safety_reserve) - a policy choice, so it's the office's
-    to make and every change is logged."""
-    office = current_user.office
-    if not office or office.office_type != "cswdo":
-        abort(403)
-    pct = request.form.get("safety_reserve_pct", type=int)
-    back = url_for("prediction.index", forecast_lgu=office.area_covered,
-                   forecast_months=request.form.get("forecast_months", type=int) or 6)
-    if pct is None or not 0 <= pct <= 100:
-        flash("Enter a safety reserve between 0% and 100%.", "error")
-        return redirect(back)
-    old = office.safety_reserve_pct
-    office.safety_reserve_pct = pct
-    db.session.add(ActivityLog(
-        actor_id=current_user.user_id, action_type="safety_reserve_updated",
-        description=f"{office.office_name} set its safety reserve for zero-forecast months from {old}% to {pct}% of the per-storm P90",
-        office_id=office.office_id,
-    ))
-    db.session.commit()
-    flash(f"Safety reserve set to {pct}% of one storm's P90 per zero-forecast month.", "success")
-    return redirect(back)

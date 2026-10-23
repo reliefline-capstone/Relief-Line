@@ -63,9 +63,49 @@
                     <div>
                         <strong>{{ rec.title }}{% if rec.tag %} <span class="badge-priority badge-priority-{{ 'critical' if rec.type == 'critical' else 'high' }}">{{ rec.tag }}</span>{% endif %}</strong>
                         <span>{{ rec.detail }}</span>
+                        {% if rec.barangays %}<button type="button" class="link-manage" data-open-modal="pa-brgy-modal-{{ loop.index }}" style="display:block; margin-top:4px; background:none; border:0; padding:0; cursor:pointer; font:inherit;">View all {{ rec.barangays|length }} barangays →</button>{% endif %}
                         {% if rec.link %}<a href="{{ rec.link }}" class="link-manage" style="display:block; margin-top:4px;">{{ rec.link_label }} →</a>{% endif %}
                     </div>
                 </div>
+                {% if rec.barangays %}
+                <div class="rd-modal-overlay" id="pa-brgy-modal-{{ loop.index }}" hidden>
+                    <div class="rd-modal" style="max-width:860px;">
+                        <div class="rd-modal-header">
+                            <h3>{{ icon('package', 18, '#0f2547') }} {{ rec.title }}</h3>
+                            <button type="button" class="rd-modal-close" data-close-modal>{{ icon('x', 18) }}</button>
+                        </div>
+                        <p class="form-hint">
+                            Biggest gap first. Short = recommended {{ rec.horizon_months }}-month stockpile minus
+                            (on hand + on the way). Together: {{ "{:,}".format(rec.total_short) }} packs short.
+                        </p>
+                        <div class="rr-table-wrap" style="max-height:60vh; overflow:auto;">
+                            <table class="rr-table">
+                                <thead><tr>
+                                    <th>Barangay</th><th>On hand</th><th>On the way</th>
+                                    <th>Expected ({{ rec.horizon_months }} mo)</th><th>Recommended</th><th>Short</th>
+                                    {% if is_cswdo %}<th></th>{% endif %}
+                                </tr></thead>
+                                <tbody>
+                                    {% for b in rec.barangays %}
+                                    <tr>
+                                        <td><strong>{{ b.name }}</strong></td>
+                                        <td>{% if b.no_record %}<span class="rd-sub">No record</span>{% else %}{{ "{:,}".format(b.on_hand) }}{% endif %}</td>
+                                        <td>{{ "{:,}".format(b.incoming) if b.incoming else '-' }}</td>
+                                        <td>{{ "{:,}".format(b.expected) }}</td>
+                                        <td>{{ "{:,}".format(b.stockpile) }}</td>
+                                        <td><strong style="color:{{ '#c0392b' if b.short_expected else '#d35400' }};">{{ "{:,}".format(b.short) }}</strong></td>
+                                        {% if is_cswdo %}
+                                        <td><a href="{{ url_for('cswdo.deliveries', allocate=b.barangay_id, qty=b.short) }}" class="btn-view-sm">{{ icon('package', 13) }} Allocate</a></td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="form-hint" style="margin-top:10px;">Red = stock doesn't even cover the expected demand. Orange = covers expected, but not the recommended stockpile.</p>
+                    </div>
+                </div>
+                {% endif %}
                 {% else %}
                 <p class="empty-note">No recommendations right now - stock levels are healthy.</p>
                 {% endfor %}
@@ -126,9 +166,6 @@
                     {% set cx = x0 + slot / 2 %}
                     {% set eh = (m.projected_packs / axis_max) * (pb - pt) %}
                     {% set ph = (m.p90_packs / axis_max) * (pb - pt) %}
-                    {# Safety reserve (policy, not forecast) - only on zero-forecast months. #}
-                    {% set rv = reserve_per_month if m.projected_packs == 0 else 0 %}
-                    {% set rh = (rv / axis_max) * (pb - pt) %}
                     {% if m.is_wet_season or m.is_peak_season %}
                     <rect class="pa-bar-band{{ ' pa-bar-band-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt }}"></rect>
                     {% endif %}
@@ -138,12 +175,7 @@
                     {% endif %}
                     {% if eh > 0 %}<path class="pa-bar-col" d="{{ top_rounded_bar(cx - bw - 1, eh, bw) }}"></path>{% endif %}
                     {% if ph > 0 %}<path class="pa-bar-p90" d="{{ top_rounded_bar(cx + 1, ph, bw) }}"></path>{% endif %}
-                    {% if rh > 0 %}
-                    <path class="pa-bar-reserve" d="{{ top_rounded_bar(cx - bw / 2, rh, bw) }}"></path>
-                    <text class="pa-bar-value pa-bar-value-reserve" x="{{ '%.1f'|format(cx) }}" y="{{ '%.1f'|format(pb - rh - 6) }}" text-anchor="middle">{{ packs(rv) }}</text>
-                    {% else %}
                     <text class="pa-bar-value" x="{{ '%.1f'|format(cx - bw / 2 - 1.5) }}" y="{{ '%.1f'|format(pb - eh - 6) }}" text-anchor="middle">{{ packs(m.projected_packs) }}</text>
-                    {% endif %}
                     {% if m.p90_packs > 0 %}
                     <text class="pa-bar-value pa-bar-value-p90" x="{{ '%.1f'|format(cx + bw / 2 + 1.5) }}" y="{{ '%.1f'|format(pb - ph - 6) }}" text-anchor="middle">{{ packs(m.p90_packs) }}</text>
                     {% endif %}
@@ -151,10 +183,10 @@
                     <text class="pa-bar-sublabel" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 38 }}" text-anchor="middle">{{ m.year }}</text>
                     <text class="pa-season-tag{{ ' pa-season-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 56 }}" text-anchor="middle">{% if m.is_peak_season %}peak{% elif m.is_wet_season %}rainy{% endif %}</text>
                     <rect class="pa-month-hit" data-month="{{ m.date }}" tabindex="0" role="button"
-                          data-tip-label="{{ m.label }} {{ m.year }}" data-tip-exp="{{ m.projected_packs }}" data-tip-p90="{{ m.p90_packs }}" data-tip-reserve="{{ rv }}"
+                          data-tip-label="{{ m.label }} {{ m.year }}" data-tip-exp="{{ m.projected_packs }}" data-tip-p90="{{ m.p90_packs }}"
                           data-tip-season="{{ 'Peak typhoon season' if m.is_peak_season else 'Rainy season' if m.is_wet_season else '' }}"
-                          data-tip-x="{{ '%.1f'|format(cx) }}" data-tip-y="{{ '%.1f'|format(pb - [eh, ph, rh]|max) }}"
-                          aria-label="{{ m.label }} {{ m.year }}: expected {{ m.projected_packs }} packs, recommended stockpile {{ [m.p90_packs, rv]|max }} packs{{ " (safety reserve)" if rv }}. Show barangay breakdown."
+                          data-tip-x="{{ '%.1f'|format(cx) }}" data-tip-y="{{ '%.1f'|format(pb - [eh, ph]|max) }}"
+                          aria-label="{{ m.label }} {{ m.year }}: expected {{ m.projected_packs }} packs, recommended stockpile {{ m.p90_packs }} packs. Show barangay breakdown."
                           x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt + 62 }}">
                     </rect>
                     {%- endfor -%}
@@ -164,7 +196,6 @@
             <div class="pa-legend">
                 <span><i class="lg-exp"></i>Expected</span>
                 <span><i class="lg-p90-bar"></i>Stockpile</span>
-                {% if reserve_per_month %}<span><i class="lg-reserve"></i>Safety reserve</span>{% endif %}
                 <span><i class="lg-wet"></i>Rainy (Jun-Oct)</span>
                 <span><i class="lg-peak"></i>Peak (Jul-Oct)</span>
             </div>
@@ -196,47 +227,7 @@
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong>
                     <span class="rd-sub">packs</span>
                 </div>
-                {% if lgu_reserve %}
-                <div class="pa-decision-tile">
-                    <span class="rd-sub">+ Safety reserve</span>
-                    <strong>{{ "{:,}".format(lgu_reserve.total) }}</strong>
-                    <span class="rd-sub">{% if lgu_reserve.zero_months %}{{ lgu_reserve.zero_months|length }} zero-forecast mo &times; {{ "{:,}".format(lgu_reserve.per_month) }}{% else %}no zero-forecast months{% endif %}</span>
-                </div>
-                <div class="pa-decision-tile">
-                    <span class="rd-sub">= Recommended total</span>
-                    <strong>{{ "{:,}".format(lgu_reserve.recommended) }}</strong>
-                    <span class="rd-sub">packs</span>
-                </div>
-                {% endif %}
             </div>
-            {% if lgu_reserve %}
-            {# Safety reserve = policy, not model output: shown apart from the forecast so the
-               model's own accuracy stays evaluable (see app.routes.pswdo._safety_reserve). #}
-            {# Collapsed by default - one quiet line; the explanation and the
-               office's % setting open on click. #}
-            <details class="pa-reserve-note">
-                <summary>
-                    {{ icon('info', 13) }}
-                    <span>Safety reserve: <strong>{{ lgu_reserve.pct }}%</strong>{% if lgu_reserve.total %} &middot; {{ "{:,}".format(lgu_reserve.total) }} packs{% endif %}</span>
-                    <span class="pa-reserve-more">{{ 'What is this? / Change' if can_edit_reserve else 'What is this?' }}</span>
-                </summary>
-                <p class="rd-sub pa-reserve-body">
-                    The model forecasts <strong>0</strong> for months with no typhoon on record{% if lgu_reserve.zero_months %} ({{ lgu_reserve.zero_months|join(', ') }}){% endif %},
-                    but monsoon and low-pressure flooding can still happen. The <strong>safety reserve</strong> keeps
-                    <strong>{{ lgu_reserve.pct }}%</strong> of one storm's P90 ({{ "{:,}".format(lgu_forecast.per_event_p90) }} packs) for each of those months.
-                    It is a policy setting of {{ lgu_forecast.lgu }}'s office, not part of the forecast.
-                </p>
-                {% if can_edit_reserve %}
-                <form method="POST" action="{{ url_for('prediction.set_safety_reserve') }}" class="pa-reserve-form">
-                    <input type="hidden" name="forecast_months" value="{{ forecast_months }}">
-                    <label for="pa-reserve-pct">Safety reserve</label>
-                    <input type="number" name="safety_reserve_pct" id="pa-reserve-pct" min="0" max="100" value="{{ lgu_reserve.pct }}" required>
-                    <span>% of one storm's P90 per zero-forecast month</span>
-                    <button type="submit" class="btn-outline">Save</button>
-                </form>
-                {% endif %}
-            </details>
-            {% endif %}
             {% if lgu_forecast.short_horizon %}
             <p class="stock-warning" style="margin:8px 0;">{{ icon('alert-triangle', 16, '#b9651a') }}<strong>Not a safety stock for this period</strong></p>
             {% endif %}
@@ -466,7 +457,7 @@
                         <span>{{ w.cover.coverage_pct }}% of stockpile</span>
                         <span>{{ w.cover.months_cover }}{{ '+' if w.cover.covers_12_plus }} months of cover</span>
                     </div>
-                    <span class="rd-sub">Recommended {{ cover_horizon }}-month stockpile for {{ w.scope_label }}: {{ "{:,}".format(w.cover.stockpile) }}{% if w.cover.reserve %} ({{ "{:,}".format(w.cover.model_stockpile) }} forecast + {{ "{:,}".format(w.cover.reserve) }} safety reserve){% endif %} (expected demand {{ "{:,}".format(w.cover.expected) }}){% if w.cover.shortfall %} &middot; <strong>short {{ "{:,}".format(w.cover.shortfall) }}</strong>{% else %} &middot; fully covered{% endif %}</span>
+                    <span class="rd-sub">Recommended {{ cover_horizon }}-month stockpile for {{ w.scope_label }}: {{ "{:,}".format(w.cover.stockpile) }} (expected demand {{ "{:,}".format(w.cover.expected) }}){% if w.cover.shortfall %} &middot; <strong>short {{ "{:,}".format(w.cover.shortfall) }}</strong>{% else %} &middot; fully covered{% endif %}</span>
                     {% else %}
                     <span class="rd-sub" style="display:block; margin-top:10px;">No trained model - run <code>scripts/train_model.py</code> to compare stock with the forecast.</span>
                     {% endif %}
@@ -694,6 +685,7 @@
 
     </main>
 </div>
+<script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
 {% if month_breakdown %}
 <script>
 (function () {
@@ -718,10 +710,7 @@
         document.getElementById('pa-month-total-s').innerHTML = '<strong>' + fmt(m.on_hand_total) + '</strong>';
         document.getElementById('pa-month-total-e').innerHTML = '<strong>' + fmt(m.expected) + '</strong>';
         document.getElementById('pa-month-total-p').innerHTML = '<strong>' + fmt(m.stockpile) + '</strong>';
-        document.getElementById('pa-month-note').textContent = m.is_reserve
-            ? 'The model expects 0 in ' + m.label + ' (no typhoon on record). The recommended stockpile here is the ' +
-              m.reserve_pct + '% safety reserve, shared among barangays the same way as the forecast.'
-            : m.expected === 0 && m.stockpile === 0
+        document.getElementById('pa-month-note').textContent = m.expected === 0 && m.stockpile === 0
             ? 'No typhoon relief demand is expected in ' + m.label + ' (outside the typhoon season), so every barangay shows 0.'
             : 'Only ' + m.label + ' is shown. Barangay figures can differ from the municipal total by a few packs due to rounding.';
         panel.hidden = false;
@@ -772,8 +761,6 @@
                     (d.tipSeason ? '<div class="pa-tip-sub">' + d.tipSeason + '</div>' : '') +
                     row('lg-exp', 'Expected', fmt(d.tipExp) + ' packs') +
                     row('lg-p90-bar', 'Stockpile', fmt(d.tipP90) + ' packs') +
-                    (+d.tipReserve > 0 ? row('lg-reserve', 'Safety reserve', fmt(d.tipReserve) + ' packs') +
-                        '<div class="pa-tip-sub">Policy reserve - the model forecasts 0 this month</div>' : '') +
                     '<div class="pa-tip-sub" style="margin-top:4px;">Click for barangay breakdown</div>';
                 place(demand, dtip, +d.tipX, +d.tipY);
             }

@@ -549,8 +549,8 @@ def _target_barangay_geojson(lgu, event_id):
             on_hand = food_pack_on_hand(barangay.barangay_id)
             # GIS colour = STOCK ADEQUACY, not disaster severity - "can this
             # barangay cover its own reported caseload from its own stock?"
-            # need = affected_families only (~1 pack/family in real practice).
-            stock_need = (report_row.affected_families or 0) if report_row else 0
+            # need = the food packs the barangay requested on that report.
+            stock_need = (report_row.requested_food_packs or 0) if report_row else 0
             adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
             props = {
                 "name": name,
@@ -744,39 +744,6 @@ def _stock_recommendations(warehouses):
     return recommendations
 
 
-DEFAULT_SAFETY_RESERVE_PCT = 10
-
-
-def _safety_reserve(lgu, horizon_months, forecast=None):
-    """Policy safety reserve on top of the model's stockpile - the
-    recommendation layer, NOT part of the forecast (ml_predict.forecast_lgu
-    stays exactly what the data predicts, so its accuracy can still be
-    evaluated honestly).
-
-    The forecaster gives 0 for months with no typhoon on record (Dec-Jun in
-    the PAGASA calendar), but a short record isn't proof of zero risk and
-    monsoon/LPA flooding still happens. So each zero-forecast month in the
-    horizon gets a reserve of `pct`% of the LGU's per-storm P90, where `pct`
-    is the LGU's CSWDO/MSWDO office setting (Office.safety_reserve_pct,
-    default 10). Months the model already forecasts demand for get nothing
-    extra - their own stockpile is far larger than any reserve.
-
-    Returns None without a trained model, else
-    {pct, per_month, zero_months: ["Dec 2026", ...], total, stockpile, recommended}."""
-    f = forecast or ml_predict.forecast_lgu(lgu, horizon_months)
-    if not f:
-        return None
-    office = Office.query.filter_by(office_type="cswdo", area_covered=lgu).first()
-    pct = office.safety_reserve_pct if office and office.safety_reserve_pct is not None else DEFAULT_SAFETY_RESERVE_PCT
-    per_month = int(round(f["per_event_p90"] * pct / 100))
-    zero_months = [f"{m['label']} {m['year']}" for m in f["months"] if m["projected_packs"] == 0]
-    total = per_month * len(zero_months)
-    return {
-        "pct": pct, "per_month": per_month, "zero_months": zero_months, "total": total,
-        "stockpile": f["horizon_p90"], "recommended": f["horizon_p90"] + total,
-    }
-
-
 def _forecast_recommendations(warehouses, horizon_months=6, audience="pswdo"):
     """Forecast-driven stock recommendations, one per municipal (CSWDO)
     warehouse: compares its food-pack stock with the model's month-by-month
@@ -802,10 +769,7 @@ def _forecast_recommendations(warehouses, horizon_months=6, audience="pswdo"):
         if not f or not f["months"]:
             continue
         stock = int(w["food_pack_qty"])
-        # Recommended stockpile = the model's P90 stockpile + the office's
-        # safety reserve for zero-forecast months (see _safety_reserve).
-        reserve = _safety_reserve(lgu, horizon_months, f)
-        stockpile, expected = int(reserve["recommended"]), int(f["horizon_total"])
+        stockpile, expected = int(f["horizon_p90"]), int(f["horizon_total"])
         if stock >= stockpile:
             continue
 
@@ -825,11 +789,8 @@ def _forecast_recommendations(warehouses, horizon_months=6, audience="pswdo"):
             rec_type, title = "warning", f"{lgu} stock is {shortfall:,} packs short of the recommended stockpile"
             summary = (f"{stock:,} packs on hand covers the expected {expected:,} packs over the next "
                        f"{horizon_months} months, but a bad season would run out{' in ' + run_p if run_p else ''}.")
-        reserve_note = (f" (includes a {reserve['total']:,}-pack safety reserve for "
-                        f"{len(reserve['zero_months'])} zero-forecast month{'s' if len(reserve['zero_months']) != 1 else ''})"
-                        if reserve["total"] else "")
         recs.append({"type": rec_type, "lgu": lgu, "title": title, "summary": summary,
-                     "detail": f"{summary} {action} to reach {stockpile:,}{reserve_note}."})
+                     "detail": f"{summary} {action} to reach {stockpile:,}."})
     recs.sort(key=lambda r: 0 if r["type"] == "critical" else 1)
     return recs
 
@@ -840,7 +801,10 @@ def _barangay_shortages(lgu, horizon_months):
     split as ml_predict.forecast_barangay (barangay share x the LGU figure),
     computed from one forecast_lgu call instead of one per barangay.
     A barangay with no inventory row on record counts as 0 on hand and is
-    flagged `no_record`."""
+    flagged `no_record`. Packs already allocated but not yet received
+    (DistributionRecord still pending - preparing through delayed) count
+    toward the barangay's stock as `incoming`, so a barangay isn't flagged
+    again for a gap a delivery on the way already covers."""
     f = ml_predict.forecast_lgu(lgu, horizon_months)
     shares = ml_predict.share_breakdown(lgu)
     if not f or not shares:
@@ -851,15 +815,23 @@ def _barangay_shortages(lgu, horizon_months):
         BarangayInventory.barangay_id.in_([r["barangay_id"] for r in shares]),
         BarangayInventory.item_type == "food_pack",
     ).all())
+    incoming = dict(db.session.query(
+        DistributionRecord.barangay_id, db.func.sum(DistributionRecord.quantity_released)
+    ).filter(
+        DistributionRecord.barangay_id.in_([r["barangay_id"] for r in shares]),
+        DistributionRecord.status == "pending",
+    ).group_by(DistributionRecord.barangay_id).all())
     rows = []
     for r in shares:
         expected = sum(max(int(round(m["projected_packs"] * r["share"])), 0) for m in f["months"])
         stockpile = max(int(round(f["horizon_p90"] * r["share"])), expected)
         stock = on_hand.get(r["barangay_id"])
-        have = stock or 0
+        coming = int(incoming.get(r["barangay_id"]) or 0)
+        have = (stock or 0) + coming
         if have < stockpile:
-            rows.append({"barangay_id": r["barangay_id"], "name": r["name"], "on_hand": have,
-                         "no_record": stock is None, "expected": expected, "stockpile": stockpile,
+            rows.append({"barangay_id": r["barangay_id"], "name": r["name"], "on_hand": stock or 0,
+                         "incoming": coming, "no_record": stock is None,
+                         "expected": expected, "stockpile": stockpile,
                          "short": stockpile - have, "short_expected": have < expected})
     rows.sort(key=lambda x: x["short"], reverse=True)
     return rows
@@ -878,19 +850,24 @@ def _barangay_recommendations(warehouses, lgus, horizon_months=6, audience="pswd
         rows = _barangay_shortages(lgu, horizon_months)
         if not rows:
             continue
-        listed = ", ".join(
-            f"{r['name']} ({r['short']:,} short, "
-            + ("no stock on record)" if r["no_record"] else f"{r['on_hand']:,} on hand)")
-            for r in rows[:top])
+        def _stock_txt(r):
+            base = "no stock on record" if r["no_record"] else f"{r['on_hand']:,} on hand"
+            return base + (f", {r['incoming']:,} on the way" if r["incoming"] else "")
+        listed = ", ".join(f"{r['name']} ({r['short']:,} short, {_stock_txt(r)})" for r in rows[:top])
         more = f" and {len(rows) - top} more" if len(rows) > top else ""
         total_short = sum(r["short"] for r in rows)
-        stock_note = (f" {lgu}'s municipal warehouse has {municipal[lgu]:,} packs."
-                      if lgu in municipal else "")
-        action = ("Allocate from the municipal warehouse, biggest gap first." if audience == "cswdo"
-                  else f"Follow up with {lgu} CSWDO/MSWDO on pre-positioning packs in these barangays.")
+        stock = municipal.get(lgu)
+        stock_note = f" {lgu}'s municipal warehouse has {stock:,} packs." if stock is not None else ""
+        if audience != "cswdo":
+            action = f"Follow up with {lgu} CSWDO/MSWDO on pre-positioning packs in these barangays."
+        elif stock is not None and stock < total_short:
+            action = (f"That covers only part of the gap - allocate the biggest gaps first and request "
+                      f"about {total_short - stock:,} more packs from PSWDO.")
+        else:
+            action = "Allocate from the municipal warehouse, biggest gap first."
         recs.append({
             "type": "critical" if any(r["short_expected"] for r in rows) else "warning",
-            "lgu": lgu, "barangays": rows,
+            "lgu": lgu, "barangays": rows, "total_short": total_short, "horizon_months": horizon_months,
             "title": f"{len(rows)} barangay{'s' if len(rows) != 1 else ''} in {lgu} need food packs",
             "detail": f"Most in need: {listed}{more}. Together they are {total_short:,} packs short of their "
                       f"{horizon_months}-month recommended stockpile.{stock_note} {action}",
@@ -3021,7 +2998,7 @@ def gis_map_barangay_detail(barangay_id):
         ).first()
     status_key = status_row.status if status_row else "normal"
     on_hand = food_pack_on_hand(barangay_id)
-    stock_need = (report_row.affected_families or 0) if report_row else 0
+    stock_need = (report_row.requested_food_packs or 0) if report_row else 0
     adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
 
     relief = _relief_summary([barangay_id], event_id)

@@ -197,4 +197,29 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}?v={{ asset_version('js/relief_request_detail.js') }}"></script>
+<script>
+// ?allocate=<barangay_id>&qty=<n> (from Predictive Analytics' "barangays need
+// food packs" list) opens the Allocate modal prefilled for that barangay.
+document.addEventListener('DOMContentLoaded', function () {
+    var params = new URLSearchParams(window.location.search);
+    var brgy = params.get('allocate');
+    var opener = document.querySelector('[data-open-modal="dv-allocate-modal"]');
+    var select = document.getElementById('dv-am-barangay');
+    if (!brgy || !opener || !select || !select.querySelector('option[value="' + CSS.escape(brgy) + '"]')) return;
+    select.value = brgy;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    var qty = parseInt(params.get('qty'), 10);
+    var qtyInput = document.getElementById('dv-am-quantity');
+    if (qty > 0 && qtyInput) {
+        qtyInput.value = qty;
+        qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    var remarks = document.getElementById('dv-am-remarks');
+    if (remarks && !remarks.value) {
+        remarks.value = 'Pre-positioning: below its recommended stockpile on Predictive Analytics'
+            + (qty > 0 ? ' (' + qty.toLocaleString() + ' packs short).' : '.');
+    }
+    opener.click();
+});
+</script>
 {% endblock %}
