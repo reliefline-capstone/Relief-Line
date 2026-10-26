@@ -265,7 +265,7 @@
                 <input type="text" name="reason" id="bi-d-reason" placeholder="e.g. Distributed at evacuation center, Purok 3">
             </div>
             <div class="form-row">
-                <label>Photo proof *</label>
+                <label>Photo proof (optional)</label>
                 <label for="bi-d-proof" class="upload-dropzone">
                     <span class="upload-dropzone-icon">{{ icon('camera', 22) }}</span>
                     <strong data-default="Tap to upload photo proof">Tap to upload photo proof</strong>
@@ -275,7 +275,7 @@
                 <div class="upload-previews" id="bi-d-proof-previews" hidden></div>
             </div>
             <div class="rd-modal-actions">
-                <button type="submit" class="btn-decision btn-partial" id="bi-d-submit" disabled title="Attach a photo first">Record</button>
+                <button type="submit" class="btn-decision btn-partial" id="bi-d-submit">Record</button>
                 <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
             </div>
         </form>
@@ -333,13 +333,11 @@
     if (proof && previews) {
         var zone = proof.closest('.upload-dropzone');
         var label = zone.querySelector('strong');
-        // Shows previews of the chosen proof photos, and enables the submit button.
+        // Shows previews of the chosen proof photos (photos are optional).
         function render() {
             var n = proof.files.length;
             label.textContent = n ? n + ' photo' + (n > 1 ? 's' : '') + ' selected - tap to change' : label.dataset.default;
             zone.classList.toggle('has-file', n > 0);
-            var submit = document.getElementById('bi-d-submit');
-            if (submit) { submit.disabled = !n; submit.title = n ? '' : 'Attach a photo first'; }
             previews.innerHTML = '';
             Array.prototype.forEach.call(proof.files, function (f) {
                 var img = document.createElement('img');

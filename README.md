@@ -9,7 +9,7 @@ and their barangays. Flask + MySQL/MariaDB.
 ```
 reliefline/
 ├── run.py                 # development server
-├── wsgi.py                # production WSGI entry point (gunicorn / waitress)
+├── wsgi.py                # production WSGI entry point (loaded by the host)
 ├── requirements.txt
 ├── app/
 │   ├── __init__.py        # create_app(): config, blueprints, context processors
@@ -47,36 +47,19 @@ mysql -u root reliefline_db < database/reliefline_db.sql
 
 1. **Database** – create a MySQL 8 / MariaDB database and a dedicated user,
    then load `reliefline/database/reliefline_db.sql`.
-2. **Environment** – set these variables (in `reliefline/.env`, or in the host's variable settings):
+2. **Environment** – set these variables in `reliefline/.env` on the server:
    - `SECRET_KEY` – long random value (the app will not start without it).
    - `DATABASE_URL` – points at the production database.
    - `FLASK_DEBUG=0`.
    - `SESSION_COOKIE_SECURE=1` once served over HTTPS.
-   - `BEHIND_PROXY=1` when behind Nginx or a PaaS router.
+   - `BEHIND_PROXY=1` when the host sits in front of the app (most hosts do).
    - `MAIL_*` – optional, for password-reset emails.
 3. **Install** – `pip install -r requirements.txt` in a virtualenv.
-4. **Run** from the `reliefline/` directory:
-   - Linux: `gunicorn --workers 3 --bind 0.0.0.0:8000 wsgi:app`
-   - Windows: `waitress-serve --listen=0.0.0.0:8000 wsgi:app`
-
-   Put Nginx (or the host's HTTPS router) in front, and let it serve
-   `app/static/` directly if possible.
+4. **Run** – point the host's WSGI setup at `reliefline/wsgi.py` (it exposes `app`),
+   and let the host serve `reliefline/app/static/` directly if possible.
 5. **Persistent files** – `app/static/uploads/` holds user-uploaded proof
    photos and attachments. Keep it on persistent storage and back it up
    together with the database.
-
-### Railway
-
-- Service **Root Directory**: `/reliefline`. `Procfile` starts gunicorn on
-  `$PORT`, and `.python-version` pins Python 3.12.
-- Add a MySQL database and set the app's `DATABASE_URL` variable to
-  `${{MySQL.MYSQL_URL}}`; a plain `mysql://` URL is converted automatically.
-- Other variables: `SECRET_KEY`, `FLASK_DEBUG=0`, `SESSION_COOKIE_SECURE=1`,
-  `BEHIND_PROXY=1`.
-- Attach a **Volume** mounted at `/app/app/static/uploads` so uploaded files
-  survive redeploys.
-- Load `database/reliefline_db.sql` once through the database's public
-  (TCP proxy) connection.
 
 The whole system runs on Philippine time (UTC+8) regardless of the server's
 time zone; see `app/utils/timezone.py`.

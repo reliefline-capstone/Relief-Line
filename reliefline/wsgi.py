@@ -1,4 +1,4 @@
-# Starts the app on the server (used by gunicorn / waitress, see Procfile).
+# Starts the app on the server (the hosting site's WSGI setup loads 'app' from here).
 
 from app import create_app
 

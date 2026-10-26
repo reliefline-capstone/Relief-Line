@@ -1,4 +1,4 @@
-# App settings, read from the .env file or Railway Variables.
+# App settings, read from the .env file.
 
 import os
 from dotenv import load_dotenv
@@ -6,30 +6,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# Reads an on/off setting from the .env file or Railway Variables.
+# Reads an on/off setting from the .env file.
 # '1', 'true', 'yes' or 'on' mean ON; anything else means OFF.
 def _env_flag(name, default="false"):
     return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
 
 
-# Gets the database address from DATABASE_URL.
-# If Railway gives it as 'mysql://...', it is changed to the 'mysql+pymysql://...' form the app needs.
-def _database_url():
-    url = os.getenv("DATABASE_URL", "mysql+pymysql://root:@localhost/reliefline_db")
-    for prefix in ("mysql://", "mariadb://"):
-        if url.startswith(prefix):
-            return "mysql+pymysql://" + url[len(prefix):]
-    return url
-
-
 # All app settings in one place: database, security key, debug mode, upload size limit and login cookies.
-# Values come from the .env file (on your computer) or Railway Variables (on the server).
+# Values come from the .env file (on your computer and on the server).
 class Config:
     DEBUG = _env_flag("FLASK_DEBUG")
 
     SECRET_KEY = os.getenv("SECRET_KEY")
 
-    SQLALCHEMY_DATABASE_URI = _database_url()
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "mysql+pymysql://root:@localhost/reliefline_db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     SQLALCHEMY_ENGINE_OPTIONS = {
