@@ -138,6 +138,12 @@
                         <option value="9" {{ 'selected' if forecast_months == 9 }}>Next 9 months</option>
                         <option value="12" {{ 'selected' if forecast_months == 12 }}>Next 12 months</option>
                     </select>
+                    {# Buffer switch: shows or hides the stockpile (buffer) bars; off by default. #}
+                    <label class="pa-buffer-toggle" title="Show the recommended stockpile (expected need plus buffer)">
+                        <input type="checkbox" name="show_buffer" value="1" {{ 'checked' if show_buffer }} onchange="this.form.submit()">
+                        <span class="pa-buffer-switch" aria-hidden="true"></span>
+                        Show buffer
+                    </label>
                 </form>
             </div>
             {% if lgu_forecast %}
@@ -166,7 +172,9 @@
                     {% set x0 = pl + loop.index0 * slot %}
                     {% set cx = x0 + slot / 2 %}
                     {% set eh = (m.projected_packs / axis_max) * (pb - pt) %}
-                    {% set ph = (m.p90_packs / axis_max) * (pb - pt) %}
+                    {% set ph = (m.p90_packs / axis_max) * (pb - pt) if show_buffer else 0 %}
+                    {# With the buffer off, the expected bar sits centred in its month. #}
+                    {% set ex = (cx - bw - 1) if show_buffer else (cx - bw / 2) %}
                     {% if m.is_wet_season or m.is_peak_season %}
                     <rect class="pa-bar-band{{ ' pa-bar-band-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt }}"></rect>
                     {% endif %}
@@ -174,10 +182,10 @@
                     <rect class="pa-now-band" x="{{ '%.1f'|format(x0 + 2) }}" y="{{ pt - 6 }}" width="{{ '%.1f'|format(slot - 4) }}" height="{{ pb - pt + 68 }}" rx="8"></rect>
                     <text class="pa-now-tag" x="{{ '%.1f'|format(cx) }}" y="{{ pt - 12 }}" text-anchor="middle">THIS MONTH</text>
                     {% endif %}
-                    {% if eh > 0 %}<path class="pa-bar-col" d="{{ top_rounded_bar(cx - bw - 1, eh, bw) }}"></path>{% endif %}
+                    {% if eh > 0 %}<path class="pa-bar-col" d="{{ top_rounded_bar(ex, eh, bw) }}"></path>{% endif %}
                     {% if ph > 0 %}<path class="pa-bar-p90" d="{{ top_rounded_bar(cx + 1, ph, bw) }}"></path>{% endif %}
-                    <text class="pa-bar-value" x="{{ '%.1f'|format(cx - bw / 2 - 1.5) }}" y="{{ '%.1f'|format(pb - eh - 6) }}" text-anchor="middle">{{ packs(m.projected_packs) }}</text>
-                    {% if m.p90_packs > 0 %}
+                    <text class="pa-bar-value" x="{{ '%.1f'|format(ex + bw / 2 - (1.5 if show_buffer else 0)) }}" y="{{ '%.1f'|format(pb - eh - 6) }}" text-anchor="middle">{{ packs(m.projected_packs) }}</text>
+                    {% if show_buffer and m.p90_packs > 0 %}
                     <text class="pa-bar-value pa-bar-value-p90" x="{{ '%.1f'|format(cx + bw / 2 + 1.5) }}" y="{{ '%.1f'|format(pb - ph - 6) }}" text-anchor="middle">{{ packs(m.p90_packs) }}</text>
                     {% endif %}
                     <text class="pa-bar-label{{ ' pa-bar-label-now' if m.is_current }}" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 22 }}" text-anchor="middle">{{ m.label }}</text>
@@ -187,7 +195,7 @@
                           data-tip-label="{{ m.label }} {{ m.year }}" data-tip-exp="{{ m.projected_packs }}" data-tip-p90="{{ m.p90_packs }}"
                           data-tip-season="{{ 'Peak typhoon season' if m.is_peak_season else 'Rainy season' if m.is_wet_season else '' }}"
                           data-tip-x="{{ '%.1f'|format(cx) }}" data-tip-y="{{ '%.1f'|format(pb - [eh, ph]|max) }}"
-                          aria-label="{{ m.label }} {{ m.year }}: expected {{ m.projected_packs }} packs, recommended stockpile {{ m.p90_packs }} packs. Show barangay breakdown."
+                          aria-label="{{ m.label }} {{ m.year }}: expected {{ m.projected_packs }} packs{% if show_buffer %}, recommended stockpile {{ m.p90_packs }} packs{% endif %}. Show barangay breakdown."
                           x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt + 62 }}">
                     </rect>
                     {%- endfor -%}
@@ -196,7 +204,7 @@
             </div>
             <div class="pa-legend">
                 <span><i class="lg-exp"></i>Expected</span>
-                <span><i class="lg-p90-bar"></i>Stockpile</span>
+                {% if show_buffer %}<span><i class="lg-p90-bar"></i>Stockpile</span>{% endif %}
                 <span><i class="lg-wet"></i>Rainy (Jun-Oct)</span>
                 <span><i class="lg-peak"></i>Peak (Jul-Oct)</span>
             </div>
@@ -223,13 +231,15 @@
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong>
                     <span class="rd-sub">packs</span>
                 </div>
+                {% if show_buffer %}
                 <div class="pa-decision-tile">
                     <span class="rd-sub">Stockpile ({{ forecast_months }} mo)</span>
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong>
                     <span class="rd-sub">packs</span>
                 </div>
+                {% endif %}
             </div>
-            {% if lgu_forecast.below_largest_event %}
+            {% if show_buffer and lgu_forecast.below_largest_event %}
             <p class="stock-warning" style="margin:8px 0;">{{ icon('alert-triangle', 16, '#b9651a') }}<strong>{% if lgu_forecast.largest_covered_only_by_buffer %}Largest storm covered only by the buffer{% else %}Extreme storms are not covered{% endif %}</strong></p>
             {% endif %}
             {% else %}
@@ -237,6 +247,50 @@
             {% endif %}
             {{ prediction_disclaimer() }}
         </section>
+
+        {% if distribution_history %}
+        {# Past Distribution: food packs actually given per month, from the real typhoon relief records. #}
+        {# Year/municipality filters redraw the chart in the browser; click a month for its barangay breakdown. #}
+        <section class="panel" id="pa-history" style="margin-bottom:16px;">
+            <div class="panel-header">
+                <h3>Past Distribution</h3>
+                <div class="wh-movement-filters">
+                    {% if target_lgus|length > 1 %}
+                    <select id="pa-hist-lgu" aria-label="Municipality">
+                        <option value="all">All municipalities</option>
+                        {% for lgu in target_lgus if lgu in distribution_history %}
+                        <option value="{{ lgu }}">{{ lgu }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    <select id="pa-hist-year" aria-label="Year"></select>
+                </div>
+            </div>
+            <p class="rd-sub" style="margin:0 0 8px;">Food packs given per month, from past typhoon relief reports (the same records the forecast learns from).</p>
+            <div class="pa-bar-chart pa-chart-host pa-bar-chart-wide" id="pa-hist-host">
+                <svg class="pa-bar-svg" id="pa-hist-svg" viewBox="0 0 1000 320" role="img" aria-label="Food packs distributed per month"></svg>
+                <div class="pa-tooltip" id="pa-hist-tip" hidden></div>
+            </div>
+            <div class="pa-legend">
+                <span><i class="lg-exp"></i>Food packs given</span>
+            </div>
+            <div class="pa-stock-tiles" id="pa-hist-tiles"></div>
+            <div id="pa-hist-detail" class="pa-month-detail" hidden>
+                <div class="panel-header" style="margin-bottom:8px;">
+                    <h4 id="pa-hist-title" style="margin:0;"></h4>
+                    <button type="button" class="link-manage" id="pa-hist-close" style="background:none; border:0; cursor:pointer;">Close</button>
+                </div>
+                <div class="rr-table-wrap" style="max-height:380px; overflow:auto;">
+                    <table class="rr-table">
+                        <thead id="pa-hist-head"></thead>
+                        <tbody id="pa-hist-rows"></tbody>
+                        <tfoot id="pa-hist-foot"></tfoot>
+                    </table>
+                </div>
+                <p class="rd-sub" id="pa-hist-note" style="margin-top:6px;"></p>
+            </div>
+        </section>
+        {% endif %}
 
         {% if cover_chart %}
         {# 'How long will the stock last?' chart: current stock vs the forecasted need adding up month by month. #}
@@ -693,6 +747,209 @@
 })();
 </script>
 {% endif %}
+{% if distribution_history %}
+<script>
+// Past Distribution chart: draws the monthly bars for the chosen year/municipality
+// and shows the barangay breakdown of a clicked month.
+(function () {
+    var DATA = {{ distribution_history|tojson }};
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+                'August', 'September', 'October', 'November', 'December'];
+    var PL = 70, PR = 980, PT = 30, PB = 270, SLOT = (PR - PL) / 12, BW = 40;
+    var svg = document.getElementById('pa-hist-svg');
+    var host = document.getElementById('pa-hist-host');
+    var tip = document.getElementById('pa-hist-tip');
+    var panel = document.getElementById('pa-hist-detail');
+    var lguSel = document.getElementById('pa-hist-lgu');
+    var yearSel = document.getElementById('pa-hist-year');
+    var current = [], activeMonth = null, axisTop = 1;
+
+    // Formats a number with commas (e.g. 12,345).
+    var fmt = function (n) { return Number(n).toLocaleString('en-US'); };
+    // Short number for bar labels (e.g. 12.3k).
+    var short = function (n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : fmt(n); };
+    // Makes text safe to show on the page.
+    function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    // Municipalities picked in the filter (all of them, or just one).
+    function lgus() {
+        var v = lguSel ? lguSel.value : 'all';
+        return v === 'all' ? Object.keys(DATA) : [v];
+    }
+
+    // Fills the year filter: "All years" first (the default), then every year that has records, newest first.
+    function fillYears() {
+        var keep = yearSel.value, years = {};
+        lgus().forEach(function (l) { Object.keys(DATA[l] || {}).forEach(function (y) { years[y] = 1; }); });
+        var list = Object.keys(years).sort().reverse();
+        yearSel.innerHTML = '<option value="all">All years (' + list[list.length - 1] + '-' + list[0] + ')</option>' +
+            list.map(function (y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
+        yearSel.value = (keep && years[keep]) ? keep : 'all';
+    }
+
+    // Adds up the chosen municipalities/years into 12 months, each with its barangay rows.
+    function build() {
+        var ls = lgus(), year = yearSel.value, showLgu = ls.length > 1, out = [];
+        for (var m = 1; m <= 12; m++) {
+            var cell = { month: m, packs: 0, families: 0, typhoons: [], rows: {}, hasData: false };
+            ls.forEach(function (l) {
+                var years = DATA[l] || {};
+                Object.keys(years).forEach(function (y) {
+                    if (year !== 'all' && y !== year) return;
+                    var d = years[y][m];
+                    if (!d) return;
+                    cell.hasData = true;
+                    cell.packs += d.packs;
+                    cell.families += d.families;
+                    d.typhoons.forEach(function (t) {
+                        var name = year === 'all' ? t + " '" + y.slice(2) : t;
+                        if (cell.typhoons.indexOf(name) < 0) cell.typhoons.push(name);
+                    });
+                    d.rows.forEach(function (r) {
+                        var key = l + '|' + r.name;
+                        var row = cell.rows[key] || (cell.rows[key] = { name: r.name, lgu: l, packs: null, families: 0 });
+                        if (r.packs !== null) row.packs = (row.packs || 0) + r.packs;
+                        row.families += r.families;
+                    });
+                });
+            });
+            cell.rows = Object.keys(cell.rows).map(function (k) { return cell.rows[k]; })
+                .sort(function (a, b) { return (b.packs || 0) - (a.packs || 0) || b.families - a.families; });
+            cell.showLgu = showLgu;
+            out.push(cell);
+        }
+        return out;
+    }
+
+    // Picks a round top value for the side scale and 4 even steps.
+    function ticks(max) {
+        var raw = Math.max(max, 1) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+        var step = [1, 2, 2.5, 5, 10].map(function (c) { return c * mag; }).filter(function (s) { return s >= raw; })[0];
+        step = Math.max(Math.ceil(step), 1);
+        return [0, 1, 2, 3, 4].map(function (i) { return step * i; });
+    }
+
+    // Draws the chart and the summary tiles for the current filters.
+    function draw() {
+        current = build();
+        var t = ticks(Math.max.apply(null, current.map(function (c) { return c.packs; })));
+        var top = axisTop = t[4], h = PB - PT, parts = [];
+        parts.push('<text class="pa-axis-title" x="8" y="14">Food packs given</text>');
+        t.forEach(function (v) {
+            var gy = (PB - v / top * h).toFixed(1);
+            parts.push('<line class="pa-bar-grid' + (v === 0 ? ' pa-bar-grid-zero' : '') + '" x1="' + PL + '" x2="' + PR +
+                '" y1="' + gy + '" y2="' + gy + '"></line>');
+            parts.push('<text class="pa-axis" x="' + (PL - 10) + '" y="' + (+gy + 4) + '" text-anchor="end">' + fmt(v) + '</text>');
+        });
+        current.forEach(function (c, i) {
+            var x0 = PL + i * SLOT, cx = x0 + SLOT / 2, bh = c.packs / top * h;
+            if (bh > 0) {
+                var r = Math.min(4, bh, BW / 2), x = cx - BW / 2, y = PB - bh;
+                parts.push('<path class="pa-bar-col" d="M' + x.toFixed(1) + ',' + PB + ' V' + (y + r).toFixed(1) +
+                    ' Q' + x.toFixed(1) + ',' + y.toFixed(1) + ' ' + (x + r).toFixed(1) + ',' + y.toFixed(1) +
+                    ' H' + (x + BW - r).toFixed(1) + ' Q' + (x + BW).toFixed(1) + ',' + y.toFixed(1) + ' ' +
+                    (x + BW).toFixed(1) + ',' + (y + r).toFixed(1) + ' V' + PB + ' Z"></path>');
+            }
+            if (c.hasData) {
+                parts.push('<text class="pa-bar-value" x="' + cx.toFixed(1) + '" y="' + (PB - bh - 6).toFixed(1) +
+                    '" text-anchor="middle">' + short(c.packs) + '</text>');
+            }
+            parts.push('<text class="pa-bar-label" x="' + cx.toFixed(1) + '" y="' + (PB + 22) + '" text-anchor="middle">' + MONTHS[i] + '</text>');
+            if (c.typhoons.length) {
+                parts.push('<text class="pa-bar-sublabel" x="' + cx.toFixed(1) + '" y="' + (PB + 38) + '" text-anchor="middle">' +
+                    c.typhoons.length + ' typhoon' + (c.typhoons.length > 1 ? 's' : '') + '</text>');
+            }
+            parts.push('<rect class="pa-month-hit' + (activeMonth === c.month ? ' active' : '') + '" data-i="' + i +
+                '" tabindex="0" role="button" aria-label="' + FULL[i] + ': ' + c.packs + ' food packs given. Show barangay breakdown." x="' +
+                x0.toFixed(1) + '" y="' + PT + '" width="' + SLOT.toFixed(1) + '" height="' + (h + 46) + '"></rect>');
+        });
+        svg.innerHTML = parts.join('');
+
+        var total = current.reduce(function (s, c) { return s + c.packs; }, 0);
+        var fams = current.reduce(function (s, c) { return s + c.families; }, 0);
+        var peak = current.reduce(function (a, c) { return c.packs > a.packs ? c : a; }, current[0]);
+        var seen = {};
+        current.forEach(function (c) { c.typhoons.forEach(function (t) { seen[t] = 1; }); });
+        var tyCount = Object.keys(seen).length;
+        document.getElementById('pa-hist-tiles').innerHTML =
+            tile('Food packs given', fmt(total), 'packs') +
+            tile('Affected families', fmt(fams), 'families') +
+            tile('Busiest month', peak.packs ? FULL[peak.month - 1] : 'None', peak.packs ? fmt(peak.packs) + ' packs' : 'no records') +
+            tile('Typhoons', fmt(tyCount), 'with relief reports');
+
+        svg.querySelectorAll('.pa-month-hit').forEach(function (el) {
+            var c = current[+el.dataset.i];
+            el.addEventListener('mouseenter', function () { showTip(c); });
+            el.addEventListener('focus', function () { showTip(c); });
+            el.addEventListener('mouseleave', function () { tip.hidden = true; });
+            el.addEventListener('blur', function () { tip.hidden = true; });
+            el.addEventListener('click', function () { select(c.month); });
+            el.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(c.month); }
+            });
+        });
+        if (activeMonth) select(activeMonth);
+    }
+
+    // One summary tile under the chart.
+    function tile(label, value, sub) {
+        return '<div class="pa-decision-tile"><span class="rd-sub">' + label + '</span><strong>' + esc(value) +
+            '</strong><span class="rd-sub">' + esc(sub) + '</span></div>';
+    }
+
+    // Shows the hover tooltip for a month's bar.
+    function showTip(c) {
+        var i = c.month - 1, top = axisTop;
+        tip.innerHTML = '<div class="pa-tip-title">' + FULL[i] + (yearSel.value === 'all' ? ' (all years)' : ' ' + yearSel.value) + '</div>' +
+            (c.typhoons.length ? '<div class="pa-tip-sub">' + esc(c.typhoons.join(', ')) + '</div>' : '') +
+            '<div class="pa-tip-row"><i class="lg-exp"></i><span>Food packs given</span><strong>' + fmt(c.packs) + '</strong></div>' +
+            '<div class="pa-tip-row"><i></i><span>Affected families</span><strong>' + fmt(c.families) + '</strong></div>' +
+            '<div class="pa-tip-sub" style="margin-top:4px;">Click for barangay breakdown</div>';
+        var vb = svg.viewBox.baseVal, r = svg.getBoundingClientRect(), hr = host.getBoundingClientRect();
+        var px = (r.left - hr.left) + (PL + (i + 0.5) * SLOT) / vb.width * r.width;
+        var py = (r.top - hr.top) + (PB - c.packs / top * (PB - PT)) / vb.height * r.height;
+        tip.hidden = false;
+        var w = tip.offsetWidth;
+        tip.style.left = Math.min(Math.max(px - w / 2, 0), hr.width - w) + 'px';
+        tip.style.top = Math.max(py - tip.offsetHeight - 12, 0) + 'px';
+    }
+
+    // Shows the barangay breakdown table for the clicked month.
+    function select(month) {
+        var c = current[month - 1];
+        activeMonth = month;
+        svg.querySelectorAll('.pa-month-hit').forEach(function (h) { h.classList.toggle('active', +h.dataset.i === month - 1); });
+        var yearTxt = yearSel.value === 'all' ? ' (all years)' : ' ' + yearSel.value;
+        var place = lguSel && lguSel.value !== 'all' ? lguSel.value : (Object.keys(DATA).length > 1 ? 'All municipalities' : Object.keys(DATA)[0]);
+        document.getElementById('pa-hist-title').textContent = 'Barangay breakdown - ' + FULL[month - 1] + yearTxt;
+        document.getElementById('pa-hist-head').innerHTML = '<tr><th>Barangay</th>' + (c.showLgu ? '<th>Municipality</th>' : '') +
+            '<th>Affected families</th><th>Food packs given</th></tr>';
+        document.getElementById('pa-hist-rows').innerHTML = c.rows.length ? c.rows.map(function (r) {
+            return '<tr><td><strong>' + esc(r.name) + '</strong></td>' + (c.showLgu ? '<td>' + esc(r.lgu) + '</td>' : '') +
+                '<td>' + fmt(r.families) + '</td><td>' + (r.packs === null ? '<span class="rd-sub">No record</span>' : fmt(r.packs)) + '</td></tr>';
+        }).join('') : '<tr><td colspan="' + (c.showLgu ? 4 : 3) + '" class="rd-sub">No relief distribution was recorded this month.</td></tr>';
+        document.getElementById('pa-hist-foot').innerHTML = c.rows.length ? '<tr><td><strong>' + esc(place) + '</strong></td>' +
+            (c.showLgu ? '<td></td>' : '') + '<td><strong>' + fmt(c.families) + '</strong></td><td><strong>' + fmt(c.packs) + '</strong></td></tr>' : '';
+        var given = c.rows.filter(function (r) { return r.packs; }).length;
+        document.getElementById('pa-hist-note').textContent = c.rows.length
+            ? (c.typhoons.length ? 'Typhoons: ' + c.typhoons.join(', ') + '. ' : '') + given + ' of ' + c.rows.length + ' barangays received food packs.'
+            : '';
+        panel.hidden = false;
+    }
+
+    document.getElementById('pa-hist-close').addEventListener('click', function () {
+        panel.hidden = true;
+        activeMonth = null;
+        svg.querySelectorAll('.pa-month-hit').forEach(function (h) { h.classList.remove('active'); });
+    });
+    yearSel.addEventListener('change', draw);
+    if (lguSel) lguSel.addEventListener('change', function () { fillYears(); draw(); });
+    fillYears();
+    draw();
+})();
+</script>
+{% endif %}
 <script>
 (function () {
     // Formats a number with commas (e.g. 12,345).
@@ -725,7 +982,7 @@
                 dtip.innerHTML = '<div class="pa-tip-title">' + d.tipLabel + '</div>' +
                     (d.tipSeason ? '<div class="pa-tip-sub">' + d.tipSeason + '</div>' : '') +
                     row('lg-exp', 'Expected', fmt(d.tipExp) + ' packs') +
-                    row('lg-p90-bar', 'Stockpile', fmt(d.tipP90) + ' packs') +
+                    ({{ 'true' if show_buffer else 'false' }} ? row('lg-p90-bar', 'Stockpile', fmt(d.tipP90) + ' packs') : '') +
                     '<div class="pa-tip-sub" style="margin-top:4px;">Click for barangay breakdown</div>';
                 place(demand, dtip, +d.tipX, +d.tipY);
             }

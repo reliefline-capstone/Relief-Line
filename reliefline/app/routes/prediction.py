@@ -2,6 +2,9 @@
 
 from flask import Blueprint, render_template, request, url_for
 from flask_login import login_required, current_user
+from sqlalchemy import text
+
+from app.extensions import db
 
 from app.utils.decorators import role_required
 from app.models.barangay import Barangay
@@ -151,6 +154,63 @@ def _barangay_snapshot(barangay, status_row, event_id):
     }
 
 
+# Past food pack distribution from the real typhoon relief records (the model's dataset),
+# grouped by municipality -> year -> month, each month with its barangay breakdown.
+def _distribution_history(lgus):
+    if not lgus:
+        return {}
+    events = db.session.execute(text(
+        "SELECT relief_event_id, city_municipality, report_date FROM relief_events "
+        "WHERE report_date IS NOT NULL")).fetchall()
+    events = {eid: (lgu, d) for eid, lgu, d in events if lgu in lgus}
+    if not events:
+        return {}
+
+    names_by_event = {}
+    storm_date = {}
+    for eid, name, start in db.session.execute(text(
+            "SELECT t.relief_event_id, c.typhoon_name, c.start_date FROM relief_event_typhoons t "
+            "JOIN typhoon_calendar c ON c.typhoon_key = t.typhoon_key ORDER BY c.start_date")).fetchall():
+        names_by_event.setdefault(eid, []).append(name)
+        storm_date.setdefault(eid, start)
+    # File each report under the month its (first) typhoon started, not the report's date,
+    # so a late report (e.g. Urdaneta's Oct 2026 report for the Aug 2026 storms) lands in the right month.
+    events = {eid: (lgu, storm_date.get(eid) or d) for eid, (lgu, d) in events.items()}
+
+    brgy_names = dict(Barangay.query.with_entities(Barangay.barangay_id, Barangay.barangay_name)
+                      .filter(Barangay.city_municipality.in_(lgus)).all())
+
+    history = {}
+    rows = db.session.execute(text(
+        "SELECT relief_event_id, barangay_id, food_packs_given, affected_families "
+        "FROM barangay_relief_records")).fetchall()
+    for eid, bid, packs, fam in rows:
+        if eid not in events:
+            continue
+        lgu, d = events[eid]
+        month = history.setdefault(lgu, {}).setdefault(str(d.year), {}).setdefault(d.month, {
+            "packs": 0, "families": 0, "typhoons": [], "brgys": {},
+        })
+        for n in names_by_event.get(eid, []):
+            if n not in month["typhoons"]:
+                month["typhoons"].append(n)
+        b = month["brgys"].setdefault(bid, {"name": brgy_names.get(bid, f"Barangay #{bid}"),
+                                            "packs": None, "families": 0})
+        if packs is not None:
+            b["packs"] = (b["packs"] or 0) + int(packs)
+            month["packs"] += int(packs)
+        b["families"] += int(fam or 0)
+        month["families"] += int(fam or 0)
+
+    # Turn each month's barangay map into a list sorted by packs given (largest first).
+    for years in history.values():
+        for months in years.values():
+            for m in months.values():
+                m["rows"] = sorted(m.pop("brgys").values(), key=lambda r: (r["packs"] or 0, r["families"]),
+                                   reverse=True)
+    return history
+
+
 # Page: /prediction/ - Predictive Analytics page: food pack forecast per municipality, how long the stock will last,
 # priority barangays, monthly breakdown charts and the model's accuracy.
 @prediction_bp.route("/")
@@ -288,7 +348,9 @@ def index():
     chart_forecast = (ml_predict.forecast_lgu(forecast_lgu_choice, forecast_months + 1, include_current=True)
                       if lgu_forecast else None)
     chart_months = chart_forecast["months"] if chart_forecast else []
-    peak = max([m["p90_packs"] for m in chart_months], default=0)
+    # Buffer (stockpile) bars are hidden unless the user turns them on; the axis fits whatever is shown.
+    show_buffer = request.args.get("show_buffer") == "1"
+    peak = max([m["p90_packs" if show_buffer else "projected_packs"] for m in chart_months], default=0)
     step = min((c * mag for mag in (1, 10, 100, 1000, 10000, 100000) for c in (1, 2, 2.5, 5)
                 if c * mag * 4 >= peak), default=1)
     step = max(int(-(-step // 1)), 1)
@@ -412,7 +474,9 @@ def index():
         cover_chart=cover_chart,
         cover_wh=cover_wh,
         backtest_chart=backtest_chart,
+        distribution_history=_distribution_history(scope_lgus),
         show_breakdown=show_breakdown,
+        show_buffer=show_buffer,
         loto_cv=ml_predict.loto_cv_summary(),
         loto_packs_cv=ml_predict.loto_packs_cv_summary(),
         loto_p90=ml_predict.p90_coverage_summary(),
