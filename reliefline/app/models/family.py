@@ -3,10 +3,10 @@
 from app.extensions import db
 
 
-# Database table 'barangay_families': the families registered in each barangay (Family Profiles),
+# Database table 'family_profiles': the families registered in each barangay (Family Profiles),
 # with household head, purok, and the number of members, PWDs, seniors and children.
 class Family(db.Model):
-    __tablename__ = "barangay_families"
+    __tablename__ = "family_profiles"
 
     family_id = db.Column(db.Integer, primary_key=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
@@ -34,14 +34,14 @@ class Family(db.Model):
         return 1 + (self.pwd_count or 0) + (self.senior_count or 0)
 
 
-# Database table 'barangay_report_families': the families listed as affected in a barangay report,
+# Database table 'situation_report_families': the families listed as affected in a barangay report,
 # and whether each one has already received its food packs.
 class ReportAffectedFamily(db.Model):
-    __tablename__ = "barangay_report_families"
+    __tablename__ = "situation_report_families"
 
-    id = db.Column(db.Integer, primary_key=True)
-    report_id = db.Column(db.Integer, db.ForeignKey("barangay_reports.report_id"), nullable=False)
-    family_id = db.Column(db.Integer, db.ForeignKey("barangay_families.family_id", ondelete="SET NULL"), nullable=True)
+    id = db.Column("report_family_id", db.Integer, primary_key=True)
+    report_id = db.Column("situation_report_id", db.Integer, db.ForeignKey("situation_reports.situation_report_id"), nullable=False)
+    family_id = db.Column(db.Integer, db.ForeignKey("family_profiles.family_id", ondelete="SET NULL"), nullable=True)
 
     family_name = db.Column(db.String(150), nullable=False)
     head_name = db.Column(db.String(150), nullable=True)
@@ -54,7 +54,7 @@ class ReportAffectedFamily(db.Model):
     received = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("0"))
     received_at = db.Column(db.DateTime, nullable=True)
     packs_given = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
-    received_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
+    received_by = db.Column("recorded_by", db.Integer, db.ForeignKey("users.user_id"), nullable=True)
 
     report = db.relationship(
         "BarangayReport",

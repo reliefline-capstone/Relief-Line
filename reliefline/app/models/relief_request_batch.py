@@ -3,12 +3,12 @@
 from app.extensions import db
 
 
-# Database table 'relief_request_batches': stock requests a CSWDO/MSWDO sends to PSWDO
+# Database table 'stock_requests': stock requests a CSWDO/MSWDO sends to PSWDO
 # (how many food packs, why, priority, attachments) and PSWDO's decision.
 class ReliefRequestBatch(db.Model):
-    __tablename__ = "relief_request_batches"
+    __tablename__ = "stock_requests"
 
-    batch_id = db.Column(db.Integer, primary_key=True)
+    batch_id = db.Column("stock_request_id", db.Integer, primary_key=True)
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey("disaster_events.event_id"), nullable=True)
 

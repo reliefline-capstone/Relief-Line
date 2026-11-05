@@ -29,7 +29,7 @@ class WarehouseStockLog(db.Model):
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=False)
     item_type = db.Column(db.String(50), nullable=False)
     item_name = db.Column(db.String(100), nullable=False)
-    delta = db.Column(db.Integer, nullable=False)
+    delta = db.Column("quantity_change", db.Integer, nullable=False)
     reason = db.Column(db.String(255), nullable=True)
     source_type = db.Column(db.Enum("standard", "donation", "dswd", "municipal", "returned_damaged", "expired"),
                              nullable=False, default="standard", server_default="standard")

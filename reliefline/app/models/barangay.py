@@ -11,4 +11,4 @@ class Barangay(db.Model):
     barangay_name = db.Column(db.String(100), nullable=False)
     city_municipality = db.Column(db.String(100), nullable=False)
     population = db.Column(db.Integer, default=0)
-    num_households = db.Column(db.Integer, default=0)
+    num_households = db.Column("total_families", db.Integer, default=0)

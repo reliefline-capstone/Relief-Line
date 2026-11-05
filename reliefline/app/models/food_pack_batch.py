@@ -14,10 +14,10 @@ class FoodPackComponent(db.Model):
     sort_order = db.Column(db.Integer, nullable=False, default=0)
 
 
-# Database table 'food_pack_batches': a group of food packs received by a warehouse on the same day.
+# Database table 'warehouse_food_pack_batches': a group of food packs received by a warehouse on the same day.
 # Its expiration date is the date of its earliest-expiring item.
 class FoodPackBatch(db.Model):
-    __tablename__ = "food_pack_batches"
+    __tablename__ = "warehouse_food_pack_batches"
 
     batch_id = db.Column(db.Integer, primary_key=True)
     office_id = db.Column(db.Integer, db.ForeignKey("offices.office_id"), nullable=False)
@@ -33,13 +33,13 @@ class FoodPackBatch(db.Model):
     office = db.relationship("Office", backref="food_pack_batches")
 
 
-# Database table 'food_pack_batch_items': the items inside a warehouse food pack batch,
+# Database table 'warehouse_food_pack_batch_items': the items inside a warehouse food pack batch,
 # each with its own expiration date.
 class FoodPackBatchItem(db.Model):
-    __tablename__ = "food_pack_batch_items"
+    __tablename__ = "warehouse_food_pack_batch_items"
 
     item_id = db.Column(db.Integer, primary_key=True)
-    batch_id = db.Column(db.Integer, db.ForeignKey("food_pack_batches.batch_id"), nullable=False)
+    batch_id = db.Column(db.Integer, db.ForeignKey("warehouse_food_pack_batches.batch_id"), nullable=False)
     component_id = db.Column(db.Integer, db.ForeignKey("food_pack_components.component_id"), nullable=True)
     custom_name = db.Column(db.String(100), nullable=True)
     quantity_label = db.Column(db.String(50), nullable=True)

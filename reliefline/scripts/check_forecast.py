@@ -59,7 +59,7 @@ with app.app_context():
     check("Urdaneta City has real relief events on record", per_lgu.get("Urdaneta City", 0) >= 10, str(per_lgu))
 
     unlinked = db.session.execute(text(
-        "SELECT e.relief_event_id, e.city_municipality, e.label FROM relief_events e "
+        "SELECT e.relief_event_id, e.city_municipality, e.report_label FROM relief_events e "
         "WHERE NOT EXISTS (SELECT 1 FROM relief_event_typhoons t "
         "                  JOIN typhoon_calendar c ON c.typhoon_key = t.typhoon_key "
         "                  WHERE t.relief_event_id = e.relief_event_id)")).fetchall()
@@ -74,7 +74,7 @@ with app.app_context():
     sb_2026 = db.session.execute(text(
         "SELECT SUM(r.food_packs_given) FROM barangay_relief_records r "
         "JOIN relief_events e ON e.relief_event_id = r.relief_event_id "
-        "WHERE e.city_municipality = 'Santa Barbara' AND e.label = 'Luis + Maymay + Neneng + Pilandok (2026)'")).scalar()
+        "WHERE e.city_municipality = 'Santa Barbara' AND e.report_label = 'Luis + Maymay + Neneng + Pilandok (2026)'")).scalar()
     check("real Sta. Barbara 2026 report loaded (14,071 packs)", int(sb_2026 or 0) == 14071, str(sb_2026))
     n_retired = db.session.execute(text(
         "SELECT COUNT(*) FROM relief_events WHERE source_file IN "

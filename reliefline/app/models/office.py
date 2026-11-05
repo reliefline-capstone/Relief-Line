@@ -11,7 +11,7 @@ class Office(db.Model):
     office_name = db.Column(db.String(100), nullable=False)
     office_type = db.Column(db.Enum("pswdo", "cswdo"), nullable=False)
     area_covered = db.Column(db.String(100), nullable=False)
-    capacity_food_pack = db.Column(db.Integer, default=20000)
+    capacity_food_pack = db.Column("food_pack_capacity", db.Integer, default=20000)
 
     full_address = db.Column(db.String(255), nullable=True)
     manager_name = db.Column(db.String(100), nullable=True)

@@ -39,17 +39,17 @@ class BarangayStockLog(db.Model):
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
     item_type = db.Column(db.String(50), nullable=False)
     item_name = db.Column(db.String(100), nullable=False)
-    delta = db.Column(db.Integer, nullable=False)
+    delta = db.Column("quantity_change", db.Integer, nullable=False)
     reason = db.Column(db.String(255), nullable=True)
     source_type = db.Column(
         db.Enum("delivery", "distribution", "adjustment", "damaged_return", "expired"),
         nullable=False, default="adjustment", server_default="adjustment",
     )
     distribution_id = db.Column(
-        db.Integer, db.ForeignKey("distribution_records.distribution_id"), nullable=True
+        "delivery_id", db.Integer, db.ForeignKey("delivery_records.delivery_id"), nullable=True
     )
     family_id = db.Column(
-        db.Integer, db.ForeignKey("barangay_families.family_id", ondelete="SET NULL"), nullable=True
+        db.Integer, db.ForeignKey("family_profiles.family_id", ondelete="SET NULL"), nullable=True
     )
     proof_photos = db.Column(db.String(500), nullable=True)
     updated_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)

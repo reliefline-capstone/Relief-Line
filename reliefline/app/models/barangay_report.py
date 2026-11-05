@@ -2,12 +2,12 @@
 
 from app.extensions import db
 
-# Database table 'barangay_reports': a barangay's situation report during a disaster
+# Database table 'situation_reports': a barangay's situation report during a disaster
 # (affected families and people, damaged houses, flood level, photos) and its review status.
 class BarangayReport(db.Model):
-    __tablename__ = "barangay_reports"
+    __tablename__ = "situation_reports"
 
-    report_id = db.Column(db.Integer, primary_key=True)
+    report_id = db.Column("situation_report_id", db.Integer, primary_key=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey("disaster_events.event_id"), nullable=True)
 
@@ -19,7 +19,7 @@ class BarangayReport(db.Model):
     incident_date = db.Column(db.Date, nullable=True)
     incident_time = db.Column(db.Time, nullable=True)
     flood_level = db.Column(
-        db.Enum("normal", "monitoring", "needs_assistance", "high_priority"),
+        "severity_status", db.Enum("normal", "monitoring", "needs_assistance", "high_priority"),
         default="normal"
     )
 
@@ -34,8 +34,8 @@ class BarangayReport(db.Model):
     wind_signal = db.Column(db.String(20), nullable=True)
 
     requested_food_packs = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
-    hygiene_kits_est = db.Column(db.Integer, default=0)
-    kitchen_kits_est = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+    hygiene_kits_est = db.Column("estimated_hygiene_kits", db.Integer, default=0)
+    kitchen_kits_est = db.Column("estimated_kitchen_kits", db.Integer, nullable=False, default=0, server_default=db.text("0"))
 
     remarks = db.Column(db.Text, nullable=True)
     photo_paths = db.Column(db.String(500), nullable=True)

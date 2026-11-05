@@ -2,20 +2,20 @@
 
 from app.extensions import db
 
-# Database table 'distribution_records': food pack deliveries to barangays -
+# Database table 'delivery_records': food pack deliveries to barangays -
 # delivery steps, who received them, condition on arrival (complete, partial, damaged), and replacements.
 class DistributionRecord(db.Model):
-    __tablename__ = "distribution_records"
+    __tablename__ = "delivery_records"
 
-    distribution_id = db.Column(db.Integer, primary_key=True)
+    distribution_id = db.Column("delivery_id", db.Integer, primary_key=True)
     barangay_id = db.Column(db.Integer, db.ForeignKey("barangays.barangay_id"), nullable=False)
     allocation_id = db.Column(db.Integer, db.ForeignKey("allocation_records.allocation_id"), nullable=False)
     quantity_released = db.Column(db.Integer, default=0)
-    distribution_date = db.Column(db.Date, nullable=False)
+    distribution_date = db.Column("delivery_date", db.Date, nullable=False)
     validation_type = db.Column(db.Enum("photo", "signature"), nullable=True)
     validation_file = db.Column(db.String(500), nullable=True)
     submitted_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
-    status = db.Column(db.Enum("pending", "confirmed"), default="pending")
+    status = db.Column("validation_status", db.Enum("pending", "confirmed"), default="pending")
     submitted_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
     issued_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
@@ -23,7 +23,7 @@ class DistributionRecord(db.Model):
     issuance_note = db.Column(db.String(255), nullable=True)
 
     replacement_of_id = db.Column(
-        db.Integer, db.ForeignKey("distribution_records.distribution_id"), nullable=True
+        "replaced_delivery_id", db.Integer, db.ForeignKey("delivery_records.delivery_id"), nullable=True
     )
 
     batch_lots = db.Column(db.Text, nullable=True)
@@ -35,9 +35,9 @@ class DistributionRecord(db.Model):
     departure_time = db.Column(db.Time, nullable=True)
     expected_arrival_time = db.Column(db.Time, nullable=True)
 
-    received_by = db.Column(db.String(150), nullable=True)
+    received_by = db.Column("received_by_name", db.String(150), nullable=True)
     time_received = db.Column(db.Time, nullable=True)
-    condition = db.Column(db.Enum("complete", "partial", "damaged"), nullable=True)
+    condition = db.Column("receipt_condition", db.Enum("complete", "partial", "damaged"), nullable=True)
     travel_time = db.Column(db.String(50), nullable=True)
 
     quantity_received = db.Column(db.Integer, nullable=True)

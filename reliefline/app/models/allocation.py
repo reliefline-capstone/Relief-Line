@@ -14,7 +14,7 @@ class AllocationRecord(db.Model):
     allocated_quantity = db.Column(db.Integer, default=0)
     historical_allocation = db.Column(db.Integer, default=0)
     allocation_date = db.Column(db.Date, nullable=False)
-    disaster_event = db.Column(db.String(150), nullable=True)
+    disaster_event = db.Column("event_name", db.String(150), nullable=True)
     event_id = db.Column(db.Integer, db.ForeignKey("disaster_events.event_id"), nullable=True)
     status = db.Column(db.Enum("pending", "approved", "released"), default="pending")
     created_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
@@ -26,14 +26,14 @@ class AllocationRecord(db.Model):
     remarks = db.Column(db.Text, nullable=True)
     decided_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
 
-    batch_id = db.Column(db.Integer, db.ForeignKey("relief_request_batches.batch_id"), nullable=True)
+    batch_id = db.Column("stock_request_id", db.Integer, db.ForeignKey("stock_requests.stock_request_id"), nullable=True)
 
     source = db.Column(
         db.Enum("pswdo_batch", "barangay_request", "cswdo_direct"),
         nullable=False, default="pswdo_batch", server_default="pswdo_batch",
     )
     barangay_report_id = db.Column(
-        db.Integer, db.ForeignKey("barangay_reports.report_id"), nullable=True
+        "situation_report_id", db.Integer, db.ForeignKey("situation_reports.situation_report_id"), nullable=True
     )
 
     barangay = db.relationship("Barangay", backref="allocation_records")
