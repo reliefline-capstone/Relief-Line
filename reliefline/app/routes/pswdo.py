@@ -628,6 +628,9 @@ def _forecast_recommendations(warehouses, horizon_months=6, audience="pswdo"):
         stockpile, expected = int(f["horizon_p90"]), int(f["horizon_total"])
         if stock >= stockpile:
             continue
+        # Shown as the 95% confidence interval (e.g. '3,107-16,218 packs'), not a single number.
+        need = (f"{f['horizon_ci_low']:,}–{f['horizon_ci_high']:,}" if f.get("horizon_ci_high")
+                else f"{expected:,}")
 
         # The month when the stock is expected to run out.
         def runout(key):
@@ -640,12 +643,13 @@ def _forecast_recommendations(warehouses, horizon_months=6, audience="pswdo"):
         run_e, run_p = runout("cum_expected"), runout("cum_p90")
         if run_e:
             rec_type, title = "critical", f"{lgu} stock may run out in {run_e}"
-            summary = (f"{stock:,} packs on hand vs {expected:,} expected over the next {horizon_months} months "
-                       f"(recommended stockpile {stockpile:,}).")
+            summary = (f"{stock:,} packs on hand vs a projected need of {need} packs (95% confidence interval) "
+                       f"over the next {horizon_months} months (recommended stockpile {stockpile:,}).")
         else:
             rec_type, title = "warning", f"{lgu} stock is {shortfall:,} packs short of the recommended stockpile"
-            summary = (f"{stock:,} packs on hand covers the expected {expected:,} packs over the next "
-                       f"{horizon_months} months, but a bad season would run out{' in ' + run_p if run_p else ''}.")
+            summary = (f"{stock:,} packs on hand vs a projected need of {need} packs (95% confidence interval) "
+                       f"over the next {horizon_months} months; a bad season would run out"
+                       f"{' in ' + run_p if run_p else ''}.")
         recs.append({"type": rec_type, "lgu": lgu, "title": title, "summary": summary,
                      "detail": f"{summary} {action} to reach {stockpile:,}."})
     recs.sort(key=lambda r: 0 if r["type"] == "critical" else 1)
@@ -682,6 +686,10 @@ def _barangay_shortages(lgu, horizon_months):
             rows.append({"barangay_id": r["barangay_id"], "name": r["name"], "on_hand": stock or 0,
                          "incoming": coming, "no_record": stock is None,
                          "expected": expected, "stockpile": stockpile,
+                         "ci_low": (sum(max(int(round(m["ci_low"] * r["share"])), 0) for m in f["months"])
+                                    if f.get("ci_level") else None),
+                         "ci_high": (sum(max(int(round(m["ci_high"] * r["share"])), 0) for m in f["months"])
+                                     if f.get("ci_level") else None),
                          "short": stockpile - have, "short_expected": have < expected})
     rows.sort(key=lambda x: x["short"], reverse=True)
     return rows

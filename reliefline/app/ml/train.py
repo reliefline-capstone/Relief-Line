@@ -515,6 +515,25 @@ def severity_scenarios(events):
     }
 
 
+# 95% confidence interval of the expected packs per PAGASA typhoon (P(relief) x average typhoon size).
+# Bootstrap: resample the typhoon list and the relief totals 5,000 times; fixed seed so retrains match.
+def expected_need_ci(events, all_typhoon_keys, level=0.95, n_boot=5000, seed=0):
+    universe = set(all_typhoon_keys)
+    totals = [t for ev in events.values() if (t := _event_total_and_known(ev["records"])[0]) > 0]
+    if not universe or not totals:
+        return None
+    n = len(universe)
+    k = min(int(round(p_relief(events, all_typhoon_keys) * n)), n)
+    hits = np.array([1.0] * k + [0.0] * (n - k))
+    arr = np.array(totals, dtype=float)
+    rng = np.random.default_rng(seed)
+    rates = (hits[rng.integers(0, n, (n_boot, n))].mean(axis=1)
+             * arr[rng.integers(0, len(arr), (n_boot, len(arr)))].mean(axis=1))
+    tail = (1 - level) / 2 * 100
+    lo, hi = np.percentile(rates, [tail, 100 - tail])
+    return {"level": level, "per_typhoon": [float(lo), float(hi)], "n_boot": n_boot}
+
+
 # Total food packs given out per year.
 def yearly_totals(events, calendar_rows):
     year_of_key = {r[0]: r[3] for r in calendar_rows}
@@ -598,7 +617,6 @@ def leave_one_typhoon_out_packs_cv(events):
     return {
         "mae_packs": float(np.abs(err).mean()),
         "rmse_packs": float(np.sqrt((err ** 2).mean())),
-        "wape": float(np.abs(err).sum() / a.sum()) if a.sum() > 0 else None,
         "n": len(a),
     }
 
@@ -697,6 +715,7 @@ def train_and_persist():
             "share_floor": SHARE_FLOOR,
             "p_relief": p_relief(events, all_keys),
             "severity": severity_scenarios(events),
+            "expected_ci": expected_need_ci(events, all_keys),
             "yearly_totals": yearly_totals(events, calendar_rows),
             "barangays": {bid: {"latest_total_families": tf} for bid, tf in latest_tf.items()},
             "event_ids": sorted(events),

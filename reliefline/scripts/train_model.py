@@ -98,7 +98,7 @@ with app.app_context():
         print(f"  {lgu:<16}{cv['spearman_model']:>16.2f}{cv['spearman_pooled']:>9.2f}"
               f"{cv['top_k_model']:>18.0%}{cv['top_k_pooled']:>9.0%}{cv['rank_n_storms']:>8}")
 
-    print(f"\n{'Pack error':<20}{'MAE':>10}{'WAPE':>10}")
+    print(f"\n{'Pack error':<20}{'MAE':>10}{'RMSE':>10}")
     for lgu, cv in out["loto_packs_cv"].items():
         if cv:
-            print(f"  {lgu:<18}{cv['mae_packs']:>10.1f}{cv['wape']:>10.1%}")
+            print(f"  {lgu:<18}{cv['mae_packs']:>10.1f}{cv['rmse_packs']:>10.1f}")

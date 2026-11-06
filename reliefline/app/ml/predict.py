@@ -75,6 +75,10 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
     lgu_p90_raw = relief_events * L["severity"]["high"]
     # Recommended stockpile = high (P90) need plus the 15% safety buffer.
     lgu_p90_total = lgu_p90_raw * (1 + buffer)
+    # 95% confidence interval of the expected need (from training); None on older model files.
+    ci = L.get("expected_ci")
+    ci_low_total = expected_typhoons * ci["per_typhoon"][0] if ci else None
+    ci_high_total = expected_typhoons * ci["per_typhoon"][1] if ci else None
 
     months = []
     running_e = running_p = 0
@@ -89,6 +93,8 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
             "date": d.strftime("%Y-%m"),
             "is_current": (d.year, d.month) == (today.year, today.month),
             "projected_packs": proj, "p90_packs": p90,
+            "ci_low": min(int(round(ci_low_total * frac)), proj) if ci else None,
+            "ci_high": max(int(round(ci_high_total * frac)), proj) if ci else None,
             "is_wet_season": d.month in ref.WET_SEASON_MONTHS,
             "is_peak_season": d.month in ref.PEAK_MONTHS,
             "cum_expected": running_e, "cum_p90": running_p,
@@ -107,6 +113,9 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
     return {
         "lgu": lgu, "months": months,
         "horizon_total": total, "horizon_p90": horizon_p90,
+        "ci_level": ci["level"] if ci else None,
+        "horizon_ci_low": sum(m["ci_low"] for m in months) if ci else None,
+        "horizon_ci_high": sum(m["ci_high"] for m in months) if ci else None,
         "p90_before_buffer": p90_before_buffer,
         "buffer": buffer, "buffer_packs": horizon_p90 - p90_before_buffer,
         "expected_typhoons": expected_typhoons,
@@ -175,7 +184,6 @@ def loto_packs_cv_summary():
             "lgu": lgu,
             "mae_packs": cv["mae_packs"],
             "rmse_packs": cv["rmse_packs"],
-            "wape": cv.get("wape"),
             "n": cv["n"],
         })
     rows.sort(key=lambda r: r["lgu"])
@@ -293,10 +301,13 @@ def forecast_barangay(barangay, months_ahead, start_month=None):
     if lgu_forecast is None:
         return None
     share = _barangay_share(barangay)
+    has_ci = lgu_forecast["ci_level"] is not None
     months = [
         {**m,
          "projected_packs": max(int(round(m["projected_packs"] * share)), 0),
-         "p90_packs": max(int(round(m["p90_packs"] * share)), 0)}
+         "p90_packs": max(int(round(m["p90_packs"] * share)), 0),
+         "ci_low": max(int(round(m["ci_low"] * share)), 0) if has_ci else None,
+         "ci_high": max(int(round(m["ci_high"] * share)), 0) if has_ci else None}
         for m in lgu_forecast["months"]
     ]
     return {
@@ -306,6 +317,9 @@ def forecast_barangay(barangay, months_ahead, start_month=None):
         "horizon_total": sum(m["projected_packs"] for m in months),
         "horizon_p90": max(int(round(lgu_forecast["horizon_p90"] * share)),
                            sum(m["projected_packs"] for m in months)),
+        "ci_level": lgu_forecast["ci_level"],
+        "horizon_ci_low": sum(m["ci_low"] for m in months) if has_ci else None,
+        "horizon_ci_high": sum(m["ci_high"] for m in months) if has_ci else None,
         "model_version": lgu_forecast["model_version"],
         "data_through": lgu_forecast["data_through"],
         "share": round(share, 4),

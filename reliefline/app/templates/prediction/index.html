@@ -14,6 +14,11 @@
 {% endblock %}
 
 {% block content %}
+{# Shows a 95% confidence interval as 'low - high' packs; '0' when the whole range is zero, #}
+{# and the single fallback value only on old model files that have no interval. #}
+{% macro ci_range(lo, hi, fallback) -%}
+{%- if hi is none -%}{{ "{:,}".format(fallback) }}{%- elif hi == 0 -%}0{%- else -%}{{ "{:,}".format(lo) }} &ndash; {{ "{:,}".format(hi) }}{%- endif -%}
+{%- endmacro %}
 <div class="dashboard-layout">
 
     {% set active_page = 'predictive_analytics' %}
@@ -82,7 +87,7 @@
                             <table class="rr-table">
                                 <thead><tr>
                                     <th>Barangay</th><th>On hand</th><th>On the way</th>
-                                    <th>Expected ({{ rec.horizon_months }} mo)</th><th>Recommended</th><th>Short</th>
+                                    <th>Projected need, 95% CI ({{ rec.horizon_months }} mo)</th><th>Recommended if bad season</th><th>Short</th>
                                     {% if is_cswdo %}<th></th>{% endif %}
                                 </tr></thead>
                                 <tbody>
@@ -91,7 +96,7 @@
                                         <td><strong>{{ b.name }}</strong></td>
                                         <td>{% if b.no_record %}<span class="rd-sub">No record</span>{% else %}{{ "{:,}".format(b.on_hand) }}{% endif %}</td>
                                         <td>{{ "{:,}".format(b.incoming) if b.incoming else '-' }}</td>
-                                        <td>{{ "{:,}".format(b.expected) }}</td>
+                                        <td>{{ ci_range(b.ci_low, b.ci_high, b.expected) }}</td>
                                         <td>{{ "{:,}".format(b.stockpile) }}</td>
                                         <td><strong style="color:{{ '#c0392b' if b.short_expected else '#d35400' }};">{{ "{:,}".format(b.short) }}</strong></td>
                                         {% if is_cswdo %}
@@ -102,8 +107,8 @@
                                 </tbody>
                             </table>
                         </div>
-                        <p class="form-hint" style="margin:10px 0 2px;"><strong style="color:#c0392b;">Red</strong> = stock doesn't even cover the expected demand.</p>
-                        <p class="form-hint" style="margin:0;"><strong style="color:#d35400;">Orange</strong> = covers expected, but not the recommended stockpile.</p>
+                        <p class="form-hint" style="margin:10px 0 2px;"><strong style="color:#c0392b;">Red</strong> = stock is below the projected need.</p>
+                        <p class="form-hint" style="margin:0;"><strong style="color:#d35400;">Orange</strong> = covers the projected need, but not the amount recommended if the season is bad.</p>
                     </div>
                 </div>
                 {% endif %}
@@ -116,7 +121,7 @@
 
         </div>
 
-        {# Projected Demand: the monthly forecast chart (expected need and recommended stockpile), #}
+        {# Projected Demand: the monthly forecast chart (95% confidence interval and the amount recommended if the season is bad), #}
         {# with a municipality and period filter. Click a month to see its barangay breakdown. #}
         <section class="panel" id="pa-forecast-detail" style="margin-top:16px; margin-bottom:16px;">
             <div class="panel-header">
@@ -138,11 +143,11 @@
                         <option value="9" {{ 'selected' if forecast_months == 9 }}>Next 9 months</option>
                         <option value="12" {{ 'selected' if forecast_months == 12 }}>Next 12 months</option>
                     </select>
-                    {# Buffer switch: shows or hides the stockpile (buffer) bars; off by default. #}
-                    <label class="pa-buffer-toggle" title="Show the recommended stockpile (expected need plus buffer)">
+                    {# "Show for bad season" switch: shows or hides the 'recommended if bad season' bars; off by default. #}
+                    <label class="pa-buffer-toggle" title="Show the amount recommended if the season is bad (bad-season need plus buffer)">
                         <input type="checkbox" name="show_buffer" value="1" {{ 'checked' if show_buffer }} onchange="this.form.submit()">
                         <span class="pa-buffer-switch" aria-hidden="true"></span>
-                        Show buffer
+                        Show for bad season
                     </label>
                 </form>
             </div>
@@ -154,14 +159,27 @@
             {% set slot = (pr - pl) / n %}
             {% set bw = [slot * 0.3, 30]|min %}
             {% set compact = n > 8 %}
+            {% set ci_pct = "%.0f"|format((lgu_forecast.ci_level or 0.95) * 100) %}
             {% macro top_rounded_bar(x, h, w) -%}
             {%- set r = [4, h, w / 2]|min -%}
             M{{ '%.1f'|format(x) }},{{ pb }} V{{ '%.1f'|format(pb - h + r) }} Q{{ '%.1f'|format(x) }},{{ '%.1f'|format(pb - h) }} {{ '%.1f'|format(x + r) }},{{ '%.1f'|format(pb - h) }} H{{ '%.1f'|format(x + w - r) }} Q{{ '%.1f'|format(x + w) }},{{ '%.1f'|format(pb - h) }} {{ '%.1f'|format(x + w) }},{{ '%.1f'|format(pb - h + r) }} V{{ pb }} Z
             {%- endmacro %}
             {% macro packs(v) -%}{%- if compact and v >= 1000 -%}{{ '%.1f'|format(v / 1000) }}k{%- else -%}{{ "{:,}".format(v) }}{%- endif -%}{%- endmacro %}
+            {# Error bar (95% confidence interval): vertical line from the lower to the upper bound with short caps. #}
+            {% macro ci_whisker(wx, lo_v, hi_v) -%}
+            {%- set yl = pb - (lo_v / axis_max) * (pb - pt) -%}
+            {%- set yh = pb - (hi_v / axis_max) * (pb - pt) -%}
+            <g class="pa-ci-whisker">
+                <line x1="{{ '%.1f'|format(wx) }}" x2="{{ '%.1f'|format(wx) }}" y1="{{ '%.1f'|format(yl) }}" y2="{{ '%.1f'|format(yh) }}"></line>
+                <line x1="{{ '%.1f'|format(wx - 6) }}" x2="{{ '%.1f'|format(wx + 6) }}" y1="{{ '%.1f'|format(yh) }}" y2="{{ '%.1f'|format(yh) }}"></line>
+                <line x1="{{ '%.1f'|format(wx - 6) }}" x2="{{ '%.1f'|format(wx + 6) }}" y1="{{ '%.1f'|format(yl) }}" y2="{{ '%.1f'|format(yl) }}"></line>
+            </g>
+            {%- endmacro %}
+            {# Bar chart: blue = projected need (point forecast) with its 95% confidence interval error bar; #}
+            {# dark = amount recommended if the season is bad (a planning target, shown as a single number). #}
             <div class="pa-bar-chart pa-chart-host pa-bar-chart-wide" id="pa-demand-host">
                 <svg class="pa-bar-svg" viewBox="0 0 1000 340" role="img"
-                     aria-label="Projected food packs needed per month for {{ lgu_forecast.lgu }}: expected demand and recommended stockpile">
+                     aria-label="Projected food packs needed per month for {{ lgu_forecast.lgu }}, with {{ ci_pct }}% confidence intervals{% if show_buffer %}, and the amount recommended if the season is bad{% endif %}">
                     <text class="pa-axis-title" x="8" y="14">Food packs per month</text>
                     {% for t in chart_axis_ticks %}
                     {% set gy = pb - (t / axis_max) * (pb - pt) %}
@@ -171,9 +189,15 @@
                     {%- for m in months -%}
                     {% set x0 = pl + loop.index0 * slot %}
                     {% set cx = x0 + slot / 2 %}
+                    {% set lo = m.ci_low if m.ci_low is not none else m.projected_packs %}
+                    {% set hi = m.ci_high if m.ci_high is not none else m.projected_packs %}
+                    {% set bad = show_buffer and m.p90_packs > 0 %}
                     {% set eh = (m.projected_packs / axis_max) * (pb - pt) %}
                     {% set ph = (m.p90_packs / axis_max) * (pb - pt) if show_buffer else 0 %}
-                    {# With the buffer off, the expected bar sits centred in its month. #}
+                    {# Tops of the error bars, used to place the value labels above them. #}
+                    {% set et = [eh, (hi / axis_max) * (pb - pt)]|max %}
+                    {% set pt_top = ph if bad else 0 %}
+                    {# With the bad-season bars off, the projected-need bar sits centred in its month. #}
                     {% set ex = (cx - bw - 1) if show_buffer else (cx - bw / 2) %}
                     {% if m.is_wet_season or m.is_peak_season %}
                     <rect class="pa-bar-band{{ ' pa-bar-band-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt }}"></rect>
@@ -184,18 +208,21 @@
                     {% endif %}
                     {% if eh > 0 %}<path class="pa-bar-col" d="{{ top_rounded_bar(ex, eh, bw) }}"></path>{% endif %}
                     {% if ph > 0 %}<path class="pa-bar-p90" d="{{ top_rounded_bar(cx + 1, ph, bw) }}"></path>{% endif %}
-                    <text class="pa-bar-value" x="{{ '%.1f'|format(ex + bw / 2 - (1.5 if show_buffer else 0)) }}" y="{{ '%.1f'|format(pb - eh - 6) }}" text-anchor="middle">{{ packs(m.projected_packs) }}</text>
-                    {% if show_buffer and m.p90_packs > 0 %}
-                    <text class="pa-bar-value pa-bar-value-p90" x="{{ '%.1f'|format(cx + bw / 2 + 1.5) }}" y="{{ '%.1f'|format(pb - ph - 6) }}" text-anchor="middle">{{ packs(m.p90_packs) }}</text>
+                    {% if hi > 0 %}{{ ci_whisker(ex + bw / 2, lo, hi) }}{% endif %}
+                    <text class="pa-bar-value" x="{{ '%.1f'|format(ex + bw / 2 - (1.5 if show_buffer else 0)) }}" y="{{ '%.1f'|format(pb - et - 6) }}" text-anchor="middle">{{ packs(m.projected_packs) }}</text>
+                    {% if bad %}
+                    <text class="pa-bar-value pa-bar-value-p90" x="{{ '%.1f'|format(cx + bw / 2 + 1.5) }}" y="{{ '%.1f'|format(pb - pt_top - 6) }}" text-anchor="middle">{{ packs(m.p90_packs) }}</text>
                     {% endif %}
                     <text class="pa-bar-label{{ ' pa-bar-label-now' if m.is_current }}" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 22 }}" text-anchor="middle">{{ m.label }}</text>
                     <text class="pa-bar-sublabel" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 38 }}" text-anchor="middle">{{ m.year }}</text>
                     <text class="pa-season-tag{{ ' pa-season-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 56 }}" text-anchor="middle">{% if m.is_peak_season %}peak{% elif m.is_wet_season %}rainy{% endif %}</text>
                     <rect class="pa-month-hit" data-month="{{ m.date }}" tabindex="0" role="button"
-                          data-tip-label="{{ m.label }} {{ m.year }}" data-tip-exp="{{ m.projected_packs }}" data-tip-p90="{{ m.p90_packs }}"
+                          data-tip-label="{{ m.label }} {{ m.year }}"
+                          data-tip-exp="{{ m.projected_packs }}" data-tip-lo="{{ lo }}" data-tip-hi="{{ hi }}"
+                          data-tip-p90="{{ m.p90_packs }}"
                           data-tip-season="{{ 'Peak typhoon season' if m.is_peak_season else 'Rainy season' if m.is_wet_season else '' }}"
-                          data-tip-x="{{ '%.1f'|format(cx) }}" data-tip-y="{{ '%.1f'|format(pb - [eh, ph]|max) }}"
-                          aria-label="{{ m.label }} {{ m.year }}: expected {{ m.projected_packs }} packs{% if show_buffer %}, recommended stockpile {{ m.p90_packs }} packs{% endif %}. Show barangay breakdown."
+                          data-tip-x="{{ '%.1f'|format(cx) }}" data-tip-y="{{ '%.1f'|format(pb - [et, pt_top]|max) }}"
+                          aria-label="{{ m.label }} {{ m.year }}: projected need {{ m.projected_packs }} packs ({{ ci_pct }}% confidence interval {{ lo }} to {{ hi }}){% if show_buffer %}, recommended if bad season {{ m.p90_packs }} packs{% endif %}. Show barangay breakdown."
                           x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt + 62 }}">
                     </rect>
                     {%- endfor -%}
@@ -203,8 +230,9 @@
                 <div class="pa-tooltip" id="pa-demand-tip" hidden></div>
             </div>
             <div class="pa-legend">
-                <span><i class="lg-exp"></i>Expected</span>
-                {% if show_buffer %}<span><i class="lg-p90-bar"></i>Stockpile</span>{% endif %}
+                <span><i class="lg-exp"></i>Projected need</span>
+                {% if show_buffer %}<span><i class="lg-p90-bar"></i>Recommended if bad season</span>{% endif %}
+                <span><i class="lg-ci"></i>{{ ci_pct }}% confidence interval of projected need</span>
                 <span><i class="lg-wet"></i>Rainy (Jun-Oct)</span>
                 <span><i class="lg-peak"></i>Peak (Jul-Oct)</span>
             </div>
@@ -215,7 +243,7 @@
                 </div>
                 <div class="rr-table-wrap" style="max-height:380px; overflow:auto;">
                     <table class="rr-table">
-                        <thead><tr><th>Barangay</th><th>Current stock</th><th>Expected</th><th>Recommended stockpile</th></tr></thead>
+                        <thead><tr><th>Barangay</th><th>Current stock</th><th>Projected need ({{ ci_pct }}% CI)</th><th>Recommended if bad season</th></tr></thead>
                         <tbody id="pa-month-rows"></tbody>
                         <tfoot><tr>
                             <td><strong>{{ lgu_forecast.lgu }}</strong></td>
@@ -226,16 +254,16 @@
                 <p class="rd-sub" id="pa-month-note" style="margin-top:6px;"></p>
             </div>
             <div class="pa-stock-tiles">
-                <div class="pa-decision-tile">
-                    <span class="rd-sub">Expected ({{ forecast_months }} mo)</span>
+                <div class="pa-decision-tile" title="The range the food pack need for the period is expected to fall within, based on past typhoon relief records.">
+                    <span class="rd-sub">Projected need &middot; next {{ forecast_months }} months</span>
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong>
-                    <span class="rd-sub">packs</span>
+                    <span class="rd-sub">packs{% if lgu_forecast.ci_level %} &middot; {{ ci_pct }}% CI {{ ci_range(lgu_forecast.horizon_ci_low, lgu_forecast.horizon_ci_high, lgu_forecast.horizon_total) }}{% endif %}</span>
                 </div>
                 {% if show_buffer %}
                 <div class="pa-decision-tile">
-                    <span class="rd-sub">Stockpile ({{ forecast_months }} mo)</span>
+                    <span class="rd-sub">Recommended if bad season &middot; {{ forecast_months }} months</span>
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong>
-                    <span class="rd-sub">packs</span>
+                    <span class="rd-sub">packs &middot; bad-season level plus buffer</span>
                 </div>
                 {% endif %}
             </div>
@@ -388,7 +416,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h3>Projected Demand by Municipality</h3>
-                    <span class="rd-sub">expected demand, next {{ forecast_months }} months</span>
+                    <span class="rd-sub">projected need, next {{ forecast_months }} months &middot; 95% confidence interval</span>
                 </div>
                 {% for f in forecast_summary_by_lgu %}
                 <div class="warehouse-status-row">
@@ -397,10 +425,10 @@
                             <div><strong>{{ f.lgu }}</strong></div>
                         </div>
                         <div class="warehouse-status-right">
-                            <strong>{{ "{:,}".format(f.horizon_total) }}</strong><span class="rd-sub">packs</span>
+                            <strong>{{ ci_range(f.ci_low, f.ci_high, f.horizon_total) }}</strong><span class="rd-sub">packs</span>
                         </div>
                     </div>
-                    <span class="warehouse-status-sub">This month: {{ "{:,}".format(f.this_month) }} packs expected &middot; recommended stockpile for the period: {{ "{:,}".format(f.horizon_p90) }}</span>
+                    <span class="warehouse-status-sub">This month: {{ ci_range(f.this_month_low, f.this_month_high, f.this_month) }} packs &middot; recommended if bad season: {{ "{:,}".format(f.horizon_p90) }}</span>
                     <a href="?{% if municipality_filter != 'all' %}municipality={{ municipality_filter }}&amp;{% endif %}{% if event_id %}event_id={{ event_id }}&amp;{% endif %}forecast_lgu={{ f.lgu|urlencode }}&amp;forecast_months={{ forecast_months }}&amp;show_breakdown=1#pa-barangay-breakdown" class="link-manage" style="display:block; margin-top:4px;">View barangay breakdown →</a>
                 </div>
                 {% else %}
@@ -412,7 +440,7 @@
 
         {% if show_breakdown and lgu_forecast and barangay_breakdown %}
         {% set top = barangay_breakdown[0] %}
-        {# Barangay Breakdown: each barangay's current stock, expected need and recommended stockpile. #}
+        {# Barangay Breakdown: each barangay's current stock, projected need (95% CI) and the amount recommended if the season is bad. #}
         <section class="panel" id="pa-barangay-breakdown" style="margin-top:16px;">
             <div class="panel-header">
                 <h3>Barangay Breakdown - {{ lgu_forecast.lgu }}</h3>
@@ -422,14 +450,14 @@
             <div class="rr-table-wrap" style="max-height:460px; overflow:auto;">
                 <table class="rr-table">
                     <thead><tr>
-                        <th>Barangay</th><th>Current stock</th><th>Expected ({{ forecast_months }} mo)</th><th>Recommended stockpile</th>
+                        <th>Barangay</th><th>Current stock</th><th>Projected need, 95% CI ({{ forecast_months }} mo)</th><th>Recommended if bad season</th>
                     </tr></thead>
                     <tbody>
                         {% for r in barangay_breakdown %}
                         <tr>
                             <td><strong>{{ r.name }}</strong></td>
                             <td>{% if r.on_hand is none %}<span class="rd-sub">No record</span>{% else %}{{ "{:,}".format(r.on_hand) }}{% endif %}</td>
-                            <td>{{ "{:,}".format(r.expected) }}</td>
+                            <td>{{ ci_range(r.ci_low, r.ci_high, r.expected) }}</td>
                             <td>{{ "{:,}".format(r.stockpile) }}</td>
                         </tr>
                         {% endfor %}
@@ -437,7 +465,7 @@
                     <tfoot><tr>
                         <td><strong>{{ lgu_forecast.lgu }}</strong></td>
                         <td><strong>{{ "{:,}".format(barangay_breakdown|selectattr('on_hand')|sum(attribute='on_hand')) }}</strong></td>
-                        <td><strong>{{ "{:,}".format(lgu_forecast.horizon_total) }}</strong></td>
+                        <td><strong>{{ ci_range(lgu_forecast.horizon_ci_low, lgu_forecast.horizon_ci_high, lgu_forecast.horizon_total) }}</strong></td>
                         <td><strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong></td>
                     </tr></tfoot>
                 </table>
@@ -472,7 +500,7 @@
                         <span>{{ w.cover.coverage_pct }}% of stockpile</span>
                         <span>{{ w.cover.months_cover }}{{ '+' if w.cover.covers_12_plus }} months of cover</span>
                     </div>
-                    <span class="rd-sub">Recommended {{ cover_horizon }}-month stockpile for {{ w.scope_label }}: {{ "{:,}".format(w.cover.stockpile) }} (expected demand {{ "{:,}".format(w.cover.expected) }}){% if w.cover.shortfall %} &middot; <strong>short {{ "{:,}".format(w.cover.shortfall) }}</strong>{% else %} &middot; fully covered{% endif %}</span>
+                    <span class="rd-sub">Recommended {{ cover_horizon }}-month stockpile for {{ w.scope_label }}: {{ "{:,}".format(w.cover.stockpile) }} (projected need {{ ci_range(w.cover.ci_low, w.cover.ci_high, w.cover.expected) }}, 95% CI){% if w.cover.shortfall %} &middot; <strong>short {{ "{:,}".format(w.cover.shortfall) }}</strong>{% else %} &middot; fully covered{% endif %}</span>
                     {% else %}
                     <span class="rd-sub" style="display:block; margin-top:10px;">No trained model - run <code>scripts/train_model.py</code> to compare stock with the forecast.</span>
                     {% endif %}
@@ -551,11 +579,11 @@
             {% endif %}
             {% if loto_packs_cv %}
             <h4 style="margin:14px 0 4px;">Per-municipality validation (packs)</h4>
-            <p class="rd-sub" style="margin:0 0 6px;">Same leave-one-typhoon-out setup as the share table below, but scoring the end-to-end forecast (share &times; that fold's expected severity) against real food packs given, per barangay per held-out typhoon. WAPE = total packs missed &divide; total packs really given; for reference, predicting zero packs everywhere gives exactly 100%. MAPE and R&sup2; were tried here and dropped: a single typhoon's severity isn't meant to be point-forecast exactly (that's what the P90 scenario range is for), so MAPE exploded past 1,000% on near-zero actuals and R&sup2; sat near or below 0 - both technically correct but not useful without a longer explanation than a table can carry.</p>
+            <p class="rd-sub" style="margin:0 0 6px;">Same leave-one-typhoon-out setup as the share table below, but scoring the end-to-end forecast (share &times; that fold's expected severity) against real food packs given, per barangay per held-out typhoon. MAPE and R&sup2; were tried here and dropped: a single typhoon's severity isn't meant to be point-forecast exactly (that's what the P90 scenario range is for), so MAPE exploded past 1,000% on near-zero actuals and R&sup2; sat near or below 0 - both technically correct but not useful without a longer explanation than a table can carry.</p>
             <div class="rr-table-wrap">
                 <table class="rr-table">
                     <thead><tr>
-                        <th>Municipality</th><th>MAE (packs)</th><th>RMSE (packs)</th><th>WAPE</th><th>Barangay-typhoon pairs</th>
+                        <th>Municipality</th><th>MAE (packs)</th><th>RMSE (packs)</th><th>Barangay-typhoon pairs</th>
                     </tr></thead>
                     <tbody>
                         {% for r in loto_packs_cv %}
@@ -563,7 +591,6 @@
                             <td><strong>{{ r.lgu }}</strong></td>
                             <td>{{ "{:,.0f}".format(r.mae_packs) }}</td>
                             <td>{{ "{:,.0f}".format(r.rmse_packs) }}</td>
-                            <td>{{ "%.0f%%"|format(r.wape * 100) if r.wape is not none else "-" }}</td>
                             <td>{{ r.n }}</td>
                         </tr>
                         {% endfor %}
@@ -711,6 +738,12 @@
     // Makes text safe to show on the page.
     function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+    // A confidence-interval range like '120 - 480' (or the single value on older model files).
+    function range(r) {
+        if (r.ci_high === null || r.ci_high === undefined) return fmt(r.expected);
+        return r.ci_high === 0 ? '0' : fmt(r.ci_low) + ' &ndash; ' + fmt(r.ci_high);
+    }
+
     // Shows the barangay breakdown for the month clicked on the forecast chart.
     function select(key) {
         var m = DATA[key];
@@ -721,12 +754,12 @@
             var stock = r.on_hand === null || r.on_hand === undefined
                 ? '<span class="rd-sub">No record</span>' : fmt(r.on_hand);
             return '<tr><td><strong>' + esc(r.name) + '</strong></td><td>' + stock + '</td><td>' +
-                fmt(r.expected) + '</td><td>' + fmt(r.stockpile) + '</td></tr>';
+                range(r) + '</td><td>' + fmt(r.stockpile) + '</td></tr>';
         }).join('');
         document.getElementById('pa-month-total-s').innerHTML = '<strong>' + fmt(m.on_hand_total) + '</strong>';
-        document.getElementById('pa-month-total-e').innerHTML = '<strong>' + fmt(m.expected) + '</strong>';
+        document.getElementById('pa-month-total-e').innerHTML = '<strong>' + range(m) + '</strong>';
         document.getElementById('pa-month-total-p').innerHTML = '<strong>' + fmt(m.stockpile) + '</strong>';
-        document.getElementById('pa-month-note').textContent = m.expected === 0 && m.stockpile === 0
+        document.getElementById('pa-month-note').textContent = !m.ci_high && m.stockpile === 0
             ? 'No typhoon relief demand is expected in ' + m.label + ' (outside the typhoon season), so every barangay shows 0.'
             : 'Only ' + m.label + ' is shown. Barangay figures can differ from the municipal total by a few packs due to rounding.';
         panel.hidden = false;
@@ -971,18 +1004,24 @@
     function row(cls, label, value) {
         return '<div class="pa-tip-row"><i class="' + cls + '"></i><span>' + label + '</span><strong>' + value + '</strong></div>';
     }
+    // Indented line under a tooltip row with the 95% confidence interval (lower - upper).
+    function sub(label, lo, hi) {
+        return '<div class="pa-tip-row pa-tip-ci"><i class="lg-ci"></i><span>' + label + '</span><small>' +
+            (+hi === 0 ? '0' : fmt(lo) + ' &ndash; ' + fmt(hi)) + '</small></div>';
+    }
 
     var demand = document.getElementById('pa-demand-host');
     if (demand) {
         var dtip = document.getElementById('pa-demand-tip');
         demand.querySelectorAll('.pa-month-hit').forEach(function (h) {
-            // Shows the tooltip for a forecast bar (expected need, stockpile, season).
+            // Shows the tooltip for a forecast bar (confidence interval, stockpile, season).
             function show() {
                 var d = h.dataset;
                 dtip.innerHTML = '<div class="pa-tip-title">' + d.tipLabel + '</div>' +
                     (d.tipSeason ? '<div class="pa-tip-sub">' + d.tipSeason + '</div>' : '') +
-                    row('lg-exp', 'Expected', fmt(d.tipExp) + ' packs') +
-                    ({{ 'true' if show_buffer else 'false' }} ? row('lg-p90-bar', 'Stockpile', fmt(d.tipP90) + ' packs') : '') +
+                    row('lg-exp', 'Projected need', fmt(d.tipExp) + ' packs') +
+                    sub('95% CI', d.tipLo, d.tipHi) +
+                    ({{ 'true' if show_buffer else 'false' }} ? row('lg-p90-bar', 'Recommended if bad season', fmt(d.tipP90) + ' packs') : '') +
                     '<div class="pa-tip-sub" style="margin-top:4px;">Click for barangay breakdown</div>';
                 place(demand, dtip, +d.tipX, +d.tipY);
             }

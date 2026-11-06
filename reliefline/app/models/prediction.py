@@ -25,7 +25,6 @@ class ModelMetrics(db.Model):
     mae = db.Column(db.Numeric(10, 4), nullable=True)
     rmse = db.Column(db.Numeric(10, 4), nullable=True)
     training_samples = db.Column(db.Integer, nullable=True)
-    wape = db.Column(db.Numeric(10, 4), nullable=True)
     p90_coverage = db.Column(db.Numeric(6, 4), nullable=True)
     trained_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     mae_baseline_equal_split = db.Column(db.Numeric(10, 4), nullable=True)

@@ -96,6 +96,9 @@ def _stock_cover(stock, lgu_names, horizon_months):
     return {
         "stockpile": stockpile,
         "expected": expected, "coverage_pct": coverage, "tier": tier,
+        # 95% confidence interval of the need over the period (shown instead of the single expected figure).
+        "ci_low": sum(f["horizon_ci_low"] for f in fh) if all(f["ci_level"] for f in fh) else None,
+        "ci_high": sum(f["horizon_ci_high"] for f in fh) if all(f["ci_level"] for f in fh) else None,
         "shortfall": max(stockpile - stock, 0),
         "months_cover": round(months, 1), "covers_12_plus": not exhausted,
     }
@@ -323,6 +326,10 @@ def index():
             "this_month": lf["months"][0]["projected_packs"] if lf["months"] else 0,
             "horizon_total": lf["horizon_total"],
             "horizon_p90": lf["horizon_p90"],
+            "ci_level": lf["ci_level"],
+            "ci_low": lf["horizon_ci_low"], "ci_high": lf["horizon_ci_high"],
+            "this_month_low": lf["months"][0]["ci_low"] if lf["months"] else None,
+            "this_month_high": lf["months"][0]["ci_high"] if lf["months"] else None,
         })
     forecast_summary_by_lgu.sort(key=lambda f: f["horizon_total"], reverse=True)
 
@@ -343,6 +350,8 @@ def index():
                 "on_hand": breakdown_on_hand.get(row["barangay_id"]),
                 "expected": fb["horizon_total"] if fb else 0,
                 "stockpile": fb["horizon_p90"] if fb else 0,
+                "ci_low": fb["horizon_ci_low"] if fb else None,
+                "ci_high": fb["horizon_ci_high"] if fb else None,
             })
 
     chart_forecast = (ml_predict.forecast_lgu(forecast_lgu_choice, forecast_months + 1, include_current=True)
@@ -350,7 +359,11 @@ def index():
     chart_months = chart_forecast["months"] if chart_forecast else []
     # Buffer (stockpile) bars are hidden unless the user turns them on; the axis fits whatever is shown.
     show_buffer = request.args.get("show_buffer") == "1"
-    peak = max([m["p90_packs" if show_buffer else "projected_packs"] for m in chart_months], default=0)
+    # The axis fits the top of each month's 95% confidence interval (and the stockpile marker when shown),
+    # plus 8% headroom so the range labels above the bars never touch the top of the chart.
+    peak = max([max(m["projected_packs"], m["ci_high"] or 0,
+                    (m["p90_packs"] if show_buffer else 0))
+                for m in chart_months], default=0) * 1.08
     step = min((c * mag for mag in (1, 10, 100, 1000, 10000, 100000) for c in (1, 2, 2.5, 5)
                 if c * mag * 4 >= peak), default=1)
     step = max(int(-(-step // 1)), 1)
@@ -371,12 +384,15 @@ def index():
             month_breakdown[m["date"]] = {
                 "label": f"{MONTH_NAMES[m['month'] - 1]} {m['year']}",
                 "expected": m["projected_packs"],
+                "ci_low": m["ci_low"], "ci_high": m["ci_high"],
                 "stockpile": month_stockpile,
                 "on_hand_total": stock_total,
                 "rows": [{
                     "name": r["name"],
                     "share": round(r["share"] * 100, 1),
                     "expected": max(int(round(m["projected_packs"] * r["share"])), 0),
+                    "ci_low": max(int(round(m["ci_low"] * r["share"])), 0) if m["ci_low"] is not None else None,
+                    "ci_high": max(int(round(m["ci_high"] * r["share"])), 0) if m["ci_high"] is not None else None,
                     "stockpile": max(int(round(month_stockpile * r["share"])), 0),
                     "on_hand": on_hand.get(r["barangay_id"]),
                 } for r in shares],

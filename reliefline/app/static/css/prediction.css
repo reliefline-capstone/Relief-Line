@@ -341,6 +341,17 @@
 .pa-bar-p90 { fill: #1e3a6e; stroke: none; rx: 0; }
 .pa-bar-value { fill: #3b4559; font-weight: 600; }
 .pa-bar-value-p90 { fill: #1e3a6e; font-weight: 700; }
+/* 95% confidence interval error bar drawn on each blue bar (lower bound to upper bound), and its legend key. */
+.pa-ci-whisker line { stroke: #0f2547; stroke-width: 2px; stroke-linecap: round; }
+.pa-legend .lg-ci, .pa-tooltip .lg-ci { box-sizing: border-box; width: 10px; height: 12px; border-radius: 0; color: #0f2547; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; background: linear-gradient(currentColor, currentColor) center / 2px 100% no-repeat; }
+/* Range label when the bad-season bar is shown: drawn above both bars in the blue of the range bar. */
+.pa-bar-value-ci { fill: #1d6fe0; font-weight: 700; }
+/* Forecast tooltip is wide enough that 'Recommended if bad season' and the range stay on one line. */
+#pa-demand-tip { width: max-content; }
+#pa-demand-tip .pa-tip-row span { white-space: nowrap; }
+/* Tooltip line under each value giving its 95% confidence interval (lower - upper). */
+.pa-tip-ci { margin-top: 1px; padding-left: 18px; }
+.pa-tip-ci small { color: #5b6475; font-weight: 600; white-space: nowrap; }
 .pa-bar-band { fill: #f3f8ff; }
 .pa-bar-band-peak { fill: #e6f0ff; }
 .pa-month-hit:hover, .pa-month-hit:focus-visible { fill: rgba(30, 58, 110, 0.06); }
@@ -499,6 +510,10 @@
     html[data-theme="dark"] .pa-bar-p90 { fill: #7f9fdc; stroke: none; }
     html[data-theme="dark"] .pa-bar-value { fill: #bfc1cc; }
     html[data-theme="dark"] .pa-bar-value-p90 { fill: #7f9fdc; }
+    html[data-theme="dark"] .pa-ci-whisker line { stroke: #78a2e3; }
+    html[data-theme="dark"] .pa-legend .lg-ci, html[data-theme="dark"] .pa-tooltip .lg-ci { border-radius: 0; color: #78a2e3; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; background: linear-gradient(currentColor, currentColor) center / 2px 100% no-repeat; }
+    html[data-theme="dark"] .pa-bar-value-ci { fill: #7faeee; }
+    html[data-theme="dark"] .pa-tip-ci small { color: #aeb1bf; }
     html[data-theme="dark"] .pa-bar-band { fill: #1f222d; }
     html[data-theme="dark"] .pa-bar-band-peak { fill: #202c43; }
     html[data-theme="dark"] .pa-month-hit:hover, html[data-theme="dark"] .pa-month-hit:focus-visible { fill: rgba(127, 159, 220, 0.06); }
