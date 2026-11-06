@@ -3056,6 +3056,9 @@ def recommendations_page():
             "shortage": shortage, "coverage_pct": round(min(on_hand / demand * 100, 100)) if demand else 100,
             "barangay_count": barangay_count, "open_request": open_req,
             "stockpile_total": stockpile_total, "expected_total": expected_total,
+            # Uncertainty of the period's need: 95% confidence interval of the expected total.
+            "ci_low": forecast["horizon_ci_low"] if forecast else None,
+            "ci_high": forecast["horizon_ci_high"] if forecast else None,
             "forecast_months": forecast["months"] if forecast else [],
             "barangays": barangay_rows,
         })

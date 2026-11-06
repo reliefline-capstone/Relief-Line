@@ -101,6 +101,8 @@
                         <td class="pmb-stockpile">
                             <strong>{{ "{:,}".format(m.stockpile_total) }}</strong>
                             <span class="rd-sub">expected {{ "{:,}".format(m.expected_total) }}</span>
+                            {# 95% confidence interval of the expected need. #}
+                            {% if m.ci_high is not none %}<span class="rd-sub">95% CI {{ "{:,}".format(m.ci_low) }}&ndash;{{ "{:,}".format(m.ci_high) }}</span>{% endif %}
                         </td>
                     </tr>
                     <tr class="pmb-detail-row">

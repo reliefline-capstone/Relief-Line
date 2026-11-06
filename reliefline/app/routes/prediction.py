@@ -293,8 +293,6 @@ def index():
         })
     combined_cover = None if is_cswdo else _stock_cover(total_food_packs, list(scope_lgus), cover_horizon)
 
-    latest_metrics = ModelMetrics.query.order_by(ModelMetrics.trained_at.desc()).first()
-
     forecast_months = request.args.get("forecast_months", 12, type=int)
     if forecast_months not in (3, 6, 9, 12):
         forecast_months = 12
@@ -303,7 +301,7 @@ def index():
         forecast_lgu_choice = scope_lgus[0] if scope_lgus else None
     lgu_forecast = ml_predict.forecast_lgu(forecast_lgu_choice, forecast_months) if forecast_lgu_choice else None
 
-    cover_chart = backtest_chart = cover_wh = None
+    cover_chart = cover_wh = None
     if lgu_forecast:
         wh = next((w for w in all_warehouses
                    if w["office"].office_type == "cswdo"
@@ -312,9 +310,6 @@ def index():
             cover_chart = forecast_charts.cover_chart(lgu_forecast["months"], wh["food_pack_qty"])
             cover_wh = {"pct": wh["pct"],
                         "cover": _stock_cover(wh["food_pack_qty"], [forecast_lgu_choice], forecast_months)}
-        bt = ml_predict.backtest_series(forecast_lgu_choice)
-        if bt:
-            backtest_chart = forecast_charts.backtest_chart(bt)
 
     forecast_summary_by_lgu = []
     for lgu in lgus:
@@ -475,7 +470,6 @@ def index():
         recommendations=recommendations,
         ranking=ranking,
         warehouse_cards=warehouse_cards,
-        latest_metrics=latest_metrics,
         model_available=ml_predict.is_model_available(),
         fulfillable_warehouses=fulfillable_warehouses,
         forecast_months=forecast_months,
@@ -489,10 +483,40 @@ def index():
         chart_axis_ticks=chart_axis_ticks,
         cover_chart=cover_chart,
         cover_wh=cover_wh,
-        backtest_chart=backtest_chart,
         distribution_history=_distribution_history(scope_lgus),
         show_breakdown=show_breakdown,
         show_buffer=show_buffer,
+    )
+
+
+# Page: /prediction/model-performance - Model Performance: how reliable the forecast is.
+# System admin only, and deliberately not linked anywhere: open it by typing the address.
+# 12-month uncertainty ranges, how the safety buffer was worked out, weighted R² per predictor,
+# and the leave-one-typhoon-out accuracy tables with the 'actual vs predicted' chart for one municipality.
+@prediction_bp.route("/model-performance")
+@login_required
+@role_required("system_admin")
+def model_performance():
+    lgu_choice = request.args.get("lgu", "")
+    if lgu_choice not in TARGET_LGUS:
+        lgu_choice = TARGET_LGUS[0]
+
+    uncertainty = [f for f in (ml_predict.forecast_lgu(lgu, 12) for lgu in TARGET_LGUS) if f]
+    bt = ml_predict.backtest_series(lgu_choice)
+    artifact_pi = uncertainty[0]["pi_level"] if uncertainty and uncertainty[0]["pi_level"] else None
+
+    return render_template(
+        "prediction/model_performance.html",
+        target_lgus=list(TARGET_LGUS),
+        lgu_choice=lgu_choice,
+        latest_metrics=ModelMetrics.query.order_by(ModelMetrics.trained_at.desc()).first(),
+        model_available=ml_predict.is_model_available(),
+        uncertainty=uncertainty,
+        pi_pct=round(artifact_pi * 100) if artifact_pi else None,
+        n_simulations=ml_predict.n_simulations(),
+        buffer_cal=ml_predict.buffer_calibration_summary(),
+        weighted_r2=ml_predict.weighted_r2_summary(),
+        backtest_chart=forecast_charts.backtest_chart(bt) if bt else None,
         loto_cv=ml_predict.loto_cv_summary(),
         loto_packs_cv=ml_predict.loto_packs_cv_summary(),
         loto_p90=ml_predict.p90_coverage_summary(),

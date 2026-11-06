@@ -9,11 +9,19 @@ from app.utils.timezone import ph_now, ph_today
 import numpy as np
 import joblib
 
-MODEL_VERSION = "v9.3-two-stage-lgu"
+MODEL_VERSION = "v9.4-two-stage-lgu-sim"
 ARTIFACT_PATH = os.path.join(os.path.dirname(__file__), "artifacts", "food_pack_demand.joblib")
 
-# 15% safety buffer added on top of the recommended stockpile.
+# Fallback safety buffer, used only when the season simulation can't calibrate one (too little data).
+# Normally the buffer is computed from the data by calibrate_buffer() on every training run.
 BUFFER = 0.15
+
+# Season simulation settings: how many seasons to simulate, a fixed seed so retrains give the same numbers,
+# the share of simulated seasons the 12-month stockpile must cover, and the prediction interval shown (P10-P90).
+N_SIMULATIONS = 20000
+SIM_SEED = 0
+BUFFER_TARGET = 0.90
+PI_LEVEL = 0.80
 
 MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -534,6 +542,137 @@ def expected_need_ci(events, all_typhoon_keys, level=0.95, n_boot=5000, seed=0):
     return {"level": level, "per_typhoon": [float(lo), float(hi)], "n_boot": n_boot}
 
 
+# Packs given in each real relief operation of a municipality (the storm sizes the simulation draws from).
+def event_sizes(events):
+    return sorted(float(t) for ev in events.values() if (t := _event_total_and_known(ev["records"])[0]) > 0)
+
+
+# Simulates many possible seasons: each season gets a random number of relief operations
+# (Poisson, averaging mean_events) and each operation's size is drawn from the real storm sizes.
+# Returns the total packs needed in every simulated season.
+def simulate_season_totals(sizes, mean_events, n_sim=N_SIMULATIONS, seed=SIM_SEED):
+    sizes = np.asarray(sizes, dtype=float)
+    if len(sizes) == 0 or mean_events <= 0:
+        return np.zeros(n_sim)
+    rng = np.random.default_rng(seed)
+    counts = rng.poisson(mean_events, n_sim)
+    draws = rng.choice(sizes, int(counts.sum()))
+    return np.bincount(np.repeat(np.arange(n_sim), counts), weights=draws, minlength=n_sim)
+
+
+# Works out the safety buffer from the data: for each municipality, simulate 12-month seasons and find the
+# extra margin the formula's stockpile (expected relief operations x P90 storm size) needs to cover
+# BUFFER_TARGET (90%) of them. The buffer is the largest margin any municipality needs, rounded up to a whole %.
+def calibrate_buffer(lgu_inputs, typhoons_per_year):
+    per_lgu = {}
+    for lgu, (sizes, p_rel, p90_size) in lgu_inputs.items():
+        mean_events = typhoons_per_year * p_rel
+        raw = mean_events * p90_size
+        if raw <= 0 or not sizes:
+            continue
+        sims = simulate_season_totals(sizes, mean_events)
+        target = float(np.percentile(sims, BUFFER_TARGET * 100))
+        per_lgu[lgu] = {
+            "stockpile_before_buffer": raw,
+            "simulated_p90": target,
+            "margin_needed": max(target / raw - 1, 0.0),
+            "coverage_before_buffer": float((sims <= raw).mean()),
+        }
+    if not per_lgu:
+        return BUFFER, {"source": "default", "per_lgu": {}}
+    buffer = float(np.ceil(max(v["margin_needed"] for v in per_lgu.values()) * 100 - 1e-9) / 100)
+    for lgu, v in per_lgu.items():
+        sizes, p_rel, _ = lgu_inputs[lgu]
+        sims = simulate_season_totals(sizes, typhoons_per_year * p_rel)
+        v["coverage_with_buffer"] = float((sims <= v["stockpile_before_buffer"] * (1 + buffer)).mean())
+    return buffer, {"source": "simulation", "target": BUFFER_TARGET, "typhoons_per_year": typhoons_per_year,
+                    "n_simulations": N_SIMULATIONS, "per_lgu": per_lgu}
+
+
+# Weighted R^2: share of the variation in barangay shares that a prediction explains,
+# with each barangay-typhoon row weighted by that typhoon's total packs (big relief operations count more).
+def _weighted_r2(actual, predicted, weights):
+    a, p, w = (np.asarray(v, dtype=float) for v in (actual, predicted, weights))
+    mean = np.average(a, weights=w)
+    total = np.sum(w * (a - mean) ** 2)
+    return float(1 - np.sum(w * (a - p) ** 2) / total) if total > 0 else None
+
+
+# Turns raw scores into shares that add up to 1 (equal shares if every score is 0).
+def _normalise(raw):
+    raw = np.maximum(np.asarray(raw, dtype=float), 0.0)
+    return raw / raw.sum() if raw.sum() > 0 else np.full(len(raw), 1.0 / len(raw))
+
+
+# Weighted R^2 of every predictor of a barangay's share, tested leave-one-typhoon-out
+# (each typhoon is predicted from the other typhoons only). 'post_event' predictors are only known after
+# the typhoon hits, so they are shown for comparison and are not used by the forecast.
+def weighted_r2_by_predictor(events):
+    rows = []
+    for eid, ev in events.items():
+        total, known = _event_total_and_known(ev["records"])
+        if total <= 0 or len(known) < 2:
+            continue
+        for r in known:
+            rows.append({"eid": eid, "bid": r["barangay_id"], "share": r["food_packs_given"] / total,
+                         "weight": total, "total_families": r["total_families_snapshot"],
+                         "total_individuals": r["total_individuals_snapshot"],
+                         "affected_families": r["affected_families"]})
+    eids = sorted({r["eid"] for r in rows})
+    if len(eids) < 3:
+        return None
+
+    # One-predictor linear model of share, fitted on the other typhoons the same way the forecast is.
+    def single(field):
+        usable = [r for r in rows if r[field] is not None]
+        a, p, w = [], [], []
+        for eid in eids:
+            train = [r for r in usable if r["eid"] != eid]
+            test = [r for r in usable if r["eid"] == eid]
+            if len(train) < 3 or len(test) < 2:
+                continue
+            slope, intercept = np.polyfit([r[field] for r in train], [r["share"] for r in train], 1,
+                                          w=np.sqrt([r["weight"] for r in train]))
+            p += list(_normalise([slope * r[field] + intercept for r in test]))
+            a += [r["share"] for r in test]
+            w += [r["weight"] for r in test]
+        return a, p, w
+
+    # Past relief share alone, or the full forecast model (families + history + floor).
+    def from_history(full_model):
+        a, p, w = [], [], []
+        for eid in eids:
+            test = [r for r in rows if r["eid"] == eid]
+            train_events = {k: v for k, v in events.items() if k != eid}
+            if full_model:
+                if any(r["total_families"] is None for r in test):
+                    continue
+                stage1 = fit_stage1(train_events)
+                if stage1 is None:
+                    continue
+                shares = stage1_shares(stage1, {r["bid"]: r["total_families"] for r in test})
+                p += [shares.get(r["bid"], 0.0) for r in test]
+            else:
+                history = pooled_history_shares(train_events)
+                p += list(_normalise([history.get(r["bid"], 0.0) for r in test]))
+            a += [r["share"] for r in test]
+            w += [r["weight"] for r in test]
+        return a, p, w
+
+    predictors = [
+        ("total_families", "Total families", False, single("total_families")),
+        ("total_individuals", "Total individuals", False, single("total_individuals")),
+        ("past_relief_share", "Past relief share", False, from_history(False)),
+        ("full_model", "Full model (families + past relief + 50% floor)", False, from_history(True)),
+        ("affected_families", "Affected families", True, single("affected_families")),
+    ]
+    out = []
+    for key, label, post_event, (a, p, w) in predictors:
+        out.append({"key": key, "label": label, "post_event": post_event, "n": len(a),
+                    "r2": _weighted_r2(a, p, w) if len(a) >= 3 else None})
+    return out
+
+
 # Total food packs given out per year.
 def yearly_totals(events, calendar_rows):
     year_of_key = {r[0]: r[3] for r in calendar_rows}
@@ -697,6 +836,7 @@ def train_and_persist():
     climatology = climatology_by_month(calendar_rows, ph_today())
 
     lgu_artifact, loto_cv, loto_packs_cv, loto_p90, backtest_series = {}, {}, {}, {}, {}
+    weighted_r2 = {}
     for lgu, events in by_lgu.items():
         stage1 = fit_stage1(events)
         if stage1 is None:
@@ -716,6 +856,8 @@ def train_and_persist():
             "p_relief": p_relief(events, all_keys),
             "severity": severity_scenarios(events),
             "expected_ci": expected_need_ci(events, all_keys),
+            # Real storm sizes, used to simulate seasons for the prediction interval.
+            "event_sizes": event_sizes(events),
             "yearly_totals": yearly_totals(events, calendar_rows),
             "barangays": {bid: {"latest_total_families": tf} for bid, tf in latest_tf.items()},
             "event_ids": sorted(events),
@@ -729,6 +871,7 @@ def train_and_persist():
             loto_cv[lgu]["floor"] = floor_protection(stage1, latest_tf)
         loto_packs_cv[lgu] = leave_one_typhoon_out_packs_cv(events)
         loto_p90[lgu] = leave_one_typhoon_out_p90_coverage(events)
+        weighted_r2[lgu] = weighted_r2_by_predictor(events)
         backtest_series[lgu] = {
             "origin": "leave-one-typhoon-out",
             "points": [
@@ -741,6 +884,12 @@ def train_and_persist():
     if not lgu_artifact:
         raise RuntimeError("Not enough real relief data to fit a share model for any LGU.")
 
+    # Safety buffer computed from the data (season simulation), not typed in by hand.
+    buffer, buffer_calibration = calibrate_buffer(
+        {lgu: (L["event_sizes"], L["p_relief"], L["severity"]["high"]) for lgu, L in lgu_artifact.items()},
+        sum(climatology.values()),
+    )
+
     data_through = ph_today().isoformat()
     os.makedirs(os.path.dirname(ARTIFACT_PATH), exist_ok=True)
     # Save the trained model to the file the app reads when making forecasts.
@@ -748,7 +897,11 @@ def train_and_persist():
         "version": MODEL_VERSION,
         "trained_at": ph_now().isoformat(),
         "data_through": data_through,
-        "buffer": BUFFER,
+        "buffer": buffer,
+        "buffer_calibration": buffer_calibration,
+        "pi_level": PI_LEVEL,
+        "n_simulations": N_SIMULATIONS,
+        "weighted_r2": weighted_r2,
         "climatology": climatology,
         "lgu": lgu_artifact,
         "loto_cv": loto_cv,
@@ -775,4 +928,5 @@ def train_and_persist():
         db.session.commit()
 
     return {"lgus": list(lgu_artifact), "loto_cv": loto_cv, "loto_packs_cv": loto_packs_cv,
-            "loto_p90": loto_p90, "data_through": data_through}
+            "loto_p90": loto_p90, "data_through": data_through,
+            "buffer": buffer, "buffer_calibration": buffer_calibration, "weighted_r2": weighted_r2}

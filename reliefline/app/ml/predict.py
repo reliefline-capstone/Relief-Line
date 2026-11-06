@@ -9,12 +9,13 @@ import joblib
 
 from app.ml.train import (
     ARTIFACT_PATH, MONTH_LABELS, historical_allocation_for,
-    _to_number, predict_shares,
+    _to_number, predict_shares, simulate_season_totals,
 )
 from app.ml import climate_reference as ref
 
 _cached_artifact = None
 _load_attempted = False
+_season_cache = {}
 
 
 # Loads the trained forecast model file (app/ml/artifacts/food_pack_demand.joblib).
@@ -55,8 +56,26 @@ def _forecast_window(months_ahead, start_month=None, include_current=False):
     return [_add_months(base, i) for i in range(months_ahead)]
 
 
+# Prediction interval for a forecast period: simulate many seasons with this many expected relief operations
+# (storm sizes drawn from the real ones) and take the 10th-90th percentile of the season totals.
+# Also gives how many of the simulated seasons a stockpile would cover. Cached, since pages ask repeatedly.
+def _season_range(lgu, L, relief_events, pi_level, stockpile):
+    sizes = L.get("event_sizes")
+    if not sizes:
+        return None
+    key = (lgu, round(relief_events, 9), pi_level, stockpile)
+    if key not in _season_cache:
+        import numpy as np
+        sims = simulate_season_totals(sizes, relief_events)
+        tail = (1 - pi_level) / 2 * 100
+        lo, hi = np.percentile(sims, [tail, 100 - tail])
+        _season_cache[key] = {"low": int(round(lo)), "high": int(round(hi)),
+                              "stockpile_coverage": float((sims <= stockpile).mean())}
+    return _season_cache[key]
+
+
 # Forecasts how many food packs a municipality will need, month by month.
-# Gives the expected need, and the recommended stockpile (high/P90 estimate plus the 15% safety buffer).
+# Gives the expected need, and the recommended stockpile (high/P90 estimate plus the data-calibrated safety buffer).
 def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
     artifact = _load_artifact()
     if artifact is None or lgu not in artifact["lgu"]:
@@ -73,7 +92,7 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
     # Expected need = how many relief operations to expect x packs a typical typhoon needs.
     lgu_expected_total = relief_events * L["severity"]["expected"]
     lgu_p90_raw = relief_events * L["severity"]["high"]
-    # Recommended stockpile = high (P90) need plus the 15% safety buffer.
+    # Recommended stockpile = high (P90) need plus the safety buffer (calibrated from simulated seasons in training).
     lgu_p90_total = lgu_p90_raw * (1 + buffer)
     # 95% confidence interval of the expected need (from training); None on older model files.
     ci = L.get("expected_ci")
@@ -105,6 +124,8 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
     horizon_p90 = max(int(round(lgu_p90_total)), total)
     if months:
         months[-1]["cum_p90"] = horizon_p90
+    pi_level = artifact.get("pi_level")
+    season = _season_range(lgu, L, relief_events, pi_level, horizon_p90) if pi_level else None
     largest_event = int(round(L["severity"].get("max") or 0))
     per_event_p90 = int(round(L["severity"]["high"]))
     yearly = L.get("yearly_totals") or {}
@@ -116,6 +137,12 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
         "ci_level": ci["level"] if ci else None,
         "horizon_ci_low": sum(m["ci_low"] for m in months) if ci else None,
         "horizon_ci_high": sum(m["ci_high"] for m in months) if ci else None,
+        # Prediction interval: the realistic range of the period's total need (from simulated seasons),
+        # and the share of simulated seasons the recommended stockpile would cover.
+        "pi_level": pi_level if season else None,
+        "horizon_pi_low": season["low"] if season else None,
+        "horizon_pi_high": season["high"] if season else None,
+        "stockpile_season_coverage": season["stockpile_coverage"] if season else None,
         "p90_before_buffer": p90_before_buffer,
         "buffer": buffer, "buffer_packs": horizon_p90 - p90_before_buffer,
         "expected_typhoons": expected_typhoons,
@@ -129,6 +156,34 @@ def forecast_lgu(lgu, months_ahead, start_month=None, include_current=False):
         "below_largest_year": (largest_year_total or 0) > p90_before_buffer,
         "model_version": artifact.get("version"), "data_through": artifact.get("data_through"),
     }
+
+
+# Weighted R^2 of each predictor of a barangay's share, per municipality (Model Performance page).
+def weighted_r2_summary():
+    artifact = _load_artifact()
+    if artifact is None:
+        return []
+    out = []
+    for lgu, rows in sorted((artifact.get("weighted_r2") or {}).items()):
+        if rows:
+            out.append({"lgu": lgu, "by_key": {r["key"]: r for r in rows}})
+    return out
+
+
+# How many seasons the simulation uses (shown on the Model Performance page).
+def n_simulations():
+    artifact = _load_artifact()
+    return (artifact or {}).get("n_simulations") or 0
+
+
+# How the safety buffer was worked out from the simulated seasons (Model Performance page).
+def buffer_calibration_summary():
+    artifact = _load_artifact()
+    if artifact is None or not artifact.get("buffer_calibration"):
+        return None
+    cal = artifact["buffer_calibration"]
+    rows = [{"lgu": lgu, **v} for lgu, v in sorted(cal.get("per_lgu", {}).items())]
+    return {**cal, "buffer": artifact["buffer"], "rows": rows}
 
 
 # Accuracy results of the 'how packs are split among barangays' part of the model,
@@ -320,6 +375,12 @@ def forecast_barangay(barangay, months_ahead, start_month=None):
         "ci_level": lgu_forecast["ci_level"],
         "horizon_ci_low": sum(m["ci_low"] for m in months) if has_ci else None,
         "horizon_ci_high": sum(m["ci_high"] for m in months) if has_ci else None,
+        # The municipality's prediction interval scaled by this barangay's share.
+        "pi_level": lgu_forecast["pi_level"],
+        "horizon_pi_low": (int(round(lgu_forecast["horizon_pi_low"] * share))
+                           if lgu_forecast["pi_level"] else None),
+        "horizon_pi_high": (int(round(lgu_forecast["horizon_pi_high"] * share))
+                            if lgu_forecast["pi_level"] else None),
         "model_version": lgu_forecast["model_version"],
         "data_through": lgu_forecast["data_through"],
         "share": round(share, 4),

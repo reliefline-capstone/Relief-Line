@@ -6,14 +6,14 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import create_app
-from app.ml.train import MODEL_VERSION, BUFFER, train_and_persist
+from app.ml.train import MODEL_VERSION, train_and_persist
 
 app = create_app()
 
 with app.app_context():
     out = train_and_persist()
     print(f"Model {MODEL_VERSION}: two-stage (Stage 1 share regression + Stage 2 climatology/severity), "
-          f"buffer {BUFFER:.0%}")
+          f"buffer {out['buffer']:.0%} (calibrated from simulated seasons)")
     print(f"LGUs trained: {out['lgus']}")
     print(f"Data through {out['data_through']}")
     import joblib
@@ -102,3 +102,17 @@ with app.app_context():
     for lgu, cv in out["loto_packs_cv"].items():
         if cv:
             print(f"  {lgu:<18}{cv['mae_packs']:>10.1f}{cv['rmse_packs']:>10.1f}")
+
+    # Safety buffer: margin each municipality needs so the 12-month stockpile covers 90% of simulated seasons.
+    cal = out["buffer_calibration"]
+    print(f"\nBuffer calibration ({cal.get('source')}, {cal.get('n_simulations', 0):,} simulated seasons, "
+          f"target {cal.get('target', 0):.0%}): buffer = {out['buffer']:.0%}")
+    for lgu, v in cal.get("per_lgu", {}).items():
+        print(f"  {lgu:<18} before buffer {v['stockpile_before_buffer']:>9,.0f}  simulated P90 {v['simulated_p90']:>9,.0f}"
+              f"  margin needed {v['margin_needed']:>6.1%}  covers {v['coverage_before_buffer']:.1%} -> {v['coverage_with_buffer']:.1%}")
+
+    # Weighted R^2 of each predictor (leave-one-typhoon-out, weighted by typhoon size).
+    print("\nWeighted R^2 (leave-one-typhoon-out)")
+    for lgu, rows in out["weighted_r2"].items():
+        if rows:
+            print(f"  {lgu:<18}" + "  ".join(f"{r['key']}={r['r2']:.3f}" for r in rows if r["r2"] is not None))
