@@ -221,4 +221,8 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(receipts_bp, url_prefix="/receipts")
 
+    # Friendly error pages (403 Forbidden, 404 Not Found, 500, ...) instead of plain text.
+    from app.utils.errors import register_error_handlers
+    register_error_handlers(app)
+
     return app

@@ -449,3 +449,76 @@
     padding: 0;
     cursor: pointer;
 }
+
+/* Error pages (403 Forbidden, 404 Not Found, 500, ...): big code, coloured badge, and the two buttons. */
+.error-page-header {
+    margin-bottom: 4px;
+}
+
+.error-code {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 2px;
+    color: var(--navy);
+    margin-bottom: 6px;
+}
+
+.error-badge-403 { background: #fdecea; }
+.error-badge-403 svg { stroke: #c0392b; }
+.error-badge-404 { background: #fff4e0; }
+.error-badge-404 svg { stroke: #d68910; }
+.error-badge-500 { background: #fdecea; }
+.error-badge-500 svg { stroke: #c0392b; }
+
+.error-page-body {
+    text-align: center;
+}
+
+.error-message {
+    color: #444;
+}
+
+.error-hint {
+    font-size: 13px;
+    color: #777;
+}
+
+.error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.static-page-body a.error-btn,
+.error-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s ease;
+}
+
+.static-page-body a.error-btn-primary,
+.error-btn-primary {
+    background: var(--accent-blue);
+    color: #fff;
+}
+.error-btn-primary:hover { background: var(--accent-blue-light); }
+.error-btn-primary svg { stroke: #fff; }
+
+.error-btn-secondary {
+    background: #fff;
+    color: var(--navy);
+    border-color: #cfd6e4;
+}
+.error-btn-secondary:hover { background: #f2f5fb; }

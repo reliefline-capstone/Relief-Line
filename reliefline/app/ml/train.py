@@ -9,7 +9,7 @@ from app.utils.timezone import ph_now, ph_today
 import numpy as np
 import joblib
 
-MODEL_VERSION = "v9.4-two-stage-lgu-sim"
+MODEL_VERSION = "two-stage-lgu-sim"
 ARTIFACT_PATH = os.path.join(os.path.dirname(__file__), "artifacts", "food_pack_demand.joblib")
 
 # Fallback safety buffer, used only when the season simulation can't calibrate one (too little data).
