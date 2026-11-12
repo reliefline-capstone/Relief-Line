@@ -23,6 +23,7 @@ from app.routes.pswdo import (
     TARGET_LGUS,
     _load_warehouses, _stock_recommendations, _forecast_recommendations, _barangay_recommendations, _relief_summary,
     _stock_adequacy,
+    _report_scope_filters,
 )
 
 prediction_bp = Blueprint("prediction", __name__)
@@ -114,15 +115,12 @@ def _barangay_snapshot(barangay, status_row, event_id):
     predicted = ml_predict.predict_quantity(barangay)
     on_hand = food_pack_on_hand(barangay.barangay_id)
 
-    report_row = None
-    if event_id:
-        report_row = BarangayReport.query.filter(
-            BarangayReport.barangay_id == barangay.barangay_id,
-            BarangayReport.event_id == event_id,
-            BarangayReport.status != "draft",
-        ).order_by(
-            BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
-        ).first()
+    report_row = BarangayReport.query.filter(
+        BarangayReport.barangay_id == barangay.barangay_id,
+        *_report_scope_filters(event_id),
+    ).order_by(
+        BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
+    ).first()
     stock_need = (report_row.requested_food_packs or 0) if report_row else 0
     adeq, ratio_pct = _stock_adequacy(stock_need, on_hand)
 

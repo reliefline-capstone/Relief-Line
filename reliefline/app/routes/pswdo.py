@@ -103,6 +103,15 @@ def _stock_adequacy(need, on_hand):
     return _STOCK_TIER[key], round(ratio * 100, 1)
 
 
+# Which barangay reports count toward the map's stock need: the event's non-draft reports,
+# or, with no active event, only still-open reports filed without an event (so old ones don't linger).
+def _report_scope_filters(event_id):
+    if event_id:
+        return [BarangayReport.event_id == event_id, BarangayReport.status != "draft"]
+    return [BarangayReport.event_id.is_(None),
+            BarangayReport.status.notin_(("draft", "declined", "fulfilled"))]
+
+
 DISPATCH_STATUS_LABELS = {
     "preparing": "Preparing",
     "loaded": "Loaded",
@@ -436,15 +445,14 @@ def _target_barangay_geojson(lgu, event_id):
         ).all()
         statuses = {r.barangay_id: r for r in rows}
 
-        report_rows = BarangayReport.query.join(Barangay).filter(
-            BarangayReport.event_id == event_id,
-            Barangay.city_municipality == lgu,
-            BarangayReport.status != "draft",
-        ).order_by(
-            BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
-        ).all()
-        for r in report_rows:
-            reports.setdefault(r.barangay_id, r)
+    report_rows = BarangayReport.query.join(Barangay).filter(
+        Barangay.city_municipality == lgu,
+        *_report_scope_filters(event_id),
+    ).order_by(
+        BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
+    ).all()
+    for r in report_rows:
+        reports.setdefault(r.barangay_id, r)
 
     features = []
     for feature in raw["features"]:
@@ -2500,18 +2508,16 @@ def gis_map_barangay_detail(barangay_id):
     event_id = _resolve_event_id(request.args.get("event_id", type=int), barangay.city_municipality)
 
     status_row = None
-    report_row = None
     if event_id:
         status_row = BarangayDisasterStatus.query.filter_by(
             barangay_id=barangay_id, event_id=event_id
         ).first()
-        report_row = BarangayReport.query.filter(
-            BarangayReport.barangay_id == barangay_id,
-            BarangayReport.event_id == event_id,
-            BarangayReport.status != "draft",
-        ).order_by(
-            BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
-        ).first()
+    report_row = BarangayReport.query.filter(
+        BarangayReport.barangay_id == barangay_id,
+        *_report_scope_filters(event_id),
+    ).order_by(
+        BarangayReport.submitted_at.desc(), BarangayReport.created_at.desc()
+    ).first()
     status_key = status_row.status if status_row else "normal"
     on_hand = food_pack_on_hand(barangay_id)
     stock_need = (report_row.requested_food_packs or 0) if report_row else 0
