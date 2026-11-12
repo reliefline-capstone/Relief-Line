@@ -678,7 +678,7 @@ document.addEventListener('DOMContentLoaded', function () {
         chevronLeft: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
     };
 
-    // Builds a colored priority badge (e.g. 'High').
+    // Builds a colored stock-adequacy badge (e.g. 'Low').
     function tierBadge(tier, label) {
         return '<span class="badge-priority badge-priority-' + tier + '"><i class="priority-dot"></i> ' + escapeHtml(label) + '</span>';
     }

@@ -75,15 +75,15 @@ DEFAULT_PRIORITY = {"label": "Unrated", "tier": "unrated", "detail": "No status 
 
 _STOCK_TIER = {
     "critical": {"label": "Critical", "tier": "critical", "rank": 4},
-    "high":     {"label": "High",     "tier": "high",     "rank": 3},
-    "medium":   {"label": "Medium",   "tier": "medium",   "rank": 2},
-    "low":      {"label": "Low",      "tier": "low",      "rank": 1},
+    "high":     {"label": "Low",      "tier": "high",     "rank": 3},
+    "medium":   {"label": "Moderate", "tier": "medium",   "rank": 2},
+    "low":      {"label": "Adequate", "tier": "low",      "rank": 1},
     "unrated":  {"label": "Unrated",  "tier": "unrated",  "rank": 0},
 }
 
 
-# Rates whether a barangay's own food packs can cover its reported need
-# (Low, Medium, High or Critical concern). Used for the map colors and priority lists.
+# Rates whether a barangay's own food packs can cover its reported need, worded as
+# stock adequacy (Adequate, Moderate, Low, Critical); tier keys stay the internal risk level.
 def _stock_adequacy(need, on_hand):
     if on_hand is None:
         return _STOCK_TIER["unrated"], None

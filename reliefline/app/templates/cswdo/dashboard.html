@@ -163,9 +163,9 @@
                 <div class="panel-header">
                     <h3>GIS Map - {{ lgu or 'Your Municipality' }}</h3>
                     <div class="map-legend">
-                        <span><i class="legend-dot normal"></i> Low</span>
-                        <span><i class="legend-dot monitoring"></i> Medium</span>
-                        <span><i class="legend-dot needs-assistance"></i> High</span>
+                        <span><i class="legend-dot normal"></i> Adequate</span>
+                        <span><i class="legend-dot monitoring"></i> Moderate</span>
+                        <span><i class="legend-dot needs-assistance"></i> Low</span>
                         <span><i class="legend-dot high-priority"></i> Critical</span>
                     </div>
                 </div>
@@ -175,11 +175,11 @@
                     <a href="{{ url_for('cswdo.gis_map', municipality=lgu) }}" class="map-fullscreen-btn" title="Open full GIS Map">{{ icon('maximize', 16, '#444') }}</a>
 
                     <div class="map-legend-box">
-                        <span class="map-legend-title">Barangay Status</span>
+                        <span class="map-legend-title">Stock Adequacy</span>
                         <div class="map-legend-row"><i class="legend-square high-priority"></i> Critical</div>
-                        <div class="map-legend-row"><i class="legend-square needs-assistance"></i> High</div>
-                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Medium</div>
-                        <div class="map-legend-row"><i class="legend-square normal"></i> Low</div>
+                        <div class="map-legend-row"><i class="legend-square needs-assistance"></i> Low</div>
+                        <div class="map-legend-row"><i class="legend-square monitoring"></i> Moderate</div>
+                        <div class="map-legend-row"><i class="legend-square normal"></i> Adequate</div>
                         <div class="map-legend-divider"></div>
                         <div class="map-legend-row"><i class="legend-mark legend-warehouse"></i> Warehouse</div>
                     </div>
