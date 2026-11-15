@@ -360,6 +360,12 @@
 .pa-legend .lg-exp, .pa-legend .lg-p90-bar { border-radius: 3px 3px 0 0; }
 .pa-legend .lg-wet { background: #f3f8ff; border-color: #d6e6ff; }
 .pa-legend .lg-peak { background: #e6f0ff; border-color: #bcd5fb; }
+/* Yellow 'other disasters' reserve bar (fire, earthquake...), its value label, legend/tooltip key and summary card. */
+.pa-bar-reserve { fill: #f6b93b; stroke: none; }
+.pa-bar-value-reserve { fill: #a86a00; font-weight: 700; }
+.pa-legend .lg-reserve, .pa-tooltip .lg-reserve { background: #f6b93b; border-radius: 3px 3px 0 0; }
+.pa-stock-tiles .pa-reserve-tile { border-color: #f6d58a; background: #fffaf0; }
+.pa-stock-tiles .pa-reserve-tile strong { color: #a86a00; }
 
 /* 'How long will stock last' chart: areas, lines, points, crosshair and stock pills. */
 .pa-area-band { fill: rgba(30, 58, 110, 0.07); stroke: none; }
@@ -522,6 +528,11 @@
     html[data-theme="dark"] .pa-legend .lg-exp, html[data-theme="dark"] .pa-legend .lg-p90-bar { border-radius: 3px 3px 0 0; }
     html[data-theme="dark"] .pa-legend .lg-wet { background: #1f222d; border-color: #24406b; }
     html[data-theme="dark"] .pa-legend .lg-peak { background: #202c43; border-color: #284167; }
+    html[data-theme="dark"] .pa-bar-reserve { fill: #fad994; stroke: none; }
+    html[data-theme="dark"] .pa-bar-value-reserve { fill: #ffc35c; }
+    html[data-theme="dark"] .pa-legend .lg-reserve, html[data-theme="dark"] .pa-tooltip .lg-reserve { background: #f6b93b; border-radius: 3px 3px 0 0; }
+    html[data-theme="dark"] .pa-stock-tiles .pa-reserve-tile { border-color: #665329; background: #2a292a; }
+    html[data-theme="dark"] .pa-stock-tiles .pa-reserve-tile strong { color: #ffc35c; }
     html[data-theme="dark"] .pa-area-band { fill: rgba(127, 159, 220, 0.07); stroke: none; }
     html[data-theme="dark"] .pa-area-exp { stroke: none; }
     html[data-theme="dark"] .pa-line-p90 { stroke: #7f9fdc; }

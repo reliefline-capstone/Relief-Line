@@ -18,7 +18,7 @@ from app.utils.mail import send_email
 from app.models.user import User
 from app.models.office import Office
 from app.models.warehouse import WarehouseInventory
-from app.models.barangay import Barangay
+from app.models.barangay import Barangay, DEFAULT_RESERVE_PCT
 from app.models.activity_log import ActivityLog
 from app.models.password_reset_request import PasswordResetRequest, DEFAULT_RESET_PASSWORD
 from app.routes.pswdo import TARGET_LGUS
@@ -507,19 +507,40 @@ def barangays():
     } for b in barangay_list]
 
     total_barangays = len(barangay_list)
+    # Barangays per municipality, for the 'Apply to all' reserve confirmation message.
+    lgu_counts = dict(db.session.query(Barangay.city_municipality, db.func.count(Barangay.barangay_id))
+                      .filter(Barangay.city_municipality.in_(TARGET_LGUS))
+                      .group_by(Barangay.city_municipality).all())
+    # The reserve % each municipality uses now (None when its barangays have different %s),
+    # so the 'Apply to all' box starts at the saved value instead of a fixed 1%.
+    lgu_pcts = {}
+    for lgu_name, pct in db.session.query(Barangay.city_municipality, Barangay.reserve_pct).filter(
+            Barangay.city_municipality.in_(TARGET_LGUS)).distinct().all():
+        lgu_pcts.setdefault(lgu_name, set()).add(float(pct))
+    lgu_pcts = {k: (next(iter(v)) if len(v) == 1 else None) for k, v in lgu_pcts.items()}
 
     return render_template(
         "admin/barangays.html", rows=rows, search_query=search_query, municipality_filter=municipality_filter,
-        total_barangays=total_barangays, target_lgus=TARGET_LGUS,
+        total_barangays=total_barangays, target_lgus=TARGET_LGUS, lgu_counts=lgu_counts,
+        lgu_pcts=lgu_pcts,
     )
 
 
-# Copies the barangay form fields (name, municipality, population, households) into the barangay record.
+# Reads a reserve % from the form, kept between 0 and 100 (blank or invalid = the default %).
+def _form_reserve_pct(field="reserve_pct"):
+    pct = request.form.get(field, type=float)
+    if pct is None:
+        return DEFAULT_RESERVE_PCT
+    return round(min(max(pct, 0.0), 100.0), 2)
+
+
+# Copies the barangay form fields (name, municipality, population, households, reserve %) into the barangay record.
 def _apply_barangay_form(barangay):
     barangay.barangay_name = request.form.get("barangay_name", "").strip()
     barangay.city_municipality = request.form.get("city_municipality", "")
     barangay.population = request.form.get("population", type=int) or 0
     barangay.num_households = request.form.get("num_households", type=int) or 0
+    barangay.reserve_pct = _form_reserve_pct()
 
 
 # Action: /admin/barangays/add - Adds a new barangay.
@@ -560,6 +581,25 @@ def edit_barangay(barangay_id):
     return redirect(url_for("admin.barangays"))
 
 
+# Action: /admin/barangays/reserve-pct - Sets the same 'other disasters' reserve % for every barangay
+# in one municipality (or in all 3), so the admin doesn't have to edit them one by one.
+@admin_bp.route("/barangays/reserve-pct", methods=["POST"])
+@login_required
+@role_required("system_admin")
+def set_reserve_pct():
+    lgu = request.form.get("municipality", "all")
+    pct = _form_reserve_pct()
+    scope = [lgu] if lgu in TARGET_LGUS else list(TARGET_LGUS)
+    count = Barangay.query.filter(Barangay.city_municipality.in_(scope)).update(
+        {Barangay.reserve_pct: pct}, synchronize_session=False)
+    where = lgu if lgu in TARGET_LGUS else "all municipalities"
+    log_admin_activity(current_user.user_id, "barangay_reserve_updated",
+                       f"{current_user.name} set the other-disasters reserve to {pct:g}% for {count} barangays in {where}")
+    db.session.commit()
+    flash(f"Reserve set to {pct:g}% for {count} barangays in {where}.", "success")
+    return redirect(url_for("admin.barangays", municipality=lgu if lgu in TARGET_LGUS else None))
+
+
 # Download: /admin/barangays/export - Downloads the barangay list as a CSV (spreadsheet) file.
 @admin_bp.route("/barangays/export")
 @login_required
@@ -573,11 +613,13 @@ def export_barangays():
     writer = csv.writer(buffer)
     writer.writerow([
         "Barangay", "Municipality", "Population", "Households", "Historical Allocation",
+        "Reserve %", "Reserve Packs",
     ])
     for b in barangay_list:
         writer.writerow([
             b.barangay_name, b.city_municipality, b.population, b.num_households,
             historical_allocation_for(b.barangay_id),
+            f"{float(b.reserve_pct):g}", b.reserve_packs,
         ])
 
     return Response(

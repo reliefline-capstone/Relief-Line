@@ -7,7 +7,7 @@ from sqlalchemy import text
 from app.extensions import db
 
 from app.utils.decorators import role_required
-from app.models.barangay import Barangay
+from app.models.barangay import Barangay, RESERVE_PACKS_PER_FAMILY
 from app.models.barangay_status import BarangayDisasterStatus
 from app.models.disaster_event import DisasterEvent
 from app.models.prediction import ModelMetrics
@@ -350,12 +350,22 @@ def index():
     chart_forecast = (ml_predict.forecast_lgu(forecast_lgu_choice, forecast_months + 1, include_current=True)
                       if lgu_forecast else None)
     chart_months = chart_forecast["months"] if chart_forecast else []
+    # 'Other disasters' reserve (fire, earthquake...): reserve % x families x 1 pack, per barangay, set by the
+    # System Admin. It's a stock level kept all year, so the same yellow bar is drawn in every month.
+    reserve_by_brgy, reserve_families, reserve_pcts = {}, 0, set()
+    if lgu_forecast:
+        for b in Barangay.query.filter_by(city_municipality=forecast_lgu_choice).all():
+            reserve_by_brgy[b.barangay_id] = b.reserve_packs
+            reserve_families += b.num_households or 0
+            reserve_pcts.add(float(b.reserve_pct or 0))
+    reserve_total = sum(reserve_by_brgy.values())
+    reserve_pcts = sorted(reserve_pcts)
     # Buffer (stockpile) bars are hidden unless the user turns them on; the axis fits whatever is shown.
     show_buffer = request.args.get("show_buffer") == "1"
     # The axis fits the top of each month's 95% confidence interval (and the stockpile marker when shown),
     # plus 8% headroom so the range labels above the bars never touch the top of the chart.
     peak = max([max(m["projected_packs"], m["ci_high"] or 0,
-                    (m["p90_packs"] if show_buffer else 0))
+                    (m["p90_packs"] if show_buffer else 0), reserve_total)
                 for m in chart_months], default=0) * 1.08
     step = min((c * mag for mag in (1, 10, 100, 1000, 10000, 100000) for c in (1, 2, 2.5, 5)
                 if c * mag * 4 >= peak), default=1)
@@ -380,6 +390,7 @@ def index():
                 "ci_low": m["ci_low"], "ci_high": m["ci_high"],
                 "stockpile": month_stockpile,
                 "on_hand_total": stock_total,
+                "reserve": reserve_total,
                 "rows": [{
                     "name": r["name"],
                     "share": round(r["share"] * 100, 1),
@@ -388,6 +399,7 @@ def index():
                     "ci_high": max(int(round(m["ci_high"] * r["share"])), 0) if m["ci_high"] is not None else None,
                     "stockpile": max(int(round(month_stockpile * r["share"])), 0),
                     "on_hand": on_hand.get(r["barangay_id"]),
+                    "reserve": reserve_by_brgy.get(r["barangay_id"], 0),
                 } for r in shares],
             }
 
@@ -484,6 +496,10 @@ def index():
         distribution_history=_distribution_history(scope_lgus),
         show_breakdown=show_breakdown,
         show_buffer=show_buffer,
+        reserve_total=reserve_total,
+        reserve_families=reserve_families,
+        reserve_pcts=reserve_pcts,
+        reserve_packs_per_family=RESERVE_PACKS_PER_FAMILY,
     )
 
 

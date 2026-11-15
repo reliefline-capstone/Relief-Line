@@ -1,5 +1,5 @@
 {# Page: /admin/barangays - Barangay Data Management (System Admin). #}
-{# List of barangays with population and households; add, edit and export them. #}
+{# List of barangays with population, households and 'other disasters' reserve %; add, edit and export them. #}
 {% extends "base.html" %}
 {% from "_macros.html" import icon with context %}
 {% from "_filter_panel.html" import filter_panel, fp_search, fp_select, f_url with context %}
@@ -59,7 +59,30 @@
             {% endcall %}
         {% endcall %}
 
-        {# Barangay table: name, municipality, population, households, typical past allocation, Edit button. #}
+        {# 'Other disasters' reserve: sets one reserve % for every barangay in a municipality (or all 3) at once. #}
+        {# Reserve packs = reserve % x families x 1 pack; shown as the yellow bar on Predictive Analytics. #}
+        <section class="panel" style="margin-bottom:16px;">
+            <div class="panel-header" style="margin-bottom:6px;">
+                <h3>Other Disasters Reserve</h3>
+            </div>
+            <p class="rd-sub" style="margin:0 0 10px;">Food packs kept on hand all year for disasters the typhoon forecast can't predict (fire, earthquake). Reserve packs = reserve % &times; families &times; 1 pack. Change one barangay with its Edit button, or set the same % for a whole municipality here.</p>
+            <form method="POST" action="{{ url_for('admin.set_reserve_pct') }}" class="reserve-bulk-form" id="reserve-bulk-form">
+                <select name="municipality" aria-label="Municipality" id="reserve-bulk-lgu">
+                    <option value="all">All municipalities</option>
+                    {% for lgu in target_lgus %}
+                    <option value="{{ lgu }}" {{ 'selected' if municipality_filter == lgu }}>{{ lgu }}</option>
+                    {% endfor %}
+                </select>
+                <label class="reserve-pct-field">
+                    <input type="number" name="reserve_pct" id="reserve-bulk-pct" min="0" max="100" step="0.01" required aria-label="Reserve %">
+                    <span>%</span>
+                </label>
+                <span class="reserve-bulk-hint">of families</span>
+                <button type="button" class="btn-decision btn-partial" id="reserve-bulk-open">Apply to all</button>
+            </form>
+        </section>
+
+        {# Barangay table: name, municipality, population, households, typical past allocation, reserve, Edit button. #}
         <section class="panel wh-table-panel">
             <table class="wh-table">
                 <thead>
@@ -69,6 +92,7 @@
                         <th>POPULATION</th>
                         <th>HOUSEHOLDS</th>
                         <th>HISTORICAL ALLOC.</th>
+                        <th>RESERVE</th>
                         <th>ACTIONS</th>
                     </tr>
                 </thead>
@@ -81,10 +105,11 @@
                         <td>{{ "{:,}".format(barangay.population) }}</td>
                         <td>{{ "{:,}".format(barangay.num_households) }}</td>
                         <td>{{ "{:,}".format(row.historical_allocation) }}</td>
+                        <td>{{ "%g"|format(barangay.reserve_pct|float) }}% <span class="rd-sub">&middot; {{ "{:,}".format(barangay.reserve_packs) }} packs</span></td>
                         <td><button type="button" class="admin-btn admin-btn-edit" data-open-modal="edit-barangay-modal-{{ barangay.barangay_id }}">Edit</button></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6" class="empty-note" style="text-align:center; padding:30px;">No barangays match your search.</td></tr>
+                    <tr><td colspan="7" class="empty-note" style="text-align:center; padding:30px;">No barangays match your search.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -125,12 +150,32 @@
                     <input type="number" name="num_households" id="add-brgy-households" min="0" value="0">
                 </div>
             </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="add-brgy-reserve">Other Disasters Reserve (% of families)</label>
+                    <input type="number" name="reserve_pct" id="add-brgy-reserve" min="0" max="100" step="0.01" value="1">
+                </div>
+                <div></div>
+            </div>
             <span class="form-hint">Historical Allocation is calculated automatically from past relief allocation records.</span>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">{{ icon('check-circle', 16, 'white') }} Add Barangay</button>
                 <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
             </div>
         </form>
+    </div>
+</div>
+
+{# Confirmation pop-up for 'Apply to all': says the %, the municipality and how many barangays will change. #}
+<div class="rd-modal-overlay" id="reserve-confirm-modal" hidden>
+    <div class="rd-modal confirm-modal">
+        <div class="confirm-modal-icon">{{ icon('alert-triangle', 22) }}</div>
+        <h3>Apply reserve to all barangays?</h3>
+        <p id="reserve-confirm-message"></p>
+        <div class="rd-modal-actions">
+            <button type="button" class="btn-decision btn-partial" id="reserve-confirm-ok">Apply</button>
+            <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -168,6 +213,16 @@
                     <input type="number" name="num_households" id="edit-brgy-households-{{ barangay.barangay_id }}" min="0" value="{{ barangay.num_households }}">
                 </div>
             </div>
+            <div class="rd-form-row">
+                <div>
+                    <label for="edit-brgy-reserve-{{ barangay.barangay_id }}">Other Disasters Reserve (% of families)</label>
+                    <input type="number" name="reserve_pct" id="edit-brgy-reserve-{{ barangay.barangay_id }}" min="0" max="100" step="0.01" value="{{ '%g'|format(barangay.reserve_pct|float) }}">
+                </div>
+                <div>
+                    <label>Reserve packs</label>
+                    <input type="text" value="{{ '{:,}'.format(barangay.reserve_packs) }} packs" disabled>
+                </div>
+            </div>
             <div class="rd-modal-actions">
                 <button type="submit" class="btn-decision btn-partial">Save Changes</button>
                 <button type="button" class="btn-cancel" data-close-modal>Cancel</button>
@@ -181,4 +236,44 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/relief_request_detail.js') }}"></script>
+<script>
+// 'Apply to all' reserve form: checks the %, then shows the confirmation pop-up before saving.
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('reserve-bulk-form');
+    var modal = document.getElementById('reserve-confirm-modal');
+    if (!form || !modal) return;
+    var counts = {{ lgu_counts|tojson }};
+    var pct = document.getElementById('reserve-bulk-pct');
+    var lgu = document.getElementById('reserve-bulk-lgu');
+    var pcts = {{ lgu_pcts|tojson }};
+
+    // Fills the % box with the reserve % the chosen municipality uses now
+    // (left blank with a 'Mixed' hint when its barangays have different %s).
+    function showCurrentPct() {
+        var vals = lgu.value === 'all' ? Object.values(pcts) : [pcts[lgu.value]];
+        var same = vals.length && vals.every(function (v) { return v !== null && v !== undefined && v === vals[0]; });
+        pct.value = same ? vals[0] : '';
+        pct.placeholder = same ? '' : 'Mixed';
+    }
+    showCurrentPct();
+    lgu.addEventListener('change', showCurrentPct);
+
+    // Opens the confirmation pop-up with the chosen % and municipality (or shows the browser's error for a bad %).
+    function openConfirm() {
+        if (!form.reportValidity()) return;
+        var all = lgu.value === 'all';
+        var n = all ? Object.values(counts).reduce(function (a, b) { return a + b; }, 0) : (counts[lgu.value] || 0);
+        document.getElementById('reserve-confirm-message').textContent =
+            'All ' + n + ' barangays in ' + (all ? 'all 3 municipalities' : lgu.value) + ' will be set to ' +
+            Number(pct.value) + '% of families. This replaces their current reserve %.';
+        modal.hidden = false;
+    }
+    document.getElementById('reserve-bulk-open').addEventListener('click', openConfirm);
+    // Pressing Enter in the % box also opens the pop-up instead of saving straight away.
+    form.addEventListener('submit', function (e) {
+        if (modal.hidden) { e.preventDefault(); openConfirm(); }
+    });
+    document.getElementById('reserve-confirm-ok').addEventListener('click', function () { form.submit(); });
+});
+</script>
 {% endblock %}

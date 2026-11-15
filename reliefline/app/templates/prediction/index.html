@@ -121,7 +121,8 @@
 
         </div>
 
-        {# Projected Demand: the monthly forecast chart (95% confidence interval and the amount recommended if the season is bad), #}
+        {# Projected Demand: the monthly forecast chart (95% confidence interval, the amount recommended if the season is bad, #}
+        {# and the yellow 'other disasters' reserve kept all year), #}
         {# with a municipality and period filter. Click a month to see its barangay breakdown. #}
         <section class="panel" id="pa-forecast-detail" style="margin-top:16px; margin-bottom:16px;">
             <div class="panel-header">
@@ -157,7 +158,11 @@
             {% set axis_max = chart_axis_max or 1 %}
             {% set pl, pr, pt, pb = 70, 980, 40, 280 %}
             {% set slot = (pr - pl) / n %}
-            {% set bw = [slot * 0.3, 30]|min %}
+            {# Bars per month: projected need, + bad-season bar when switched on, + yellow reserve bar when a reserve is set. #}
+            {% set show_reserve = reserve_total > 0 %}
+            {% set nbars = 1 + (1 if show_buffer else 0) + (1 if show_reserve else 0) %}
+            {% set bw = [slot * (0.3 if nbars < 3 else 0.25), 30 if nbars < 3 else 24]|min %}
+            {% set group_w = nbars * bw + (nbars - 1) * 2 %}
             {% set compact = n > 8 %}
             {% set ci_pct = "%.0f"|format((lgu_forecast.ci_level or 0.95) * 100) %}
             {% macro top_rounded_bar(x, h, w) -%}
@@ -176,10 +181,11 @@
             </g>
             {%- endmacro %}
             {# Bar chart: blue = projected need (point forecast) with its 95% confidence interval error bar; #}
-            {# dark = amount recommended if the season is bad (a planning target, shown as a single number). #}
+            {# dark = amount recommended if the season is bad (a planning target, shown as a single number); #}
+            {# yellow = 'other disasters' reserve (same every month: stock kept on hand all year, set per barangay by the admin). #}
             <div class="pa-bar-chart pa-chart-host pa-bar-chart-wide" id="pa-demand-host">
                 <svg class="pa-bar-svg" viewBox="0 0 1000 340" role="img"
-                     aria-label="Projected food packs needed per month for {{ lgu_forecast.lgu }}, with {{ ci_pct }}% confidence intervals{% if show_buffer %}, and the amount recommended if the season is bad{% endif %}">
+                     aria-label="Projected food packs needed per month for {{ lgu_forecast.lgu }}, with {{ ci_pct }}% confidence intervals{% if show_buffer %}, and the amount recommended if the season is bad{% endif %}{% if show_reserve %}, plus a reserve of {{ reserve_total }} packs for other disasters{% endif %}">
                     <text class="pa-axis-title" x="8" y="14">Food packs per month</text>
                     {% for t in chart_axis_ticks %}
                     {% set gy = pb - (t / axis_max) * (pb - pt) %}
@@ -196,9 +202,12 @@
                     {% set ph = (m.p90_packs / axis_max) * (pb - pt) if show_buffer else 0 %}
                     {# Tops of the error bars, used to place the value labels above them. #}
                     {% set et = [eh, (hi / axis_max) * (pb - pt)]|max %}
-                    {% set pt_top = ph if bad else 0 %}
-                    {# With the bad-season bars off, the projected-need bar sits centred in its month. #}
-                    {% set ex = (cx - bw - 1) if show_buffer else (cx - bw / 2) %}
+                    {% set rh = (reserve_total / axis_max) * (pb - pt) if show_reserve else 0 %}
+                    {% set pt_top = [ph if bad else 0, rh]|max %}
+                    {# The month's bars sit side by side, centred in the month: projected need, bad season, reserve. #}
+                    {% set ex = cx - group_w / 2 %}
+                    {% set px = ex + bw + 2 %}
+                    {% set rx = ex + (nbars - 1) * (bw + 2) %}
                     {% if m.is_wet_season or m.is_peak_season %}
                     <rect class="pa-bar-band{{ ' pa-bar-band-peak' if m.is_peak_season }}" x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt }}"></rect>
                     {% endif %}
@@ -207,11 +216,15 @@
                     <text class="pa-now-tag" x="{{ '%.1f'|format(cx) }}" y="{{ pt - 12 }}" text-anchor="middle">THIS MONTH</text>
                     {% endif %}
                     {% if eh > 0 %}<path class="pa-bar-col" d="{{ top_rounded_bar(ex, eh, bw) }}"></path>{% endif %}
-                    {% if ph > 0 %}<path class="pa-bar-p90" d="{{ top_rounded_bar(cx + 1, ph, bw) }}"></path>{% endif %}
+                    {% if ph > 0 %}<path class="pa-bar-p90" d="{{ top_rounded_bar(px, ph, bw) }}"></path>{% endif %}
+                    {% if rh > 0 %}<path class="pa-bar-reserve" d="{{ top_rounded_bar(rx, rh, bw) }}"></path>{% endif %}
                     {% if hi > 0 %}{{ ci_whisker(ex + bw / 2, lo, hi) }}{% endif %}
-                    <text class="pa-bar-value" x="{{ '%.1f'|format(ex + bw / 2 - (1.5 if show_buffer else 0)) }}" y="{{ '%.1f'|format(pb - et - 6) }}" text-anchor="middle">{{ packs(m.projected_packs) }}</text>
+                    <text class="pa-bar-value" x="{{ '%.1f'|format(ex + bw / 2 - (1.5 if nbars > 1 else 0)) }}" y="{{ '%.1f'|format(pb - et - 6) }}" text-anchor="middle">{{ packs(m.projected_packs) }}</text>
                     {% if bad %}
-                    <text class="pa-bar-value pa-bar-value-p90" x="{{ '%.1f'|format(cx + bw / 2 + 1.5) }}" y="{{ '%.1f'|format(pb - pt_top - 6) }}" text-anchor="middle">{{ packs(m.p90_packs) }}</text>
+                    <text class="pa-bar-value pa-bar-value-p90" x="{{ '%.1f'|format(px + bw / 2 + (0 if show_reserve else 1.5)) }}" y="{{ '%.1f'|format(pb - ph - 6) }}" text-anchor="middle">{{ packs(m.p90_packs) }}</text>
+                    {% endif %}
+                    {% if rh > 0 %}
+                    <text class="pa-bar-value pa-bar-value-reserve" x="{{ '%.1f'|format(rx + bw / 2 + 1.5) }}" y="{{ '%.1f'|format(pb - rh - 6) }}" text-anchor="middle">{{ packs(reserve_total) }}</text>
                     {% endif %}
                     <text class="pa-bar-label{{ ' pa-bar-label-now' if m.is_current }}" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 22 }}" text-anchor="middle">{{ m.label }}</text>
                     <text class="pa-bar-sublabel" x="{{ '%.1f'|format(cx) }}" y="{{ pb + 38 }}" text-anchor="middle">{{ m.year }}</text>
@@ -219,10 +232,10 @@
                     <rect class="pa-month-hit" data-month="{{ m.date }}" tabindex="0" role="button"
                           data-tip-label="{{ m.label }} {{ m.year }}"
                           data-tip-exp="{{ m.projected_packs }}" data-tip-lo="{{ lo }}" data-tip-hi="{{ hi }}"
-                          data-tip-p90="{{ m.p90_packs }}"
+                          data-tip-p90="{{ m.p90_packs }}" data-tip-reserve="{{ reserve_total }}"
                           data-tip-season="{{ 'Peak typhoon season' if m.is_peak_season else 'Rainy season' if m.is_wet_season else '' }}"
                           data-tip-x="{{ '%.1f'|format(cx) }}" data-tip-y="{{ '%.1f'|format(pb - [et, pt_top]|max) }}"
-                          aria-label="{{ m.label }} {{ m.year }}: projected need {{ m.projected_packs }} packs ({{ ci_pct }}% confidence interval {{ lo }} to {{ hi }}){% if show_buffer %}, recommended if bad season {{ m.p90_packs }} packs{% endif %}. Show barangay breakdown."
+                          aria-label="{{ m.label }} {{ m.year }}: projected need {{ m.projected_packs }} packs ({{ ci_pct }}% confidence interval {{ lo }} to {{ hi }}){% if show_buffer %}, recommended if bad season {{ m.p90_packs }} packs{% endif %}{% if show_reserve %}, other-disasters reserve {{ reserve_total }} packs{% endif %}. Show barangay breakdown."
                           x="{{ '%.1f'|format(x0) }}" y="{{ pt }}" width="{{ '%.1f'|format(slot) }}" height="{{ pb - pt + 62 }}">
                     </rect>
                     {%- endfor -%}
@@ -232,7 +245,8 @@
             <div class="pa-legend">
                 <span><i class="lg-exp"></i>Projected need</span>
                 {% if show_buffer %}<span><i class="lg-p90-bar"></i>Recommended if bad season</span>{% endif %}
-                <span><i class="lg-ci"></i>{{ ci_pct }}% confidence interval of projected need</span>
+                {% if show_reserve %}<span><i class="lg-reserve"></i>Other disasters</span>{% endif %}
+                <span><i class="lg-ci"></i>{{ ci_pct }}% CI of projected need</span>
                 <span><i class="lg-wet"></i>Rainy (Jun-Oct)</span>
                 <span><i class="lg-peak"></i>Peak (Jul-Oct)</span>
             </div>
@@ -243,11 +257,11 @@
                 </div>
                 <div class="rr-table-wrap" style="max-height:380px; overflow:auto;">
                     <table class="rr-table">
-                        <thead><tr><th>Barangay</th><th>Current stock</th><th>Projected need ({{ ci_pct }}% CI)</th><th>Recommended if bad season</th></tr></thead>
+                        <thead><tr><th>Barangay</th><th>Current stock</th><th>Projected need ({{ ci_pct }}% CI)</th><th>Recommended if bad season</th>{% if show_reserve %}<th>Other disasters reserve</th>{% endif %}</tr></thead>
                         <tbody id="pa-month-rows"></tbody>
                         <tfoot><tr>
                             <td><strong>{{ lgu_forecast.lgu }}</strong></td>
-                            <td id="pa-month-total-s"></td><td id="pa-month-total-e"></td><td id="pa-month-total-p"></td>
+                            <td id="pa-month-total-s"></td><td id="pa-month-total-e"></td><td id="pa-month-total-p"></td>{% if show_reserve %}<td id="pa-month-total-r"></td>{% endif %}
                         </tr></tfoot>
                     </table>
                 </div>
@@ -264,6 +278,14 @@
                     <span class="rd-sub">Recommended if bad season &middot; {{ forecast_months }} months</span>
                     <strong>{{ "{:,}".format(lgu_forecast.horizon_p90) }}</strong>
                     <span class="rd-sub">packs &middot; bad-season level plus buffer</span>
+                </div>
+                {% endif %}
+                {% if show_reserve %}
+                {# 'Other disasters' reserve card: packs kept on hand all year (not added per month), refilled after use. #}
+                <div class="pa-decision-tile pa-reserve-tile" title="Kept on hand all year for disasters the typhoon forecast can't predict (fire, earthquake). Reserve % x families x {{ reserve_packs_per_family }} pack, per barangay; the % is set by the System Admin. Held once, not added every month.">
+                    <span class="rd-sub">Other disasters reserve &middot; all year</span>
+                    <strong>{{ "{:,}".format(reserve_total) }}</strong>
+                    <span class="rd-sub">packs &middot; {% if reserve_pcts|length == 1 %}{{ "%g"|format(reserve_pcts[0]) }}%{% else %}{{ "%g"|format(reserve_pcts[0]) }}&ndash;{{ "%g"|format(reserve_pcts[-1]) }}%{% endif %} of {{ "{:,}".format(reserve_families) }} families &middot; kept on hand</span>
                 </div>
                 {% endif %}
             </div>
@@ -528,6 +550,8 @@
 <script>
 (function () {
     var DATA = {{ month_breakdown|tojson }};
+    // True when the 'other disasters' reserve column is shown in the barangay breakdown.
+    var SHOW_RESERVE = {{ 'true' if reserve_total > 0 else 'false' }};
     var panel = document.getElementById('pa-month-detail');
     if (!panel) return;
     var hits = document.querySelectorAll('.pa-month-hit');
@@ -552,11 +576,13 @@
             var stock = r.on_hand === null || r.on_hand === undefined
                 ? '<span class="rd-sub">No record</span>' : fmt(r.on_hand);
             return '<tr><td><strong>' + esc(r.name) + '</strong></td><td>' + stock + '</td><td>' +
-                range(r) + '</td><td>' + fmt(r.stockpile) + '</td></tr>';
+                range(r) + '</td><td>' + fmt(r.stockpile) + '</td>' +
+                (SHOW_RESERVE ? '<td>' + fmt(r.reserve) + '</td>' : '') + '</tr>';
         }).join('');
         document.getElementById('pa-month-total-s').innerHTML = '<strong>' + fmt(m.on_hand_total) + '</strong>';
         document.getElementById('pa-month-total-e').innerHTML = '<strong>' + range(m) + '</strong>';
         document.getElementById('pa-month-total-p').innerHTML = '<strong>' + fmt(m.stockpile) + '</strong>';
+        if (SHOW_RESERVE) document.getElementById('pa-month-total-r').innerHTML = '<strong>' + fmt(m.reserve) + '</strong>';
         document.getElementById('pa-month-note').textContent = !m.ci_high && m.stockpile === 0
             ? 'No typhoon relief demand is expected in ' + m.label + ' (outside the typhoon season), so every barangay shows 0.'
             : 'Only ' + m.label + ' is shown. Barangay figures can differ from the municipal total by a few packs due to rounding.';
@@ -820,6 +846,7 @@
                     row('lg-exp', 'Projected need', fmt(d.tipExp) + ' packs') +
                     sub('95% CI', d.tipLo, d.tipHi) +
                     ({{ 'true' if show_buffer else 'false' }} ? row('lg-p90-bar', 'Recommended if bad season', fmt(d.tipP90) + ' packs') : '') +
+                    (+d.tipReserve > 0 ? row('lg-reserve', 'Other disasters reserve', fmt(d.tipReserve) + ' packs') : '') +
                     '<div class="pa-tip-sub" style="margin-top:4px;">Click for barangay breakdown</div>';
                 place(demand, dtip, +d.tipX, +d.tipY);
             }

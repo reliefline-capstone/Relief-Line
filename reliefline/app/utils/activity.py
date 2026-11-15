@@ -31,6 +31,7 @@ MODULE_LABELS = {
     "office_deactivated": "Office Management",
     "barangay_created": "Barangay Management",
     "barangay_updated": "Barangay Management",
+    "barangay_reserve_updated": "Barangay Management",
     "settings_updated": "System Settings",
 }
 DEFAULT_MODULE_LABEL = "Other"
